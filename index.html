@@ -1,0 +1,1718 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acampada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Jost:wght@700;800&family=Chakra+Petch:wght@400;600;700&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#efeae2; --ink:#0b0a0a; --muted:#5b554f; --line:#0b0a0a; --panel:#ffffff;
+  --red:#b02a22; --redbox:#8b2320; --green:#4ba36f; --white:#f4f1ea;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0b0a0a; --ink:#f4f1ea; --muted:#a39d97; --line:#f4f1ea; --panel:#161414; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#0b0a0a; --ink:#f4f1ea; --muted:#a39d97; --line:#f4f1ea; --panel:#161414; color-scheme:dark; }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+button{ touch-action:manipulation; }
+body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-family:Jost, Futura, "Trebuchet MS", sans-serif; -webkit-tap-highlight-color:transparent; }
+.wrap{ width:min(calc(100vw - 14px), 460px, max(300px, calc((100dvh - 260px) * 1.0667))); margin:6px auto 14px; }
+/* computers: the column keeps its phone width and is scaled up to fill the window (see fit()) */
+.pc body{ min-height:0; }
+.pc .wrap{ width:460px; transform-origin:50% 0; }
+.pc #ov .wrapc{ transform-origin:50% 50%; }
+.mini[hidden]{ display:none; }
+.rough{ filter:url(#rough); }
+.hud{ background:var(--panel); border:2px solid var(--line); padding:8px 10px 9px; }
+.top{ display:flex; align-items:center; gap:8px; }
+.logo{ font-weight:800; font-size:22px; line-height:1; color:var(--red); letter-spacing:.3px; }
+#city{ flex:1; min-width:0; font-weight:800; font-size:13px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#clock{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:13px; text-decoration:underline; text-underline-offset:3px; white-space:nowrap; }
+.mini{ font:inherit; font-weight:800; font-size:13px; color:var(--ink); background:none; border:2px solid var(--line); padding:0 7px; cursor:pointer; line-height:20px; }
+.hudbody{ display:flex; gap:8px; align-items:flex-end; }
+.hudL{ flex:1; min-width:0; }
+.pm{ margin:0; width:84px; flex:none; display:flex; flex-direction:column; align-items:center; }
+.pm svg{ display:block; width:84px; height:auto; overflow:visible; transform-origin:50% 100%; transition:transform .5s; }
+.pm figcaption{ position:relative; z-index:1; background:var(--panel); padding:0 3px; font-family:"Helvetica Neue", Arial, sans-serif; font-size:10px; letter-spacing:.4px; text-transform:uppercase; margin-top:2px; }
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin:7px 0 6px; }
+.stats div{ display:flex; flex-direction:column; }
+.stats dt{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:10.5px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); }
+.stats dd{ margin:0; font-weight:800; font-size:22px; line-height:1.05; }
+.bar{ display:grid; grid-template-columns:70px 1fr; align-items:center; gap:6px; margin-top:4px; font-family:"Helvetica Neue", Arial, sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:.4px; }
+.bar i{ display:block; height:10px; border:2px solid var(--line); background:transparent; }
+.bar b{ display:block; height:100%; width:0; transition:width .25s; }
+#bM{ background:var(--green); } #bS{ background:var(--ink); } #bP{ background:var(--red); }
+.stage{ position:relative; margin-top:8px; border:2px solid var(--line); background:#0b0a0a; }
+canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rendering:pixelated; image-rendering:crisp-edges; touch-action:none; }
+.act{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:15px; line-height:1.05; text-transform:uppercase; border:2px solid var(--line); padding:8px 4px 6px; cursor:pointer; color:#0b0a0a; background:#f4f1ea; }
+.act small{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-weight:400; font-size:10.5px; text-transform:none; margin-top:2px; opacity:.8; }
+.act:active{ transform:translateY(2px); }
+.act:disabled{ opacity:.4; cursor:default; }
+.act.red{ background:var(--redbox); color:#fff; border-color:var(--redbox); }
+.act.green{ background:var(--green); color:#0b0a0a; border-color:var(--green); }
+.act.ink{ background:var(--ink); color:var(--bg); }
+.act:focus-visible,.mini:focus-visible{ outline:3px solid #ffd23a; outline-offset:2px; }
+#ctxBtn{ width:100%; margin-top:8px; background:#fff; color:var(--redbox); border-color:#fff; font-size:17px; padding:9px 6px 7px; box-shadow:inset 0 0 0 2px var(--redbox); }
+#ctxBtn[hidden]{ display:none; }
+.actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; }
+.help{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:11.5px; color:var(--muted); margin:9px 2px 0; line-height:1.4; text-transform:uppercase; letter-spacing:.3px; }
+@media (prefers-reduced-motion: reduce){ .bar b{ transition:none; } }
+#ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px calc(env(safe-area-inset-bottom,0px) + 16px); overflow:auto; text-align:center; color:#fff; background:#0b0a0a; font-family:Jost, Futura, "Trebuchet MS", sans-serif; }
+#ov[hidden]{ display:none; }
+#ov .wrapc{ position:relative; z-index:1; margin:auto; width:100%; max-width:460px; }
+.rough{ filter:url(#rough); }
+#ov h2,#ov p{ margin:0; }
+.p-red{ color:#b02a22; font-weight:800; font-size:clamp(30px, 9.5vw, 42px); line-height:1; letter-spacing:.5px; }
+.p-big{ font-weight:800; font-size:clamp(32px, 10vw, 44px); line-height:1.02; text-transform:uppercase; }
+.p-mid{ font-weight:700; font-size:22px; line-height:1.15; margin-top:6px !important; text-transform:uppercase; }
+.p-info{ font-weight:800; font-size:22px; line-height:1.12; text-transform:uppercase; }
+.tent{ display:block; margin:12px auto 10px; width:150px; height:auto; }
+.chaps{ display:grid; gap:8px; margin:14px auto 0; max-width:420px; }
+.chap{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; text-align:left; background:transparent; color:#fff; border:2px solid #f4f1ea; padding:8px 12px 6px; cursor:pointer; font-family:Jost, Futura, sans-serif; }
+.chap:active{ transform:translateY(2px); }
+.chap .k{ color:#b02a22; font-weight:800; font-size:14px; }
+.chap .n{ font-weight:800; font-size:22px; line-height:1; text-transform:uppercase; }
+.chap .pl{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:12px; font-weight:400; color:#c9c4c4; margin-top:2px; }
+.chap .ok{ font-weight:800; font-size:11px; color:#0b0a0a; background:#4ba36f; padding:2px 6px; text-transform:uppercase; }
+.chap.done{ border-color:#4ba36f; }
+.chap:focus-visible{ outline:3px solid #ffd23a; outline-offset:3px; }
+.foot{ font-weight:800; font-size:11px; letter-spacing:.6px; margin-top:8px !important; opacity:.9; }
+#ov .help{ text-transform:none; letter-spacing:0; font-family:"Helvetica Neue", Arial, sans-serif; font-weight:400; font-size:13px; line-height:1.4; color:#c9c4c4; margin:12px auto 0 !important; max-width:30em; }
+#ov.comunicado{ background:rgba(118,24,20,.8); -webkit-backdrop-filter:grayscale(1) contrast(1.35) brightness(.75); backdrop-filter:grayscale(1) contrast(1.35) brightness(.75); }
+#ov.comunicado::before{ content:""; position:absolute; inset:0; pointer-events:none; background-image:radial-gradient(rgba(0,0,0,.4) 1px, transparent 1.5px); background-size:4px 4px; }
+.box-red{ display:inline-block; background:#8b2320; color:#fff; padding:8px 14px 6px; font-weight:800; font-size:29px; line-height:1.05; text-transform:uppercase; }
+.box-white{ display:inline-block; background:#fff; color:#8b2320; padding:6px 12px 4px; margin-top:14px; font-weight:800; font-size:19px; line-height:1.12; text-transform:uppercase; }
+#ov.comunicado .help{ color:#fff; }
+.comunicado .stat{ font-weight:800; font-size:16px; margin-top:10px !important; text-transform:uppercase; }
+.btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:18px; text-transform:uppercase; background:#fff; color:#0b0a0a; border:none; padding:11px 22px 9px; margin:16px 5px 0; cursor:pointer; }
+.btnp.red{ background:#8b2320; color:#fff; }
+.btnp.arrow{ padding:9px 13px 7px; margin:16px 0 0; }
+.btnp.narrow{ margin:16px 0 0; white-space:nowrap; font-size:16px; padding:10px 12px 8px; }
+.btnp:active{ transform:translateY(2px); }
+#ov.needs{ background:#232425; color:#4ba36f; font-family:"Helvetica Neue", Arial, sans-serif; }
+.needs h2{ font-weight:400; font-size:33px; line-height:1.08; text-transform:uppercase; text-decoration:underline; text-decoration-thickness:3px; text-underline-offset:5px; margin-bottom:10px !important; }
+.need{ display:block; width:100%; background:none; border:none; color:#4ba36f; font-family:inherit; font-size:25px; line-height:1.05; text-transform:uppercase; cursor:pointer; padding:7px 0; }
+.need small{ display:block; font-size:12.5px; line-height:1.3; text-transform:none; color:#b6c7bc; margin-top:2px; }
+.need .c{ font-size:14px; vertical-align:middle; opacity:.85; }
+.need:disabled{ opacity:.35; cursor:default; }
+#ov.needs .btnp{ font-family:inherit; font-weight:700; background:#4ba36f; color:#232425; }
+#ov.adred{ background:#8b2320; color:#fff; }
+.adtag{ display:inline-block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:11px; letter-spacing:.6px; text-transform:uppercase; border:1.5px solid currentColor; padding:1px 6px; margin-bottom:10px; opacity:.85; }
+.ad{ text-align:left; }
+.ad .k{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:13px; text-transform:uppercase; text-align:right; letter-spacing:.3px; }
+.ad .rule{ height:6px; background:#fff; margin:10px 0; }
+.ad .t{ font-weight:800; font-size:clamp(34px, 11vw, 50px); line-height:.98; text-transform:uppercase; }
+.ad .cols{ display:flex; justify-content:space-between; gap:12px; font-size:clamp(17px, 5.4vw, 22px); line-height:1.12; text-transform:uppercase; }
+.ad .cols div:last-child{ text-align:right; }
+.ad .cols b{ font-weight:800; }
+.ad .src{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:11.5px; line-height:1.35; opacity:.85; margin-top:12px !important; }
+.ad .big{ font-weight:800; font-size:clamp(60px, 20vw, 88px); line-height:.9; }
+.ad .center,.ad.center{ text-align:center; }
+.ad .p-red{ text-transform:uppercase; }
+.agenda{ display:grid; gap:9px; margin-top:12px; text-align:left; }
+.agenda div{ display:grid; grid-template-columns:76px 1fr; gap:8px; align-items:baseline; }
+.agenda .when{ font-size:13px; text-decoration:underline; text-underline-offset:3px; }
+.agenda .what{ font-size:20px; line-height:1.05; text-transform:uppercase; }
+.agenda .what small{ display:block; font-size:12px; text-transform:none; line-height:1.3; }
+.needlist{ font-size:clamp(20px, 6.4vw, 27px); line-height:1.06; text-transform:uppercase; text-align:center; margin-top:8px !important; }
+#ov.green{ background:#4ba36f; color:#161616; font-family:"Helvetica Neue", Arial, sans-serif; }
+.green h2{ font-weight:400; font-size:36px; line-height:1.02; text-transform:uppercase; }
+.green h2 u{ text-decoration-thickness:3px; text-underline-offset:5px; }
+#ov.green .help{ color:#163a24; }
+.slots{ display:grid; grid-template-columns:1fr 1fr; gap:14px 14px; margin-top:16px; text-align:left; }
+.slot{ background:none; border:none; padding:0; color:#161616; font-family:inherit; text-align:left; cursor:pointer; }
+.slot:nth-child(even){ text-align:right; }
+.slot .t{ font-size:13px; text-decoration:underline; }
+.slot .n{ display:block; font-size:22px; line-height:1.02; text-transform:uppercase; margin-top:2px; }
+.slot .d{ display:block; font-size:12px; line-height:1.3; margin-top:3px; color:#163a24; }
+.slots.one{ grid-template-columns:1fr; }
+.slots.one .slot:nth-child(even){ text-align:left; }
+#ov.green .btnp{ font-family:inherit; font-weight:700; background:#161616; color:#4ba36f; }
+.arrow{ font-size:34px; line-height:1; }
+.btnp:focus-visible,.need:focus-visible,.slot:focus-visible{ outline:3px solid #ffd23a; outline-offset:3px; }
+.jelly{ position:relative; font:inherit; font-weight:700; font-size:14px; color:#1b1464; cursor:pointer; padding:10px 12px; border:2px solid var(--edge); border-radius:999px;
+  background:linear-gradient(180deg,#a8f7ff,#2cc4ea); box-shadow:inset 0 -3px 6px rgba(0,0,0,.18), 0 3px 0 var(--edge); overflow:hidden; }
+.jelly::before{ content:""; position:absolute; left:10%; right:10%; top:2px; height:42%; border-radius:999px; background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0)); pointer-events:none; }
+.jelly:active{ transform:translateY(2px); box-shadow:inset 0 -3px 6px rgba(0,0,0,.18), 0 1px 0 var(--edge); }
+.jelly:disabled{ filter:grayscale(.75); opacity:.55; cursor:default; }
+.jelly:focus-visible,.mini:focus-visible,.card:focus-visible{ outline:3px solid #ffd36b; outline-offset:2px; }
+.pink{ background:linear-gradient(180deg,#ffc2ec,#ff5fc8); }
+.lime{ background:linear-gradient(180deg,#e9ffb8,#8ee03a); }
+.lav{ background:linear-gradient(180deg,#eee6ff,#a98bff); }
+.gold{ background:linear-gradient(180deg,#fff2bf,#ffc53d); }
+
+#ctxBtn{ width:100%; margin-top:9px; }
+#ctxBtn[hidden]{ display:none; }
+.actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-top:9px; }
+.actions .jelly{ padding:9px 2px; font-size:12.5px; line-height:1.15; }
+.help{ font-size:12px; color:var(--muted); margin:9px 4px 0; line-height:1.4; }
+@media (prefers-reduced-motion: reduce){ #bP{ animation:none; } .bar b{ transition:none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></svg>
+<main class="wrap">
+  <header class="hud">
+    <div class="top"><span class="logo rough">ACAMPADA</span><span id="city">Porto</span><span id="clock">DIA 1 · 17:00</span><button id="info" class="mini" type="button" aria-label="Informação: ver os cartazes">i</button><button id="mute" class="mini" type="button" aria-label="Desligar o som">♪</button><button id="full" class="mini" type="button" aria-label="Ecrã inteiro" hidden>⛶</button></div>
+    <div class="hudbody"><div class="hudL">
+    <dl class="stats">
+      <div><dt>Tendas</dt><dd id="sT">0</dd></div>
+      <div><dt>Pessoas</dt><dd id="sP">0</dd></div>
+      <div><dt>Materiais</dt><dd id="sSup">0</dd></div>
+      <div><dt>Detidos</dt><dd id="sD">0</dd></div>
+    </dl>
+    <div class="bar"><span>Moral</span><i><b id="bM"></b></i></div>
+    <div class="bar"><span>Apoio</span><i><b id="bS"></b></i></div>
+    <div class="bar"><span>Pressão</span><i><b id="bP"></b></i></div>
+    </div>
+    <figure class="pm" aria-live="polite">
+      <svg id="pm" viewBox="-4 4 128 122" role="img" aria-label="Humor do governo: contente">
+        <defs>
+          <radialGradient id="skin" cx="42%" cy="38%" r="68%"><stop offset="0" stop-color="#f3cdab"/><stop offset=".65" stop-color="#d9a37a"/><stop offset="1" stop-color="#b47b55"/></radialGradient>
+          <linearGradient id="suit" x1="0" x2="1"><stop offset="0" stop-color="#2e3d6b"/><stop offset=".55" stop-color="#1f2a4a"/><stop offset="1" stop-color="#121a30"/></linearGradient>
+          <pattern id="dots" width="3" height="3" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".85" fill="#000"/></pattern>
+          <path id="body" d="M60 10 C73 10 80 20 80 34 C80 44 76 50 69 54 L69 58 C84 60 95 70 96 84 L97 118 L23 118 L24 84 C25 70 36 60 51 58 L51 54 C44 50 40 44 40 34 C40 20 47 10 60 10 Z"/>
+          <g id="o0"><use href="#body"/></g>
+          <g id="o1"><use href="#body"/><path d="M34 63 L11 73 L15 89 L39 81 Z"/><ellipse cx="7" cy="80" rx="9.5" ry="6.5"/><path d="M86 63 L109 73 L105 89 L81 81 Z"/><ellipse cx="113" cy="80" rx="9.5" ry="6.5"/></g>
+          <g id="o2"><use href="#body"/></g>
+          <g id="torso">
+            <rect x="54" y="47" width="12" height="13" fill="#c48d64"/>
+            <path d="M51 58 C36 60 25 70 24 84 L23 118 L97 118 L96 84 C95 70 84 60 69 58 L60 75 Z" fill="url(#suit)"/>
+            <path d="M53 58 L60 75 L67 58 Z" fill="#eef1f6"/>
+            <path d="M58 62 L62 62 L64 87 L60 92 L56 87 Z" fill="#34589f"/>
+            <path d="M58.6 66 h1.2 M60.4 70.5 h1.2 M58.8 75 h1.2 M60.6 79.5 h1.2 M59 84 h1.2" stroke="#a9c6ff" stroke-width=".9"/>
+            <path d="M51 58 L57 81 M69 58 L63 81" stroke="#0c1226" stroke-width="2" fill="none"/>
+            <path d="M31 78 C34 92 34 106 33 118" stroke="rgba(255,255,255,.09)" stroke-width="3" fill="none"/>
+          </g>
+          <g id="headbase">
+            <ellipse cx="42.5" cy="35" rx="3.3" ry="5.6" fill="#cf966b"/><ellipse cx="77.5" cy="35" rx="3.3" ry="5.6" fill="#cf966b"/>
+            <ellipse cx="60" cy="34" rx="17" ry="20" fill="url(#skin)"/>
+            <path d="M43 31 C41 16 50 10 60 10 C71 10 79 16 77 31 C75 22 70 19 64 19 L57 22 C51 21 46 24 43 31 Z" fill="#4a3426"/>
+            <path d="M60 29 L57.3 40.5 Q60 42.5 62.7 40.5" stroke="#a46a46" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          </g>
+        </defs>
+        <path d="M80 118 L104 122 L86 94 Z" fill="#9c7040"/>
+        <g id="pose0">
+          <use href="#o0" fill="#8a6234" transform="translate(2.5 2)"/><use href="#o0" fill="#c99a5e" stroke="#c99a5e" stroke-width="6" stroke-linejoin="round"/>
+          <use href="#torso"/>
+          <g transform="rotate(-6 60 54)">
+            <use href="#headbase"/>
+            <path d="M48 24.5 Q53 22 57 24.5 M63 24.5 Q67 22 72 24.5" stroke="#3b2a20" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+            <path d="M49 31 Q53 27.5 57 31 M63 31 Q67 27.5 71 31" stroke="#2a1a14" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M47 30 l-3 -1.4 M47 32.5 l-3 1 M73 30 l3 -1.4 M73 32.5 l3 1" stroke="#a46a46" stroke-width=".8"/>
+            <ellipse cx="49" cy="38.5" rx="4" ry="2.4" fill="#e58a7a" opacity=".35"/><ellipse cx="71" cy="38.5" rx="4" ry="2.4" fill="#e58a7a" opacity=".35"/>
+            <path d="M47.5 41 Q60 59 72.5 41 Q60 45 47.5 41 Z" fill="#3a1414"/>
+            <path d="M50 42.2 Q60 45.8 70 42.2 L69 45.3 Q60 48 51 45.3 Z" fill="#fff"/>
+            <path d="M54.5 52.5 Q60 54.5 65.5 52.5 L64.5 50.8 Q60 52.3 55.5 50.8 Z" fill="#f2efe8"/>
+          </g>
+          <use href="#o0" fill="url(#dots)" opacity=".2"/><use class="red" href="#o0" fill="#e0201c" opacity="0" style="mix-blend-mode:multiply"/>
+        </g>
+        <g id="pose1" style="display:none">
+          <use href="#o1" fill="#8a6234" transform="translate(2.5 2)"/><use href="#o1" fill="#c99a5e" stroke="#c99a5e" stroke-width="6" stroke-linejoin="round"/>
+          <use href="#torso"/>
+          <path d="M34 63 L11 73 L15 89 L39 81 Z" fill="url(#suit)"/><path d="M86 63 L109 73 L105 89 L81 81 Z" fill="url(#suit)"/>
+          <path d="M11 73 L15 89 L13 89.6 L9 74 Z" fill="#eef1f6"/><path d="M109 73 L105 89 L107 89.6 L111 74 Z" fill="#eef1f6"/>
+          <path d="M-1 78 Q2 71 10 74.5 L13 87 Q4 89 0 85 Q-3 81.5 -1 78 Z" fill="url(#skin)"/><path d="M121 78 Q118 71 110 74.5 L107 87 Q116 89 120 85 Q123 81.5 121 78 Z" fill="url(#skin)"/>
+          <path d="M0 79.5 L6 79 M0 82.5 L6 82 M120 79.5 L114 79 M120 82.5 L114 82" stroke="#a46a46" stroke-width=".7"/>
+          <use href="#headbase"/>
+          <path d="M52 17.5 Q60 15.5 68 17.5 M53 19.5 Q60 18 67 19.5" stroke="#b47b55" stroke-width=".7" fill="none"/>
+          <path d="M48 22 Q53 17.5 57 22 M63 22 Q67 17.5 72 22" stroke="#3b2a20" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+          <ellipse cx="53" cy="30" rx="3.6" ry="3.2" fill="#fff"/><circle cx="53" cy="30" r="1.6" fill="#2a1a14"/>
+          <ellipse cx="67" cy="30" rx="3.6" ry="3.2" fill="#fff"/><circle cx="67" cy="30" r="1.6" fill="#2a1a14"/>
+          <path d="M54.5 44.5 Q60 49.5 65.5 44.5 Q60 42.5 54.5 44.5 Z" fill="#3a1414"/>
+          <use href="#o1" fill="url(#dots)" opacity=".2"/><use class="red" href="#o1" fill="#e0201c" opacity="0" style="mix-blend-mode:multiply"/>
+          <g><rect x="76" y="2" width="44" height="15" fill="#fff" stroke="#0b0a0a" stroke-width="1.6"/><path d="M84 17 L80 23 L90 17 Z" fill="#fff" stroke="#0b0a0a" stroke-width="1.2"/><text x="98" y="12.8" text-anchor="middle" font-family="Jost, Futura, sans-serif" font-weight="800" font-size="10" fill="#8b2320">O QUÊ?</text></g>
+        </g>
+        <g id="pose2" style="display:none">
+          <use href="#o2" fill="#8a6234" transform="translate(2.5 2)"/><use href="#o2" fill="#c99a5e" stroke="#c99a5e" stroke-width="6" stroke-linejoin="round"/>
+          <use href="#torso"/>
+          <path d="M28 82 L52 72 L55 81 L31 92 Z" fill="url(#suit)"/><path d="M92 82 L68 72 L65 81 L89 92 Z" fill="url(#suit)"/>
+          <path d="M50 72 L53 81 L55 80.5 L52 71.5 Z" fill="#eef1f6"/><path d="M70 72 L67 81 L65 80.5 L68 71.5 Z" fill="#eef1f6"/>
+          <ellipse cx="56" cy="73.5" rx="7" ry="5.2" fill="url(#skin)"/><ellipse cx="64" cy="72.5" rx="7" ry="5.2" fill="url(#skin)"/>
+          <path d="M52 71 L60 70 M53 74 L61 73 M58 69.5 L67 69 M59 72.5 L68 72" stroke="#a46a46" stroke-width=".7"/>
+          <use href="#headbase"/>
+          <path d="M48 25 Q52 21.5 57 22.5 M63 22.5 Q68 21.5 72 25" stroke="#3b2a20" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+          <ellipse cx="53" cy="30" rx="3.6" ry="3" fill="#fff"/><circle cx="53.4" cy="28.3" r="1.6" fill="#2a1a14"/>
+          <ellipse cx="67" cy="30" rx="3.6" ry="3" fill="#fff"/><circle cx="67.4" cy="28.3" r="1.6" fill="#2a1a14"/>
+          <path d="M49.5 31.5 Q53 33.5 56.5 31.5 M63.5 31.5 Q67 33.5 70.5 31.5" stroke="#a46a46" stroke-width=".8" fill="none"/>
+          <path d="M53.5 45.5 Q60 42 66.5 45.5" stroke="#7a3b2e" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M56 47 Q60 48.4 64 47" stroke="#a46a46" stroke-width=".8" fill="none"/>
+          <path id="pmTear" d="M51 34 Q48.5 39 51 40.5 Q53.5 39 51 34 Z" fill="#5fc7ff" style="display:none"/>
+          <path d="M79 15 Q77 19.5 79 21 Q81 19.5 79 15 Z" fill="#5fc7ff"/>
+          <path d="M30 100 L92 92" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/><path d="M30 101.3 L92 93.3" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
+          <use href="#o2" fill="url(#dots)" opacity=".2"/><use class="red" href="#o2" fill="#e0201c" opacity="0" style="mix-blend-mode:multiply"/>
+        </g>
+      </svg>
+      <figcaption>Governo</figcaption>
+    </figure>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="c" width="256" height="240" aria-label="A acampada vista de cima, em perspetiva"></canvas>
+  </div>
+  <button id="ctxBtn" class="act" type="button" hidden>Ação</button>
+  <nav class="actions" aria-label="Ações da acampada">
+    <button class="act" id="btnChain" type="button">Cordão<small>Proteger</small></button>
+    <button class="act red" id="btnLive" type="button">Direto<small>Transmitir</small></button>
+    <button class="act green" id="btnBuild" type="button">Montar<small>Construir</small></button>
+    <button class="act ink" id="btnVote" type="button">Assembleia<small>Votar</small></button>
+  </nav>
+  <p class="help" id="help">Toca na praça para andar.</p>
+</main>
+<div id="ov"></div>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const W = 256, H = 240, OX = 128, OY = 100, TW = 12, TH = 6, N = 10, DAY = 72, HOUR = DAY / 24;
+const cv = $('c'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ri = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const gd = (a, b) => Math.hypot(a.gx - b.gx, a.gy - b.gy);
+const iso = (gx, gy, z = 0) => ({ x: OX + (gx - gy) * TW, y: OY + (gx + gy) * TH - z });
+const toWorld = (sx, sy) => { const a = (sx - OX) / TW, b = (sy - OY) / TH; return { gx: (a + b) / 2, gy: (b - a) / 2 }; };
+const lerpY = (P, Q, x) => P.y + (Q.y - P.y) * ((x - P.x) / ((Q.x - P.x) || 1));
+const frac = v => v - Math.floor(v);
+const hash = (x, y) => { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const shadeCache = new Map();
+function shade(hex, f) {
+  const k = hex + '|' + f; let o = shadeCache.get(k); if (o) return o;
+  const n = parseInt(hex.slice(1, 7), 16); const c = v => clamp(Math.round(v * f), 0, 255);
+  o = '#' + ((1 << 24) | (c(n >> 16 & 255) << 16) | (c(n >> 8 & 255) << 8) | c(n & 255)).toString(16).slice(1);
+  shadeCache.set(k, o); return o;
+}
+function mix(a, b, t) { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); const m = s => Math.round((A >> s & 255) * (1 - t) + (B >> s & 255) * t); return `rgb(${m(16)},${m(8)},${m(0)})`; }
+
+/* ================= drawing primitives ================= */
+function R(x, y, w, h, c, g = ctx) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
+function vl(g, x, y0, y1, c) { const a = Math.round(y0), b = Math.round(y1); if (b < a) return; g.fillStyle = c; g.fillRect(x, a, 1, b - a + 1); }
+function box(g, x0, y0, x1, y1, z0, h, cT, cL, cR) {
+  const A = iso(x0, y0, z0 + h), B = iso(x1, y0, z0 + h), C = iso(x1, y1, z0 + h), D = iso(x0, y1, z0 + h);
+  if (cR) for (let sx = Math.round(C.x); sx < Math.round(B.x); sx++) { const gy = x1 - (sx + .5 - OX) / TW; const by = OY + (x1 + gy) * TH - z0; vl(g, sx, by - h, by, cR); }
+  if (cL) for (let sx = Math.round(D.x); sx < Math.round(C.x); sx++) { const gx = (sx + .5 - OX) / TW + y1; const by = OY + (gx + y1) * TH - z0; vl(g, sx, by - h, by, cL); }
+  if (cT) for (let sx = Math.round(D.x); sx < Math.round(B.x); sx++) { const xc = sx + .5; const t = xc < A.x ? lerpY(D, A, xc) : lerpY(A, B, xc); const b = xc < C.x ? lerpY(D, C, xc) : lerpY(C, B, xc); vl(g, sx, t, b, cT); }
+}
+function boxc(g, gx, gy, hw, z0, h, col) { box(g, gx - hw, gy - hw, gx + hw, gy + hw, z0, h, shade(col, 1.06), shade(col, .88), shade(col, .72)); }
+function ell(g, cx, cy, r, c, ry = r / 2) { const n = Math.round(r); for (let dx = -n; dx < n; dx++) { const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / r) ** 2)); vl(g, Math.round(cx) + dx, cy - ry * e, cy + ry * e, c); } }
+function circ(g, cx, cy, r, c) { ell(g, cx, cy, r, c, r); }
+function cyl(g, cx, cy, r, h, col, top) {
+  const n = Math.round(r);
+  for (let dx = -n; dx < n; dx++) { const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / r) ** 2)); const k = (dx + .5) / r; const f = k < -.35 ? 1.04 : k < .35 ? .92 : .76; vl(g, Math.round(cx) + dx, cy - h, cy + r / 2 * e, shade(col, f)); }
+  ell(g, cx, cy - h, r, top || shade(col, 1.1));
+}
+function bmp(g, rows, pal, x, y, s = 1, flip = false) {
+  const w = rows[0].length; x = Math.round(x); y = Math.round(y);
+  for (let r = 0; r < rows.length; r++) { const row = rows[r]; for (let c = 0; c < w; c++) { const col = pal[row[c]]; if (!col) continue; g.fillStyle = col; g.fillRect(x + (flip ? w - 1 - c : c) * s, y + r * s, s, s); } }
+}
+// a flat panel stuck on an iso face. face 'L' = plane gy=k (lower-left), 'R' = plane gx=k (lower-right)
+function panel(face, k, center, z0, w, h, col) {
+  const p = face === 'L' ? iso(center, k) : iso(k, center); const slope = face === 'L' ? .5 : -.5;
+  for (let i = -Math.floor(w / 2); i < Math.ceil(w / 2); i++) { const yb = p.y + i * slope - z0; vl(ctx, Math.round(p.x) + i, yb - h + 1, yb, typeof col === 'function' ? col(i, h) : col); }
+}
+
+/* ================= bitmaps ================= */
+// The Rossio donkey head, from the photos: brown face, white-rimmed ears with black insides, white eyes, grey muzzle with a black centre line and grille teeth
+const DONKEY = [
+  'WW..............WW',
+  'WKW............WKW',
+  'WKKW..........WKKW',
+  '.WKKW........WKKW.',
+  '.WKKW........WKKW.',
+  '..WKKW......WKKW..',
+  '..WKKW......WKKW..',
+  '...WKBW....WBKW...',
+  '...BWBB....BBWB...',
+  '....BBBBBBBBBB....',
+  '...bBBBBBBBBBBb...',
+  '...bWWWBBBBWWWb...',
+  '...bWKWBBBBWKWb...',
+  '...bBWBBBBBBWBb...',
+  '...bBBBBBBBBBBb...',
+  '....bBBBKKBBBb....',
+  '....bBBBKKBBBb....',
+  '....GGGGKKGGGG....',
+  '....GGGGKKGGGG....',
+  '....GGGGKKGGGG....',
+  '....gGGGGGGGGg....',
+  '....KWKWKWKWKK....',
+  '....KWKWKWKWKK....',
+  '....KKKKKKKKKK....'
+];
+const DPAL = { W: '#f4f1ea', K: '#16121a', B: '#4b2a1f', b: '#361c13', G: '#c3c6cf', g: '#959aa6' };
+const HORSE = [
+  '...........HH...',
+  '..........HHHH..',
+  '.........HHH.H..',
+  '........HHH.....',
+  '.......HHHHH.L..',
+  '......HHHHHHLL..',
+  '.....HHHHHH....B',
+  '....HHHHHH....BB',
+  '...HHHHHH.....BB',
+  '..HHHHH......BBB',
+  '.HHHH........B.B',
+  '.H..H.......B..B',
+  '.H..H.......B..B',
+  'HH.HH......BB.BB'
+];
+const HPAL = { H: '#a3824f', L: '#a3824f', B: '#7d6238' };
+const KING = ['..BB..', '..BB..', '.BBBB.', 'BBBBBB', '.BBBB.', '.BBBB.', '.BBBB.', '.BBBB.', '.B..B.', 'BBBBBB'];
+const KPAL = { B: '#4f6f63' };
+const VIRTUE = ['..WW...', '..Ws...', '.WWWW..', 'WWWWWs.', '.WWWWWW', 'WWWWWWs', 'sWWWWs.'];
+const VPAL = { W: '#f3eee2', s: '#d2cab6' };
+
+/* ================= cities (from reporting on each square) ================= */
+const CITIES = [
+  { name: 'Porto', place: 'Praça D. João I', ground: 'granite', police: 1.0, patrols: false, helmets: true, cleaners: true, tag: 'Capacetes azuis e a equipa de limpeza',
+    intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.',
+    clear: 'O Porto aguentou as noites. No sábado, às 17:00, começam a chegar tendas ao Rossio.',
+    blocks: [[2, 4], [7, 4]],
+    deco: [{ t: 'corcel', gx: 2.5, gy: 4.5 }, { t: 'corcel', gx: 7.5, gy: 4.5, flip: true }, { t: 'lamp', gx: .4, gy: 2.5 }, { t: 'lamp', gx: .4, gy: 7.5 }, { t: 'lamp', gx: 9.6, gy: 9.6 }],
+    L: [{ a: 0, b: 5.5, h: 58, style: 'rivoli', roof: '#a99c80' }, { a: 5.5, b: 10, h: 42, style: 'pombal', col: '#9fb7cf', neon: '#57ffb0' }],
+    R: [{ a: 0, b: 6.5, h: 52, style: 'atlantico', roof: '#b8ad94' }, { a: 6.5, b: 10, h: 40, style: 'pombal', col: '#e3b54b', neon: '#ff5fc8' }],
+    C: { h: 96, style: 'rialto', roof: '#b0a588' } },
+  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.12, patrols: false, donkey: true, dj: true, tag: 'O DJ p.45 e a cabeça de burro',
+    intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer. A seguir: Não temos casa, ficam as tendas! Sábado, 24 de outubro, 15:00, do Marquês do Pombal ao Rossio.',
+    clear: 'O Rossio tornou-se uma pequena aldeia. Coimbra convoca uma assembleia na Praça 8 de Maio.',
+    blocks: [[4, 4], [5, 4], [4, 5], [5, 5], [4, 1], [5, 1], [4, 8], [5, 8]],
+    deco: [{ t: 'column', gx: 5, gy: 5 }, { t: 'fountain', gx: 5, gy: 1.5 }, { t: 'fountain', gx: 5, gy: 8.5 }, { t: 'bin', gx: 1.6, gy: 10.3 },
+      { t: 'lamp', gx: .4, gy: 3 }, { t: 'lamp', gx: .4, gy: 7 }, { t: 'lamp', gx: 9.6, gy: 9.6 }],
+    L: [{ a: 0, b: 3.4, h: 46, style: 'pombal', col: '#e8c547', neon: '#57ffb0' }, { a: 3.4, b: 6.8, h: 48, style: 'pombal', col: '#e9a6a0' }, { a: 6.8, b: 10, h: 44, style: 'pombal', col: '#9ec3d9', neon: '#ff5fc8' }],
+    R: [{ a: 0, b: 1.5, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 1.5, b: 8.5, h: 46, style: 'theatre', roof: '#9ea3b5' }, { a: 8.5, b: 10, h: 44, style: 'pombal', col: '#e8c547' }],
+    C: { h: 46, style: 'pombal', col: '#d97a4a' } },
+  { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'mosaic', police: 1.25, patrols: true, students: true, drums: true, rents: true, tag: 'Os bombos e as rendas dos estudantes',
+    intro: 'Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.',
+    clear: 'Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.',
+    blocks: [],
+    deco: [{ t: 'lamp', gx: .4, gy: 3 }, { t: 'lamp', gx: .4, gy: 7 }, { t: 'lamp', gx: 3, gy: .4 }, { t: 'lamp', gx: 7, gy: .4 }],
+    L: [{ a: 0, b: 4, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 4, b: 10, h: 42, style: 'pombal', col: '#e3b54b', neon: '#57ffb0' }],
+    R: [{ a: 0, b: 2, h: 40, style: 'pombal', col: '#e9a6a0' }, { a: 2, b: 6, h: 58, style: 'church', roof: '#cfc6b0' }, { a: 6, b: 10, h: 46, style: 'camara', roof: '#c4674a' }],
+    C: { h: 40, style: 'pombal', col: '#9ec3d9' } },
+  { name: 'Braga', place: 'Avenida Central', ground: 'checker', police: 1.38, patrols: true, students: true, noTents: true, tag: 'Sem tendas: assembleia no chafariz',
+    intro: 'Junto ao chafariz da Avenida Central, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.',
+    clear: 'Braga aguentou sem uma única tenda.',
+    blocks: [[4, 4], [5, 4], [4, 5], [5, 5], [1, 1], [8, 1], [1, 8], [8, 8]],
+    deco: [{ t: 'chafariz', gx: 5, gy: 5 }, { t: 'tree', gx: 1.5, gy: 1.5 }, { t: 'tree', gx: 8.5, gy: 1.5 }, { t: 'tree', gx: 1.5, gy: 8.5 }, { t: 'tree', gx: 8.5, gy: 8.5 }],
+    L: [{ a: 0, b: 1.5, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 1.5, b: 8.5, h: 48, style: 'arcada', roof: '#c4674a' }, { a: 8.5, b: 10, h: 44, style: 'pombal', col: '#9ec3d9' }],
+    R: [{ a: 0, b: 5, h: 46, style: 'pombal', col: '#f2efe6', neon: '#39e1ff' }, { a: 5, b: 10, h: 42, style: 'pombal', col: '#e8c547' }],
+    C: { h: 44, style: 'pombal', col: '#e9a6a0' } },
+  { name: 'Faro', place: 'Praça da Liberdade', ground: 'rings', police: 1.5, patrols: true, slowStart: true, tag: 'Um arranque lento, depois o Algarve resiste',
+    intro: 'Em frente à CCDR, debaixo das palmeiras, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.',
+    clear: 'Viva o Algarve a resistir.',
+    blocks: [[2, 2], [7, 2], [2, 7], [7, 7]],
+    deco: [{ t: 'palm', gx: 2.5, gy: 2.5 }, { t: 'palm', gx: 7.5, gy: 2.5 }, { t: 'palm', gx: 2.5, gy: 7.5 }, { t: 'palm', gx: 7.5, gy: 7.5 }, { t: 'lamp', gx: 9.6, gy: 9.6 }],
+    L: [{ a: 0, b: 5, h: 34, style: 'algarve' }, { a: 5, b: 10, h: 30, style: 'algarve', roof: '#e9e4d6' }],
+    R: [{ a: 0, b: 3, h: 32, style: 'algarve' }, { a: 3, b: 7.5, h: 44, style: 'ccdr', roof: '#aeb5c4' }, { a: 7.5, b: 10, h: 30, style: 'algarve' }],
+    C: { h: 34, style: 'algarve' } }
+];
+
+/* ================= facades ================= */
+const GLASS = fz => fz >= 8 ? '#c9f6ff' : '#4f7fd0';
+const STYLES = {
+  pombal: b => { const col = b.col || '#e8c547', h = b.h; return { extra: 9, fn: (u, z, w, front) => {
+    if (z >= h) { if (!front) return null; const m = (u + 5) % 22; if (m < 9) { if (z >= h + 7) return '#b0503a'; if (m >= 2 && m <= 6 && z >= h + 1 && z <= h + 5) return '#2a2d4f'; return '#f3efe6'; } return null; }
+    if (z >= h - 3) return z === h - 1 ? '#ffffff' : '#ece6d6';
+    if (z < 13) { const m = u % 14; if (m >= 3 && m <= 10 && z < 10) return z >= 8 ? '#2a2350' : '#3a3160';
+      if (b.neon && z >= 10 && z <= 11 && Math.floor(u / 14) % 3 === 1) return b.neon; return '#ece6d6'; }
+    const fz = (z - 13) % 12, m = u % 9;
+    if (m >= 3 && m <= 6 && fz >= 2 && fz <= 9) return fz === 2 ? '#1b1464' : GLASS(fz);
+    if (m >= 2 && m <= 7 && fz >= 1 && fz <= 10) return '#ffffff';
+    return col; } }; },
+  theatre: b => { const h = b.h; return { extra: 18, fn: (u, z, w, front) => {
+    const mid = w / 2, hw = Math.min(mid - 4, 38), d = Math.abs(u - mid);
+    if (z >= h) { if (!front || d > hw) return null; const ph = 17 * (1 - d / hw); if (z < h + ph) { if (z >= h + ph - 2) return '#ffffff'; if (z < h + 2) return '#f7f3e9'; if (d < 5 && z > h + 5 && z < h + 9) return '#d8b85a'; return '#dcd5c3'; } return null; }
+    if (z >= h - 5) return z >= h - 2 ? '#ffffff' : '#e6e0d0';
+    if (front && d < hw && z < h - 5) { const m = Math.floor(u - mid + hw) % 9; if (m < 3) return m === 1 ? '#ffffff' : '#f1ece0'; if (z < 3) return '#cfc8b6'; return z > h - 12 ? '#3f3560' : '#4a3f6e'; }
+    const m = u % 10, fz = z % 14; if (m >= 3 && m <= 6 && fz >= 4 && fz <= 11) return fz > 9 ? '#c9f6ff' : '#4f7fd0';
+    return '#efeadd'; } }; },
+  rivoli: b => { const h = b.h; return { extra: 6, fn: (u, z, w, front) => {
+    if (z >= h) { if (!front) return null; return Math.abs(u - w / 2) < 10 ? '#f3e9cf' : null; }
+    if (z >= h - 3) return '#f3e9cf';
+    if (z < 12) { const m = u % 10; return (m >= 2 && m <= 7 && z < 10) ? '#2a2350' : '#d8c7a0'; }
+    if (front && z >= h - 14 && z < h - 7 && Math.abs(u - w / 2) < w * .3) return (u % 4 < 2) ? '#ff4f8b' : '#ffd0e0';
+    const m = u % 12; if (m < 2) return '#f6eedb';
+    if (m >= 4 && m <= 8 && z >= 14 && z < h - 16) return ((z - 14) % 10 < 1) ? '#eadcbc' : (z % 10 > 6 ? '#c9f6ff' : '#4f7fd0');
+    return '#eadcbc'; } }; },
+  atlantico: b => { const h = b.h, col = '#d9cdb2'; return { extra: 0, fn: (u, z) => {
+    if (z >= h) return null; if (z >= h - 2) return '#efe6d0';
+    if (z < 11) { const m = u % 8; return m >= 2 && m <= 6 && z < 9 ? '#2a2350' : '#c8bb9e'; }
+    const m = u % 6, fz = (z - 11) % 8; if (m >= 2 && m <= 4 && fz >= 2 && fz <= 5) return fz >= 5 ? '#c9f6ff' : '#4f7fd0';
+    return col; } }; },
+  rialto: b => { const h = b.h, col = '#cfc3a6'; return { extra: 12, fn: (u, z, w) => {
+    if (z >= h) return Math.abs(u - w / 2) < 1 ? '#9aa0ad' : null;
+    if (z >= h - 8) return (u % 5 < 2) ? '#efe6d0' : '#bfb294';
+    if (z < 11) return u % 8 < 5 && z < 9 ? '#2a2350' : '#bfb294';
+    const m = u % 6, fz = (z - 11) % 8; if (m >= 2 && m <= 4 && fz >= 2 && fz <= 5) return (z > 60 && hash(u, z >> 3) > .6) ? '#ffe9a8' : (fz >= 5 ? '#c9f6ff' : '#4f7fd0');
+    return col; } }; },
+  church: b => { const h = b.h, col = '#f1ebdd'; return { extra: 5, fn: (u, z, w, front) => {
+    const mid = w / 2, d = Math.abs(u - mid);
+    if (z >= h) { if (!front) return null; return ((u >> 2) & 1) ? '#e9e2d2' : null; }
+    if (front && d < 12 && z < 46) {
+      if (d < 5 && z < 22) return z >= 19 - Math.round(d * d / 8) ? '#d8c89a' : '#2e2648';
+      return ((u + z) % 4 === 0) ? '#c9b77d' : ((u * 3 + z) % 7 === 0 ? '#bda96a' : '#e7dcc0'); }
+    if (front && d < 4 && z >= 49 && z < 55) return '#4f7fd0';
+    const m = u % 16; if (m >= 6 && m <= 9 && z >= 22 && z < 36) return '#3a3160';
+    return col; } }; },
+  camara: b => { const h = b.h, col = '#f2eee4'; return { extra: 0, fn: (u, z) => {
+    if (z >= h) return null; if (z >= h - 4) return z >= h - 2 ? '#ffffff' : '#e3ddcf';
+    if (z < 14) { const m = u % 12; return (m >= 3 && m <= 8 && z < 12) ? '#3a3160' : '#e3ddcf'; }
+    const m = u % 11, fz = (z - 14) % 15; if (m >= 4 && m <= 7 && fz >= 2 && fz <= 12) return fz >= 10 ? '#c9f6ff' : '#4f7fd0';
+    if (fz === 1 && m >= 3 && m <= 8) return '#2a2350';
+    return col; } }; },
+  arcada: b => { const h = b.h, col = '#ead9a6'; return { extra: 8, fn: (u, z, w, front) => {
+    if (z >= h) { if (!front) return null; const d = Math.abs(u - w / 2); if (d < 8 && z < h + 8) return z > h + 5 ? '#ffffff' : (d < 3 && z > h + 1 && z < h + 5 ? '#1b1464' : '#ead9a6'); return null; }
+    if (z >= h - 3) return '#ffffff';
+    if (z < 20) { const m = u % 14; const inside = m >= 2 && m <= 11 && z < 13 + 5 * Math.sqrt(Math.max(0, 1 - ((m - 6.5) / 4.5) ** 2)); if (inside) return '#2e2648'; return '#f3e8c2'; }
+    const m = u % 9, fz = (z - 20) % 12; if (m >= 3 && m <= 6 && fz >= 2 && fz <= 9) return GLASS(fz); if (m >= 2 && m <= 7 && fz >= 1 && fz <= 10) return '#ffffff';
+    return col; } }; },
+  algarve: b => { const h = b.h, col = '#fbfbf7'; return { extra: 13, fn: (u, z, w, front) => {
+    if (z >= h) { if (!front) return null; if (z < h + 3) return (u % 4 === 0 || z === h + 2) ? '#ffffff' : null;
+      const m = u % 30; if (m >= 12 && m <= 17 && z < h + 13) { if (z >= h + 11) return '#ffffff'; return ((m + z) % 3 === 0) ? '#3a3160' : '#fbfbf7'; } return null; }
+    if (z < 12) { const m = u % 12; return (m >= 3 && m <= 8 && z < 10) ? '#2f7fd1' : '#f0ede4'; }
+    const m = u % 10, fz = (z - 12) % 12; if (m >= 3 && m <= 6 && fz >= 2 && fz <= 9) return '#4f7fd0'; if (m >= 2 && m <= 7 && fz >= 1 && fz <= 10) return '#e7b95a';
+    return col; } }; },
+  ccdr: b => { const h = b.h, col = '#d6dbe3'; return { extra: 0, fn: (u, z) => {
+    if (z >= h) return null; if (z < 10) return u % 12 < 6 ? '#5a6a8a' : '#c3c9d6';
+    return (z % 10) < 4 ? ((u + z) % 7 === 0 ? '#e6fbff' : '#7fd8ff') : col; } }; }
+};
+function faceGX(g, gxc, ga, gb, z0, Hm, fn, f) {
+  const xl = Math.round(iso(gxc, gb).x), xr = Math.round(iso(gxc, ga).x), w = xr - xl;
+  for (let sx = xl; sx < xr; sx++) { const gy = gxc - (sx + .5 - OX) / TW; const by = Math.round(OY + (gxc + gy) * TH - z0); const u = sx - xl;
+    for (let z = 0; z < Hm; z++) { const c = fn(u, z, w); if (c) { g.fillStyle = f === 1 ? c : shade(c, f); g.fillRect(sx, by - z, 1, 1); } } }
+}
+function faceGY(g, gyc, ga, gb, z0, Hm, fn, f) {
+  const xl = Math.round(iso(ga, gyc).x), xr = Math.round(iso(gb, gyc).x), w = xr - xl;
+  for (let sx = xl; sx < xr; sx++) { const gx = (sx + .5 - OX) / TW + gyc; const by = Math.round(OY + (gx + gyc) * TH - z0); const u = sx - xl;
+    for (let z = 0; z < Hm; z++) { const c = fn(u, z, w); if (c) { g.fillStyle = f === 1 ? c : shade(c, f); g.fillRect(sx, by - z, 1, 1); } } }
+}
+function drawBuilding(g, b, side) {
+  const st = STYLES[b.style](b), d = 2.4; let x0, y0, x1, y1;
+  if (side === 'L') { x0 = -d; x1 = 0; y0 = b.a; y1 = b.b; } else if (side === 'R') { x0 = b.a; x1 = b.b; y0 = -d; y1 = 0; } else { x0 = -d; x1 = 0; y0 = -d; y1 = 0; }
+  box(g, x0, y0, x1, y1, 0, b.h, b.roof || '#c4674a', null, null);
+  const Hm = b.h + st.extra;
+  faceGX(g, x1, y0, y1, 0, Hm, (u, z, w) => st.fn(u, z, w, side !== 'R'), .84);
+  faceGY(g, y1, x0, x1, 0, Hm, (u, z, w) => st.fn(u, z, w, side !== 'L'), 1);
+}
+
+/* ================= ground ================= */
+const PLAZA = {
+  waves: (gx, gy) => { const v = gy + .42 * Math.sin(gx * Math.PI * 2 / 2.6); return (Math.floor(v * 2.2) & 1) ? [44, 42, 54] : [239, 233, 219]; },
+  granite: (gx, gy) => { if (frac(gx * 2) < .06 || frac(gy * 1.5) < .07) return [128, 130, 142]; const k = hash(Math.floor(gx * 2), Math.floor(gy * 1.5)); return k < .33 ? [185, 187, 197] : k < .66 ? [196, 198, 206] : [172, 174, 185]; },
+  mosaic: (gx, gy) => (frac((gx + gy) * 1.2) < .1 || frac((gx - gy) * 1.2) < .1) ? [90, 88, 104] : [234, 227, 209],
+  checker: (gx, gy) => { if (frac(gx) < .04 || frac(gy) < .04) return [140, 138, 150]; return ((Math.floor(gx) + Math.floor(gy)) & 1) ? [170, 168, 162] : [222, 218, 208]; },
+  rings: (gx, gy) => { const r = Math.hypot(gx - 5, gy - 5); return frac(r * 1.4) < .16 ? [214, 170, 96] : [243, 239, 228]; }
+};
+function makeBG(city) {
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const img = g.createImageData(W, H), d = img.data, P = PLAZA[city.ground];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const w = toWorld(x + .5, y + .5), gx = w.gx, gy = w.gy;
+    if (gx < 0 || gy < 0) continue;
+    let c3;
+    if (gx < N && gy < N) c3 = P(gx, gy);
+    else if (gx < N + .6 && gy < N + .6) { c3 = [206, 200, 222]; if (frac(gx * 2) < .08 || frac(gy * 2) < .08) c3 = [184, 177, 204]; if (gx >= N + .45 || gy >= N + .45) c3 = [150, 140, 180]; }
+    else { c3 = [64, 56, 96]; const lane = (gy >= N + .6 && Math.abs(gy - (N + 2)) < .07 && frac(gx * 1.2) < .5) || (gx >= N + .6 && Math.abs(gx - (N + 2)) < .07 && frac(gy * 1.2) < .5); if (lane) c3 = [230, 222, 250]; }
+    const n = (hash(x >> 1, y) - .5) * 12, i = (y * W + x) * 4;
+    d[i] = clamp(c3[0] + n, 0, 255); d[i + 1] = clamp(c3[1] + n, 0, 255); d[i + 2] = clamp(c3[2] + n, 0, 255); d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  drawBuilding(g, city.C, 'C');
+  [...city.L].sort((a, b) => a.a - b.a).forEach(b => drawBuilding(g, b, 'L'));
+  [...city.R].sort((a, b) => a.a - b.a).forEach(b => drawBuilding(g, b, 'R'));
+  return c;
+}
+
+/* ================= sound ================= */
+let actx = null, muted = false;
+function tone(f, d, type = 'square', v = .045, when = 0) {
+  if (muted || !actx) return;
+  const t0 = actx.currentTime + when, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + d);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + d + .02);
+}
+function sfx(k) {
+  switch (k) {
+    case 'join': tone(660, .06); tone(990, .08, 'square', .04, .06); break;
+    case 'crate': tone(520, .1, 'triangle', .08); tone(780, .12, 'triangle', .08, .1); break;
+    case 'siren': for (let i = 0; i < 8; i++) tone(i % 2 ? 620 : 880, .2, 'sawtooth', .022, i * .22); break;
+    case 'hit': tone(150, .25, 'square', .06); tone(100, .3, 'square', .05, .12); break;
+    case 'viral': [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, .09, 'square', .045, i * .07)); break;
+    case 'chain': tone(330, .15, 'triangle', .09); tone(440, .2, 'triangle', .09, .12); break;
+    case 'live': tone(1200, .05); tone(1200, .05, 'square', .045, .1); break;
+    case 'leave': tone(300, .15, 'triangle', .04); break;
+    case 'build': [392, 494, 587, 784].forEach((f, i) => tone(f, .08, 'triangle', .07, i * .06)); break;
+    case 'bells': for (let i = 0; i < 6; i++) tone(i % 2 ? 2350 : 2650, .12, 'sine', .05, i * .14 + (i > 2 ? .4 : 0)); break;
+    case 'win': [392, 523, 659, 784, 1046].forEach((f, i) => tone(f, .14, 'square', .05, i * .12)); break;
+    case 'lose': [392, 330, 262, 196].forEach((f, i) => tone(f, .2, 'triangle', .07, i * .18)); break;
+    case 'donkey': tone(700, .25, 'sawtooth', .05); tone(330, .35, 'sawtooth', .05, .25); tone(680, .25, 'sawtooth', .05, .6); tone(320, .4, 'sawtooth', .05, .85); break;
+    case 'concert': { const notes = [262, 330, 392, 523, 392, 330, 294, 349, 440, 587, 440, 349]; for (let i = 0; i < 48; i++) tone(notes[i % 12] * (i % 24 < 12 ? 1 : 1.122), .18, 'square', .03, i * .25); for (let i = 0; i < 24; i++) tone(i % 2 ? 98 : 131, .2, 'triangle', .06, i * .5); break; }
+  }
+}
+
+/* ================= Grândola, from Rui's MIDI arrangement ================= */
+// notes as [delta ticks, length, pitch, velocity]; v = channel volume [delta, value]; b = pitch bend [delta, cents]
+const GRANDOLA = {"spt":0.0044642864583333336,"t":[{"k":"brass","n":[2304,27,48,73,0,27,55,74,96,27,48,82,0,27,55,76,27,69,48,59,0,69,48,82,0,69,55,70,0,69,55,71,69,27,48,95,0,27,55,82,96,27,48,91,0,27,55,88,27,69,48,80,0,69,48,88,0,69,55,74,0,69,55,76,69,27,48,104,0,27,55,85,96,27,48,109,0,27,55,78,96,27,48,104,0,27,55,91,96,27,48,91,0,27,55,82,27,69,48,78,0,69,48,91,0,69,55,67,0,69,55,74,69,27,48,104,0,27,55,88,96,27,48,91,0,27,55,82,27,69,48,85,0,69,55,62,69,27,48,88,0,27,48,98,0,27,55,73,0,27,55,80,27,69,48,88,0,69,48,88,0,69,55,71,0,69,55,71,69,27,48,88,0,27,55,80,27,69,48,85,0,69,48,91,0,69,55,76,0,69,55,78,69,27,48,109,0,27,55,95,96,27,48,98,0,27,55,88,27,69,48,88,0,69,48,91,0,69,55,74,0,69,55,80,69,27,48,114,0,27,55,91,96,27,48,104,0,27,55,95,27,69,48,78,0,69,48,82,0,69,55,74,0,69,55,76,69,27,48,114,0,27,55,91,96,27,48,98,0,27,55,95,27,69,48,82,0,69,48,91,0,69,55,78,0,69,55,80,69,27,48,109,0,27,55,82,27,69,48,98,0,69,55,85,69,27,48,109,0,27,55,85,27,69,48,95,69,27,48,114,0,27,55,78,0,27,55,98,96,27,48,104,0,27,55,88,27,69,48,67,0,69,48,95,0,69,55,80,0,69,55,80,69,27,48,104,0,27,55,95,96,27,48,85,0,27,55,82,27,69,48,78,0,69,48,82,0,69,55,71,0,69,55,78,69,27,48,109,0,27,55,88,96,27,48,109,0,27,55,91,96,27,48,109,0,27,55,98,96,27,48,109,0,27,55,91,27,69,48,80,0,69,48,88,0,69,55,71,0,69,55,80,69,27,48,109,0,27,55,95,96,27,48,95,0,27,55,91,27,69,48,73,0,69,48,78,0,69,55,73,0,69,55,80,69,27,48,98,0,27,55,95,96,27,48,104,0,27,55,91,27,69,48,80,0,69,48,85,0,69,55,76,0,69,55,80,69,27,48,109,0,27,55,98,96,27,48,114,0,27,55,98,96,27,48,114,0,27,55,109,96,27,48,95,0,27,55,91,27,69,48,80,0,69,48,95,0,69,55,73,0,69,55,80,69,27,48,114,0,27,55,98,96,27,48,104,0,27,55,95,27,69,48,74,0,69,48,98,0,69,55,73,0,69,55,76,69,27,48,104,0,27,55,88,96,27,48,114,0,27,55,91,27,69,48,73,0,69,48,88,0,69,55,78,0,69,55,82,69,27,48,114,0,27,55,98,96,27,48,109,0,27,55,95,96,27,48,109,0,27,55,104,96,27,48,104,0,27,55,85,27,69,48,91,0,69,48,91,0,69,55,74,0,69,55,74,69,27,48,104,0,27,55,91,96,27,48,95,0,27,55,85,27,69,48,82,0,69,48,98,0,69,55,74,0,69,55,78,69,27,48,98,0,27,55,91,27,69,48,82,0,69,48,85,0,69,55,68,0,69,55,76,69,27,48,104,0,27,55,85,27,69,48,82,0,69,48,82,0,69,55,76,0,69,55,80,69,27,48,114,0,27,55,104,96,27,48,104,0,27,55,95,27,69,48,91,0,69,55,70,69,27,48,85,0,27,48,114,0,27,55,78,0,27,55,98,96,27,48,109,0,27,55,88,96,27,48,120,0,27,55,95,96,27,48,98,0,27,55,88,27,69,48,65,0,69,48,85,0,69,55,70,0,69,55,80,69,27,48,109,0,27,55,88,96,27,48,104,0,27,55,91,27,69,48,73,0,69,48,91,0,69,55,73,0,69,55,76,69,27,48,120,0,27,55,85,96,27,48,109,0,27,55,95,27,69,48,70,0,69,48,95,0,69,55,73,0,69,55,78,69,27,48,109,0,27,55,85,96,27,48,114,0,27,55,82,96,27,48,114,0,27,55,98,96,27,48,109,0,27,55,95,27,69,48,82,0,69,48,85,0,69,55,71,0,69,55,73,69,27,48,114,0,27,55,95,96,27,48,104,0,27,55,88,27,69,48,78,0,69,48,82,0,69,55,70,0,69,55,74,69,27,48,109,0,27,55,95,96,27,48,120,0,27,55,104,27,69,48,82,0,69,48,104,0,69,55,74,0,69,55,80,69,27,48,104,0,27,55,95,27,69,48,95,0,69,48,95,0,69,55,73,0,69,55,85,69,27,48,95,0,27,55,91,27,69,48,70,0,69,48,85,0,69,55,80,0,69,55,80,69,27,48,114,0,27,55,109,96,27,48,104,0,27,55,95,27,69,48,73,0,69,48,95,0,69,55,76,0,69,55,82,69,27,48,120,0,27,55,95,96,27,48,109,0,27,55,95,27,69,48,62,0,69,48,91,0,69,55,78,0,69,55,82,69,27,48,114,0,27,55,95,96,27,48,104,0,27,55,95,27,69,48,68,0,69,48,91,0,69,55,80,0,69,55,85,69,27,48,104,0,27,55,98,96,27,48,104,0,27,55,104,96,27,48,114,0,27,55,120,96,27,48,104,0,27,55,91,0,27,57,91,27,69,48,98,0,69,55,76,0,69,55,78,0,69,57,74,69,27,48,71,0,27,48,114,0,27,55,98,96,27,48,109,0,27,55,109,27,69,47,91,0,69,48,85,0,69,48,95,0,69,55,91,0,69,55,95,69,27,48,124,0,27,55,114,96,27,48,120,0,27,55,104,27,69,48,98,0,69,48,109,0,69,55,95,0,69,55,98,69,27,48,124,0,27,55,120,96,27,48,127,0,27,55,124,96,27,48,127,0,27,55,124,96,27,48,120,0,27,55,109,27,69,48,85,0,69,48,98,0,69,55,88,0,69,55,95,69,27,48,120,0,27,55,120,96,27,48,120,0,27,55,114,27,69,48,95,0,69,48,104,0,69,55,88,0,69,55,95,69,27,48,120,0,27,55,109,96,27,48,109,0,27,55,114,27,69,48,80,0,69,48,104,0,69,55,91,0,69,55,95,69,27,48,114,0,27,55,109,27,69,48,98,0,69,55,88,69,27,48,104,0,27,48,109,0,27,55,98,0,27,55,109,27,69,48,80,0,69,48,109,0,69,55,91,0,69,55,98,69,27,48,124,0,27,55,120,96,27,48,114,0,27,55,114,27,69,48,80,0,69,48,98,0,69,55,88,0,69,55,91,69,27,48,124,0,27,55,114,96,27,48,127,0,27,55,120,27,69,48,85,0,69,48,91,0,69,55,91,0,69,55,98,69,27,48,120,0,27,53,114,96,27,48,124,0,27,53,114,27,69,48,91,0,69,48,98,0,69,53,95,0,69,53,95,69,27,48,124,0,27,53,114,96,27,48,120,0,27,53,124,27,69,48,76,0,69,48,88,0,69,53,95,0,69,53,98,69,27,48,127,0,27,53,114,96,27,48,120,0,27,53,114,27,69,48,91,0,69,48,98,0,69,53,91,0,69,53,98,69,27,48,88,0,27,53,109,27,69,48,67,0,69,48,91,0,69,53,91,0,69,53,104,69,27,48,91,0,27,53,104,27,69,48,82,0,69,48,85,0,69,53,98,0,69,53,104,69,27,48,120,0,27,53,120,96,27,48,88,0,27,53,114,27,69,48,76,0,69,48,95,0,69,53,98,0,69,53,104,69,27,48,120,0,27,53,120,96,27,48,120,0,27,53,114,27,69,48,95,0,69,48,104,0,69,53,98,0,69,53,98,69,27,48,120,0,27,53,120,96,27,48,114,0,27,53,109,27,69,48,82,0,69,48,91,0,69,53,95,0,69,53,98,69,27,48,124,0,27,53,120,96,27,48,124,0,27,53,114,96,27,48,127,0,27,53,120,96,27,48,120,0,27,53,120,27,69,48,95,0,69,48,98,0,69,53,95,0,69,53,98,69,27,48,127,0,27,53,120,96,27,48,127,0,27,53,120,27,69,48,85,0,69,48,104,0,69,53,95,0,69,53,95,69,27,48,124,0,27,53,120,96,27,48,109,0,27,53,109,27,69,48,80,0,69,48,85,0,69,53,98,0,69,53,98,69,27,48,120,0,27,53,114,27,69,48,98,0,69,53,91,69,27,48,120,0,27,53,109,27,69,48,109,0,69,53,109,69,27,48,124,0,27,53,114,96,27,48,114,0,27,53,109,27,69,48,74,0,69,48,104,0,69,53,98,0,69,53,104,69,27,48,120,0,27,53,114,96,27,48,124,0,27,53,120,27,69,48,91,0,69,48,98,0,69,53,98,0,69,53,98,69,27,48,120,0,27,53,109,96,27,48,120,0,27,53,109,27,69,48,80,0,69,48,85,0,69,53,98,0,69,53,104,69,27,48,124,0,27,53,114,96,27,48,124,0,27,53,120,96,27,48,127,0,27,53,124,96,27,48,120,0,27,53,109,27,69,48,85,0,69,48,95,0,69,53,91,0,69,53,95,69,27,48,124,0,27,53,114,96,27,48,120,0,27,53,114,27,69,48,76,0,69,48,88,0,69,53,98,0,69,53,98,69,27,50,124,0,27,55,120,96,27,50,124,0,27,55,120,27,69,50,95,0,69,50,104,0,69,55,98,0,69,55,109,69,27,50,127,0,27,55,120,27,69,50,114,0,69,55,114,69,27,50,127,0,27,55,114,27,69,50,124,0,69,55,109,69,27,48,124,0,27,55,120,96,27,48,114,0,27,55,109,27,69,48,85,0,69,48,98,0,69,55,95,0,69,55,95,69,27,48,124,0,27,55,109,96,27,48,124,0,27,55,114,27,69,48,88,0,69,48,98,0,69,55,85,0,69,55,104,69,27,48,120,0,27,55,114,96,27,48,120,0,27,55,109,27,69,48,98,0,69,48,104,0,69,55,95,0,69,55,98,69,27,48,124,0,27,55,114,96,27,48,127,0,27,55,120,96,27,48,127,0,27,55,124,96,27,48,124,0,27,55,114,27,69,48,98,0,69,48,98,0,69,55,98,0,69,55,104,69,27,48,124,0,27,55,120,96,27,48,120,0,27,55,114,27,69,48,91,0,69,48,109,0,69,55,95,0,69,55,104,69,27,48,120,0,27,55,109,27,69,48,98,0,69,48,104,0,69,55,95,0,69,55,109,69,27,48,120,0,27,55,109,27,69,48,95,0,69,48,98,0,69,55,95,0,69,55,98,69,27,48,124,0,27,55,124,96,27,48,109,0,27,55,109,27,69,48,82,0,69,48,98,0,69,55,88,0,69,55,95,69,27,48,124,0,27,55,82,96,27,48,120,0,27,55,120,27,69,48,91,0,69,48,104,0,69,55,95,0,69,55,98,69,27,48,127,0,27,55,120,27,69,48,104,0,69,55,95,69,27,48,120,0,27,55,120,27,69,48,109,0,69,55,98,69,27,48,124,0,27,55,109,96,27,48,114,0,27,55,104,27,69,48,78,0,69,48,91,0,69,55,88,0,69,55,95,69,27,48,120,0,27,55,114,96,27,48,109,0,27,55,109,27,69,48,88,0,69,48,95,0,69,55,85,0,69,55,95,69,27,48,120,0,27,55,109,96,27,48,109,0,27,55,98,27,69,48,85,0,69,48,95,0,69,55,91,0,69,55,95,69,27,48,124,0,27,55,104,27,69,48,91,0,69,48,95,0,69,55,80,0,69,55,95,69,27,48,114,0,27,55,114,27,69,48,82,0,69,48,85,0,69,55,82,0,69,55,88,69,27,48,120,0,27,55,109,96,27,48,109,0,27,55,98,27,69,48,91,0,69,48,98,0,69,55,91,0,69,55,98,69,27,48,120,0,27,55,114,96,27,48,114,0,27,55,109,27,69,48,73,0,69,48,95,0,69,55,91,0,69,55,98,69,27,48,120,0,27,55,114,96,27,48,114,0,27,53,104,27,69,48,91,0,69,48,104,0,69,53,85,0,69,53,88,69,27,48,120,0,27,53,114,96,27,48,124,0,27,53,124,96,27,48,124,0,27,53,120,96,27,48,109,0,27,53,109,27,69,48,91,0,69,48,95,0,69,53,85,0,69,53,91,69,27,48,114,0,27,53,109,96,27,48,120,0,27,53,109,27,69,48,85,0,69,48,95,0,69,53,95,0,69,53,95,69,27,48,120,0,27,53,104,96,27,48,114,0,27,53,109,27,69,48,74,0,69,48,82,0,69,53,91,0,69,53,95,69,27,48,114,0,27,53,109,96,27,48,120,0,27,48,120,0,27,53,104,0,27,53,104,96,27,48,114,0,27,48,120,0,27,53,104,0,27,53,109,96,27,48,114,0,27,53,109,27,69,48,91,0,69,53,91,69,27,48,104,0,27,48,114,0,27,53,91,0,27,53,114,96,27,48,120,0,27,53,114,96,27,48,124,0,27,53,120,96,27,48,114,0,27,53,114,27,69,48,82,0,69,48,91,0,69,53,91,0,69,53,95,69,27,48,104,0,27,53,104,27,69,48,91,0,69,48,91,0,69,53,91,0,69,53,98,69,27,48,114,0,27,53,109,27,69,48,91,0,69,48,91,0,69,53,95,0,69,53,95,69,27,48,120,0,27,53,120,96,27,48,114,0,27,53,109,27,69,48,88,0,69,48,109,0,69,53,91,0,69,53,98,69,27,48,124,0,27,53,114,96,27,48,120,0,27,53,109,27,69,48,80,0,69,48,98,0,69,53,91,0,69,53,95,69,27,48,120,0,27,53,114,96,27,48,120,0,27,53,114,96,27,48,120,0,27,53,120,96,27,48,124,0,27,53,114,27,69,48,95,0,69,48,109,0,69,53,91,0,69,53,98,69,27,48,120,0,27,53,120,96,27,50,120,0,27,55,98,27,69,50,104,0,69,50,104,0,69,55,88,0,69,55,95,69,27,50,124,0,27,55,114,96,27,50,120,0,27,55,109,27,69,50,88,0,69,50,91,0,69,55,88,69,27,50,120,0,27,55,98,0,27,55,120,96,27,50,109,0,27,55,109,27,69,50,88,0,69,55,88,69,27,50,85,0,27,50,114,0,27,55,91,0,27,55,98,27,69,50,98,0,69,55,88,69,27,50,95,0,27,50,109,0,27,55,91,0,27,55,104,27,69,50,95,0,69,55,82,69,27,50,98,0,27,50,124,0,27,55,95,0,27,55,109,96,27,50,120,0,27,55,109,27,69,50,95,0,69,50,95,0,69,55,85,0,69,55,85,69,27,50,120,0,27,55,114,96,27,50,120,0,27,55,109,27,69,50,88,0,69,50,91,0,69,55,85,0,69,55,98,69,27,48,124,0,27,55,114,96,27,48,109,0,27,55,104,27,69,48,104,0,69,48,104,0,69,55,80,0,69,55,88,69,27,48,120,0,27,55,109,96,27,48,124,0,27,55,114,96,27,48,127,0,27,55,120,96,27,48,109,0,27,55,98,27,69,48,91,0,69,48,98,0,69,55,91,0,69,55,95,69,27,48,120,0,27,55,114,96,27,48,120,0,27,55,104,27,69,48,88,0,69,48,98,0,69,55,95,0,69,55,95,69,27,48,127,0,27,55,114,96,27,48,120,0,27,55,120,96,27,48,124,0,27,55,124,96,27,48,114,0,27,55,104,27,69,48,95,0,69,48,98,0,69,55,85,0,69,55,91,69,27,48,124,0,27,55,109,96,27,48,120,0,27,55,109,27,69,48,95,0,69,48,109,0,69,55,91,0,69,55,95,69,27,48,124,0,27,55,104,27,69,48,95,0,69,48,98,0,69,55,95,0,69,55,95,69,27,48,104,0,27,55,98,27,69,48,91,0,69,48,95,0,69,55,88,0,69,55,88,69,27,48,124,0,27,55,120,96,27,48,120,0,27,55,109,27,69,48,95,0,69,48,98,0,69,55,91,0,69,55,104,69,27,48,124,0,27,55,114,96,27,48,124,0,27,55,104,27,69,48,98,0,69,48,104,0,69,55,98,69,27,48,127,0,27,55,98,0,27,55,120,96,27,48,120,0,27,55,114,27,69,48,95,0,69,55,98,69,27,48,82,0,27,48,124,0,27,55,109,0,27,55,114,96,27,48,120,0,27,55,120,96,27,48,127,0,27,55,124,96,27,48,124,0,27,55,104,27,69,48,104,0,69,55,98,69,27,48,114,0,27,48,120,0,27,55,98,0,27,55,109,27,69,48,91,0,69,55,95,69,27,48,104,0,27,48,124,0,27,55,104,0,27,55,114,27,69,48,109,0,69,55,95,69,27,48,104,0,27,48,127,0,27,55,109,0,27,55,124,96,27,48,124,0,27,55,109,27,69,48,98,0,69,55,104,69,27,48,95,0,27,48,127,0,27,55,98,0,27,55,114,96,27,48,124,0,27,55,120,27,69,48,104,0,69,55,98,69,27,48,104,0,27,48,124,0,27,55,98,0,27,55,120,96,27,48,127,0,27,55,120,27,69,48,82,0,69,48,104,0,69,55,98,69,27,48,124,0,27,55,104,0,27,55,114,27,69,48,95,0,69,48,98,0,69,55,91,69,27,48,120,0,27,55,98,0,27,55,114,27,69,48,91,0,69,48,98,0,69,55,91,0,69,55,95,69,27,48,127,0,27,55,124,96,27,48,120,0,27,55,120,27,69,48,104,0,69,48,109,0,69,55,98,0,69,55,109,69,27,48,127,0,27,55,124,96,27,48,124,0,27,55,120,27,69,48,104,0,69,48,104,0,69,55,98,0,69,55,109,69,27,48,120,0,27,53,109,0,27,55,120,96,27,48,127,0,27,53,124,27,69,48,98,0,69,48,114,0,69,53,98,0,69,53,114,69,27,48,127,0,27,53,120,96,27,48,127,0,27,53,124,96,27,48,127,0,27,53,127,96,27,48,127,0,27,55,120,27,69,48,109,0,69,48,114,0,69,55,95,0,69,55,98,69,27,48,127,0,27,53,120,96,27,48,124,0,27,53,114,27,69,48,88,0,69,48,104,0,69,53,91,0,69,53,104,69,27,48,127,0,27,53,120,96,27,48,124,0,27,53,109,27,69,48,98,0,69,48,120,0,69,53,91,0,69,53,98,69,27,48,124,0,27,53,114,27,69,48,104,0,69,48,109,0,69,53,95,0,69,53,104,69,27,48,120,0,27,53,114,27,69,48,98,0,69,48,114,0,69,53,88,0,69,53,98,69,27,48,127,0,27,53,124,96,27,48,114,0,27,53,104,27,69,48,91,0,69,48,98,0,69,53,91,0,69,53,104,69,27,48,127,0,27,53,120,96,27,48,120,0,27,53,114,27,69,48,98,0,69,48,109,0,69,53,88,0,69,53,114,69,27,50,124,0,27,55,114,96,27,50,124,0,27,55,120,27,69,50,98,0,69,50,109,0,69,55,91,0,69,55,109,69,27,50,124,0,27,55,114,96,27,50,127,0,27,55,124,96,27,50,127,0,27,55,120,96,27,50,124,0,27,55,114,27,69,50,85,0,69,50,98,0,69,55,91,0,69,55,95,69,27,50,127,0,27,55,114,96,27,50,124,0,27,55,114,27,69,50,114,0,69,50,120,0,69,55,95,0,69,55,109,69,27,50,120,0,27,55,114,96,27,50,124,0,27,55,114,27,69,50,104,0,69,50,104,0,69,55,98,0,69,55,104,69,27,50,120,0,27,55,114,27,69,50,104,0,69,50,109,0,69,55,91,0,69,55,104,69,27,50,127,0,27,55,120,27,69,50,95,0,69,50,114,0,69,55,95,0,69,55,109,69,27,48,127,0,27,55,120,96,27,48,124,0,27,55,120,27,69,48,104,0,69,48,104,0,69,55,95,0,69,55,104,69,27,48,127,0,27,55,120,96,27,48,120,0,27,55,114,27,69,48,82,0,69,48,109,0,69,55,98,0,69,55,109,69,27,48,127,0,27,55,120,96,27,48,124,0,27,55,124,96,27,48,127,0,27,55,127,96,27,48,127,0,27,55,114,27,69,48,98,0,69,48,104,0,69,55,104,0,69,55,104,69,27,48,127,0,27,55,124,96,27,48,124,0,27,55,120,27,69,48,114,0,69,55,98,69,27,48,114,0,27,48,124,0,27,55,104,0,27,55,120,27,69,48,109,0,69,55,98,69,27,48,109,0,27,48,127,0,27,55,109,0,27,55,114,27,69,48,104,0,69,48,114,0,69,55,98,69,27,48,127,0,27,55,109,0,27,55,120,96,27,48,124,0,27,55,109,27,69,48,109,0,69,55,104,69,27,48,104,0,27,48,127,0,27,55,104,0,27,55,120,96,27,48,127,0,27,55,120,96,27,48,127,0,27,55,124,96,27,48,127,0,27,55,120,27,69,48,109,0,69,55,109,0,69,55,109,69,27,48,114,0,27,48,120,0,27,55,109,27,69,48,104,0,69,48,114,0,69,55,91,0,69,55,104,69,27,48,114,0,27,55,114,27,69,48,95,0,69,48,104,0,69,55,88,0,69,55,104,69,27,48,127,0,27,55,114,96,27,48,120,0,27,55,114,27,69,48,104,0,69,48,104,0,69,55,98,69,27,48,127,0,27,55,104,0,27,55,120,96,27,48,124,0,27,55,114,96,27,48,124,0,27,55,114,96,27,48,109,0,27,55,114,27,69,48,82,0,69,48,91,0,69,55,98,0,69,55,98,69,27,48,120,0,27,55,120,96,27,48,124,0,27,55,127,27,69,48,104,0,69,48,109,0,69,55,98,0,69,55,98,69,27,48,114,0,27,55,109,27,69,48,104,0,69,48,109,0,69,55,95,0,69,55,109,69,27,48,114,0,27,55,114,27,69,48,98,0,69,48,114,0,69,55,95,0,69,55,104,69,27,48,124,0,27,55,120,96,27,48,120,0,27,55,109,27,69,48,82,0,69,48,98,0,69,55,95,0,69,55,95,69,27,48,127,0,27,55,120,96,27,48,114,0,27,55,114,96,27,48,124,0,27,55,124,96,27,48,109,0,27,55,109,27,69,48,88,0,69,48,95,0,69,55,91,0,69,55,91,69,27,48,114,0,27,55,109,27,69,48,82,0,69,48,91,0,69,55,88,0,69,55,109,69,27,48,114,0,27,55,109,27,69,48,78,0,69,48,98,0,69,55,91,0,69,55,91,69,27,48,120,0,27,55,124],"v":[0,60]},{"k":"bass","n":[1920,31,24,109,96,96,24,120,288,31,24,124,96,31,24,124,288,31,24,124,96,96,24,124,288,31,24,120,96,96,24,124,288,31,24,124,96,96,24,120,288,31,24,120,96,96,24,120,288,31,24,124,96,127,24,120,288,31,24,124,96,96,24,120,288,31,24,120,96,96,24,114,288,31,24,120,96,96,24,114,288,31,24,120,96,96,24,114,288,31,24,120,96,96,24,114,288,31,24,114,96,96,24,120,288,31,24,120,96,96,24,114,288,31,24,114,96,31,24,114,288,31,24,109,96,31,24,114,288,31,24,114,96,31,24,114,288,31,24,120,96,31,24,114,288,31,24,120,96,31,24,120,288,31,24,114,96,31,24,120,288,31,24,114,96,31,24,114,288,31,24,120,96,31,24,114,288,31,24,120,96,31,24,120,288,31,24,120,96,96,24,120,288,31,24,124,96,96,24,120,288,31,29,120,96,96,29,114,288,31,29,120,96,96,29,120,288,31,29,114,96,96,29,114,288,31,29,114,96,96,29,109,288,31,29,114,96,96,29,109,288,31,29,114,96,96,29,109,288,31,29,109,96,96,29,114,288,31,31,114,96,96,31,120,288,31,31,120,96,96,31,120,288,31,31,114,96,96,31,120,288,31,24,109,96,96,24,114,288,31,24,109,96,96,24,109,288,31,24,114,96,96,24,114,288,31,24,114,96,96,24,120,288,31,24,120,96,96,24,114,288,31,24,114,96,31,24,120,288,31,24,114,96,31,24,120,288,31,24,120,96,96,24,120,288,31,29,120,96,96,29,120,288,31,29,114,96,96,29,120,288,31,29,114,96,96,29,114,288,31,29,114,96,96,29,114,288,31,29,114,96,96,29,109,288,31,29,109,96,96,29,114,288,31,29,114,96,96,29,109,288,31,31,109,96,96,31,114,288,31,31,114,96,96,31,114,288,31,31,114,96,96,31,114,288,31,24,109,96,96,24,114,288,31,24,109,96,96,24,120,288,31,24,120,96,96,24,120,288,31,24,120,96,96,24,120,288,31,24,124,96,96,24,124,288,31,24,120,96,96,24,114,288,31,24,114,96,96,24,120,288,31,29,109,96,96,29,114,288,31,29,109,96,96,29,114,288,31,29,114,96,96,29,114,288,31,29,109,96,96,29,109,288,31,29,109,96,96,29,109,288,31,29,114,96,96,29,109,288,31,29,114,96,96,29,109,288,31,31,98,96,96,31,114,288,31,31,114,96,96,31,109,288,31,31,109,96,96,31,114,288,31,24,114,96,96,24,114,288,31,24,120,96,96,24,124,288,31,24,114,96,96,24,120,288,31,24,120,96,96,24,114,288,31,24,114,96,96,24,120,288,31,24,120,96,31,24,120,288,31,24,120,96,96,24,120,288,31,24,120,96,31,24,120,288,31,24,124,96,96,24,114,288,31,24,120,96,96,24,120],"v":[0,90]},{"k":"strings","n":[1536,8752,36,100,1,8746,48,50,8240,126,67,70,2,122,64,59,141,36,64,67,1,36,67,76,63,122,67,98,1,176,64,74,138,42,72,76,57,130,67,76,2,115,64,59,123,43,65,78,2,43,62,80,54,220,36,88,1,189,64,73,0,206,67,85,0,213,48,76,197,198,62,88,1,187,65,91,2,190,43,76,188,524,64,68,2,515,60,78,1,686,36,91,0,711,48,85,567,122,69,109,1,117,72,109,139,36,72,78,0,37,69,85,53,498,72,74,0,504,69,91,1,2634,41,73,2,718,53,76,517,43,67,82,2,32,71,68,49,127,69,109,1,123,65,91,127,43,67,80,1,38,71,76,51,191,69,98,0,206,72,95,4,1912,53,76,194,199,71,88,2,188,67,95,198,502,69,91,1,496,65,88,587,116,65,95,0,152,69,104,140,34,64,60,0,50,67,82,54,139,69,85,1,140,65,82,131,38,71,76,2,42,67,85,50,134,69,88,1,149,72,88,136,53,71,78,0,69,67,88,54,199,69,95,3,170,65,91,184,140,67,88,1,178,64,76,134,43,69,62,15,24,65,67,18,32,67,78,20,1100,43,54,3,480,65,85,3,475,62,98,4,1074,55,71,575,151,62,88,1,109,59,88,137,45,60,82,0,48,64,78,54,119,65,85,2,115,62,98,136,55,69,88,1,51,65,95,55,141,67,76,3,143,64,76,133,44,65,82,1,43,62,85,48,3090,36,74,4,202,67,85,0,3084,48,68,2,192,64,85,192,203,65,76,5,170,62,82,194,815,60,74,1,810,64,74,946,4417,60,63,3,1708,55,57,1731,2706,57,78,2,2670,41,71,206,199,48,74,360,2137,48,67,2122,1111,62,62,0,1125,59,82,1,1142,43,76,202,950,55,60,932,1276,60,66,0,2613,36,62,4,2631,48,67,6,2460,64,50,771,374,55,62,389,152,55,76,129,1162,60,58,60,172,55,85,185,905,55,74,975,119,69,91,2,117,65,104,133,34,65,104,0,34,69,88,51,489,69,91,1,489,65,98,1,2671,53,74,5,2644,41,68,503,38,67,85,1,39,64,74,53,114,69,98,1,105,65,109,138,40,71,98,0,41,67,88,55,178,69,109,0,187,72,98,193,136,71,91,2,145,67,91,133,40,72,76,12,27,69,73,19,27,71,91,6,38,67,80,28,474,69,95,2,466,65,98,578,136,69,114,1,107,65,109,133,41,64,68,1,51,67,85,61,118,65,88,1,112,69,114,124,46,67,85,1,43,71,91,57,142,72,95,1,119,69,109,129,52,71,78,2,49,67,91,58,206,69,98,2,176,65,98,193,134,67,98,1,135,64,85,129,43,69,78,12,29,65,63,24,21,64,85,0,33,67,98,29,477,65,95,0,1063,43,63,3,475,62,95,6,1039,55,70,560,97,59,95,1,123,62,104,130,37,60,78,2,39,64,82,54,112,62,98,0,116,65,98,136,39,65,104,1,37,69,95,50,133,67,85,1,128,64,76,136,37,65,88,1,37,62,88,47,4248,36,74,4,184,67,88,0,191,64,91,1,4248,48,70,195,138,65,88,2,140,62,95,133,36,67,63,18,16,64,53,7,44,62,85,4,27,65,76,33,815,64,74,3,1559,60,85],"v":[0,85]},{"k":"choir","n":[1515,9984,48,49,5,669,52,49,1,675,55,55,769,525,53,50,4,527,57,52,572,180,55,52,7,190,59,29,191,182,55,58,7,175,52,59,193,117,55,68,2,112,52,58,126,35,55,62,4,29,52,57,53,178,55,70,4,132,52,64,146,58,52,70,55,189,53,71,4,176,57,73,178,171,55,82,0,186,59,70,180,163,53,71,1,147,57,70,148,36,59,59,7,33,55,58,24,25,57,76,5,32,53,58,26,499,55,70,1,493,52,71,567,118,57,74,2,114,60,62,136,40,57,68,2,35,60,64,52,497,57,73,1,497,60,71,525,58,55,70,2,37,59,70,50,123,57,82,0,126,60,73,148,34,59,68,0,34,62,66,50,171,60,74,1,188,64,63,177,182,62,82,2,182,59,82,188,520,60,61,1,522,57,67,588,120,57,71,0,160,60,76,150,31,55,62,3,44,59,74,47,127,57,70,2,121,60,76,124,38,59,62,1,34,62,67,42,140,60,70,2,148,64,65,135,62,59,59,2,48,62,68,54,196,60,64,2,173,57,76,185,187,59,76,2,185,55,78,194,503,53,64,1,498,57,82,578,124,50,73,0,146,53,78,148,36,52,67,0,39,55,70,49,116,53,82,2,115,57,74,132,53,57,67,2,46,60,66,48,135,55,74,0,135,59,70,137,56,57,73,3,49,53,66,52,200,55,76,3,196,59,70,199,179,57,78,2,155,53,64,181,477,55,74,2,468,52,73,578,131,64,61,0,136,67,73,156,30,67,88,0,31,64,63,51,118,67,88,1,108,64,61,131,44,67,80,1,38,72,80,54,122,64,66,2,140,67,82,131,45,65,78,2,47,62,80,57,174,64,71,1,187,67,78,179,191,62,88,1,186,65,88,192,487,64,67,2,485,60,78,573,126,60,95,1,125,57,98,146,36,60,82,1,35,57,88,54,503,57,88,0,2650,53,82,3,501,60,95,513,42,59,95,0,46,55,98,54,118,60,85,1,122,57,98,133,29,59,85,1,32,62,98,47,204,64,82,1,185,60,109,195,194,59,91,0,197,62,91,199,502,57,88,1,501,60,88,582,118,57,95,0,149,60,98,139,35,55,73,2,42,59,85,51,155,57,88,1,141,60,91,147,31,62,88,1,33,59,88,41,154,64,74,1,144,60,104,141,41,59,85,0,46,62,80,47,191,60,85,1,167,57,91,185,195,59,88,0,205,55,98,196,506,43,73,3,485,57,88,0,493,53,82,569,157,53,85,1,120,50,95,0,553,43,80,152,44,52,85,1,46,55,80,52,117,53,95,0,119,57,88,137,44,60,91,0,56,57,104,50,145,59,85,1,131,55,91,134,38,53,85,2,37,57,91,44,3072,48,71,2,186,55,91,1,186,59,78,193,185,53,85,0,194,57,91,200,1538,55,74,2,1166,52,80,1151,206,60,64,201,154,52,56,175,390,57,71,1,357,53,59,382,534,55,71,1,514,52,62,577,128,60,73,0,131,57,66,147,32,57,73,2,29,60,74,48,960,60,73,0,967,57,68,3,2684,53,63,955,193,55,65,1,194,59,74,185,591,57,63,3,586,60,62,601,941,57,71,1,922,60,82,928,2069,55,67,4,1160,59,70,2,1167,62,66,959,180,53,58,195,241,52,80,0,870,60,71,208,175,50,66,179,2302,48,64,569,131,60,80,1,130,64,76,150,31,60,76,1,28,64,74,50,113,60,71,1,117,64,76,134,47,67,65,1,26,64,68,50,161,64,67,3,109,60,78,140,46,60,73,2,30,57,68,53,179,60,68,3,177,64,70,179,199,62,73,1,167,57,82,191,498,60,74,1,491,55,80,574,123,60,104,1,118,57,104,148,30,57,91,0,30,60,91,51,510,57,95,0,512,60,95,3,522,53,78,520,47,55,88,1,39,59,85,44,2104,53,55,8,122,60,82,0,129,57,91,137,32,59,88,1,32,62,98,48,183,60,91,0,200,64,74,190,204,59,95,1,189,62,95,196,536,60,91,2,533,57,91,577,126,57,88,0,145,60,109,144,31,55,76,2,35,59,85,48,133,60,98,1,140,57,85,139,38,59,85,0,38,62,82,47,141,60,91,2,155,64,71,145,48,62,76,2,45,59,85,49,186,60,78,3,151,57,88,176,151,59,80,2,157,55,95,144,37,60,66,6,40,57,73,31,26,59,80,2,36,55,85,25,1127,43,82,1,496,57,85,3,489,53,88,553,118,50,91,0,137,53,91,142,34,55,85,1,35,52,78,49,119,53,104,0,121,57,82,140,51,57,91,1,46,60,88,48,155,59,80,1,141,55,85,149,37,57,91,0,38,53,76,48,198,59,82,0,3466,48,71,1,188,55,104,198,181,57,88,1,158,53,88,184,567,55,74,3,565,52,68,578,186,55,74,3,196,60,76,192,537,55,58,5,527,52,73,567,175,55,82,1,179,60,85,188,546,55,85,3,532,52,80,571,192,55,82,2,197,60,78,202,543,55,76,3,541,52,80,562,188,55,80,3,196,60,74,189,327,52,68,5,309,55,74],"v":[0,85]},{"k":"lead","n":[3256,118,84,124,140,25,84,114,52,153,84,120,151,37,83,120,52,127,84,127,136,30,86,114,46,203,88,124,193,201,86,114,197,453,84,124,594,97,89,120,134,26,89,124,50,534,89,124,538,25,88,109,38,126,89,127,136,34,91,120,47,197,93,124,191,193,91,114,192,442,89,127,588,145,89,124,138,31,88,120,49,125,89,124,133,35,91,120,51,158,93,114,147,41,91,114,45,193,89,127,185,201,88,120,195,460,86,124,590,123,83,114,133,38,84,120,53,122,86,127,128,44,89,98,59,148,88,127,144,34,86,114,52,197,88,127,188,193,86,127,189,443,84,120,582,112,79,124,134,31,79,127,53,148,79,124,141,50,84,124,57,147,79,127,140,38,77,114,55,204,79,127,190,206,77,124,199,481,76,127,566,112,77,120,0,113,81,120,141,30,81,114,0,31,77,109,50,508,81,114,0,517,77,114,509,37,79,91,4,37,76,88,54,125,77,109,1,119,81,114,137,31,79,109,1,34,83,109,53,207,84,114,1,180,81,120,192,187,83,98,3,170,79,120,189,484,81,104,3,477,77,114,589,131,77,120,0,157,81,127,146,24,76,82,1,32,79,104,52,120,81,120,1,128,77,109,134,31,79,114,1,30,83,114,50,134,81,124,0,155,84,120,141,30,79,114,0,36,83,98,49,198,81,124,3,167,77,109,183,180,79,88,3,157,76,114,179,483,77,98,2,483,74,104,592,103,71,109,1,121,74,120,131,35,72,88,1,30,76,120,56,110,74,120,0,110,77,124,136,36,81,114,1,33,77,124,52,141,79,120,2,130,76,124,132,42,77,104,1,42,74,98,58,207,79,120,1,175,76,124,192,198,77,95,3,178,74,120,187,768,76,104,2,768,72,98,957,103,84,127,137,30,84,127,59,149,84,127,140,45,83,124,57,117,84,127,126,36,86,120,52,206,88,120,195,206,86,124,197,440,84,124,568,102,89,114,138,24,89,124,52,531,89,127,524,45,88,114,58,128,89,127,139,38,91,120,56,205,93,124,192,202,91,120,192,450,89,127,583,161,89,127,153,39,88,120,46,126,89,127,132,33,91,114,46,157,93,120,142,43,91,120,45,190,89,127,180,202,88,109,191,481,86,127,606,137,83,124,131,43,84,120,56,125,86,127,126,45,89,114,58,150,88,124,139,36,86,127,52,206,88,127,195,200,86,127,190,453,84,127,578,104,79,124,136,25,79,120,58,129,79,124,128,46,84,109,59,141,79,127,137,41,77,114,56,207,79,124,199,200,77,120,188,446,76,127,581,104,76,91,0,106,81,109,139,28,81,109,1,21,76,98,55,533,81,120,1,501,77,120,521,34,79,88,1,22,76,76,48,117,81,120,1,118,77,104,131,28,83,95,0,29,79,114,51,212,84,120,1,182,81,127,197,185,83,91,5,168,79,120,179,458,81,104,2,456,77,114,574,128,77,109,0,159,81,124,146,28,76,76,2,36,79,104,50,125,81,124,0,131,77,104,137,36,79,104,3,32,83,98,51,159,81,120,1,161,84,114,150,37,83,95,1,31,79,124,46,199,81,124,2,169,77,109,185,193,79,104,1,167,76,109,184,465,77,98,2,464,74,91,572,103,71,104,0,122,74,120,135,34,76,109,1,32,72,91,56,110,74,114,0,115,77,120,137,33,77,104,2,33,81,95,2,23,79,80,51,139,79,114,0,144,76,114,138,35,77,80,2,31,74,95,53,179,76,120,0,205,79,104,189,206,77,85,2,190,74,109,200,3261,76,82,5,3251,72,104],"v":[203,115,15518,100,11,99,11,98,10,97,11,96,11,95,10,94,11,93,11,92,10,91,11,90,11,89,10,88,11,87,11,86,10,85,11,84,11,83,10,82,11,81,10,80,11,79,11,78,10,77,11,76,11,75,10,74,11,73,11,72,10,71,11,70,11,69,10,68,11,67,11,66,10,65,11,64,11,63,10,62,11,61,9,60,12,59,11,58,9,57,12,56,11,55,9,54,12,53,11,52,9,51,12,50,11,49,9,48,12,47,11,46,9,45,12,44,11,43,9,42,12,41,9,40,11,39,12,38,9,37,11,36,12,35,9,34,11,33,12,32,9,31,11,30,12,29,9,28,11,27,3,29,2,31,1,34,2,37,2,40,1,43,2,46,1,49,2,52,2,55,1,58,2,61,1,64,2,67,2,70,1,73,2,76,1,79,2,82,2,85,1,88,2,91,1,94,2,97,2,99,278,100],"b":[3556,3,3,38,4,94,4,131,4,75,4,-6,3,0,407,12,4,53,3,106,4,116,4,19,4,0,174,22,4,72,4,125,4,91,3,-6,5,0,469,-6,4,-31,4,-62,4,-94,3,-134,4,-181,4,-200,26,-159,4,0,784,38,4,103,4,119,3,53,5,0,383,16,4,59,4,103,4,116,3,56,4,0,175,31,4,91,3,134,4,125,4,34,4,0,435,-6,4,-9,4,-16,3,-25,4,-34,5,-44,3,-56,4,-69,4,-84,4,-103,4,-125,3,-144,4,-159,4,-175,4,-191,4,-200,15,-191,4,-103,4,0,193,25,4,69,4,112,3,81,4,-6,4,0,357,9,4,59,4,106,8,69,3,-3,4,0,209,3,4,31,4,75,4,94,3,62,4,0,174,28,5,69,3,112,8,28,4,0,450,-3,8,-6,4,-12,3,-16,4,-25,4,-34,4,-44,3,-56,4,-66,4,-78,5,-94,3,-116,4,-138,4,-156,4,-178,3,-191,4,-200,23,-188,4,-162,4,-62,3,0,547,22,4,62,4,112,7,75,4,-3,4,0,213,28,3,75,4,119,4,97,4,0,167,9,4,50,4,100,3,112,4,72,4,-3,4,0,1095,28,4,78,4,103,3,38,4,0,224,16,4,66,4,122,4,112,4,19,4,0,174,3,4,41,4,106,4,128,3,97,4,0,1255,9,3,53,4,112,4,131,4,88,3,-6,4,0,416,19,4,69,3,122,4,147,4,156,4,94,4,-19,4,0,160,3,3,44,4,100,4,141,4,134,3,50,4,0,720,28,4,75,4,134,4,147,4,134,4,28,4,0,358,9,4,44,4,100,4,141,4,131,3,22,4,0,218,6,3,50,4,112,4,153,4,156,3,94,4,-9,5,0,144,19,4,69,3,131,4,147,4,119,4,0,496,-6,4,-19,4,-34,4,-50,4,-72,4,-97,4,-125,3,-147,4,-166,4,-188,4,-200,19,-188,4,-100,3,0,530,3,3,41,5,97,4,134,3,119,4,0,232,9,4,53,4,100,4,131,4,138,3,75,5,-9,3,0,164,3,4,34,3,75,4,119,8,34,3,0,1276,34,4,91,4,112,4,106,4,3,4,0,413,22,4,75,4,131,4,134,4,106,3,0,163,22,4,66,4,116,4,169,4,191,4,153,3,-19,4,0,1273,19,4,72,3,134,4,112,4,-9,4,0,421,12,4,59,4,109,4,97,4,0,174,19,4,69,4,131,4,125,3,22,4,0,716,9,4,59,3,119,4,125,4,16,4,0,346,3,3,34,4,88,4,119,4,84,4,-6,4,0,208,9,4,50,4,103,8,41,4,0,163,28,3,75,4,134,4,150,4,119,4,-6,4,0,1099,6,4,59,4,119,3,109,4,16,4,0,228,9,3,59,4,112,4,106,4,3,4,0,163,28,4,75,3,134,4,138,4,75,4,-6,4,0,1088,25,3,66,4,88,4,34,4,0,228,12,4,53,3,106,4,134,4,112,4,0,163,6,4,47,4,103,4,144,3,125,4,0,1289,25,3,75,4,125,4,106,4,0,419,3,4,44,4,100,3,147,4,153,4,47,4,0,152,6,4,47,4,106,4,147,4,131,3,0,702,12,3,66,4,131,4,147,4,112,4,-9,4,0,381,34,4,100,3,138,5,109,3,-6,4,0,213,22,4,72,4,138,4,150,4,69,4,-6,4,0,156,31,3,94,4,144,4,134,4,9,3,0,1087,34,4,94,4,125,4,62,4,0,217,9,4,47,4,94,3,147,4,156,4,131,4,0,186,12,4,66,4,134,4,169,3,106,4,-19,4,0]},{"k":"reed","n":[1530,10374,36,73,3,12734,48,91,217,265,79,109,258,30,81,78,23,149,77,109,150,25,79,58,16,24,77,91,17,24,76,114,25,357,74,88,346,38,77,80,25,39,76,85,28,42,74,95,38,151,72,109,150,43,79,88,48,142,72,109,145,42,79,95,45,471,72,114,1364,134,79,88,125,26,77,70,14,32,76,76,21,28,74,95,21,553,72,85,5176,136,79,124,148,35,79,109,52,148,79,104,142,62,84,104,51,116,79,120,112,31,81,65,19,27,79,104,26,34,77,120,27,159,79,114,158,28,81,71,19,36,79,85,21,151,77,109,143,34,79,73,23,36,77,88,25,548,76,114,574,125,81,98,5,121,77,85,138,32,77,76,2,29,81,82,47,517,77,88,1,537,81,91,380,2310,41,67,150,37,79,91,0,42,76,88,45,127,81,82,0,146,77,104,138,26,79,91,1,28,83,95,45,211,84,95,1,191,81,104,197,199,83,88,1,176,79,104,190,553,81,82,2,557,77,88,584,124,81,114,127,32,83,91,22,21,81,88,17,35,79,124,25,166,81,120,156,37,83,124,42,137,84,124,135,34,86,82,24,24,84,80,14,45,83,120,33,133,81,91,129,27,83,114,22,27,81,114,21,157,79,104,149,34,81,95,23,28,79,104,18,1157,43,76,4,506,77,109,116,917,50,46,391,27,79,66,15,31,77,82,20,29,76,120,25,155,74,104,146,57,76,104,48,155,77,120,146,56,81,91,43,155,79,114,146,44,77,95,47,154,79,109,1,3148,36,73,3,5751,48,66,147,33,81,78,25,28,79,78,19,149,77,114,144,38,79,78,25,33,77,76,21,334,76,109,335,27,77,60,18,23,76,80,14,29,74,114,25,154,72,104,149,41,79,78,45,159,72,104,151,36,79,85,37,767,72,104,2001,2611,41,53,2603,1617,43,76,1,1104,50,82,1155,2657,36,31,13,5419,48,49,747,1921,43,56,193,142,79,124,151,30,79,104,50,151,79,104,145,48,84,109,45,106,79,114,103,30,81,60,18,28,79,104,26,25,77,124,29,155,79,114,154,27,81,74,20,28,79,88,16,162,77,109,159,30,79,74,21,35,77,114,27,548,76,109,573,128,81,114,145,24,81,98,48,518,81,104,7,2682,41,62,515,32,83,71,24,17,81,91,15,33,79,120,23,150,81,104,146,42,83,109,43,148,84,104,146,31,86,80,22,29,84,78,18,154,83,109,153,32,84,74,22,30,83,73,18,529,81,104,583,107,81,124,110,29,83,104,24,18,81,95,18,33,79,82,30,161,81,109,152,39,83,120,43,131,84,114,127,34,86,74,26,27,84,78,17,34,83,91,25,152,81,114,149,25,83,76,19,39,81,91,24,147,79,104,141,36,81,62,24,34,79,88,26,5428,43,63,1,510,77,95,108,965,50,55,407,24,79,59,14,26,77,82,16,29,76,104,26,148,74,95,138,64,76,91,55,148,77,104,139,54,81,88,48,157,79,109,145,52,77,85,44,4283,36,67,3,146,79,104,141,37,81,76,26,31,79,73,20,159,77,95,156,35,79,62,24,30,77,73,21,210,76,98,216,38,81,109,0,142,79,91,132,25,77,78,13,28,76,95,18,28,74,114,26,137,72,98,134,36,79,95,41,152,72,98,146,37,79,95,41,149,72,114,145,37,79,95,45,107,72,109,94,82,81,104,69,33,79,80,25,166,77,104,89,49,79,73,75,35,79,88,37,109,74,76,98,63,77,104,48,43,76,88,47,158,74,91,147,48,77,91,48,58,76,95,63,22,77,61,13,28,76,91,16,57,74,91,52,44,72,85,45,107,74,98,99,100,76,91,98,150,72,88,146,45,79,71,49,137,72,109,139,37,79,95,41,99,72,109,100,72,84,104,64,29,83,91,25,61,81,82,52,50,83,104,46,49,79,76,44,50,81,80,55,52,77,95,53,20,79,62,12,22,77,88,14,26,76,104,23,54,74,82,48,61,77,85,49,48,76,98,45,40,72,82,44,50,74,104,53,24,76,78,16,30,74,78,28,629,72,95],"v":[0,92]},{"k":"drums","n":[775,24,42,100,185,7,42,100,192,40,42,100,192,45,42,100,960,38,38,65,0,152,69,125,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,0,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,0,144,69,125,96,12,38,65,96,144,69,100,0,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65,0,152,69,125,96,23,38,65,31,23,38,65,32,29,38,65,33,50,38,65,1,144,69,100,103,15,38,65,28,1,38,65,29,27,38,65,31,33,38,65,0,144,69,125,96,12,38,65,96,144,69,100,1,21,38,65,100,19,38,65,32,16,38,65,28,20,38,65,31,152,69,125,1,33,38,65,102,18,38,65,29,18,38,65,32,18,38,65,27,56,38,65,2,144,69,100,106,15,38,65,28,18,38,65,26,21,38,65,31,63,38,65,0,144,69,125,97,14,38,65,30,20,38,65,33,19,38,65,32,144,69,100,2,27,38,65,31,19,38,65,35,19,38,65,31,19,38,65,33,18,38,65,28,17,38,65,32,38,38,65],"v":[0,100]}]};
+const SONG_GAIN = .55, SONG_IN = 6, SONG_OUT = 43, SONG_LEN = 30, SONG_FADE = 1.5;
+const SONG_VOICE = {
+  brass: { type: 'sawtooth', cut: 1400, a: .01, r: .06, gain: .45 },
+  bass: { type: 'triangle', a: .005, r: .08, gain: 1.1 },
+  strings: { type: 'sawtooth', cut: 1800, a: .08, r: .25, gain: .35 },
+  choir: { type: 'triangle', a: .12, r: .3, gain: .75 },
+  lead: { type: 'triangle', a: .02, r: .08, gain: .95 },
+  reed: { type: 'square', cut: 2200, a: .02, r: .06, gain: .28 }
+};
+let song = null, songTracks = null, songEnd = 0, noiseBuf = null;
+function prepSong() {
+  if (songTracks) return;
+  const k = GRANDOLA.spt;
+  const auto = arr => { const out = []; let t = 0; for (let i = 0; i < (arr || []).length; i += 2) { t += arr[i]; out.push([t * k, arr[i + 1]]); } return out; };
+  songTracks = GRANDOLA.t.map(tr => {
+    const notes = []; let t = 0;
+    for (let i = 0; i < tr.n.length; i += 4) { t += tr.n[i]; notes.push([t * k, tr.n[i + 1] * k, tr.n[i + 2], tr.n[i + 3]]); songEnd = Math.max(songEnd, (t + tr.n[i + 1]) * k); }
+    return { k: tr.k, notes, vol: auto(tr.v), bend: auto(tr.b) };
+  });
+  // play only the excerpt Rui picked (file times SONG_IN to SONG_OUT), sped up to last SONG_LEN seconds; notes crossing the edges are cut there
+  const sp = SONG_LEN / (SONG_OUT - SONG_IN); songEnd = SONG_LEN;
+  for (const t of songTracks) {
+    t.notes = t.notes.filter(n => n[0] < SONG_OUT && n[0] + n[1] > SONG_IN).map(([st, du, p, v]) => { const a = Math.max(st, SONG_IN), b = Math.min(st + du, SONG_OUT); return [(a - SONG_IN) * sp, (b - a) * sp, p, v]; });
+    for (const a of [t.vol, t.bend]) for (const e of a) e[0] = Math.max(0, (e[0] - SONG_IN) * sp);
+  }
+  const n = actx.sampleRate; noiseBuf = actx.createBuffer(1, n, n); const d = noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+}
+const autoAt = (arr, t, def) => { let v = def; for (const [at, x] of arr) { if (at > t) break; v = x; } return v; };
+function drumHit(p, t0, v, dest) {
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain(), snare = p === 38, len = snare ? .14 : .045;
+  src.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = snare ? 1200 : 7000;
+  g.gain.setValueAtTime(.16 * v, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + len);
+  src.connect(f).connect(g).connect(dest); src.start(t0, Math.random() * .5); src.stop(t0 + len + .02);
+  if (snare) { const o = actx.createOscillator(), og = actx.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(190, t0); o.frequency.exponentialRampToValueAtTime(120, t0 + .08);
+    og.gain.setValueAtTime(.1 * v, t0); og.gain.exponentialRampToValueAtTime(.0001, t0 + .09); o.connect(og).connect(dest); o.start(t0); o.stop(t0 + .1); }
+}
+function songNote(tr, n, dest) {
+  const [st, du, p, vel] = n, t0 = song.at + st;
+  if (t0 < actx.currentTime - .02) return;
+  const v = vel / 127 * autoAt(tr.vol, st, 100) / 127;
+  if (tr.k === 'drums') return drumHit(p, t0, v, dest);
+  const V = SONG_VOICE[tr.k], o = actx.createOscillator(), g = actx.createGain();
+  o.type = V.type; o.frequency.value = 440 * 2 ** ((p - 69) / 12);
+  if (tr.bend.length) { o.detune.setValueAtTime(autoAt(tr.bend, st, 0), t0); for (const [at, c] of tr.bend) if (at > st && at < st + du + V.r) o.detune.setValueAtTime(c, song.at + at); }
+  const peak = .09 * V.gain * v, a = t0 + Math.min(V.a, du / 2), end = Math.max(a, t0 + du);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(peak, a); g.gain.setValueAtTime(peak, end); g.gain.linearRampToValueAtTime(0, end + V.r);
+  o.connect(g).connect(dest); o.start(t0); o.stop(end + V.r + .02);
+}
+function startSong() { audioOn(); if (!actx || song) return; prepSong(); song = { pos: 0, out: null, idx: [], g: 0 }; }
+function songOut() {
+  const bus = actx.createGain(), fade = actx.createGain(), comp = actx.createDynamicsCompressor();
+  bus.gain.value = song.g = muted ? 0 : SONG_GAIN; bus.connect(fade).connect(comp).connect(actx.destination);
+  const fadeAt = song.at + songEnd - SONG_FADE; // fade out over the last seconds of the excerpt
+  if (fadeAt > actx.currentTime) { fade.gain.setValueAtTime(1, fadeAt); fade.gain.linearRampToValueAtTime(0, fadeAt + SONG_FADE); } else fade.gain.value = Math.max(0, (song.at + songEnd - actx.currentTime) / SONG_FADE);
+  const tr = songTracks.map(t => { const c = SONG_VOICE[t.k] && SONG_VOICE[t.k].cut; if (!c) return bus; const f = actx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = c; f.connect(bus); return f; });
+  return { bus, tr };
+}
+function songSilence() {
+  if (!song || !song.out) return;
+  const o = song.out; song.out = null;
+  o.bus.gain.cancelScheduledValues(actx.currentTime); o.bus.gain.setTargetAtTime(0, actx.currentTime, .04); setTimeout(() => o.bus.disconnect(), 400);
+}
+function stopSong() { songSilence(); song = null; }
+// called every frame: schedules the next half second of notes; holds its place while the game is paused
+function songTick() {
+  if (!song) return;
+  if (mode !== 'play') return songSilence();
+  const now = actx.currentTime;
+  if (!song.out) { song.at = now + .05 - song.pos; song.out = songOut(); song.idx = songTracks.map(t => { let i = 0; while (i < t.notes.length && t.notes[i][0] < song.pos) i++; return i; }); }
+  song.pos = Math.max(song.pos, now - song.at);
+  const g = muted ? 0 : SONG_GAIN; if (g !== song.g) { song.g = g; song.out.bus.gain.setTargetAtTime(g, now, .05); }
+  const until = now - song.at + .5;
+  songTracks.forEach((t, ti) => { let i = song.idx[ti]; while (i < t.notes.length && t.notes[i][0] < until) songNote(t, t.notes[i++], song.out.tr[ti]); song.idx[ti] = i; });
+  if (song.pos > songEnd + .5) stopSong();
+}
+
+/* ================= game data ================= */
+const TENT_COLORS = ['#ff8a2a', '#3ec46d', '#2f8fff', '#ffd23a', '#ff4f8b', '#9a6bff', '#2ad1c9', '#c6ff4a'];
+const SKIN = ['#f1c9a5', '#d9a37a', '#a8714a', '#7a4a2c', '#5a3520'];
+const HAIR = ['#2b1a10', '#1a1a24', '#6b3a1e', '#d9b46a', '#b03a5a', '#3a4fa8'];
+const SHIRTS = ['#ffd23a', '#3ec46d', '#2f8fff', '#9a6bff', '#ff7ad9', '#f2efe6', '#444a77', '#2ad1c9', '#ff8a2a'];
+const DONATIONS = ['Sopa', 'Água', 'Bifanas', 'Mantas', 'Café', 'Pão', 'Fruta', 'Arroz'];
+const STATIONS = {
+  kitchen: { name: 'Cozinha popular', cost: 4, desc: 'Transforma os donativos em refeições e mantém a moral em alta. Também podes cozinhar mais à mão.' },
+  info: { name: 'Ponto de informação', cost: 3, desc: 'Quem passa por perto junta-se sozinho. Faz conversas de boas-vindas para quem está à espera.' },
+  aid: { name: 'Primeiros socorros', cost: 3, desc: 'Numa rusga, uma pessoa por tenda escapa em vez de ser detida.' },
+  stage: { name: 'Palco', cost: 6, desc: 'Concertos que trazem gente, apoio e pressão.' }
+};
+const PERKS = [
+  { id: 'vigias', name: 'Vigias', desc: 'As sirenes ouvem-se mais cedo e os agentes andam 15% mais devagar.' },
+  { id: 'afinidade', name: 'Grupos de afinidade', desc: 'Os cordões humanos duram mais 3 segundos e chegam mais longe.' },
+  { id: 'caixa', name: 'Caixa de solidariedade', desc: '+6 materiais já, e os donativos aparecem mais vezes.' },
+  { id: 'comunicado', name: 'Comunicado', desc: '+15 de apoio imediato.' },
+  { id: 'turnos', name: 'Turnos', desc: 'A moral desce 30% mais devagar.' },
+  { id: 'megafone', name: 'Megafone', desc: 'Acolhe quem chega a partir de mais longe.' },
+  { id: 'legal', name: 'Equipa legal', desc: 'Metade das pessoas detidas em cada rusga volta depois.' },
+  { id: 'cartazes', name: 'Cartazes na estátua', desc: 'A pressão sobe 20% mais depressa.' }
+];
+
+/* ================= state ================= */
+let S = null, cityIdx = 0, mode = 'title', bg = null, hudT = 0;
+let cleared = new Set();
+try { cleared = new Set(JSON.parse(localStorage.getItem('acampada3-cleared') || '[]')); } catch (e) {}
+function saveCleared() { try { localStorage.setItem('acampada3-cleared', JSON.stringify([...cleared])); } catch (e) {} }
+
+function look(student) {
+  return student && Math.random() < .55
+    ? { skin: pick(SKIN), hair: pick(HAIR), shirt: '#15151c', pants: '#15151c', cape: true }
+    : { skin: pick(SKIN), hair: pick(HAIR), shirt: pick(SHIRTS), pants: pick(['#2b2d55', '#3a3a44', '#4a6fa5', '#5a3a6b']) };
+}
+function newLevel() {
+  stopSong();
+  const city = CITIES[cityIdx];
+  S = { city, t: 0, clock: 17, dark: 0, occ: new Array(N * N).fill(null),
+    tents: [], stations: [], residents: [], arrivals: [], crates: [], police: [], parts: [], floats: [],
+    van: null, bikes: null, tandem: null, chain: null,
+    supplies: 4, morale: 70, support: 15, pressure: 0, detained: 0,
+    chainCd: 0, live: 0, liveCd: 0, asmCd: 20, perks: new Set(),
+    raid: false, raidT: 0, raidDetained: 0, warned: false,
+    nextRaid: 30, nextPatrol: 38, nextLimit: 24.5,
+    arrivalT: 1, crateT: 5, leaveT: 3, kitchenT: 14, bikeT: rnd(45, 70), releaseT: 0, releaseN: 0,
+    donkey: city.donkey ? 'small' : null, dj: null, djT: city.dj ? 35 : -1, helmets: 0, hcrate: null, helmetT: city.helmets ? 25 : -1, cleaners: null, swept: false, drums: null, drumT: city.drums ? 40 : -1, freeze: 0, singCd: 0, rally: false, tandemT: 0, tip: null, tipT: 0,
+    player: { gx: 6.5, gy: 8.6, tx: 6.5, ty: 8.6, step: 0, moving: false, flip: false, back: false } };
+  for (const [a, b] of city.blocks) S.occ[b * N + a] = 'X';
+  bg = makeBG(city);
+  for (let i = 0; i < 3; i++) { const t = addTent(); t.occ = 2; t.pop = 0; }
+  $('city').textContent = city.name + ', ' + city.place;
+  $('sT').previousElementSibling.textContent = city.noTents ? 'Grupos' : 'Tendas';
+}
+const idx = (gx, gy) => Math.floor(gy) * N + Math.floor(gx);
+function blockedAt(gx, gy) {
+  if (gx < 0 || gy < 0) return true;
+  if (gx >= N || gy >= N) return gx > N + 4 || gy > N + 4;
+  const o = S.occ[idx(gx, gy)]; return o === 'X' || (o && o.kind === 'station');
+}
+function freeTiles() { const out = []; for (let gy = 0; gy < N; gy++) for (let gx = 0; gx < N; gx++) if (!S.occ[gy * N + gx]) out.push([gx, gy]); return out; }
+function addTent() {
+  const f = freeTiles(); if (!f.length) return null;
+  let bestT = null, bk = 1e9;
+  for (const [gx, gy] of f) { const k = Math.hypot(gx + .5 - 5, gy + .5 - 5.5) + Math.random() * 2.2; if (k < bk) { bk = k; bestT = [gx, gy]; } }
+  const t = { kind: 'tent', tx: bestT[0], ty: bestT[1], gx: bestT[0] + .5 + rnd(-.08, .08), gy: bestT[1] + .5 + rnd(-.08, .08), color: pick(TENT_COLORS), occ: 1, pop: .4, hit: false, l1: look(S.city.students), l2: look(S.city.students) };
+  S.occ[bestT[1] * N + bestT[0]] = t; S.tents.push(t); return t;
+}
+const people = () => S.tents.reduce((s, t) => s + t.occ, 0);
+// each person you see stands for a crowd: the multiplier grows with public support
+const crowdMult = () => 6 + Math.floor(S.support / 10) * 2;
+const crowd = () => people() * crowdMult();
+const fmt = n => n.toLocaleString('pt-PT');
+const station = k => S.stations.find(s => s.kind === k);
+function float(gx, gy, text, color, z = 18) { const p = iso(gx, gy, z); S.floats.push({ x: p.x, y: p.y, text, color, t: 1.6 }); }
+function floatXY(x, y, text, color) { S.floats.push({ x, y, text, color, t: 1.8 }); }
+function sparkle(gx, gy, n = 6, z = 10) { const p = iso(gx, gy, z); for (let i = 0; i < n; i++) S.parts.push({ x: p.x, y: p.y, vx: rnd(-18, 18), vy: rnd(-26, -6), life: rnd(.5, .9), type: 'spark', col: pick(['#ffffff', '#39e1ff', '#ff5fc8', '#b6ff3b']) }); }
+
+function joinOne(gx, gy, quiet) {
+  let t = S.tents.find(t => t.occ < 2);
+  if (t) t.occ++;
+  else { t = addTent(); if (!t) { S.pressure = Math.min(100, S.pressure + 1.5); float(gx, gy, 'Praça cheia!', '#ffd36b'); return; } }
+  S.morale = Math.min(100, S.morale + 2);
+  if (!quiet) { float(gx, gy, '+' + crowdMult(), '#b6ff3b'); sparkle(gx, gy, 5); sfx('join'); }
+}
+function removeTent(t, byPolice) {
+  const i = S.tents.indexOf(t); if (i < 0) return 0;
+  S.tents.splice(i, 1); S.occ[t.ty * N + t.tx] = null;
+  const n = t.occ;
+  if (byPolice) {
+    let det = n, rescued = 0;
+    if (station('aid') && n > 0) { det = n - 1; rescued = 1; }
+    S.detained += det; S.raidDetained += det;
+    S.support = Math.min(100, S.support + 5);
+    if (det) float(t.gx, t.gy, det + (det === 1 ? ' detida' : ' detidas'), '#ff8aa8');
+    if (rescued) joinOne(t.gx, t.gy - .6);
+    if (S.live > 0) {
+      S.support = Math.min(100, S.support + 12); S.pressure = Math.min(100, S.pressure + 2);
+      float(t.gx, t.gy, 'Viral!', '#ffd36b', 30); sparkle(t.gx, t.gy, 10, 20);
+      for (let k = 0; k < 3; k++) spawnArrival();
+      sfx('viral');
+    } else sfx('hit');
+  }
+  return n;
+}
+function randomSpot() { for (let k = 0; k < 40; k++) { const gx = rnd(.5, 9.5), gy = rnd(.5, 9.5); if (!blockedAt(gx, gy)) return [gx, gy]; } return [6.5, 8.5]; }
+function spawnArrival(opts = {}) {
+  const side = Math.random() < .5;
+  const gx = side ? rnd(.5, 9.5) : N + 1.6, gy = side ? N + 1.6 : rnd(.5, 9.5);
+  const [tx, ty] = opts.target || randomSpot();
+  S.arrivals.push({ rent: S.city.rents ? pick([550, 600, 650, 700]) : 0, gx, gy, ex: gx, ey: gy, tx, ty, state: 'walk', wait: 12, auto: !!opts.auto, look: look(S.city.students), step: rnd(0, 9), flip: false, back: true, infoT: 0 });
+}
+function spawnCrate() {
+  const side = Math.random() < .5;
+  S.crates.push({ gx: side ? rnd(.6, 9.4) : 10.25, gy: side ? 10.25 : rnd(.6, 9.4), life: 18, label: pick(DONATIONS) });
+}
+function nearestTent(o, avoidShield) {
+  let b = null, bd = 1e9;
+  for (const t of S.tents) {
+    if (avoidShield && S.chain && Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r) continue;
+    const d = Math.hypot(t.gx - o.gx, t.gy - o.gy); if (d < bd) { bd = d; b = t; }
+  }
+  return b;
+}
+function face(e, ux, uy) { const sx = ux - uy, sy = ux + uy; if (Math.abs(sx) > .05) e.flip = sx < 0; e.back = sy < -.05; }
+/* ---- pathfinding: everyone walks around statues, fountains, trees and stations ---- */
+const GW = 13, DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+function walkTile(x, y) { if (x < 0 || y < 0 || x >= GW || y >= GW) return false; if (x >= N || y >= N) return true; const o = S.occ[y * N + x]; return !(o === 'X' || (o && o.kind === 'station')); }
+function clearAt(gx, gy) { const m = .2; for (const [dx, dy] of [[0, 0], [m, 0], [-m, 0], [0, m], [0, -m]]) { const x = gx + dx, y = gy + dy; if (x < 0 || y < 0 || !walkTile(Math.floor(x), Math.floor(y))) return false; } return true; }
+function los(ax, ay, bx, by) { const d = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.ceil(d / .1)); for (let i = 1; i <= n; i++) { const t = i / n; if (!clearAt(ax + (bx - ax) * t, ay + (by - ay) * t)) return false; } return true; }
+function findPath(ax, ay, bx, by) {
+  const sx = clamp(Math.floor(ax), 0, GW - 1), sy = clamp(Math.floor(ay), 0, GW - 1);
+  let tx = clamp(Math.floor(bx), 0, GW - 1), ty = clamp(Math.floor(by), 0, GW - 1);
+  if (!walkTile(tx, ty)) { let b = null, bd = 1e9; for (let y = 0; y < GW; y++) for (let x = 0; x < GW; x++) if (walkTile(x, y)) { const d = Math.hypot(x + .5 - bx, y + .5 - by); if (d < bd) { bd = d; b = [x, y]; } } if (!b) return null; [tx, ty] = b; bx = tx + .5; by = ty + .5; }
+  const prev = new Int16Array(GW * GW).fill(-1), start = sy * GW + sx, goal = ty * GW + tx; prev[start] = start; const q = [start];
+  for (let qi = 0; qi < q.length; qi++) { const c = q[qi]; if (c === goal) break; const cx = c % GW, cy = (c / GW) | 0;
+    for (const [dx, dy] of DIRS) { const nx = cx + dx, ny = cy + dy; if (!walkTile(nx, ny)) continue; if (dx && dy && (!walkTile(cx + dx, cy) || !walkTile(cx, cy + dy))) continue; const ni = ny * GW + nx; if (prev[ni] !== -1) continue; prev[ni] = c; q.push(ni); } }
+  if (prev[goal] === -1) return null;
+  const pts = [[bx, by]]; let c = prev[goal]; if (goal !== start) while (c !== start) { pts.push([c % GW + .5, ((c / GW) | 0) + .5]); c = prev[c]; }
+  pts.reverse();
+  const out = []; let cx = ax, cy = ay, i = 0;
+  while (i < pts.length) { let j = pts.length - 1; while (j > i && !los(cx, cy, pts[j][0], pts[j][1])) j--; out.push(pts[j]); cx = pts[j][0]; cy = pts[j][1]; i = j + 1; }
+  return out;
+}
+function stepTo(e, tx, ty, sp, dt) { const dx = tx - e.gx, dy = ty - e.gy, d = Math.hypot(dx, dy); if (d < .02) return true; const st = Math.min(d, sp * dt); face(e, dx / d, dy / d); e.gx += dx / d * st; e.gy += dy / d * st; return d <= sp * dt + .01; }
+function moveEnt(e, tx, ty, sp, dt, free) {
+  const d = Math.hypot(tx - e.gx, ty - e.gy);
+  if (d < .04) { e.moving = false; e.path = null; return true; }
+  e.moving = true; e.step = (e.step || 0) + dt * 8;
+  if (free) { stepTo(e, tx, ty, sp, dt); return d <= sp * dt + .01; }
+  const key = Math.round(tx * 8) + ',' + Math.round(ty * 8);
+  e.repath = (e.repath || 0) - dt;
+  if (!e.path || e.pathKey !== key || e.repath <= 0) { e.path = findPath(e.gx, e.gy, tx, ty); e.pathKey = key; e.repath = 1; }
+  if (!e.path || !e.path.length) { stepTo(e, tx, ty, sp, dt); return d <= sp * dt + .01; }
+  const w = e.path[0];
+  if (stepTo(e, w[0], w[1], sp, dt)) { e.path.shift(); if (!e.path.length) { e.path = null; e.moving = false; return true; } }
+  return false;
+}
+function slideMove(e, tx, ty, sp, dt) {
+  const dx = tx - e.gx, dy = ty - e.gy, d = Math.hypot(dx, dy);
+  if (d < .04) { e.moving = false; return true; }
+  const st = Math.min(d, sp * dt), ux = dx / d, uy = dy / d;
+  face(e, ux, uy); e.moving = true; e.step = (e.step || 0) + dt * 8;
+  const nx = e.gx + ux * st, ny = e.gy + uy * st;
+  if (!blockedAt(nx, ny)) { e.gx = nx; e.gy = ny; }
+  else if (!blockedAt(e.gx + ux * st, e.gy)) e.gx += ux * st;
+  else if (!blockedAt(e.gx, e.gy + uy * st)) e.gy += uy * st;
+  else { const s = e.side || 1, px = -uy * s, py = ux * s; if (!blockedAt(e.gx + px * st, e.gy + py * st)) { e.gx += px * st; e.gy += py * st; } else e.side = -s; }
+  return d <= sp * dt + .01;
+}
+function darkness(h) { if (h >= 19 && h < 21) return (h - 19) / 2; if (h >= 21 || h < 5) return 1; if (h >= 5 && h < 7) return 1 - (h - 5) / 2; return 0; }
+
+/* ================= actions ================= */
+function doChain() {
+  if (mode !== 'play' || S.chainCd > 0) return;
+  if (people() < 6) { float(S.player.gx, S.player.gy, 'Precisas de mais gente', '#ff8aa8'); return; }
+  const aff = S.perks.has('afinidade');
+  S.chain = { gx: S.player.gx, gy: S.player.gy, r: aff ? 1.9 : 1.5, t: aff ? 9 : 6 };
+  if (S.helmets > 0) { S.helmets--; S.chain.t *= 2; S.chain.helmet = true; float(S.player.gx, S.player.gy, 'Capacetes azuis!', '#39e1ff', 28); }
+  S.chainCd = 15; S.morale = Math.max(0, S.morale - 5); sfx('chain');
+}
+function doLive() { if (mode !== 'play' || S.liveCd > 0) return; S.live = 9; S.liveCd = 24; sfx('live'); }
+function nearestFreeTo(p) {
+  let b = null, bd = 1e9; const pt = idx(p.gx, p.gy);
+  for (const [gx, gy] of freeTiles()) { if (gy * N + gx === pt) continue; const d = Math.hypot(gx + .5 - p.gx, gy + .5 - p.gy); if (d < bd) { bd = d; b = [gx, gy]; } }
+  return b;
+}
+function build(kind) {
+  const def = STATIONS[kind]; if (S.supplies < def.cost || station(kind)) return;
+  const spot = nearestFreeTo(S.player); if (!spot) { float(S.player.gx, S.player.gy, 'Sem espaço', '#ff8aa8'); return; }
+  S.supplies -= def.cost;
+  const st = { kind: 'station', type: kind, tx: spot[0], ty: spot[1], gx: spot[0] + .5, gy: spot[1] + .5, cd: 0 };
+  st.kind = 'station'; st.k = kind;
+  S.occ[spot[1] * N + spot[0]] = st; S.stations.push(st);
+  float(st.gx, st.gy, def.name + '!', '#b6ff3b', 26); sparkle(st.gx, st.gy, 12, 14); sfx('build');
+}
+const stationOf = k => S.stations.find(s => s.k === k);
+function hoist(solo) {
+  const t = S.tandem; if (!t || t.state !== 'wait') return;
+  S.donkey = 'giant'; t.state = 'leave'; t.cargo = false; t.wp = [[7.5, 11.2], [15, 11.2]];
+  const k = solo === true ? .5 : 1;
+  S.support = Math.min(100, S.support + 20 * k); S.morale = Math.min(100, S.morale + 25 * k); S.pressure = Math.min(100, S.pressure + 6 * k);
+  const c = iso(5, 5, 40); floatXY(c.x, c.y - 10, solo === true ? 'Içaram sem ti!' : 'Burro gigante!', '#ffd36b'); sparkle(5.5, 5.6, 22, 30); sfx('donkey');
+}
+function contextAction() {
+  if (!S || mode !== 'play') return null;
+  const p = S.player;
+  if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 1.4) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
+  if (Math.hypot(p.gx - 5, p.gy - 5) < 2.2) { const n = people(); return { label: n < 12 ? 'Cantar Grândola · falta gente' : S.singCd > 0 ? 'Cantar Grândola ' + Math.ceil(S.singCd) + 's' : 'Cantar Grândola', ok: n >= 12 && S.singCd <= 0, fn: sing }; }
+  for (const st of S.stations) {
+    if (gd(p, st) > 1.25) continue;
+    const cd = st.cd > 0 ? ' ' + Math.ceil(st.cd) + 's' : '';
+    if (st.k === 'kitchen') return { label: 'Cozinhar uma refeição, 1 material' + cd, ok: st.cd <= 0 && S.supplies > 0, fn: () => { S.supplies--; S.morale = Math.min(100, S.morale + 15); S.support = Math.min(100, S.support + 2); st.cd = 5; steam(st, 10); float(st.gx, st.gy, 'Refeição servida', '#ffd36b', 24); sfx('crate'); } };
+    if (st.k === 'stage') return { label: (S.concert ? 'Concerto a decorrer' : 'Dar um concerto') + cd, ok: st.cd <= 0 && !S.concert, fn: () => startConcert(st) };
+    if (st.k === 'info') return { label: 'Conversa de boas-vindas' + cd, ok: st.cd <= 0, fn: () => { st.cd = 30; let n = 0; for (const a of S.arrivals) if (a.state !== 'leave') { a.gone = true; joinOne(a.gx, a.gy); n++; } float(st.gx, st.gy, n ? fmt(n * crowdMult()) + ' juntaram-se' : 'Ninguém à espera', '#9ff0ff', 26); } };
+    if (st.k === 'aid') return { label: 'Turno de descanso' + cd, ok: st.cd <= 0, fn: () => { st.cd = 25; S.morale = Math.min(100, S.morale + 10); float(st.gx, st.gy, 'Descansados', '#b6ff3b', 24); } };
+  }
+  return null;
+}
+function steam(st, n) { const p = iso(st.gx, st.gy, 14); for (let i = 0; i < n; i++) S.parts.push({ x: p.x + rnd(-2, 2), y: p.y, vx: rnd(-3, 3), vy: rnd(-14, -8), life: rnd(.8, 1.4), type: 'steam', col: '#ffffff' }); }
+function startConcert(st) {
+  st.cd = 50; S.concert = { t: 14, st, spawn: 0 };
+  S.support = Math.min(100, S.support + 8); S.pressure = Math.min(100, S.pressure + 5); S.morale = Math.min(100, S.morale + 12);
+  float(st.gx, st.gy, 'Concerto!', '#ff5fc8', 34); sfx('concert');
+}
+function startBikes() {
+  const n = ri(8, 12), riders = [];
+  for (let i = 0; i < n; i++) riders.push({ s: i * (4 / n) * .5, look: look(false), col: pick(['#ff5fc8', '#39e1ff', '#b6ff3b', '#ffd36b', '#ffffff']), gx: 0, gy: 0, flip: false });
+  S.bikes = { t: 0, dur: 14, riders };
+  S.support = Math.min(100, S.support + 10); S.morale = Math.min(100, S.morale + 8); S.pressure = Math.min(100, S.pressure + 3);
+  const c = iso(5, 10, 20); floatXY(c.x, c.y - 30, 'Bicicletada!', '#39e1ff'); sfx('bells');
+}
+function bikePos(s) {
+  const a = .3, b = 10.35, k = ((s % 4) + 4) % 4, f = frac(k);
+  if (k < 1) return [a + (b - a) * f, a]; if (k < 2) return [b, a + (b - a) * f]; if (k < 3) return [b - (b - a) * f, b]; return [a, b - (b - a) * f];
+}
+function startRaid(patrol) {
+  S.raid = true; S.raidT = 0; S.raidDetained = 0; S.warned = false;
+  S.van = { gx: -4, gy: 11.15, tx: rnd(2, 6), state: 'arrive', patrol };
+}
+function onRaidEnd() {
+  S.swept = false;
+  if (S.donkey === 'small') { S.donkey = 'binned'; S.tandemT = 18; const p = iso(1.6, 10.3, 14); floatXY(p.x, p.y, 'Cabeça no lixo', '#c9c4b8'); }
+  if (S.perks.has('legal') && S.raidDetained > 0) { S.releaseT = 14; S.releaseN = Math.ceil(S.raidDetained / 2); }
+}
+
+/* ================= city events ================= */
+function sing() {
+  startSong();
+  // the police stay frozen for as long as the song plays (10 s if there is no sound); the next sing-along is 60 s after it ends
+  S.freeze = song ? songEnd - song.pos : 10; S.singCd = S.freeze + 60;
+  S.support = Math.min(100, S.support + 8); S.morale = Math.min(100, S.morale + 8); S.pressure = Math.min(100, S.pressure + 3);
+  const q = iso(5, 5, 40); floatXY(q.x, q.y, 'Grândola, Vila Morena', '#ffd36b');
+}
+function updEvents(dt, hr) {
+  const p = S.player, c = S.city;
+  S.freeze = Math.max(0, S.freeze - dt); S.singCd = Math.max(0, S.singCd - dt);
+  if (!S.singHint && people() >= 12) { S.singHint = true; const q = iso(5, 5, 34); floatXY(q.x, q.y, 'Muita gente: canta Grândola no centro', '#ffd36b'); }
+  if ((S.freeze > 0 || song) && Math.random() < dt * 8 && S.residents.length) { const r = pick(S.residents), q = iso(r.gx, r.gy, 18); S.parts.push({ x: q.x, y: q.y, vx: rnd(-4, 4), vy: -12, life: 1.1, type: 'note', col: pick(['#ffd36b', '#ffffff', '#ff3b4e']) }); }
+  // Porto: blue helmet crate
+  if (c.helmets) {
+    if (!S.hcrate && S.helmets === 0) { S.helmetT -= dt; if (S.helmetT <= 0) { const side = Math.random() < .5; S.hcrate = { gx: side ? rnd(1, 9) : 10.25, gy: side ? 10.25 : rnd(1, 9), life: 30 }; const q = iso(S.hcrate.gx, S.hcrate.gy, 14); floatXY(q.x, q.y, 'Capacetes!', '#39e1ff'); S.helmetT = 70; } }
+    if (S.hcrate) { S.hcrate.life -= dt; if (gd(S.hcrate, p) < .7) { S.helmets = 2; float(p.gx, p.gy, 'Capacetes: próximos 2 cordões', '#39e1ff', 26); sparkle(S.hcrate.gx, S.hcrate.gy, 10, 6); sfx('crate'); S.hcrate = null; } else if (S.hcrate.life <= 0) S.hcrate = null; }
+  }
+  // Porto: cleaning crew before dawn
+  if (c.cleaners && !S.cleaners && !S.swept && !S.raid && S.clock >= S.nextRaid - 3.4 && S.clock < S.nextRaid - .5) {
+    S.cleaners = { crew: [1.5, 3.8, 6.2, 8.5].map((y, i) => ({ gx: -.2 - i * .4, gy: y, step: 0, flip: false, back: false, look: look(false) })) };
+    const q = iso(5, 5, 30); floatXY(q.x, q.y, 'Limpeza: sem desculpas', '#4ba36f');
+  }
+  if (S.cleaners) {
+    let done = true;
+    for (const m of S.cleaners.crew) { if (!moveEnt(m, 10.4, m.gy, 1.9, dt, true)) done = false; if (Math.random() < dt * 6) { const q = iso(m.gx, m.gy, 1); S.parts.push({ x: q.x - 4, y: q.y, vx: rnd(-8, -2), vy: rnd(-6, -1), life: .6, type: 'steam', col: '#ffffff' }); } }
+    if (done) { S.cleaners = null; S.swept = true; const q = iso(5, 5, 30); floatXY(q.x, q.y, 'Praça limpa: rusga mais curta', '#4ba36f'); }
+  }
+  // Coimbra: drum circle
+  if (c.drums) {
+    if (!S.drums) { S.drumT -= dt; if (S.drumT <= 0) {
+      const [cx, cy] = randomSpot();
+      S.drums = { cx, cy, t: 0, state: 'in', beat: 0, spawn: 0, crew: Array.from({ length: 5 }, (_, i) => ({ gx: N + 1.6, gy: clamp(cy + i * .3, .5, 9.5), a: i / 5 * Math.PI * 2, step: 0, look: look(true), flip: false, back: true })) };
+      S.drumT = 70; } }
+    else {
+      const d = S.drums; d.t += dt;
+      if (d.state === 'in') { let all = true; for (const m of d.crew) { if (!moveEnt(m, d.cx + Math.cos(m.a) * .9, d.cy + Math.sin(m.a) * .9, 1.6, dt)) all = false; } if (all) { d.state = 'play'; d.t = 0; S.support = Math.min(100, S.support + 6); S.morale = Math.min(100, S.morale + 6); const q = iso(d.cx, d.cy, 34); floatXY(q.x, q.y, 'Eu quero um teto, eu quero um chão!', '#ffd36b'); } }
+      else if (d.state === 'play') {
+        d.beat -= dt; if (d.beat <= 0) { d.beat = .45; tone(70, .16, 'triangle', .13); tone(110, .08, 'square', .02, .22); for (const m of d.crew) m.hitT = .15; }
+        for (const m of d.crew) { m.hitT = Math.max(0, (m.hitT || 0) - dt); m.flip = (d.cx - m.gx - (d.cy - m.gy)) < 0; m.back = (d.cx - m.gx + d.cy - m.gy) < 0; }
+        d.spawn -= dt; if (d.spawn <= 0) { d.spawn = 1; spawnArrival({ auto: true, target: [clamp(d.cx + rnd(-1.4, 1.4), .4, 9.6), clamp(d.cy + rnd(-1.4, 1.4), .4, 9.6)] }); }
+        if (d.t > 12) { d.state = 'out'; }
+      } else { let all = true; for (const m of d.crew) if (!moveEnt(m, N + 2, m.gy, 1.6, dt, true)) all = false; if (all) S.drums = null; }
+    }
+  }
+  // Faro: the rally moment
+  if (c.slowStart && !S.rally && people() >= 20) {
+    S.rally = true; S.support = Math.min(100, S.support + 12); S.pressure = Math.min(100, S.pressure + 5); S.morale = Math.min(100, S.morale + 10);
+    const q = iso(5, 5, 34); floatXY(q.x, q.y, 'Viva o Algarve a resistir!', '#ffd36b'); sparkle(5, 5, 20, 20); sfx('viral');
+  }
+}
+function drawHCrate(h) {
+  if (h.life < 4 && Math.floor(S.t * 6) % 2) return;
+  boxc(ctx, h.gx, h.gy, .18, 0, 6, '#2f6bff'); const q = iso(h.gx, h.gy, 6);
+  for (const dx of [-3, 2]) { R(q.x + dx - 2, q.y - 3, 4, 2, '#2f6bff'); R(q.x + dx - 1, q.y - 4, 2, 1, '#9fd0ff'); }
+  if (Math.floor(S.t * 3) % 2) { R(q.x + 5, q.y - 10, 1, 3, '#ffffff'); R(q.x + 4, q.y - 9, 3, 1, '#ffffff'); }
+}
+function drawSweeper(m) {
+  const q = iso(m.gx, m.gy); guy(q.x, q.y, { ...m.look, shirt: '#4ba36f', moving: true, step: m.step, flip: m.flip, back: m.back });
+  const sw = Math.floor(S.t * 6) % 2 ? 1 : -1; R(q.x + 3, q.y - 9, 1, 9, '#8a6234'); R(q.x + 1 + sw, q.y, 5, 1, '#d9b46a');
+}
+function drawDrummer(m) {
+  const q = iso(m.gx, m.gy), x = Math.round(q.x), y = Math.round(q.y);
+  guy(x, y, { ...m.look, moving: m.moving, step: m.step, flip: m.flip, back: m.back });
+  ell(ctx, x, y - 6, 4, '#e2283b', 3); ell(ctx, x, y - 8, 3.5, '#f4f1ea', 1.4);
+  const up = m.hitT > 0 ? 0 : 2; R(x - 4, y - 12 - up, 1, 4, '#d9b46a'); R(x + 3, y - 12 - (2 - up), 1, 4, '#d9b46a');
+}
+function drawGroup(t) {
+  const q = iso(t.gx, t.gy), x = Math.round(q.x) + (t.hit ? ((Math.floor(S.t * 20) % 2) ? 1 : -1) : 0), y = Math.round(q.y);
+  ell(ctx, x, y, 9, '#b8895a', 4); ell(ctx, x - 1, y - 1, 8, '#c99a5e', 3.5);
+  const seat = (sx, L) => { R(sx - 2, y - 2, 6, 2, L.pants); R(sx - 2, y - 7, 5, 5, L.cape ? '#121218' : L.shirt); R(sx - 2, y - 11, 4, 4, L.skin); R(sx - 2, y - 11, 4, 1, L.hair); };
+  seat(x - 3, t.l1); if (t.occ === 2) seat(x + 3, t.l2);
+  if (S.dark > .5) { R(x, y - 3, 1, 2, '#fff3b0'); R(x, y - 4, 1, 1, '#ffcf6b'); }
+}
+
+/* ================= DJ p.45 (Lisboa) ================= */
+const FLOOR = { x0: 10.6, x1: 12.5, y0: 2.4, y1: 5.6 };
+const CONGA_WP = [[.7, .7], [9.3, .7], [9.3, 9.3], [.7, 9.3]];
+const DJ_LOOK = { skin: '#7a4a2c', hair: '#16121a', shirt: '#2f8a50', pants: '#2a2a3a' };
+function skank(loud) { const v = loud ? 1 : .4; tone(98, .22, 'triangle', .07 * v); tone(392, .07, 'square', .022 * v, .25); tone(494, .07, 'square', .018 * v, .25); tone(587, .07, 'square', .016 * v, .25); }
+function spawnDJ() {
+  const side = Math.random() < .5;
+  S.dj = { gx: side ? rnd(1, 9) : N + 1.6, gy: side ? N + 1.6 : rnd(1, 9), state: 'wander', t: 0, beat: 0, trail: [], followers: [], recruits: [], wp: 0, legs: 0, step: 0, flip: false, back: true, spawnT: 0 };
+  [S.dj.tx, S.dj.ty] = randomSpot();
+  const q = iso(5, 10); floatXY(q.x, 64, 'O DJ p.45 está na praça', '#b6ff3b');
+}
+function startConga() {
+  const d = S.dj; d.state = 'conga'; d.t = 0; d.trail = []; d.legs = 0;
+  let bi = 0, bd = 1e9; CONGA_WP.forEach((w, i) => { const k = Math.hypot(w[0] - d.gx, w[1] - d.gy); if (k < bd) { bd = k; bi = i; } });
+  d.wp = bi;
+  const q = iso(d.gx, d.gy, 30); floatXY(q.x, q.y, 'Conga!', '#ffd36b'); sfx('viral');
+  S.morale = Math.min(100, S.morale + 6);
+}
+function startParty() {
+  const d = S.dj; d.state = 'party'; d.pt = 20;
+  const spot = () => [rnd(FLOOR.x0 + .2, FLOOR.x1 - .2), rnd(FLOOR.y0 + .2, FLOOR.y1 - .2)];
+  for (const f of [...d.followers, ...d.recruits]) { [f.tx, f.ty] = spot(); f.arrived = false; f.dance = Math.random() < .3 ? 'break' : Math.random() < .5 ? 'arms' : 'bounce'; }
+  S.support = Math.min(100, S.support + 6); S.pressure = Math.min(100, S.pressure + 5);
+  const q = iso(11.5, 4, 34); floatXY(q.x - 24, q.y, 'Pista de dança!', '#ff5fc8');
+}
+function endParty() {
+  const d = S.dj, all = [...d.followers, ...d.recruits];
+  for (const f of all) joinOne(5, 5, true);
+  if (all.length) { sfx('join'); sparkle(11.5, 4, 16, 10); }
+  const q = iso(11.5, 4, 34); floatXY(q.x - 24, q.y, fmt(all.length * crowdMult()) + ' juntaram-se à acampada', '#b6ff3b');
+  d.followers = []; d.recruits = []; d.state = 'leave'; d.tx = 13; d.ty = 1.5;
+}
+function updDJ(dt) {
+  if (!S.city.dj) return;
+  if (!S.dj) { if (S.djT > 0) { S.djT -= dt; if (S.djT <= 0) spawnDJ(); } return; }
+  const d = S.dj; d.t += dt; d.beat -= dt;
+  const busy = d.state === 'conga' || d.state === 'party';
+  if (d.beat <= 0) {
+    d.beat = busy ? .5 : 1;
+    if (busy || gd(d, S.player) < 4) skank(busy);
+    if (d.state !== 'leave') { const q = iso(d.gx, d.gy, 16); S.parts.push({ x: q.x + (d.flip ? 4 : -4), y: q.y, vx: rnd(-5, 5), vy: -14, life: 1, type: 'note', col: pick(['#ff3b4e', '#ffd23a', '#3ec46d']) }); }
+  }
+  if (d.state === 'wander') {
+    if (moveEnt(d, d.tx, d.ty, .9, dt)) [d.tx, d.ty] = randomSpot();
+    if (gd(d, S.player) < .9) startConga();
+    else if (d.t > 45) { d.state = 'leave'; d.tx = N + 2; d.ty = d.gy; }
+  } else if (d.state === 'conga') {
+    const w = CONGA_WP[d.wp % 4];
+    if (moveEnt(d, w[0], w[1], 1.7, dt)) { d.wp++; d.legs++; }
+    const last = d.trail[0];
+    if (!last || Math.hypot(last[0] - d.gx, last[1] - d.gy) > .08) { d.trail.unshift([d.gx, d.gy]); if (d.trail.length > 400) d.trail.pop(); }
+    for (const a of S.arrivals) if (a.state !== 'leave' && gd(a, d) < 1.4) { a.gone = true; d.recruits.push({ gx: a.gx, gy: a.gy, look: a.look, step: 0 }); }
+    d.spawnT -= dt;
+    if (d.spawnT <= 0 && d.followers.length + d.recruits.length < 18) { d.spawnT = .7; const side = Math.random() < .5; d.recruits.push({ gx: side ? rnd(.5, 9.5) : N + 1.6, gy: side ? N + 1.6 : rnd(.5, 9.5), look: look(false), step: 0 }); }
+    const tail = d.trail[Math.min(d.trail.length - 1, (d.followers.length + 1) * 4)] || [d.gx, d.gy];
+    for (const r of d.recruits) { r.step += dt * 8; if (moveEnt(r, tail[0], tail[1], 3.2, dt, true) || Math.hypot(r.gx - tail[0], r.gy - tail[1]) < .35) { r.done = true; d.followers.push(r); } }
+    d.recruits = d.recruits.filter(r => !r.done);
+    d.followers.forEach((f, k) => {
+      const i = Math.min(d.trail.length - 1, (k + 1) * 4), p = d.trail[i], q = d.trail[Math.min(d.trail.length - 1, i + 1)] || p;
+      if (p) { face(f, p[0] - q[0], p[1] - q[1]); f.gx = p[0]; f.gy = p[1]; } f.step += dt * 8; f.moving = true; });
+    if (d.legs >= 6) startParty();
+  } else if (d.state === 'party') {
+    d.pt -= dt;
+    moveEnt(d, FLOOR.x0 - .1, (FLOOR.y0 + FLOOR.y1) / 2, 2, dt, true);
+    for (const f of d.followers) { if (!f.arrived && moveEnt(f, f.tx, f.ty, 2.4, dt, true)) { f.arrived = true; f.moving = false; } f.step += dt * 8; }
+    for (const r of d.recruits) { r.step += dt * 8; if (moveEnt(r, r.tx, r.ty, 2.6, dt, true)) { r.done = true; r.arrived = true; d.followers.push(r); } }
+    d.recruits = d.recruits.filter(r => !r.done);
+    S.morale = Math.min(100, S.morale + dt * 1.2); S.support = Math.min(100, S.support + dt * .4);
+    if (Math.random() < dt * 3) sparkle(rnd(FLOOR.x0, FLOOR.x1), rnd(FLOOR.y0, FLOOR.y1), 2, 4);
+    if (d.pt <= 0) endParty();
+  } else if (d.state === 'leave') {
+    if (moveEnt(d, d.tx, d.ty, 1.2, dt, true)) { S.dj = null; S.djT = rnd(110, 150); }
+  }
+}
+function drawDJ(d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+  const bob = (d.state !== 'leave' && Math.floor(S.t * 4) % 2) ? 1 : 0;
+  const pack = () => { const px = d.flip ? x + 2 : x - 6; R(px, y - 12 - bob, 5, 8, '#16121a'); circ(ctx, px + 2.5, y - 10 - bob, 1.5, '#39e1ff'); circ(ctx, px + 2.5, y - 6 - bob, 1.2, '#39e1ff'); R(px + 4, y - 17 - bob, 1, 5, '#9aa0ad'); R(px + 4, y - 18 - bob, 1, 1, '#ff3b4e'); };
+  if (!d.back) pack();
+  guy(x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
+  if (d.back) pack();
+  R(x - 3, y - 18 - bob, 7, 1, '#e2283b'); R(x - 3, y - 17 - bob, 7, 1, '#ffd23a'); R(x - 3, y - 16 - bob, 7, 1, '#3ec46d');
+  if (d.state === 'wander') drawFloat({ x: q.x, y: q.y - 28, text: 'DJ p.45', color: '#b6ff3b', t: 1 });
+}
+function drawDancer(f, i) {
+  const q = iso(f.gx, f.gy), x = Math.round(q.x), y = Math.round(q.y), L = f.look;
+  if (!f.arrived || !f.dance) { guy(x, y, { ...L, moving: true, step: f.step, flip: f.flip, back: f.back }); return; }
+  const ph = Math.floor(S.t * 4 + i) % 4, shirt = L.cape ? '#121218' : L.shirt;
+  if (f.dance === 'break') {
+    R(x - 5, y - 1, 11, 2, 'rgba(30,10,70,.28)');
+    if (ph < 2) { const s = ph ? 1 : -1; R(x - 2, y - 4, 5, 4, L.skin); R(x - 2, y - 1, 5, 1, L.hair); R(x - 3, y - 9, 7, 5, shirt); R(x - 3 + s, y - 14, 2, 5, L.pants); R(x + 2 + s, y - 14, 2, 5, L.pants); }
+    else { const s = ph === 2 ? -1 : 1; R(x - 7, y - 5, 4, 4, L.skin); R(x - 3, y - 5, 6, 4, shirt); R(x + 3, y - 6 + s * 2, 5, 2, L.pants); R(x + 3, y - 4 - s * 2, 5, 2, L.pants); }
+    return;
+  }
+  const b = ph % 2;
+  guy(x, y - b, { ...L, moving: b === 0, step: ph, flip: ph > 1, back: false });
+  if (f.dance === 'arms') { R(x - 4, y - 15 - b - (ph % 2), 1, 5, L.skin); R(x + 4, y - 15 - b - ((ph + 1) % 2), 1, 5, L.skin); }
+}
+
+/* ================= update ================= */
+const keys = {};
+function update(dt) {
+  S.t += dt; S.clock += dt / HOUR;
+  const hr = S.clock % 24; S.dark = darkness(hr);
+  const p = S.player;
+  const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  if (kx || ky) { // screen-relative keys to world
+    let wx = (kx + ky) / 2, wy = (ky - kx) / 2; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
+    slideMove(p, p.gx + wx, p.gy + wy, 3, dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
+  } else if (!moveEnt(p, p.tx, p.ty, 3, dt)) {} else p.moving = false;
+  p.gx = clamp(p.gx, .15, 9.85); p.gy = clamp(p.gy, .15, 9.85);
+
+  S.chainCd = Math.max(0, S.chainCd - dt); S.liveCd = Math.max(0, S.liveCd - dt); S.live = Math.max(0, S.live - dt); S.asmCd = Math.max(0, S.asmCd - dt);
+  if (S.chain) { S.chain.t -= dt; if (S.chain.t <= 0) S.chain = null; }
+  for (const t of S.tents) { t.hit = false; if (t.pop > 0) t.pop = Math.max(0, t.pop - dt); }
+  for (const st of S.stations) st.cd = Math.max(0, st.cd - dt);
+
+  // schedule
+  const warnH = S.perks.has('vigias') ? 3 : 1.5;
+  if (!S.raid && !S.warned && S.clock >= S.nextRaid - warnH) { S.warned = true; sfx('siren'); }
+  if (!S.raid && S.clock >= S.nextRaid) { startRaid(false); S.nextRaid += 24; }
+  if (S.clock >= S.nextPatrol) { if (S.city.patrols && !S.raid) startRaid(true); S.nextPatrol += 24; }
+  if (S.clock >= S.nextLimit) { S.nextLimit += 24; const c = iso(5, 10, 0); floatXY(c.x, 60, 'PSP: limite legal 00:30', '#9ecbff'); }
+
+  // arrivals
+  const night = S.dark > .8 ? .45 : 1, evening = (hr >= 17 && hr < 22) ? 1.3 : 1;
+  const slow = S.city.slowStart ? clamp(.35 + people() / 28, .35, 1.6) : 1;
+  S.arrivalT -= dt * night * evening * slow;
+  if (S.arrivalT <= 0) { spawnArrival(); S.arrivalT = Math.max(1.1, 5.5 - S.support * .045) * rnd(.7, 1.3); }
+  const joinR = S.perks.has('megafone') ? 1.0 : .6, info = stationOf('info');
+  for (const a of S.arrivals) {
+    if (a.state !== 'leave') {
+      if (gd(a, p) < joinR) { a.gone = true; joinOne(a.gx, a.gy); continue; }
+      if (info && gd(a, info) < 2.2) { a.infoT += dt; if (a.infoT > 1.2) { a.gone = true; joinOne(a.gx, a.gy); continue; } }
+    }
+    if (a.state === 'walk') { if (moveEnt(a, a.tx, a.ty, 1.3, dt)) { a.moving = false; if (a.auto) { a.gone = true; joinOne(a.gx, a.gy); } else a.state = 'wait'; } }
+    else if (a.state === 'wait') { a.wait -= dt; a.moving = false; if (a.wait <= 0) a.state = 'leave'; }
+    else if (moveEnt(a, a.ex, a.ey, 1.4, dt, true)) a.gone = true;
+  }
+  S.arrivals = S.arrivals.filter(a => !a.gone);
+
+  // donations
+  S.crateT -= dt;
+  if (S.crateT <= 0) { spawnCrate(); S.crateT = (S.perks.has('caixa') ? rnd(6, 9) : rnd(9, 14)); }
+  for (const c of S.crates) {
+    c.life -= dt;
+    if (gd(c, p) < .65) { S.supplies = Math.min(20, S.supplies + 2); if (!stationOf('kitchen')) S.morale = Math.min(100, S.morale + 5); float(c.gx, c.gy, c.label + ' +2', '#ffd36b'); sparkle(c.gx, c.gy, 6, 4); sfx('crate'); c.life = 0; }
+  }
+  S.crates = S.crates.filter(c => c.life > 0);
+
+  // kitchen
+  const kit = stationOf('kitchen');
+  if (kit) { S.kitchenT -= dt; if (S.kitchenT <= 0) { S.kitchenT = 14; if (S.supplies > 0) { S.supplies--; S.morale = Math.min(100, S.morale + 7); steam(kit, 6); } } if (Math.random() < dt * 2) steam(kit, 1); }
+
+  // concert
+  if (S.concert) {
+    const c = S.concert; c.t -= dt; c.spawn -= dt;
+    if (c.spawn <= 0 && c.t > 2) { c.spawn = 2; spawnArrival({ auto: true, target: [clamp(c.st.gx + rnd(-1.2, 1.2), .3, 9.7), clamp(c.st.gy + rnd(.8, 1.8), .3, 9.7)] }); }
+    if (Math.random() < dt * 6) { const q = iso(c.st.gx, c.st.gy, 22); S.parts.push({ x: q.x + rnd(-8, 8), y: q.y, vx: rnd(-6, 6), vy: -16, life: 1.2, type: 'note', col: pick(['#ff5fc8', '#39e1ff', '#b6ff3b', '#ffd36b']) }); }
+    if (c.t <= 0) S.concert = null;
+  }
+
+  // bikes
+  S.bikeT -= dt;
+  if (S.bikeT <= 0 && !S.bikes) { if (S.support >= 12) startBikes(); S.bikeT = rnd(65, 100); }
+  if (S.bikes) {
+    S.bikes.t += dt;
+    for (const r of S.bikes.riders) { r.s += dt * .55; const [x, y] = bikePos(r.s); const dx = x - r.gx, dy = y - r.gy; if (Math.abs(dx - dy) > .001) r.flip = (dx - dy) < 0; r.gx = x; r.gy = y; }
+    if (S.bikes.t > S.bikes.dur) S.bikes = null;
+  }
+
+  // donkey tandem (Lisboa)
+  if (S.tandemT > 0) { S.tandemT -= dt; if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: 11.2, wp: [[4.5, 11.2], [5.5, 10.5]], state: 'in', cargo: true, step: 0, flip: false }; const c = iso(3, 11, 20); floatXY(c.x, c.y, 'Vem aí um tandem…', '#ffd36b'); } }
+  if (S.tandem) {
+    const t = S.tandem;
+    if ((t.state === 'in' || t.state === 'leave') && t.wp.length) { const w = t.wp[0]; if (moveEnt(t, w[0], w[1], 2.2, dt, true)) { t.wp.shift(); if (!t.wp.length) { if (t.state === 'in') { t.state = 'wait'; t.waitT = 20; } else S.tandem = null; } } }
+    else if (t.state === 'leave') S.tandem = null;
+    else if (t.state === 'wait') { t.waitT -= dt; if (t.waitT <= 0) hoist(true); }
+  }
+
+  // legal team
+  if (S.releaseT > 0) { S.releaseT -= dt; if (S.releaseT <= 0) { for (let i = 0; i < S.releaseN; i++) spawnArrival({ auto: true }); S.detained = Math.max(0, S.detained - S.releaseN); const c = iso(5, 10); floatXY(c.x, 70, S.releaseN + ' libertadas', '#b6ff3b'); } }
+
+  // raid
+  const v = S.van;
+  if (v) {
+    if (v.state === 'arrive') {
+      if (S.bikes) { if (Math.random() < dt) { const q = iso(0, 11); floatXY(q.x + 20, q.y - 30, 'Bicicletas travam a carrinha', '#39e1ff'); } }
+      else if (moveEnt(v, v.tx, v.gy, 3, dt, true)) {
+        v.state = 'parked';
+        let n = v.patrol ? 2 + Math.floor(cityIdx / 2) : Math.min(10, 3 + cityIdx + Math.floor(S.tents.length / 5));
+        if (S.swept) n = Math.max(1, n - 2);
+        for (let i = 0; i < n; i++) S.police.push({ gx: v.gx + rnd(-.6, .6), gy: 10.7, state: 'walk', target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true });
+        const q = iso(5, 10); floatXY(q.x, 64, v.patrol ? 'Patrulha!' : 'Rusga de madrugada!', '#ff8aa8');
+      }
+    } else if (v.state === 'parked') { S.raidT += dt; if (!S.police.length) v.state = 'leave'; }
+    else if (moveEnt(v, 15, v.gy, 3, dt, true)) { S.van = null; S.raid = false; onRaidEnd(); }
+  }
+  const spBase = 1.15 * S.city.police * (S.perks.has('vigias') ? .85 : 1) * (S.bikes ? .5 : 1);
+  const shielded = t => S.chain && Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r;
+  const pushOut = o => { const c = S.chain, dx = o.gx - c.gx, dy = o.gy - c.gy, d = Math.hypot(dx, dy) || 1; if (d < c.r + .25) { o.gx = c.gx + dx / d * (c.r + .25); o.gy = c.gy + dy / d * (c.r + .25); return true; } return false; };
+  for (const o of S.police) {
+    if (S.raidT > (S.swept ? 18 : 30) && o.state !== 'back') o.state = 'back';
+    if (S.freeze > 0) { o.moving = false; continue; }
+    if (o.state === 'walk' || o.state === 'dismantle') {
+      if (!o.target || !S.tents.includes(o.target)) { o.target = nearestTent(o, false); o.state = 'walk'; o.prog = 0; if (!o.target) o.state = 'back'; }
+    }
+    if (o.state === 'walk') {
+      const t = o.target; let sp = spBase; if (gd(o, p) < .9) sp *= .35;
+      if (gd(o, t) < .4) { o.state = 'dismantle'; o.prog = 0; o.moving = false; }
+      else { moveEnt(o, t.gx, t.gy + .3, sp, dt); o.blocked = false;
+        if (shielded(t) && pushOut(o)) { o.blocked = true; o.moving = false; o.re += dt; if (o.re > 1.2) { const alt = nearestTent(o, true); if (alt) o.target = alt; o.re = 0; } } }
+    } else if (o.state === 'dismantle') {
+      const t = o.target; let rate = gd(o, p) < .8 ? .35 : 1;
+      if (shielded(t)) { rate = 0; pushOut(o); o.state = 'walk'; }
+      o.prog += dt * rate; t.hit = rate > 0;
+      if (o.prog >= 2.2) { o.carry = removeTent(t, true) > 0; o.state = 'back'; }
+    } else if (o.state === 'back') {
+      if (moveEnt(o, S.van ? S.van.gx : 4, 10.8, 1.3, dt)) o.done = true;
+    }
+  }
+  S.police = S.police.filter(o => !o.done);
+
+  // residents (visual life)
+  const want = Math.min(16, S.dark > .8 ? Math.ceil(people() / 3) : people());
+  while (S.residents.length < want && S.tents.length) { const t = pick(S.tents); S.residents.push({ gx: t.gx + rnd(-.3, .3), gy: t.gy + .4, tx: t.gx, ty: t.gy, wait: rnd(0, 3), look: look(S.city.students), step: 0 }); }
+  if (S.residents.length > want) S.residents.length = Math.max(0, want);
+  for (const r of S.residents) {
+    if (r.wait > 0) { r.wait -= dt; r.moving = false; continue; }
+    if (moveEnt(r, r.tx, r.ty, .8, dt)) {
+      r.wait = rnd(1.5, 5); r.moving = false;
+      if (S.concert) { r.tx = clamp(S.concert.st.gx + rnd(-1.3, 1.3), .3, 9.7); r.ty = clamp(S.concert.st.gy + rnd(.7, 1.8), .3, 9.7); }
+      else if (S.tents.length) { const t = pick(S.tents); r.tx = clamp(t.gx + rnd(-.6, .6), .3, 9.7); r.ty = clamp(t.gy + rnd(.3, .7), .3, 9.7); }
+      if (blockedAt(r.tx, r.ty)) { r.tx = r.gx; r.ty = r.gy; }
+    }
+  }
+
+  updDJ(dt);
+  updEvents(dt, hr);
+
+  // meters
+  S.morale = Math.max(0, S.morale - dt * (.5 + S.tents.length * .012) * (1 + .4 * S.dark) * (S.perks.has('turnos') ? .7 : 1));
+  if (S.morale < 20) { S.leaveT -= dt; if (S.leaveT <= 0 && S.tents.length) { S.leaveT = 3; const t = pick(S.tents); t.occ--; float(t.gx, t.gy, 'Foi para casa', '#d6d0e6'); sfx('leave'); if (t.occ <= 0) removeTent(t, false); } }
+  if (S.support > 10) S.support = Math.max(10, S.support - dt * .22);
+  const dk = S.donkey === 'giant' ? 1.25 : S.donkey === 'small' ? 1.1 : 1;
+  S.pressure = Math.min(100, S.pressure + dt * (.032 * Math.sqrt(S.tents.length) + .0013 * S.support) * dk * (S.perks.has('cartazes') ? 1.2 : 1));
+
+  // tips near landmarks
+  S.tipT -= dt;
+  if (S.city.donkey && S.tipT <= 0 && Math.hypot(p.gx - 5, p.gy - 5.9) < 1.1) { S.tipT = 12; const c = iso(5, 5.6, 30); floatXY(c.x, c.y, 'Faleceu Art.º 65', '#f2efe6'); }
+
+  for (const f of S.floats) { f.t -= dt; f.y -= 11 * dt; }
+  S.floats = S.floats.filter(f => f.t > 0);
+  for (const q of S.parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.type === 'spark') q.vy += 40 * dt; }
+  S.parts = S.parts.filter(q => q.life > 0);
+
+  if (people() === 0) return gameOver();
+  if (S.pressure >= 100) return levelClear();
+}
+
+/* ================= characters ================= */
+function guy(x, y, o) {
+  x = Math.round(x); y = Math.round(y);
+  const f = o.moving ? (Math.floor(o.step || 0) % 3) : 0;
+  R(x - 3, y - 1, 7, 2, 'rgba(30,10,70,.28)');
+  const lp = o.pants || '#2b2d55';
+  R(x - 2, y - 5 + (f === 1 ? 1 : 0), 2, 4 - (f === 1 ? 1 : 0), lp); R(x + 1, y - 5 + (f === 2 ? 1 : 0), 2, 4 - (f === 2 ? 1 : 0), lp);
+  if (o.cape) { R(x - 3, y - 10, 7, 7, '#121218'); R(x - 2, y - 10, 1, 6, '#2a2a36'); }
+  else { R(x - 3, y - 10, 7, 5, o.shirt); R(x + 1, y - 10, 2, 5, shade(o.shirt, .82)); }
+  R(x - 3, y - 6, 1, 1, o.skin); R(x + 3, y - 6, 1, 1, o.skin);
+  R(x - 2, y - 14, 5, 4, o.skin);
+  if (o.mask) { R(x - 2, y - 15, 5, 5, '#16121a'); if (!o.back) { R(x - 1, y - 12, 3, 1, o.skin); R(x - 1, y - 12, 1, 1, '#ffffff'); R(x + 1, y - 12, 1, 1, '#ffffff'); } }
+  else if (o.back) R(x - 2, y - 15, 5, 4, o.hair);
+  else { R(x - 2, y - 15, 5, 2, o.hair); R(o.flip ? x + 2 : x - 2, y - 13, 1, 2, o.hair); R(x - 1, y - 12, 1, 1, '#1b1464'); R(x + 1, y - 12, 1, 1, '#1b1464'); }
+}
+const WHEEL = [[-1, -3], [0, -3], [1, -3], [2, -2], [3, -1], [3, 0], [3, 1], [2, 2], [1, 3], [0, 3], [-1, 3], [-2, 2], [-3, 1], [-3, 0], [-3, -1], [-2, -2]];
+function wheel(cx, cy) { for (const [a, b] of WHEEL) R(cx + a, cy + b, 1, 1, '#1b1464'); R(cx, cy, 1, 1, '#9aa0ad'); }
+function bike(x, y, fl, col, len) {
+  x = Math.round(x); y = Math.round(y);
+  R(x - len - 2, y, len * 2 + 5, 1, 'rgba(30,10,70,.25)');
+  wheel(x - len, y - 3); wheel(x + len, y - 3);
+  R(x - len, y - 4, len * 2, 1, col); R(x - len + 2, y - 6, len * 2 - 4, 1, col);
+  const front = fl ? x - len : x + len - 1; R(front, y - 9, 1, 6, col); R(front - 1, y - 9, 3, 1, '#1b1464');
+}
+function drawPlayer() {
+  const p = S.player, q = iso(p.gx, p.gy);
+  // holographic ring
+  for (let a = 0; a < 36; a++) { const t = a / 36 * Math.PI * 2; ctx.fillStyle = `hsl(${(a * 10 + S.t * 140) % 360} 100% 66%)`; ctx.fillRect(Math.round(q.x + Math.cos(t) * 7), Math.round(q.y + Math.sin(t) * 3.5), 1, 1); }
+  guy(q.x, q.y, { skin: '#e0b090', hair: '#2b1a10', shirt: '#b6ff3b', pants: '#3a2f6b', moving: p.moving, step: p.step, flip: p.flip, back: p.back });
+  const x = Math.round(q.x), y = Math.round(q.y);
+  R(p.flip ? x - 6 : x + 3, y - 9, 3, 2, '#ff5fc8'); R(p.flip ? x - 7 : x + 6, y - 10, 1, 4, '#ff5fc8');
+  if (S.live > 0) { R(p.flip ? x + 3 : x - 5, y - 11, 2, 3, '#1b1464'); R(p.flip ? x + 3 : x - 5, y - 11, 1, 1, '#ff3b3b'); }
+  const b = Math.floor(S.t * 3) % 2;
+  R(x - 2, y - 22 - b, 5, 1, '#ff5fc8'); R(x - 1, y - 21 - b, 3, 1, '#ff5fc8'); R(x, y - 20 - b, 1, 1, '#ff5fc8');
+}
+function drawCop(o) {
+  const q = iso(o.gx, o.gy), x = Math.round(q.x), y = Math.round(q.y);
+  guy(x, y, { skin: '#d9a37a', hair: '#141a33', shirt: '#1d2747', pants: '#141a33', moving: o.moving, step: o.step, flip: o.flip, back: o.back });
+  R(x - 3, y - 16, 7, 4, '#141a33'); if (!o.back) R(x - 2, y - 13, 5, 1, '#7fe7ff');
+  ctx.fillStyle = 'rgba(190,225,255,.55)'; const sx = o.flip ? x - 6 : x + 2; ctx.fillRect(sx, y - 12, 5, 10); R(sx, y - 12, 5, 1, '#e6f6ff');
+  if (o.state === 'back' && o.carry) guy(x + (o.flip ? 6 : -6), y, { skin: '#d9a37a', hair: '#3a2a1a', shirt: '#9a9fb0', pants: '#55596b', moving: true, step: o.step });
+  if (o.state === 'dismantle') { R(x - 6, y - 21, 12, 3, '#1b1464'); R(x - 5, y - 20, Math.round(10 * o.prog / 2.2), 1, '#ff5fc8'); }
+}
+function drawArrival(a) {
+  const q = iso(a.gx, a.gy);
+  guy(q.x, q.y, { ...a.look, moving: a.moving, step: a.step, flip: a.flip, back: a.back });
+  if (a.state === 'wait' && (a.wait > 3 || Math.floor(S.t * 6) % 2)) {
+    const x = Math.round(q.x), y = Math.round(q.y);
+    R(x - 4, y - 25, 9, 8, '#1b1464'); R(x - 3, y - 24, 7, 6, '#ffffff'); R(x - 3, y - 24, 7, 2, '#c9f6ff');
+    R(x, y - 23, 1, 3, '#ff3b8b'); R(x, y - 19, 1, 1, '#ff3b8b'); R(x - 1, y - 17, 2, 1, '#1b1464');
+    if (a.rent) drawFloat({ x: q.x, y: q.y - 33, text: a.rent + '€ quarto', color: '#ffd36b', t: 1 });
+  }
+}
+function drawTent(t) {
+  if (S.city.noTents) return drawGroup(t);
+  const q = iso(t.gx, t.gy); let cx = Math.round(q.x); const cy = Math.round(q.y);
+  if (t.hit) cx += (Math.floor(S.t * 20) % 2) ? 1 : -1;
+  const lift = Math.round(t.pop * 10);
+  ell(ctx, cx, cy, 9, 'rgba(30,10,70,.28)');
+  for (let dx = -8; dx < 8; dx++) {
+    const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / 8) ** 2)), k = (dx + .5) / 8;
+    const col = k < -.3 ? shade(t.color, 1.14) : k < .35 ? t.color : shade(t.color, .76);
+    vl(ctx, cx + dx, cy - 1 - lift - 11 * e, cy - 1 - lift + 3.5 * e, col);
+  }
+  R(cx - 4, cy - 11 - lift, 3, 1, 'rgba(255,255,255,.7)'); R(cx - 6, cy - 9 - lift, 2, 1, 'rgba(255,255,255,.5)');
+  R(cx, cy - 12 - lift, 1, 1, '#1b1464');
+  const dc = S.dark > .5 ? '#ffcf6b' : '#2a2350';
+  R(cx - 4, cy - 5 - lift, 4, 5, dc); R(cx - 3, cy - 6 - lift, 2, 1, dc);
+  if (t.occ === 2) R(cx + 4, cy - 4 - lift, 1, 1, '#ffffff');
+}
+function drawCrate(c) {
+  if (c.life < 3 && Math.floor(S.t * 6) % 2) return;
+  boxc(ctx, c.gx, c.gy, .16, 0, 6, '#b07a42');
+  const q = iso(c.gx, c.gy, 6); R(q.x - 3, q.y - 1, 6, 1, '#7a4f25');
+  if (Math.floor(S.t * 3) % 2) { R(q.x + 4, q.y - 8, 1, 3, '#ffffff'); R(q.x + 3, q.y - 7, 3, 1, '#ffffff'); }
+}
+function gazebo(st, canopy, stripe, inner) {
+  const x0 = st.gx - .42, x1 = st.gx + .42, y0 = st.gy - .42, y1 = st.gy + .42;
+  for (const [a, b] of [[x0, y0], [x1, y0], [x0, y1]]) { const q = iso(a, b); vl(ctx, Math.round(q.x), q.y - 18, q.y, '#e9e6f2'); }
+  inner();
+  for (let i = 0; i < 4; i++) { const a = x0 + (x1 - x0) * i / 4, b = x0 + (x1 - x0) * (i + 1) / 4, c = i % 2 ? stripe : canopy; box(ctx, a, y0, b, y1, 18, 3, shade(c, 1.05), shade(c, .88), shade(c, .74)); }
+  const q = iso(x1, y1); vl(ctx, Math.round(q.x), q.y - 18, q.y, '#e9e6f2');
+}
+function badge(st, col, glyph) {
+  const q = iso(st.gx, st.gy, 28 + (Math.floor(S.t * 2) % 2)); circ(ctx, q.x, q.y, 5, '#1b1464'); circ(ctx, q.x, q.y, 4, col); R(q.x - 2, q.y - 3, 3, 1, 'rgba(255,255,255,.7)'); glyph(Math.round(q.x), Math.round(q.y));
+}
+function drawStation(st) {
+  const k = st.k;
+  if (k === 'kitchen') gazebo(st, '#ff8a2a', '#ffffff', () => { boxc(ctx, st.gx, st.gy, .3, 0, 7, '#a8774a'); const q = iso(st.gx, st.gy); cyl(ctx, q.x, q.y - 7, 4, 5, '#9aa0ad', '#3a3160'); });
+  else if (k === 'info') { gazebo(st, '#2f8fff', '#ffffff', () => { boxc(ctx, st.gx, st.gy, .3, 0, 7, '#4f7fd0'); const q = iso(st.gx, st.gy, 7); R(q.x - 3, q.y - 1, 2, 1, '#ffffff'); R(q.x + 1, q.y, 2, 1, '#ffd36b'); }); badge(st, '#39e1ff', (x, y) => { R(x, y - 3, 1, 1, '#1b1464'); R(x, y - 1, 1, 3, '#1b1464'); }); }
+  else if (k === 'aid') { gazebo(st, '#ffffff', '#ffe3ec', () => boxc(ctx, st.gx, st.gy, .3, 0, 7, '#e9e6f2')); badge(st, '#ffffff', (x, y) => { R(x - 1, y - 3, 3, 7, '#ff3b5c'); R(x - 3, y - 1, 7, 3, '#ff3b5c'); }); }
+  else if (k === 'stage') {
+    box(ctx, st.gx - .48, st.gy - .48, st.gx + .48, st.gy - .38, 6, 26, '#ff5fc8', '#d23fa0', '#a8307f');
+    const bq = iso(st.gx, st.gy - .48, 22); for (let i = 0; i < 5; i++) R(bq.x - 8 + i * 4, bq.y - 2 + (i % 2) * 4 + i * 2, 1, 1, '#ffffff');
+    box(ctx, st.gx - .48, st.gy - .48, st.gx + .48, st.gy + .48, 0, 6, '#9a7be8', '#6d4fb4', '#553b92');
+    boxc(ctx, st.gx - .3, st.gy + .3, .12, 6, 9, '#2a2350'); boxc(ctx, st.gx + .3, st.gy - .3, .12, 6, 9, '#2a2350');
+    if (S.concert && S.concert.st === st) {
+      const q = iso(st.gx, st.gy, 6); guy(q.x, q.y, { skin: '#a8714a', hair: '#ff5fc8', shirt: '#39e1ff', pants: '#1b1464', moving: Math.floor(S.t * 4) % 2 === 0, step: S.t * 6 });
+      R(q.x - 4, q.y - 8, 6, 2, '#ffd36b');
+    } else { const q = iso(st.gx, st.gy, 6); R(q.x, q.y - 12, 1, 12, '#9aa0ad'); R(q.x - 1, q.y - 13, 3, 2, '#1b1464'); }
+  }
+}
+
+/* ================= landmarks ================= */
+function drawLamp(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 1, 3, 1, '#2a2350'); vl(ctx, x, y - 24, y, '#2a2350'); R(x - 2, y - 27, 5, 3, '#2a2350'); R(x - 1, y - 26, 3, 2, S.dark > .3 ? '#fff3b0' : '#dfe6f5'); }
+function drawTree(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); ell(ctx, x, y, 9, 'rgba(30,10,70,.25)'); R(x - 1, y - 14, 2, 14, '#6b4a2b'); circ(ctx, x, y - 22, 9, '#2f8a50'); circ(ctx, x - 3, y - 25, 5, '#57c46e'); circ(ctx, x + 3, y - 19, 4, '#25703f'); R(x - 5, y - 28, 2, 1, '#b6ff3b'); }
+function drawPalm(d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); ell(ctx, x, y, 8, 'rgba(30,10,70,.25)');
+  for (let i = 0; i < 26; i++) R(x + Math.round(Math.sin(i / 8) * 2), y - i, 2, 1, i % 3 ? '#9a7a4a' : '#7a5a32');
+  const tx = x + Math.round(Math.sin(26 / 8) * 2), ty = y - 26;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [.7, -.5], [-.7, -.5], [.5, .4], [-.5, .4], [0, -1]]) for (let k = 0; k < 10; k++) R(tx + Math.round(dx * k), ty + Math.round(dy * k + k * k * .07), 2, 1, k > 6 ? '#57c46e' : '#2e9a5a');
+}
+function drawFountain(gx, gy, big) {
+  const q = iso(gx, gy), r = big ? 20 : 13;
+  cyl(ctx, q.x, q.y, r, 5, '#cfc8b6', '#dad3c2'); ell(ctx, q.x, q.y - 5, r - 2, '#59c3f5');
+  for (let i = 0; i < 4; i++) R(q.x - r + 5 + ((Math.floor(S.t * 3) + i * 5) % (2 * r - 10)), q.y - 6 + (i % 2) * 2, 3, 1, '#c9f6ff');
+  cyl(ctx, q.x, q.y - 5, 3, 9, '#5f7d70'); cyl(ctx, q.x, q.y - 14, big ? 9 : 7, 2, '#5f7d70', '#59c3f5');
+  if (big) { cyl(ctx, q.x, q.y - 16, 2, 8, '#5f7d70'); cyl(ctx, q.x, q.y - 24, 5, 2, '#5f7d70', '#59c3f5'); }
+  const top = big ? 26 : 16; cyl(ctx, q.x, q.y - top, 2, 5, '#5f7d70');
+  const j = Math.floor(S.t * 8) % 3; R(q.x, q.y - top - 9 + j, 1, 4, '#c9f6ff'); R(q.x - 3 - j, q.y - top - 3 + j, 1, 2, '#c9f6ff'); R(q.x + 3 + j, q.y - top - 3 + j, 1, 2, '#c9f6ff');
+}
+function drawCorcel(d) {
+  box(ctx, d.gx - .35, d.gy - .35, d.gx + .35, d.gy + .35, 0, 9, '#77757f', '#5b5964', '#45434e');
+  const q = iso(d.gx - .35, d.gy + .35, 1); R(q.x + 2, q.y - 8, 1, 6, 'rgba(255,255,255,.35)');
+  const t = iso(d.gx, d.gy, 9); bmp(ctx, HORSE, HPAL, t.x - 8, t.y - 15, 1, !!d.flip);
+}
+function drawColumn() {
+  // lower step and the four seated virtues
+  box(ctx, 4.1, 4.1, 5.9, 5.9, 0, 5, '#d9d3c3', '#c9c2b0', '#b4ac99');
+  const v0 = iso(4.3, 4.3, 5); bmp(ctx, VIRTUE, VPAL, v0.x - 3, v0.y - 8);
+  box(ctx, 4.45, 4.45, 5.55, 5.55, 5, 24, '#ebe6d8', '#d8d1bf', '#c3bba7');
+  // plaque, posters and the mattress
+  panel('L', 5.55, 5.0, 22, 10, 6, (i, h) => '#f5f1e6'); panel('L', 5.55, 5.0, 25, 8, 1, '#3a3160'); panel('L', 5.55, 5.0, 23, 8, 1, '#3a3160');
+  panel('L', 5.55, 4.68, 12, 4, 5, '#ffd23a'); panel('R', 5.55, 4.75, 14, 5, 6, '#16121a'); panel('R', 5.55, 4.75, 13, 3, 1, '#ff4f8b'); panel('R', 5.55, 5.25, 15, 4, 4, '#f2efe6');
+  panel('R', 5.9, 4.85, 0, 13, 9, (i) => (i % 3 === 0 ? '#dad6cc' : '#f3f1ea')); panel('R', 5.9, 4.85, 3, 9, 2, (i) => (i % 2 ? '#16121a' : '#f3f1ea'));
+  // drum, column, statue
+  const c = iso(5, 5, 29);
+  cyl(ctx, c.x, c.y, 7, 9, '#efe9da'); R(c.x - 2, c.y - 7, 4, 4, '#d8d1bf');
+  cyl(ctx, c.x, c.y - 9, 5, 4, '#e6dfcd');
+  cyl(ctx, c.x, c.y - 13, 3, 46, '#f3eee2'); R(c.x - 1, c.y - 58, 1, 44, '#d8d1bf'); R(c.x + 1, c.y - 58, 1, 44, '#c9c1ad');
+  cyl(ctx, c.x, c.y - 59, 4, 3, '#efe9da');
+  bmp(ctx, KING, KPAL, c.x - 3, c.y - 72); R(c.x - 1, c.y - 71, 1, 3, '#7aa092');
+  for (const [a, b] of [[5.7, 4.3], [4.3, 5.7], [5.7, 5.7]]) { const v = iso(a, b, 5); bmp(ctx, VIRTUE, VPAL, v.x - 3, v.y - 8, 1, a > b); }
+  // the donkey head, hanging under the plaque
+  if (S.donkey === 'small') { const h = iso(5.0, 5.55, 31); bmp(ctx, DONKEY, DPAL, h.x - 9, h.y, 1); }
+  else if (S.donkey === 'giant') { const h = iso(5.0, 5.55, 50); bmp(ctx, DONKEY, DPAL, h.x - 18, h.y, 2); }
+}
+function drawBin(d) {
+  boxc(ctx, d.gx, d.gy, .17, 0, 9, '#3e8e5a'); const q = iso(d.gx, d.gy, 9); R(q.x - 3, q.y - 1, 6, 1, '#2a6a40');
+  if (S.donkey === 'binned' || S.donkey === 'giant') bmp(ctx, DONKEY.slice(0, 10), DPAL, q.x - 9, q.y - 9, 1);
+}
+function drawTandem(t) {
+  const q = iso(t.gx, t.gy), x = Math.round(q.x), y = Math.round(q.y), fl = t.flip;
+  bike(x, y, fl, '#39e1ff', 9);
+  guy(x + (fl ? -4 : 4), y - 5, { skin: '#d9a37a', hair: '#16121a', shirt: '#2a2a3a', pants: '#16121a', mask: true, moving: t.state !== 'wait', step: S.t * 8, flip: fl });
+  if (t.cargo) bmp(ctx, DONKEY, DPAL, x + (fl ? 5 : -5) - 18, y - 56, 2, false);
+  if (t.state === 'wait' && Math.floor(S.t * 4) % 2) { R(x - 4, y - 66, 9, 8, '#1b1464'); R(x - 3, y - 65, 7, 6, '#ffd36b'); R(x, y - 64, 1, 3, '#1b1464'); R(x, y - 60, 1, 1, '#1b1464'); }
+}
+function drawVan() {
+  const v = S.van, gx = v.gx, gy = v.gy;
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 1, 5, '#eef0f6', '#d5d9e6', '#b7bccd');
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 6, 2, '#2f6bff', '#2f6bff', '#2552c8');
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 8, 7, '#f6f7fb', '#dde0ea', '#bfc4d4');
+  box(ctx, gx + .45, gy - .28, gx + .76, gy + .28, 10, 4, null, '#2a3550', '#24324f');
+  const f = Math.floor(S.t * 6) % 2;
+  box(ctx, gx - .15, gy - .12, gx, gy + .12, 15, 2, f ? '#3b7bff' : '#ff3b5c', f ? '#2f62cc' : '#cc2f49', f ? '#2f62cc' : '#cc2f49');
+  box(ctx, gx, gy - .12, gx + .15, gy + .12, 15, 2, f ? '#ff3b5c' : '#3b7bff', f ? '#cc2f49' : '#2f62cc', f ? '#cc2f49' : '#2f62cc');
+  for (const [a, b] of [[gx - .5, gy + .3], [gx + .5, gy + .3]]) { const q = iso(a, b); R(q.x - 2, q.y - 2, 4, 3, '#1b1464'); }
+}
+
+/* ================= render ================= */
+const STARS = Array.from({ length: 26 }, () => [Math.random() * W, Math.random() * 90, Math.random() * 6]);
+function drawFloat(f) {
+  ctx.font = '8px Silkscreen, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const T = f.text.toUpperCase(), w = Math.ceil(ctx.measureText(T).width) + 8, x = clamp(Math.round(f.x - w / 2), 1, W - w - 1), y = Math.round(f.y - 5);
+  ctx.globalAlpha = Math.min(1, f.t * 2);
+  R(x, y, w, 11, '#0b0a0a'); R(x, y + 10, w, 1, f.color);
+  ctx.fillStyle = f.color; ctx.fillText(T, x + w / 2, y + 6);
+  ctx.globalAlpha = 1;
+}
+function draw() {
+  const d = S.dark;
+  const sky = ctx.createLinearGradient(0, 0, 0, 140);
+  sky.addColorStop(0, mix('#7fd6ff', '#0d0730', d)); sky.addColorStop(.6, mix('#c9b8ff', '#2a1458', d)); sky.addColorStop(1, mix('#ffd1f2', '#3b1a6e', d));
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  if (d > .2) for (const [x, y, k] of STARS) { const on = (Math.floor(S.t * 2 + k) % 4) !== 0; ctx.globalAlpha = d; R(x, y, 1, 1, '#ffffff'); if (on && k > 4) { R(x - 1, y, 3, 1, '#c9f6ff'); R(x, y - 1, 1, 3, '#c9f6ff'); } ctx.globalAlpha = 1; }
+  else { ctx.globalAlpha = 1 - d; circ(ctx, 36, 26, 9, '#fff6c7'); circ(ctx, 34, 24, 4, '#ffffff'); ctx.globalAlpha = 1; }
+  ctx.drawImage(bg, 0, 0);
+
+  if (S.chain) { const c = S.chain, q = iso(c.gx, c.gy); ctx.fillStyle = 'rgba(57,225,255,.18)'; ctx.beginPath(); ctx.ellipse(q.x, q.y, c.r * TW * 1.414, c.r * TH * 1.414, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  if (S.dj && S.dj.state === 'party') { const st = .45; for (let a = FLOOR.x0; a < FLOOR.x1 - .01; a += st) for (let b = FLOOR.y0; b < FLOOR.y1 - .01; b += st) { const c = ['#ff5fc8', '#39e1ff', '#b6ff3b', '#ffd36b'][(Math.floor((a + b) / st + S.t * 4)) % 4]; box(ctx, a, b, a + st, b + st, 0, 1, c, shade(c, .7), shade(c, .55)); } }
+  const list = [];
+  const add = (gx, gy, f) => list.push({ k: gx + gy, f });
+  for (const dd of S.city.deco) {
+    const fn = { lamp: () => drawLamp(dd), tree: () => drawTree(dd), palm: () => drawPalm(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd) }[dd.t];
+    add(dd.gx, dd.gy, fn);
+  }
+  S.tents.forEach(t => add(t.gx, t.gy, () => drawTent(t)));
+  S.stations.forEach(s => add(s.gx, s.gy, () => drawStation(s)));
+  S.crates.forEach(c => add(c.gx, c.gy, () => drawCrate(c)));
+  S.residents.forEach(r => add(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); guy(q.x, q.y, { ...r.look, moving: r.moving, step: r.step, flip: r.flip, back: r.back }); }));
+  S.arrivals.forEach(a => add(a.gx, a.gy, () => drawArrival(a)));
+  S.police.forEach(o => add(o.gx, o.gy, () => drawCop(o)));
+  add(S.player.gx, S.player.gy, drawPlayer);
+  if (S.chain) { const c = S.chain, n = 14; for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2, gx = c.gx + Math.cos(a) * c.r, gy = c.gy + Math.sin(a) * c.r; add(gx, gy, () => { const q = iso(gx, gy); guy(q.x, q.y, { skin: SKIN[k % 5], hair: HAIR[k % 6], shirt: SHIRTS[k % 9], pants: '#2b2d55' }); if (c.helmet) { R(q.x - 3, q.y - 17, 7, 3, '#2f6bff'); R(q.x - 2, q.y - 17, 2, 1, '#9fd0ff'); } }); } }
+  if (S.bikes) S.bikes.riders.forEach(r => add(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); bike(q.x, q.y, r.flip, r.col, 5); guy(q.x, q.y - 5, { ...r.look, moving: true, step: S.t * 8, flip: r.flip }); }));
+  if (S.tandem) add(S.tandem.gx, S.tandem.gy, () => drawTandem(S.tandem));
+  if (S.van) add(S.van.gx, S.van.gy, drawVan);
+  if (S.hcrate) add(S.hcrate.gx, S.hcrate.gy, () => drawHCrate(S.hcrate));
+  if (S.cleaners) S.cleaners.crew.forEach(m => add(m.gx, m.gy, () => drawSweeper(m)));
+  if (S.drums) S.drums.crew.forEach(m => add(m.gx, m.gy, () => drawDrummer(m)));
+  if (S.dj) { const d = S.dj; add(d.gx, d.gy, () => drawDJ(d)); d.followers.forEach((f, i) => add(f.gx, f.gy, () => drawDancer(f, i))); d.recruits.forEach((f, i) => add(f.gx, f.gy, () => drawDancer(f, i))); }
+  list.sort((a, b) => a.k - b.k).forEach(o => o.f());
+
+  // night
+  if (d > 0) {
+    ctx.fillStyle = `rgba(18,8,64,${.5 * d})`; ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'lighter';
+    const glow = (x, y, r, col, a) => { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col.replace('A', a)); g.addColorStop(1, col.replace('A', 0)); ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2); };
+    for (const dd of S.city.deco) if (dd.t === 'lamp') { const q = iso(dd.gx, dd.gy, 25); glow(q.x, q.y, 22, 'rgba(255,220,140,A)', .45 * d); }
+    for (const t of S.tents) { const q = iso(t.gx, t.gy, 3); glow(q.x - 2, q.y, 8, 'rgba(255,190,90,A)', .35 * d); }
+    if (S.concert) { const q = iso(S.concert.st.gx, S.concert.st.gy, 20); glow(q.x, q.y, 30, Math.floor(S.t * 4) % 2 ? 'rgba(255,95,200,A)' : 'rgba(57,225,255,A)', .5 * d); }
+    if (S.dj && S.dj.state === 'party') { const q = iso(11.5, 4, 6); glow(q.x, q.y, 34, Math.floor(S.t * 4) % 2 ? 'rgba(255,95,200,A)' : 'rgba(182,255,59,A)', .5 * d); }
+    if (S.van) { const q = iso(S.van.gx, S.van.gy, 16); glow(q.x, q.y, 24, Math.floor(S.t * 6) % 2 ? 'rgba(60,120,255,A)' : 'rgba(255,60,90,A)', .6); }
+    if (S.donkey === 'giant' && S.city.donkey) { const q = iso(5, 5.6, 20); glow(q.x, q.y, 20, 'rgba(255,230,160,A)', .25 * d); }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  for (const q of S.parts) {
+    ctx.globalAlpha = Math.min(1, q.life * 2);
+    if (q.type === 'spark') { R(q.x, q.y, 1, 1, q.col); if (q.life > .4) { R(q.x - 1, q.y, 3, 1, q.col); R(q.x, q.y - 1, 1, 3, q.col); } }
+    else if (q.type === 'note') { R(q.x, q.y, 2, 2, q.col); R(q.x + 1, q.y - 4, 1, 4, q.col); R(q.x + 2, q.y - 4, 2, 1, q.col); }
+    else { ctx.globalAlpha = Math.min(.7, q.life); R(q.x, q.y, 2, 2, '#ffffff'); }
+  }
+  ctx.globalAlpha = 1;
+  for (const f of S.floats) drawFloat(f);
+
+  if (mode === 'play') {
+    if (S.warned && !S.raid && Math.floor(S.t * 4) % 2) drawFloat({ x: 128, y: 14, text: 'Sirenes antes do amanhecer', color: '#ff8aa8', t: 1 });
+    if (S.live > 0) { R(4, 4, 46, 12, '#1b1464'); R(5, 5, 44, 10, '#2a1f7a'); R(8, 7, 5, 5, Math.floor(S.t * 3) % 2 ? '#ff3b3b' : '#7a1c1c'); ctx.font = '8px Silkscreen, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff'; ctx.fillText('LIVE ' + Math.ceil(S.live), 16, 10); }
+  }
+}
+
+/* ================= hud ================= */
+let ctxCache = null;
+function hud() {
+  $('sT').textContent = S.tents.length; $('sP').textContent = fmt(crowd()); $('sSup').textContent = S.supplies; $('sD').textContent = S.detained;
+  const h = Math.floor(S.clock % 24), m = Math.floor((S.clock % 1) * 60 / 10) * 10;
+  $('clock').textContent = `DIA ${1 + Math.floor((S.clock - 6) / 24)} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  $('bM').style.width = S.morale + '%'; $('bS').style.width = S.support + '%'; $('bP').style.width = S.pressure + '%';
+  const play = mode === 'play';
+  const pr = S.pressure, ps = pr < 35 ? 0 : pr < 70 ? 1 : 2;
+  ['pose0', 'pose1', 'pose2'].forEach((id, i) => { $(id).style.display = i === ps ? '' : 'none'; });
+  document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', (pr / 100 * .75).toFixed(2)));
+  $('pmTear').style.display = pr >= 85 ? '' : 'none';
+  $('pm').style.transform = ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
+  $('pm').setAttribute('aria-label', 'Humor do governo: ' + ['contente', 'confuso', 'derrotado'][ps]);
+  const lab = (pt, en) => `${pt}<small>${en}</small>`;
+  const bc = $('btnChain'); bc.innerHTML = lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger'); bc.disabled = !play || S.chainCd > 0;
+  const bl = $('btnLive'); bl.innerHTML = lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir'); bl.disabled = !play || S.liveCd > 0;
+  $('btnBuild').disabled = !play;
+  const bv = $('btnVote'); bv.innerHTML = lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar'); bv.disabled = !play || S.asmCd > 0;
+  ctxCache = contextAction(); const cb = $('ctxBtn');
+  if (ctxCache) { cb.hidden = false; cb.textContent = ctxCache.label; cb.disabled = !ctxCache.ok; } else cb.hidden = true;
+}
+
+/* ================= screens ================= */
+const ov = $('ov');
+const TENT = `<svg class="tent" viewBox="0 0 160 112" aria-hidden="true"><defs><pattern id="ht" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.6" fill="#b02a22"/></pattern><pattern id="ht2" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r=".9" fill="#b02a22"/></pattern></defs><path d="M12 94 C20 44 50 14 82 12 C114 14 140 42 150 92 L122 106 L40 108 Z" fill="url(#ht)"/><path d="M56 30 C66 21 79 17 94 19 L86 64 L50 68 Z" fill="#0b0a0a"/><path d="M59 35 L88 26 L81 60 L55 63 Z" fill="url(#ht2)"/><path d="M82 12 C68 42 58 80 40 108 M82 12 C102 42 114 74 122 106" fill="none" stroke="#0b0a0a" stroke-width="2.5"/><path d="M12 94 L40 108 L122 106 L150 92" fill="none" stroke="#b02a22" stroke-width="2"/></svg>`;
+const FOOT = '<p class="foot">#ACAMPADAPELAHABITAÇÃO</p>';
+function show(html, variant = '') { ov.className = variant; ov.innerHTML = `<div class="wrapc">${html}</div>`; ov.hidden = false; ov.scrollTop = 0; fitOv(); }
+function titleScreen() {
+  mode = 'title';
+  show(`<h2 class="p-red rough">PROTESTO</h2><p class="p-big rough">A acampada resiste</p><p class="p-mid rough">Junta-te a nós</p>${TENT}
+  <p class="p-info rough">Porto · Lisboa · Coimbra<br>Braga · Faro</p>
+  <p class="help">Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.</p>
+  <p class="help"><b>Manifestação: Não temos casa, ficam as tendas!</b><br>Sábado, 24 out. 2026, 15:00 · Marquês do Pombal → Rossio</p>
+  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">Junta-te →</button><button class="btnp narrow red" data-a="info">Informação</button></div>${FOOT}`);
+}
+function chapterScreen() {
+  mode = 'chapters';
+  const rows = CITIES.map((c, i) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">CAP. ${i + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${c.tag.replace('&', '&amp;')}</span></span>${cleared.has(i) ? '<span class="ok">Resistiu</span>' : '<span></span>'}</button>`).join('');
+  show(`<h2 class="p-red rough">ESCOLHE</h2><p class="p-big rough">a tua praça</p><p class="help">Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.</p><div class="chaps">${rows}</div>
+  <button class="btnp red" data-a="title">← Voltar</button>${cleared.size ? '<button class="btnp" data-a="reset">Recomeçar tudo</button>' : ''}`);
+}
+function introScreen() {
+  mode = 'intro'; const c = CITIES[cityIdx];
+  show(`<h2 class="p-red rough">PROTESTO</h2><p class="p-big rough">Acampada ${c.name}</p><p class="p-mid rough">Junta-te a nós</p>${TENT}
+  <p class="p-info rough">Dia 1<br>17 horas<br>${c.place}</p><p class="help">${c.intro}</p><button class="btnp" data-a="go">Lá estaremos!</button>${FOOT}`);
+}
+function buildMenu() {
+  if (mode !== 'play') return; mode = 'menu';
+  const list = Object.entries(STATIONS).map(([k, d]) => { const has = !!stationOf(k), dis = has || S.supplies < d.cost;
+    return `<button class="need" data-build="${k}" ${dis ? 'disabled' : ''}>${d.name} <span class="c">${has ? '✓' : '· ' + d.cost}</span><small>${d.desc}</small></button>`; }).join('');
+  show(`<h2>Coisas que<br>precisamos:</h2>${list}<p class="help" style="color:#b6c7bc">Tens ${S.supplies} materiais. Monta-se mesmo ao teu lado.</p><button class="btnp" data-a="resume">Fechar</button>`, 'needs');
+}
+function assembly() {
+  if (mode !== 'play' || S.asmCd > 0) return;
+  if (people() < 8) { float(S.player.gx, S.player.gy, 'Precisas de mais gente', '#ff8aa8'); return; }
+  mode = 'menu';
+  const pool = PERKS.filter(p => !S.perks.has(p.id)).sort(() => Math.random() - .5).slice(0, 3);
+  if (!pool.length) { mode = 'play'; return; }
+  show(`<h2>Assembleia<br><u>popular 19:00</u></h2><p class="help">Todas as pessoas têm voz. Vota no que a acampada faz a seguir.</p>
+  <div class="slots one">${pool.map(p => `<button class="slot" data-perk="${p.id}"><span class="n">${p.name}</span><span class="d">${p.desc}</span></button>`).join('')}</div>`, 'green');
+}
+/* ================= informative posters between levels ================= */
+let adIdx = 0, adNext = null;
+try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
+const CHECK = '<p class="src">Datas e horas podem mudar: confirma nas redes dos movimentos.</p>';
+const ADS = [
+  () => ['adred', `<div class="ad"><span class="adtag">Informação</span><p class="k">Manifestação | @acampada.lisboa</p><div class="rule"></div>
+    <p class="t">Não temos casa, ficam as tendas!</p><div class="rule"></div>
+    <div class="cols"><div>Sábado<br><b>24 out. 2026</b><br><b>15:00</b></div><div><b>Marquês<br>do Pombal</b><br>→ Rossio</div></div>${CHECK}</div>`],
+  () => ['green', `<div class="ad"><span class="adtag">Informação</span><h2 class="center">Este fim<br><u>de semana</u></h2><div class="agenda">
+    <div><span class="when">Sex 23 · 18:00</span><span class="what">Évora<small>Concentração, Praça do Sertório</small></span></div>
+    <div><span class="when">Sáb 24 · 15:00</span><span class="what">Lisboa<small>Marcha do Marquês do Pombal ao Rossio</small></span></div>
+    <div><span class="when">Sáb 24 · 15:00</span><span class="what">Braga<small>Assembleia popular até à meia-noite, Av. Central / Praça da República. Música, cultura, comida. Já Não Dá Mais</small></span></div>
+    <div><span class="when">Sáb 24 · 15:00</span><span class="what">Aveiro<small>Assembleia popular, Praça da República. Não Dá Mais P’ra Viver Assim</small></span></div>
+    <div><span class="when">Sáb 24</span><span class="what">Porto<small>Manifestação na Praça D. João I, hora a anunciar. @acampadaporto</small></span></div>
+  </div>${CHECK}</div>`],
+  () => ['', `<div class="ad center"><span class="adtag">Informação</span><h2 class="p-red rough">14 de novembro</h2><p class="p-big rough">Casa para viver</p>
+    <p class="p-mid rough">Não nos vão roubar<br>o direito a morar</p>
+    <div class="agenda" style="color:#fff"><div><span class="when">15:00</span><span class="what">Lisboa<small>Alameda D. Afonso Henriques</small></span></div>
+    <div><span class="when">15:00</span><span class="what">Porto<small>Praça do Marquês</small></span></div>
+    <div><span class="when">Hora a anunciar</span><span class="what">Ponta Delgada<small>Portas da Cidade</small></span></div>
+    <div><span class="when">+</span><span class="what">Dezenas de cidades<small>O Porta a Porta espera que se juntem cerca de 30</small></span></div></div>
+    <p class="src">Plataforma Casa Para Viver (@casaparaviver.pt) com Porta a Porta (@portaaportadh).</p>${CHECK}</div>`],
+  () => ['', `<div class="ad center"><span class="adtag">Informação</span><h2 class="p-red rough">Sabias que…</h2>
+    <p class="big rough">+16,5%</p><p class="p-mid rough">Subida dos preços das casas<br>num ano, a maior da UE</p>
+    <p class="help">2.º trimestre de 2026 face ao mesmo período de 2025. Fonte: Eurostat, 1 de outubro de 2026.</p>
+    <p class="big rough" style="margin-top:14px">~2%</p><p class="p-mid rough">das casas são<br>habitação pública</p>
+    <p class="help">Fonte: inquérito à habitação do INE (dados de 2015), um número muito citado pelo governo e pelos movimentos pela habitação.</p></div>`]
+];
+function showAd(next) {
+  mode = 'ad'; adNext = next;
+  const [variant, html] = ADS[adIdx % ADS.length](); adIdx++;
+  try { localStorage.setItem('acampada3-ad', String(adIdx)); } catch (e) {}
+  sfx('win');
+  show(`${html}<div class="center" style="text-align:center"><button class="btnp${variant === 'adred' ? '' : ' red'}" data-a="adnext">Continua a lutar!</button></div>`, variant);
+}
+function levelClear() { showAd(finishLevel); }
+let infoReturn = null, infoIdx = 0;
+function openInfo(i) {
+  if (mode !== 'info') { if (!['play', 'paused', 'title', 'chapters', 'intro'].includes(mode)) return; infoReturn = mode; }
+  mode = 'info'; infoIdx = (i + ADS.length) % ADS.length;
+  const [variant, html] = ADS[infoIdx]();
+  const main = variant === 'adred' ? '' : ' red', side = variant === 'adred' ? ' red' : '';
+  show(`${html.replace('Informação</span>', `Informação · ${infoIdx + 1}/${ADS.length}</span>`)}<div style="display:flex;justify-content:center;gap:6px"><button class="btnp arrow${side}" data-a="infoprev" aria-label="Cartaz anterior">←</button><button class="btnp narrow${main}" data-a="infoclose">Continua a lutar!</button><button class="btnp arrow${side}" data-a="infonext" aria-label="Próximo cartaz">→</button></div>`, variant);
+}
+function closeInfo() {
+  const r = infoReturn; infoReturn = null;
+  if (r === 'play') { ov.hidden = true; mode = 'play'; }
+  else if (r === 'paused') { mode = 'play'; pause(); }
+  else if (r === 'chapters') chapterScreen();
+  else if (r === 'intro') introScreen();
+  else titleScreen();
+}
+function finishLevel() {
+  const first = !cleared.has(cityIdx); cleared.add(cityIdx); saveCleared();
+  if (cleared.size === CITIES.length && first) {
+    mode = 'win';
+    show(`<h2 class="p-red rough">VITÓRIA</h2><p class="p-big rough">A luta continua</p>${TENT}<p class="p-info rough">Cinco praças<br>uma exigência:<br>casas para viver</p>
+    <p class="help">Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.</p><button class="btnp" data-a="chapters">Escolher praça</button>${FOOT}`);
+    return;
+  }
+  mode = 'clear';
+  let nxt = -1; for (let k = 1; k <= CITIES.length; k++) { const j = (cityIdx + k) % CITIES.length; if (!cleared.has(j)) { nxt = j; break; } }
+  show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">${S.city.name} resiste</span>
+  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} tendas · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} dias · ${cleared.size}/5 praças</p>
+  <div>${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp red" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+}
+function gameOver() {
+  sfx('lose'); mode = 'over';
+  show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">Sobre a<br>repressão policial</span>
+  <p class="help">Ao amanhecer, enquanto a maioria das pessoas dormia, a polícia levou as tendas de ${S.city.place}. ${S.detained} pessoas detidas.</p>
+  <p class="help">A acampada foi desmontada. A assembleia popular já decidiu: a acampada resiste, com ou sem tendas.</p>
+  <div><button class="btnp" data-a="retry">Voltamos às 19h</button><button class="btnp red" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+}
+function pause() {
+  if (mode !== 'play') return; mode = 'paused';
+  const day = 1 + Math.floor((S.clock - 6) / 24);
+  show(`<h2>Acampada<br><u>Dia ${day}</u></h2>
+  <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">Assembleia popular</span></div>
+  <div class="slot"><span class="t">18:00</span><span class="n">Coros</span><span class="d">(ensaio aberto)</span></div><div class="slot"><span class="t">20:30</span><span class="n">Jantar popular</span></div></div>
+  <p class="help">Em pausa.</p><button class="btnp" data-a="resume">Voltar →</button><button class="btnp" data-a="chapters">Praças</button>`, 'green');
+}
+function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
+function begin() { ov.hidden = true; mode = 'play'; float(S.player.gx, S.player.gy, pcMQ.matches ? 'Clica para andar' : 'Toca para andar', '#ffffff', 26); }
+ov.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return; audioOn();
+  if (b.dataset.build) { build(b.dataset.build); ov.hidden = true; mode = 'play'; return; }
+  if (b.dataset.perk) { const id = b.dataset.perk; S.perks.add(id); S.asmCd = 75;
+    if (id === 'caixa') S.supplies = Math.min(20, S.supplies + 6); if (id === 'comunicado') S.support = Math.min(100, S.support + 15);
+    const pk = PERKS.find(p => p.id === id); float(S.player.gx, S.player.gy, pk.name, '#c9b8ff', 26); ov.hidden = true; mode = 'play'; return; }
+  const a = b.dataset.a;
+  if (b.dataset.city) { cityIdx = +b.dataset.city; newLevel(); introScreen(); return; }
+  if (a === 'chapters') chapterScreen();
+  else if (a === 'title') titleScreen();
+  else if (a === 'reset') { cleared.clear(); saveCleared(); chapterScreen(); }
+  else if (a === 'retry') { newLevel(); introScreen(); }
+  else if (a === 'info') openInfo(0);
+  else if (a === 'infoprev') openInfo(infoIdx - 1);
+  else if (a === 'infonext') openInfo(infoIdx + 1);
+  else if (a === 'infoclose') closeInfo();
+  else if (a === 'adnext') { const f = adNext; adNext = null; if (f) f(); }
+  else if (a === 'go') begin();
+  else if (a === 'resume') { ov.hidden = true; mode = 'play'; }
+});
+
+/* ================= input ================= */
+let dragging = false;
+function setTarget(e) {
+  const r = cv.getBoundingClientRect();
+  const w = toWorld((e.clientX - r.left) / r.width * W, (e.clientY - r.top) / r.height * H + 3);
+  let gx = clamp(w.gx, .15, 9.85), gy = clamp(w.gy, .15, 9.85);
+  if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < N; yy++) for (let xx = 0; xx < N; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
+  S.player.tx = gx; S.player.ty = gy;
+}
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+cv.addEventListener('pointermove', e => { if (dragging && mode === 'play') setTarget(e); });
+cv.addEventListener('pointerup', () => dragging = false); cv.addEventListener('pointercancel', () => dragging = false);
+const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
+addEventListener('keydown', e => {
+  if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = true; if (mode === 'play') e.preventDefault(); return; }
+  const k = e.key.toLowerCase();
+  if (k === 'i') { if (mode === 'info') closeInfo(); else openInfo(0); return; }
+  if (k === 'f' && !$('full').hidden) { $('full').click(); return; }
+  if (k === 'c') doChain(); else if (k === 'l') doLive(); else if (k === 'b') buildMenu(); else if (k === 'v') assembly();
+  else if (k === 'e' || k === ' ') { if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
+  else if (k === 'p' || k === 'escape') { if (mode === 'play') pause(); else if (mode === 'paused' || mode === 'menu') { ov.hidden = true; mode = 'play'; } }
+});
+addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+$('btnChain').addEventListener('click', doChain);
+$('btnLive').addEventListener('click', doLive);
+$('btnBuild').addEventListener('click', buildMenu);
+$('btnVote').addEventListener('click', assembly);
+$('ctxBtn').addEventListener('click', () => { const c = contextAction(); if (c && c.ok) { c.fn(); hudT = 0; } });
+$('info').addEventListener('click', () => openInfo(0));
+$('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? 'Ligar o som' : 'Desligar o som'); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
+
+/* ================= bigger on computers ================= */
+// with a mouse, the whole column is scaled up to fill the window height; phones and tablets keep the normal layout
+const wrap = document.querySelector('.wrap'), pcMQ = matchMedia('(hover: hover) and (pointer: fine)');
+let zoom = 1;
+const isPC = () => pcMQ.matches && innerWidth >= 600;
+function fit() {
+  const pc = isPC();
+  document.documentElement.classList.toggle('pc', pc);
+  $('help').textContent = pcMQ.matches ? 'Clica na praça para andar · teclas: WASD ou setas, E, C, L, B, V, P' + (document.fullscreenEnabled ? ', F' : '') : 'Toca na praça para andar.';
+  wrap.style.transform = ''; wrap.style.marginBottom = ''; zoom = 1;
+  if (pc) {
+    // measure with the context button showing, so the column still fits when it pops up
+    const cb = $('ctxBtn'), was = cb.hidden; cb.hidden = false;
+    const h = wrap.offsetHeight + 20; cb.hidden = was;
+    const z = Math.min((innerHeight - 4) / h, (innerWidth - 24) / 460);
+    if (z > 1.02) { zoom = z; wrap.style.transform = `scale(${z.toFixed(3)})`; wrap.style.marginBottom = `${Math.round(14 + (h - 20) * (z - 1))}px`; }
+  }
+  fitOv();
+}
+// overlay screens grow by the same amount, but never past the window height
+function fitOv() {
+  const c = ov.querySelector('.wrapc'); if (!c) return;
+  c.style.transform = '';
+  if (zoom <= 1 || ov.hidden) return;
+  const z = Math.min(zoom, (innerHeight - 40) / c.offsetHeight);
+  if (z > 1.02) c.style.transform = `scale(${z.toFixed(3)})`;
+}
+addEventListener('resize', fit);
+pcMQ.addEventListener && pcMQ.addEventListener('change', fit);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+// full screen button, only where the browser supports it (not on iPhone)
+const fullEl = document.documentElement;
+if (document.fullscreenEnabled && pcMQ.matches) {
+  $('full').hidden = false;
+  $('full').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else fullEl.requestFullscreen().catch(() => {}); });
+  document.addEventListener('fullscreenchange', () => $('full').setAttribute('aria-label', document.fullscreenElement ? 'Sair do ecrã inteiro' : 'Ecrã inteiro'));
+}
+
+/* ================= loop ================= */
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (mode === 'play') update(dt); else S.t += dt;
+  songTick();
+  draw();
+  hudT -= dt; if (hudT <= 0) { hud(); hudT = .1; }
+  requestAnimationFrame(frame);
+}
+cityIdx = 1; newLevel(); S.clock = 21.5; S.dark = 1;
+for (let i = 0; i < 9; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = 0; } }
+cityIdx = 0;
+titleScreen();
+fit();
+requestAnimationFrame(frame);
+window.__acampada = { get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, newLevel: i => { cityIdx = i; newLevel(); } };
+})();
+</script>
+</body>
+</html>
