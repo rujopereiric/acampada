@@ -108,6 +108,14 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .land .stats{ grid-template-columns:repeat(2,1fr); margin:4px 0; } .land .stats dd{ font-size:18px; }
 .land .actions{ grid-template-columns:repeat(2,1fr); gap:5px; } .land .act{ font-size:13px; padding:6px 4px 5px; }
 .land #ctxBtn{ font-size:14px; padding:6px 4px 5px; }
+/* sideways phones only have 300-360 px of height (less with the browser's bar): a compact column so every button fits */
+.land .hud{ padding:5px 7px; }
+.land .top{ row-gap:3px; column-gap:5px; } .land .logo{ font-size:16px; } .land #clock{ font-size:11px; }
+.land .top .mini{ font-size:11px; line-height:17px; padding:0 5px; border-width:1.5px; } .land #city{ font-size:10px; }
+.land .stats{ grid-template-columns:repeat(4,1fr); gap:2px; margin:3px 0 2px; } .land .stats dt{ font-size:8px; letter-spacing:0; } .land .stats dd{ font-size:15px; }
+.land .bar{ grid-template-columns:52px 1fr; gap:4px; margin-top:2px; font-size:9px; } .land .bar i{ height:7px; border-width:1.5px; }
+.land .actions{ gap:4px; } .land .act{ font-size:12px; padding:4px 2px 3px; } .land .act small{ font-size:9.5px; margin-top:1px; }
+.land #ctxBtn{ font-size:12px; padding:5px 4px 4px; margin-top:4px; }
 .mini[hidden]{ display:none; }
 .rough{ filter:url(#rough); }
 .hud{ background:var(--panel); border:2px solid var(--line); padding:8px 10px 9px; }
@@ -1252,6 +1260,7 @@ function look(student) {
     : { skin: pick(SKIN), hair: pick(HAIR), shirt: pick(SHIRTS), pants: pick(['#2b2d55', '#3a3a44', '#4a6fa5', '#5a3a6b']) };
 }
 function newLevel() {
+  CAM.look = null; // a tapped event from the last level must not hold the camera
   stopSong();
   const city = CITIES[cityIdx];
   [NX, NY] = city.size || [10, 10]; CX = NX / 2; CY = NY / 2; GWX = NX + 3; GWY = NY + 3; OY = city.viewY || 100; setFloor();
@@ -2834,10 +2843,12 @@ function assembly() {
   if (mode !== 'play' || S.asmCd > 0) return;
   if (people() < 8) { float(S.player.gx, S.player.gy, 'Precisas de mais gente', '#ff8aa8'); return; }
   mode = 'menu';
-  const pool = PERKS.filter(p => !S.perks.has(p.id)).sort(() => Math.random() - .5).slice(0, 3);
+  // the same three options come back until one is voted, so closing and reopening can't reroll them
+  if (!S.asmPool || S.asmPool.some(id => S.perks.has(id))) S.asmPool = PERKS.filter(p => !S.perks.has(p.id)).sort(() => Math.random() - .5).slice(0, 3).map(p => p.id);
+  const pool = S.asmPool.map(id => PERKS.find(p => p.id === id));
   if (!pool.length) { mode = 'play'; return; }
   show(`<h2>Assembleia<br><u>popular 19:00</u></h2><p class="help">Todas as pessoas têm voz. Vota no que a acampada faz a seguir.</p>
-  <div class="slots one">${pool.map(p => `<button class="slot" data-perk="${p.id}"><span class="n">${p.name}</span><span class="d">${p.desc}</span></button>`).join('')}</div>`, 'green');
+  <div class="slots one">${pool.map(p => `<button class="slot" data-perk="${p.id}"><span class="n">${p.name}</span><span class="d">${p.desc}</span></button>`).join('')}</div><button class="btnp" data-a="resume">Mais tarde</button>`, 'green');
 }
 /* ================= informative posters between levels ================= */
 let adIdx = 0, adNext = null;
@@ -3075,7 +3086,7 @@ function finishLevel() {
   mode = 'clear';
   let nxt = -1; for (let k = 1; k <= CITIES.length; k++) { const j = (cityIdx + k) % CITIES.length; if (!cleared.has(j)) { nxt = j; break; } }
   show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">${S.city.name} resiste</span>
-  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} tendas · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} dias · ${cleared.size}/5 praças</p>
+  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} ${S.city.noTents ? 'grupos' : 'tendas'} · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} dias · ${cleared.size}/5 praças</p>
   <div>${SHARE_BTN}${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
   prepStory();
 }
@@ -3099,7 +3110,7 @@ function begin() { ov.hidden = true; mode = 'play'; if (CAM.upright) showRotHint
 ov.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; audioOn();
   if (b.dataset.build) { build(b.dataset.build); ov.hidden = true; mode = 'play'; return; }
-  if (b.dataset.perk) { const id = b.dataset.perk; S.perks.add(id); S.asmCd = 75;
+  if (b.dataset.perk) { const id = b.dataset.perk; S.perks.add(id); S.asmCd = 75; S.asmPool = null;
     if (id === 'caixa') S.supplies = Math.min(20, S.supplies + 6); if (id === 'comunicado') S.support = Math.min(100, S.support + 15);
     const pk = PERKS.find(p => p.id === id); float(S.player.gx, S.player.gy, pk.name, '#c9b8ff', 26); ov.hidden = true; mode = 'play'; return; }
   const a = b.dataset.a;
@@ -3163,10 +3174,11 @@ addEventListener('keydown', e => {
   if (k === 'h' || k === '?') { openRules(); return; }
   if (k === 'f' && !$('full').hidden) { $('full').click(); return; }
   if (k === 'c') doChain(); else if (k === 'l') doLive(); else if (k === 'b') buildMenu(); else if (k === 'v') assembly();
-  else if (k === 'e' || k === ' ') { if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
+  else if (k === 'e' || k === ' ') { if (k === ' ' && mode === 'play') e.preventDefault(); if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
   else if (k === 'p' || k === 'escape') { if (mode === 'play') pause(); else if (mode === 'paused' || mode === 'menu') { ov.hidden = true; mode = 'play'; } }
 });
 addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; }); // a key released in another window never sends keyup here
 $('btnChain').addEventListener('click', doChain);
 $('btnLive').addEventListener('click', doLive);
 $('btnBuild').addEventListener('click', buildMenu);
