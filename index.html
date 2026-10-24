@@ -1332,7 +1332,7 @@ function spawnCrate() {
 function nearestStation(o) { let b = null, bd = 1e9; for (const t of S.stations) { const d = Math.hypot(t.gx - o.gx, t.gy - o.gy); if (d < bd) { bd = d; b = t; } } return b; }
 function removeStation(st) { const i = S.stations.indexOf(st); if (i < 0) return; S.stations.splice(i, 1); S.occ[st.ty * NX + st.tx] = null; float(st.gx, st.gy, 'Levaram a estrutura', '#ff8aa8', 22); sfx('hit'); }
 // Porto, riot police only: blood
-function blood(gx, gy) { const q = iso(gx, gy, 6); for (let i = 0; i < 6; i++) S.parts.push({ x: q.x, y: q.y, vx: rnd(-14, 14), vy: rnd(-18, -4), life: rnd(.4, .8), type: 'spark', col: pick(['#b3121b', '#7a0b12', '#d11f2a']) }); if ((S.stains ||= []).length < 24) S.stains.push({ gx: gx + rnd(-.2, .2), gy: gy + rnd(-.1, .2), t: 40 }); }
+function blood(gx, gy) { const q = iso(gx, gy, 6); for (let i = 0; i < 6; i++) S.parts.push({ x: q.x, y: q.y, vx: rnd(-14, 14), vy: rnd(-18, -4), life: rnd(.4, .8), type: 'spark', col: pick(['#b3121b', '#7a0b12', '#d11f2a']) }); if ((S.stains ||= []).length < (S.city.violent ? 24 : 4)) S.stains.push({ gx: gx + rnd(-.2, .2), gy: gy + rnd(-.1, .2), t: 40 }); }
 function nearestTent(o, avoidShield) {
   let b = null, bd = 1e9;
   for (const t of S.tents) {
@@ -2122,7 +2122,7 @@ function update(dt) {
       if (moveEnt(o, o.form[0], o.form[1], 1.4, dt, true)) { o.moving = false; o.flip = false; o.back = true; }
       S.formT += dt / S.police.length; if (S.formT > 3.5) o.state = 'walk'; continue;
     }
-    if (o.riot) { o.hit = false; for (const r of S.residents) if (Math.hypot(r.gx - o.gx, r.gy - o.gy) < .8) { o.hit = true; if (S.city.violent && Math.random() < dt * 1.5) blood(r.gx, r.gy); } if (S.city.violent && o.state === 'dismantle' && Math.random() < dt) blood(o.target.gx, o.target.gy); }
+    if (o.riot) { const bk = S.city.violent ? 1 : .1; o.hit = false; for (const r of S.residents) if (Math.hypot(r.gx - o.gx, r.gy - o.gy) < .8) { o.hit = true; if (Math.random() < dt * 1.5 * bk) blood(r.gx, r.gy); } if (o.state === 'dismantle' && Math.random() < dt * bk) blood(o.target.gx, o.target.gy); } // blood: Porto, and a tenth as much elsewhere
     if (o.state === 'walk') {
       const t = o.target; let sp = spBase; if (gd(o, p) < .9) sp *= .35;
       if (gd(o, t) < .4) { o.state = 'dismantle'; o.prog = 0; o.moving = false; }
