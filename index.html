@@ -1428,7 +1428,7 @@ function hoist(solo) {
 function contextAction() {
   if (!S || mode !== 'play') return null;
   const p = S.player;
-  if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 1.4) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
+  if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 2) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
   if (Math.hypot(p.gx - (S.city.singAt || [CX, CY])[0], p.gy - (S.city.singAt || [CX, CY])[1]) < 2.2) { const n = people(); return { label: n < 12 ? 'Cantar Grândola · falta gente' : S.singCd > 0 ? 'Cantar Grândola ' + Math.ceil(S.singCd) + 's' : 'Cantar Grândola', ok: n >= 12 && S.singCd <= 0, fn: sing }; }
   for (const st of S.stations) {
     if (gd(p, st) > 1.25) continue;
@@ -1436,7 +1436,7 @@ function contextAction() {
     if (st.k === 'kitchen') return { label: 'Cozinhar uma refeição, 1 material' + cd, ok: st.cd <= 0 && S.supplies > 0, fn: () => { S.supplies--; S.morale = Math.min(100, S.morale + 15); S.support = Math.min(100, S.support + 2); st.cd = 5; steam(st, 10); float(st.gx, st.gy, 'Refeição servida', '#ffd36b', 24); sfx('crate'); } };
     if (st.k === 'stage') { const a = artistNow(); return { label: (S.concert ? (S.concert.name ? (S.concert.name.length > 18 ? '♪ ' + S.concert.name : S.concert.name + ' a tocar') : 'Concerto a decorrer') : a ? (a.length > 18 ? a : 'Concerto ' + a) : 'Dar um concerto') + (!S.concert && nightConcert() ? ' (a polícia vai ouvir)' : '') + cd, ok: st.cd <= 0 && !S.concert, fn: () => startConcert(st) }; }
     if (st.k === 'info') return { label: 'Conversa de boas-vindas' + cd, ok: st.cd <= 0, fn: () => { st.cd = 30; let n = 0; for (const a of S.arrivals) if (a.state !== 'leave') { a.gone = true; joinOne(a.gx, a.gy); n++; } float(st.gx, st.gy, n ? fmt(n * crowdMult()) + ' juntaram-se' : 'Ninguém à espera', '#9ff0ff', 26); } };
-    if (st.k === 'aid' && S.wounded && S.wounded.length) return { label: S.wounded.length > 1 ? `Curar feridos (${S.wounded.length})` : 'Curar feridos', ok: true, fn: () => { for (const w of S.wounded) { w.done = true; S.morale = Math.min(100, S.morale + 8); S.support = Math.min(100, S.support + 2); float(w.gx, w.gy, 'Ferido tratado', '#b6ff3b', 20); sparkle(w.gx, w.gy, 6, 4); } S.wounded = []; sfx('join'); } };
+    if (st.k === 'aid' && S.wounded && S.wounded.length) return { label: S.wounded.length > 1 ? `Curar feridos (${S.wounded.length})` : 'Curar feridos', ok: true, fn: () => { for (const w of S.wounded) { w.done = true; if ((S.stains ||= []).length < 24) S.stains.push({ gx: w.gx + .1, gy: w.gy, t: 40 }); S.morale = Math.min(100, S.morale + 8); S.support = Math.min(100, S.support + 2); float(w.gx, w.gy, 'Ferido tratado', '#b6ff3b', 20); sparkle(w.gx, w.gy, 6, 4); } S.wounded = []; sfx('join'); } };
     if (st.k === 'aid') return { label: 'Turno de descanso' + cd, ok: st.cd <= 0, fn: () => { st.cd = 25; S.morale = Math.min(100, S.morale + 10); float(st.gx, st.gy, 'Descansados', '#b6ff3b', 24); } };
   }
   return null;
@@ -1611,11 +1611,14 @@ function updWounded(dt) {
     }
     if (!w.done && w.t <= 0) { w.done = true; S.morale = Math.max(0, S.morale - 10); float(w.gx, w.gy, 'Levado para o hospital', '#ff8aa8', 20); }
   }
+  for (const w of S.wounded) if (w.done && (S.stains ||= []).length < 24) S.stains.push({ gx: w.gx + .1, gy: w.gy, t: 40 });
   S.wounded = S.wounded.filter(w => !w.done);
 }
 function drawWounded(w) {
   const q = iso(w.gx, w.gy), x = Math.round(q.x), y = Math.round(q.y);
-  R(x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)'); R(x - 5, y - 4, 4, 3, '#2b2d55'); R(x - 1, y - 5, 5, 4, '#9a9fb0'); R(x + 4, y - 6, 3, 3, '#c98e62');
+  R(x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)');
+  ell(ctx, x + 2, y, 6, '#7a0b12', 2); R(x - 1, y - 1, 4, 1, '#b3121b'); R(x + 5, y, 2, 1, '#9a0f18'); // a pool of blood under every wounded person
+  R(x - 5, y - 4, 4, 3, '#2b2d55'); R(x - 1, y - 5, 5, 4, '#9a9fb0'); R(x + 4, y - 6, 3, 3, '#c98e62');
   if (Math.floor(S.t * 3) % 2) { R(x - 1, y - 14, 5, 5, '#ffffff'); R(x, y - 13, 3, 3, '#d11f2a'); R(x + 1, y - 14, 1, 5, '#d11f2a'); R(x - 1, y - 12, 5, 1, '#d11f2a'); }
 }
 function drawUmbrella(d) {
@@ -2078,10 +2081,10 @@ function update(dt) {
   updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt);
 
   // donkey tandem (Lisboa)
-  if (S.tandemT > 0) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY + .5]], state: 'in', cargo: true, step: 0, flip: false }; const c = iso(3, NY + 1, 20); floatXY(c.x, c.y, 'Vem aí um tandem…', '#ffd36b'); } }
+  if (S.tandemT > 0) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY - .6], [CX + .6, CY + 2.3]], state: 'in', cargo: true, step: 0, flip: false }; floatXY(0, 0, 'Vem aí um tandem com a cabeça de burro', '#ffd36b', { gx: CX + .6, gy: CY + 2.3 }); } } // it rides into the square and stops next to the column
   if (S.tandem) {
     const t = S.tandem;
-    if ((t.state === 'in' || t.state === 'leave') && t.wp.length) { const w = t.wp[0]; if (moveEnt(t, w[0], w[1], 2.2, dt, true)) { t.wp.shift(); if (!t.wp.length) { if (t.state === 'in') { t.state = 'wait'; t.waitT = 20; } else S.tandem = null; } } }
+    if ((t.state === 'in' || t.state === 'leave') && t.wp.length) { const w = t.wp[0]; if (moveEnt(t, w[0], w[1], 2.2, dt, true)) { t.wp.shift(); if (!t.wp.length) { if (t.state === 'in') { t.state = 'wait'; t.waitT = 30; floatXY(0, 0, 'Vai ajudar a içar a cabeça de burro', '#ffd36b', t); } else S.tandem = null; } } }
     else if (t.state === 'leave') S.tandem = null;
     else if (t.state === 'wait') { t.waitT -= dt; if (t.waitT <= 0) hoist(true); }
   }
