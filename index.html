@@ -50,7 +50,7 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .wide body{ overflow:hidden; }
 .wide .wrap{ position:fixed; inset:0; width:auto; margin:0; display:flex; flex-direction:column; gap:8px; padding:8px; }
 .wide .hud{ display:flex; align-items:center; gap:22px; padding:6px 14px; }
-.wide .top{ flex:0 0 380px; flex-wrap:wrap; row-gap:6px; }
+.wide .top{ flex:0 0 450px; flex-wrap:wrap; row-gap:6px; }
 .wide .logo{ font-size:26px; }
 .wide #city{ flex-basis:100%; order:5; }
 .wide .hudbody{ flex:1; align-items:center; gap:22px; min-width:0; }
@@ -66,6 +66,16 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .wide #ctxBtn{ margin:0; }
 .wide #ctxBtn[hidden]{ display:block; visibility:hidden; }
 .wide .help{ grid-column:1 / -1; margin:0 2px; text-align:center; }
+/* wide computer windows: bigger labels, they were hard to read */
+.wide #city,.wide #clock{ font-size:15px; }
+.wide .mini{ font-size:15px; line-height:24px; padding:0 9px; }
+.wide .stats dt{ font-size:13px; } .wide .stats dd{ font-size:28px; }
+.wide .bar{ grid-template-columns:92px 1fr; font-size:13.5px; } .wide .bar i{ height:13px; }
+.wide .pm figcaption{ font-size:12px; }
+.wide .act{ font-size:19px; padding:10px 4px 8px; } .wide .act small{ font-size:13.5px; }
+.wide #ctxBtn{ font-size:19px; }
+.wide .help{ font-size:13.5px; }
+.wide .flt{ font-size:12px; padding:3px 6px 2px; } .wide .bub{ font-size:12px; padding:4px 8px 3px; } .wide #ban{ font-size:17px; }
 /* phones: the square fills the rest of the screen and a camera follows the player (see updCam) */
 .cam body{ overflow:hidden; }
 .cam .wrap{ position:fixed; inset:0; bottom:auto; height:var(--vvh, 100dvh); width:auto; margin:0; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); display:flex; flex-direction:column; gap:6px; }
@@ -84,6 +94,10 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .bub::after{ content:''; position:absolute; left:50%; bottom:-5px; margin-left:-4px; border:4px solid transparent; border-top-color:#fff; border-bottom:0; }
 .camBtn{ position:absolute; right:8px; bottom:8px; z-index:2; width:46px; height:46px; display:grid; place-items:center; padding:0; background:#f4f1ea; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; font:800 14px/1 Jost, Futura, sans-serif; text-transform:uppercase; letter-spacing:.3px; cursor:pointer; }
 .camBtn[hidden]{ display:none; } .camBtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #0b0a0a; } #rotHint button{ flex:none; background:none; border:0; color:#f4f1ea; font-size:18px; line-height:1; padding:4px 6px; cursor:pointer; }
+/* upright phones: the city name gets its own line so the header buttons always fit; narrow phones shrink the action labels */
+.cam:not(.land) .top{ flex-wrap:wrap; row-gap:3px; } .cam:not(.land) #city{ order:5; flex-basis:100%; }
+.cam:not(.land) .top .mini{ padding:0 6px; }
+.cam .actions{ grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr); } .cam .act{ font-size:clamp(10.5px, 3.6vw, 15px); padding-left:2px; padding-right:2px; }
 /* phone on its side: details and buttons in a column on the right */
 .land .wrap{ display:grid; grid-template-columns:1fr 212px; grid-template-rows:auto 1fr; padding-left:calc(env(safe-area-inset-left,0px) + 6px); padding-right:calc(env(safe-area-inset-right,0px) + 6px); }
 .land .stage{ grid-column:1; grid-row:1 / span 2; }
@@ -156,6 +170,10 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .box-red{ display:inline-block; background:#8b2320; color:#fff; padding:8px 14px 6px; font-weight:800; font-size:29px; line-height:1.05; text-transform:uppercase; }
 .box-white{ display:inline-block; background:#fff; color:#8b2320; padding:6px 12px 4px; margin-top:14px; font-weight:800; font-size:19px; line-height:1.12; text-transform:uppercase; }
 #ov.comunicado .help{ color:#fff; }
+.rules{ text-align:left; margin-top:6px; }
+.rules h3{ font-weight:800; font-size:17px; text-transform:uppercase; color:#e0332f; margin:14px 0 4px; letter-spacing:.3px; }
+.rules p{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:14px; line-height:1.42; color:#d9d4d0; margin:4px 0; }
+.rules b{ color:#fff; }
 .comunicado .stat{ font-weight:800; font-size:16px; margin-top:10px !important; text-transform:uppercase; }
 .btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:18px; text-transform:uppercase; background:#fff; color:#0b0a0a; border:none; padding:11px 22px 9px; margin:16px 5px 0; cursor:pointer; }
 .btnp.red{ background:#8b2320; color:#fff; }
@@ -226,7 +244,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></svg>
 <main class="wrap">
   <header class="hud">
-    <div class="top"><span class="logo rough">ACAMPADA</span><span id="city">Porto</span><span id="clock">DIA 1 · 17:00</span><button id="info" class="mini" type="button" aria-label="Informação: ver os cartazes">i</button><button id="mute" class="mini" type="button" aria-label="Desligar o som">♪</button><button id="full" class="mini" type="button" aria-label="Ecrã inteiro" hidden>⛶</button></div>
+    <div class="top"><span class="logo rough">ACAMPADA</span><span id="city">Porto</span><span id="clock">DIA 1 · 17:00</span><button id="info" class="mini" type="button" aria-label="Informação: ver os cartazes">i</button><button id="rules" class="mini" type="button" aria-label="Como jogar">?</button><button id="pauseBtn" class="mini" type="button" aria-label="Pausa e menu">❚❚</button><button id="mute" class="mini" type="button" aria-label="Desligar o som">♪</button><button id="full" class="mini" type="button" aria-label="Ecrã inteiro" hidden>⛶</button></div>
     <div class="hudbody"><div class="hudL">
     <dl class="stats">
       <div><dt>Tendas</dt><dd id="sT">0</dd></div>
@@ -2778,7 +2796,7 @@ function titleScreen() {
   <p class="p-info rough">Porto · Lisboa · Coimbra<br>Braga · Faro</p>
   <p class="help">Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.</p>
   <p class="help"><b>Manifestação: Não temos casa, ficam as tendas!</b><br>Sábado, 24 out. 2026, 15:00 · Marquês do Pombal → Rossio</p>
-  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">Junta-te →</button><button class="btnp narrow red" data-a="info">Informação</button></div>${FOOT}`);
+  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">Junta-te →</button><button class="btnp narrow red" data-a="info">Informação</button></div><button class="btnp narrow" data-a="rules" style="margin-top:8px">Como jogar?</button>${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
@@ -2841,7 +2859,180 @@ function showAd(next) {
   sfx('win');
   show(`${html}<div class="center" style="text-align:center"><button class="btnp${variant === 'adred' ? '' : ' red'}" data-a="adnext">Continua a lutar!</button></div>`, variant);
 }
-function levelClear() { showAd(finishLevel); }
+function levelClear() { snapScene(); showAd(finishLevel); }
+
+/* ================= Partilha: an Instagram story for a cleared square ================= */
+// 1080 x 1920: headline, the square as it was won, a slogan, the next rally and the call to play.
+// Key content stays inside the story's safe area (about 150-1770 px).
+const SLOGANS = [
+  'Daqui não saio, daqui ninguém me tira',
+  'Montenegro, presta atenção, a tua casa vai virar ocupação',
+  { city: 'Lisboa', t: 'Carlos Moedas, presta atenção, a tua casa vai virar ocupação' },
+  { city: 'Porto', t: 'Pedro Duarte, presta atenção, a tua casa vai virar ocupação' },
+  'A barricada, greve geral, ação direta que derruba o capital',
+  'Não dá mais? Então monta a tua tenda!',
+  'Casa é para morar, não é para especular',
+  'Rendas de luxo, ordenados de lixo',
+  'Gente despejada e tanta casa vazia!',
+  'Baixem as rendas, subam os salários',
+  'Paz, pão, saúde, habitação',
+  'Na rua nos querem, na rua nos verão',
+  'Não temos casa, ficam as tendas!'
+];
+// rallies, Portugal time; a rally drops off the story two hours after it starts
+const RALLIES = [
+  { date: '2026-10-24', at: '15:00', city: 'Lisboa', title: 'Não temos casa, ficam as tendas!', where: 'Marquês do Pombal → Rossio' },
+  { date: '2026-10-24', at: '16:00', city: 'Porto', title: 'Manifestação pela habitação', where: 'Batalha → Praça D. João I' },
+  { date: '2026-10-24', at: '15:00', city: 'Coimbra', title: 'Assembleia popular', where: 'Praça 8 de Maio' },
+  { date: '2026-10-24', at: '15:00', city: 'Braga', title: 'Assembleia popular', where: 'Av. Central · Praça da República' },
+  { date: '2026-10-24', at: '10:00', city: 'Faro', title: 'Concentração pela habitação', where: 'Praça da Liberdade (Pontinha)' },
+  { date: '2026-11-14', at: '15:00', city: null, title: 'Casa para viver', where: 'Lisboa · Porto · Ponta Delgada · e dezenas de cidades' }
+];
+const PLACE_ART = { Porto: 'a ', Lisboa: 'o ', Coimbra: 'a ', Braga: 'a ', Faro: 'a ' };
+const MESES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'], DIAS = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+function lisbonNow(now = new Date()) { // date and minutes in Portugal, whatever the phone's time zone
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now);
+  const v = k => f.find(x => x.type === k).value; return { date: `${v('year')}-${v('month')}-${v('day')}`, min: +v('hour') * 60 + +v('minute') };
+}
+function nextRally(city, now) {
+  const t = lisbonNow(now), mins = r => +r.at.slice(0, 2) * 60 + +r.at.slice(3);
+  const up = RALLIES.filter(r => r.date > t.date || (r.date === t.date && t.min < mins(r) + 120));
+  if (!up.length) return null;
+  const day = up.map(r => r.date).sort()[0], same = up.filter(r => r.date === day);
+  const r = same.find(r => r.city === city) || same.find(r => r.city === 'Lisboa') || same[0];
+  const d = new Date(r.date + 'T12:00:00Z'), tm = new Date(t.date + 'T12:00:00Z'); tm.setUTCDate(tm.getUTCDate() + 1);
+  const when = r.date === t.date ? 'HOJE' : r.date === tm.toISOString().slice(0, 10) ? 'AMANHÃ' : `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
+  return { ...r, when, time: r.at.slice(0, 2).replace(/^0/, '') + 'H', elsewhere: !!r.city && r.city !== city };
+}
+function nextSlogan(city) {
+  const pool = SLOGANS.filter(x => typeof x === 'string' || x.city === city).map(x => typeof x === 'string' ? x : x.t);
+  let k = 0; try { k = +(localStorage.getItem('acampada-slogan') || 0) || 0; localStorage.setItem('acampada-slogan', String(k + 1)); } catch (e) {}
+  return pool[k % pool.length];
+}
+// the square as it was won (the canvas has no text on it: messages are HTML above it)
+let shot = null;
+function snapScene() { try { draw(); shot = document.createElement('canvas'); shot.width = cv.width; shot.height = cv.height; shot.getContext('2d').drawImage(cv, 0, 0); } catch (e) { shot = null; } }
+function wrapLines(g, text, maxW) {
+  const out = []; let line = '';
+  for (const w of text.split(' ')) { const t = line ? line + ' ' + w : w; if (g.measureText(t).width > maxW && line) { out.push(line); line = w; } else line = t; }
+  if (line) out.push(line); return out;
+}
+let logoImg = null;
+async function storyAssets() {
+  if (!logoImg) { logoImg = new Image(); logoImg.src = TENT.match(/src="([^"]+)"/)[1]; }
+  try { await logoImg.decode(); } catch (e) {}
+  try { await Promise.all(['800 60px Jost', '700 38px Jost', '400 30px Silkscreen'].map(f => document.fonts.load(f))); } catch (e) {}
+}
+function makeStory(o) {
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1920; const g = c.getContext('2d');
+  const RED = '#c4282a', DARK = '#0b0a0a', CREAM = '#f4f1ea', M = 64, fw = 1080 - 2 * M;
+  g.fillStyle = DARK; g.fillRect(0, 0, 1080, 1920);
+  const fitFont = (txt, size, maxW, weight = 800) => { let sz = size; do { g.font = `${weight} ${sz}px Jost, sans-serif`; sz -= 4; } while (g.measureText(txt).width > maxW && sz > 18); return sz + 4; };
+  if (o.logo && o.logo.width) { const lw = 330, lh = lw * o.logo.height / o.logo.width; g.drawImage(o.logo, 1080 - M - lw + 10, 150, lw, lh); }
+  const head = o.city.toUpperCase(), hs = fitFont(head, 168, 620);
+  g.fillStyle = RED; g.fillText(head, M - 6, 150 + hs * .82);
+  let y = 150 + hs * .82 + 104;
+  g.font = '800 104px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText('RESISTE!', M, y);
+  y += 58; const sub = `Segurei ${PLACE_ART[o.city] || ''}${o.place} na Acampada Pixel`.toUpperCase();
+  fitFont(sub, 38, fw, 700); g.fillStyle = CREAM; g.fillText(sub, M, y);
+  // the square
+  const fy = y + 34, fh = 540;
+  g.fillStyle = CREAM; g.fillRect(M - 8, fy - 8, fw + 16, fh + 16);
+  if (o.scene) { const sc = o.scene, k = Math.max(fw / sc.width, fh / sc.height), sw = fw / k, sh = fh / k;
+    g.imageSmoothingEnabled = false; g.drawImage(sc, (sc.width - sw) / 2, (sc.height - sh) / 2, sw, sh, M, fy, fw, fh); g.imageSmoothingEnabled = true; }
+  else { g.fillStyle = '#1b1430'; g.fillRect(M, fy, fw, fh); }
+  const st = `${o.stats.tents} ${o.stats.unit} · ${o.stats.people} PESSOAS · ${o.stats.days} ${o.stats.days === 1 ? 'DIA' : 'DIAS'}`;
+  g.font = '400 30px Silkscreen, monospace'; const tw = g.measureText(st).width + 32;
+  g.fillStyle = DARK; g.fillRect(M + 18, fy + fh - 66, tw, 48); g.fillStyle = CREAM; g.fillText(st, M + 34, fy + fh - 31);
+  y = fy + fh + 60;
+  // slogan
+  g.font = '800 60px Jost, sans-serif'; const sl = wrapLines(g, '«' + o.slogan.toUpperCase() + '»', fw - 60);
+  const sh2 = sl.length * 66 + 40; g.fillStyle = RED; g.fillRect(M - 8, y, fw + 16, sh2);
+  g.fillStyle = '#ffffff'; sl.forEach((l, i) => g.fillText(l, M + 22, y + 74 + i * 66));
+  y += sh2 + 36;
+  // the next rally
+  const r = nextRally(o.city);
+  if (r) {
+    const rh = 196; g.strokeStyle = CREAM; g.lineWidth = 4; g.strokeRect(M - 6, y, fw + 12, rh);
+    g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText(`${r.when} · ${r.time}${r.city ? ' · ' + r.city.toUpperCase() : ''}`, M + 22, y + 62);
+    g.fillStyle = CREAM; fitFont(r.title.toUpperCase(), 46, fw - 40); g.fillText(r.title.toUpperCase(), M + 22, y + 120);
+    const wh = r.where + (r.elsewhere ? ' · e noutras cidades' : ''); fitFont(wh, 34, fw - 40, 700); g.fillText(wh, M + 22, y + 170);
+    y += rh + 40;
+  }
+  // call to play
+  g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText('ENTRA NESTA', M, y + 42); g.fillText('SIMULAÇÃO DIGITAL', M, y + 94);
+  g.font = '400 36px Silkscreen, monospace'; const url = 'ACAMPADAPIXEL.PT', uw = g.measureText(url).width + 44;
+  g.fillStyle = CREAM; g.fillRect(1080 - M - uw, y + 12, uw, 80); g.fillStyle = DARK; g.fillText(url, 1080 - M - uw + 22, y + 66);
+  const fb = Math.max(y + 160, 1740);
+  g.font = '800 25px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText('PORTO · LISBOA · COIMBRA · BRAGA · FARO', M, fb);
+  g.fillStyle = RED; g.textAlign = 'right'; g.fillText('#ACAMPADAPELAHABITAÇÃO', 1080 - M, fb); g.textAlign = 'left';
+  return c;
+}
+// the story is made as soon as the square is won, so tapping "Partilha" can open the share sheet straight away
+// (iPhone only allows sharing right after a tap)
+let storyJob = null;
+function prepStory() {
+  const city = S.city, stats = { tents: S.tents.length, unit: city.noTents ? 'GRUPOS' : 'TENDAS', people: fmt(crowd()), days: 1 + Math.floor((S.clock - 6) / 24) };
+  const slogan = nextSlogan(city.name), scene = shot;
+  storyJob = { slogan, city: city.name, file: null, blob: null };
+  const job = storyJob;
+  job.ready = storyAssets().then(() => new Promise(res => makeStory({ city: city.name, place: city.place, scene, logo: logoImg, slogan, stats }).toBlob(res, 'image/png'))).then(blob => {
+    job.blob = blob; try { job.file = new File([blob], `acampada-${city.name.toLowerCase()}.png`, { type: 'image/png' }); } catch (e) {}
+  });
+}
+function saveStory(job) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(job.blob); a.download = `acampada-${job.city.toLowerCase()}.png`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function shareStory(btn) {
+  const job = storyJob; if (!job) return;
+  if (!job.blob) { btn.disabled = true; btn.firstChild.textContent = 'A preparar…'; await job.ready; btn.disabled = false; btn.firstChild.textContent = 'Partilha'; }
+  if (!job.blob) return;
+  const text = `«${job.slogan}» Entra na acampada: acampadapixel.pt #acampadapelahabitação`;
+  if (job.file && navigator.canShare && navigator.canShare({ files: [job.file] })) {
+    try { await navigator.share({ files: [job.file], text }); } catch (e) { if (e.name !== 'AbortError') saveStory(job); }
+  } else saveStory(job);
+}
+const SHARE_BTN = '<button class="btnp red" data-a="share">Partilha<small style="display:block;font-size:11px;font-weight:700;opacity:.85">story para o Instagram</small></button>';
+
+/* ================= Como jogar ================= */
+let rulesReturn = null;
+function openRules() {
+  if (mode === 'rules') return closeRules();
+  if (!['play', 'paused', 'title', 'chapters', 'intro'].includes(mode)) return;
+  rulesReturn = mode; mode = 'rules';
+  show(`<h2 class="p-red rough">COMO JOGAR</h2><p class="p-mid rough">Segura a praça</p><div class="rules">
+  <h3>Objetivo</h3>
+  <p>Enche a barra de <b>Pressão</b> até ao fim para segurar a praça. Segura as cinco, Porto, Lisboa, Coimbra, Braga e Faro, para ganhar. Se toda a gente for para casa ou for detida, a acampada cai, mas podes voltar.</p>
+  <h3>Na praça</h3>
+  <p>Toca (ou clica) na praça para andar. No computador também podes usar WASD ou as setas.</p>
+  <p>Vai ter com quem chega à praça para se juntar à acampada, e apanha os <b>donativos</b> que aparecem nas bordas.</p>
+  <h3>Botões</h3>
+  <p><b>Cordão:</b> um cordão humano protege as tendas da polícia (precisa de 6 pessoas).</p>
+  <p><b>Direto:</b> transmite em direto, e as rusgas ficam virais e trazem apoio.</p>
+  <p><b>Montar:</b> com materiais, monta a cozinha, o ponto de informação, os primeiros socorros ou o palco.</p>
+  <p><b>Assembleia:</b> vota numa melhoria para a acampada (precisa de 8 pessoas).</p>
+  <p>Quando estás perto de algo, aparece um botão por baixo: cozinhar, dar um concerto, cantar a Grândola…</p>
+  <h3>Barras</h3>
+  <p><b>Moral:</b> se cair muito, as pessoas vão para casa. Comida, música e boas notícias ajudam.</p>
+  <p><b>Apoio:</b> traz mais gente, e cada pessoa que vês conta por mais.</p>
+  <p><b>Pressão:</b> o que o governo sente. Cheia, a praça é tua.</p>
+  <h3>A rusga</h3>
+  <p>Às 6h da manhã a polícia chega, e ouves as sirenes antes. Faz cordões, fica perto das tendas e põe o direto a correr. As bicicletadas atrasam a carrinha.</p>
+  <h3>Grândola</h3>
+  <p>Com 12 pessoas ou mais, vai ao centro e canta a <b>Grândola, Vila Morena</b>: a polícia fica parada enquanto se canta.</p>
+  <h3>Teclas</h3>
+  <p>E ou Espaço: ação · C, L, B, V: botões · P ou Esc: pausa · I: cartazes · H: como jogar · F: ecrã inteiro</p>
+  </div><button class="btnp" data-a="rulesclose">Percebi!</button>`);
+}
+function closeRules() {
+  const r = rulesReturn; rulesReturn = null;
+  if (r === 'play') { ov.hidden = true; mode = 'play'; }
+  else if (r === 'paused') { mode = 'play'; pause(); }
+  else if (r === 'chapters') chapterScreen();
+  else if (r === 'intro') introScreen();
+  else titleScreen();
+}
 let infoReturn = null, infoIdx = 0;
 function openInfo(i) {
   if (mode !== 'info') { if (!['play', 'paused', 'title', 'chapters', 'intro'].includes(mode)) return; infoReturn = mode; }
@@ -2863,14 +3054,15 @@ function finishLevel() {
   if (cleared.size === CITIES.length && first) {
     mode = 'win';
     show(`<h2 class="p-red rough">VITÓRIA</h2><p class="p-big rough">A luta continua</p>${TENT}<p class="p-info rough">Cinco praças<br>uma exigência:<br>casas para viver</p>
-    <p class="help">Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.</p><button class="btnp" data-a="chapters">Escolher praça</button>${FOOT}`);
-    return;
+    <p class="help">Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.</p>${SHARE_BTN}<button class="btnp" data-a="chapters">Escolher praça</button>${FOOT}`);
+    prepStory(); return;
   }
   mode = 'clear';
   let nxt = -1; for (let k = 1; k <= CITIES.length; k++) { const j = (cityIdx + k) % CITIES.length; if (!cleared.has(j)) { nxt = j; break; } }
   show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">${S.city.name} resiste</span>
   <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} tendas · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} dias · ${cleared.size}/5 praças</p>
-  <div>${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp red" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+  <div>${SHARE_BTN}${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+  prepStory();
 }
 function gameOver() {
   sfx('lose'); mode = 'over';
@@ -2885,7 +3077,7 @@ function pause() {
   show(`<h2>Acampada<br><u>Dia ${day}</u></h2>
   <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">Assembleia popular</span></div>
   <div class="slot"><span class="t">18:00</span><span class="n">Coros</span><span class="d">(ensaio aberto)</span></div><div class="slot"><span class="t">20:30</span><span class="n">Jantar popular</span></div></div>
-  <p class="help">Em pausa.</p><button class="btnp" data-a="resume">Voltar →</button><button class="btnp" data-a="chapters">Praças</button>`, 'green');
+  <p class="help">Em pausa.</p><button class="btnp" data-a="resume">Voltar →</button><button class="btnp" data-a="rules">Como jogar</button><button class="btnp" data-a="chapters">Praças</button><button class="btnp" data-a="title">Menu inicial</button>`, 'green');
 }
 function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
 function begin() { ov.hidden = true; mode = 'play'; if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Clica para andar' : 'Toca para andar', '#ffffff', 26); }
@@ -2906,6 +3098,9 @@ ov.addEventListener('click', e => {
   else if (a === 'infonext') openInfo(infoIdx + 1);
   else if (a === 'infoclose') closeInfo();
   else if (a === 'adnext') { const f = adNext; adNext = null; if (f) f(); }
+  else if (a === 'share') shareStory(b);
+  else if (a === 'rules') openRules();
+  else if (a === 'rulesclose') closeRules();
   else if (a === 'go') begin();
   else if (a === 'resume') { ov.hidden = true; mode = 'play'; }
 });
@@ -2950,6 +3145,7 @@ addEventListener('keydown', e => {
   if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = true; if (mode === 'play') e.preventDefault(); return; }
   const k = e.key.toLowerCase();
   if (k === 'i') { if (mode === 'info') closeInfo(); else openInfo(0); return; }
+  if (k === 'h' || k === '?') { openRules(); return; }
   if (k === 'f' && !$('full').hidden) { $('full').click(); return; }
   if (k === 'c') doChain(); else if (k === 'l') doLive(); else if (k === 'b') buildMenu(); else if (k === 'v') assembly();
   else if (k === 'e' || k === ' ') { if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
@@ -2962,6 +3158,8 @@ $('btnBuild').addEventListener('click', buildMenu);
 $('btnVote').addEventListener('click', assembly);
 $('ctxBtn').addEventListener('click', () => { const c = contextAction(); if (c && c.ok) { c.fn(); hudT = 0; } });
 $('info').addEventListener('click', () => openInfo(0));
+$('rules').addEventListener('click', openRules);
+$('pauseBtn').addEventListener('click', () => { if (mode === 'play') pause(); else if (mode === 'paused') { ov.hidden = true; mode = 'play'; } });
 $('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? 'Ligar o som' : 'Desligar o som'); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
@@ -2985,7 +3183,7 @@ const isPC = () => pcMQ.matches && innerWidth >= 600;
 /* ================= phone camera ================= */
 // phones show the picture zoomed in around the player (2x upright, 1.5x on its side); the ⤢ button, the title
 // screens and the big moments (raids, fascists, the choir) show the whole square
-const CAM = { on: false, land: false, all: false, z: 1, x: 128, y: 120, s: 1, fill: 1, bg: '' };
+const CAM = { on: false, land: false, all: true, z: 1, x: 128, y: 120, s: 1, fill: 1, bg: '' };
 const VIEW = { x0: 0, y0: 0, x1: 256, y1: 240 };
 // zoomed in from the start (2x upright, 1.6x on its side); ⤢ shows the whole square; it never changes on its own
 function camTarget() {
@@ -3027,7 +3225,7 @@ function fit() {
   if (window.visualViewport) document.documentElement.style.setProperty('--vvh', Math.round(visualViewport.height) + 'px');
   const pc = isPC();
   document.documentElement.classList.toggle('pc', pc);
-  $('help').textContent = pcMQ.matches ? 'Clica na praça para andar · teclas: WASD ou setas, E, C, L, B, V, P' + (document.fullscreenEnabled ? ', F' : '') : 'Toca na praça para andar.';
+  $('help').textContent = pcMQ.matches ? 'Clica na praça para andar · teclas: WASD ou setas, E, C, L, B, V, P, H' + (document.fullscreenEnabled ? ', F' : '') : 'Toca na praça para andar.';
   // wide windows: the square fills the window between the top and bottom bars; taller windows keep the phone column
   const wide = pc && innerWidth > innerHeight * 1.15;
   document.documentElement.classList.toggle('wide', wide);
@@ -3118,7 +3316,7 @@ cityIdx = 0;
 titleScreen();
 fit();
 requestAnimationFrame(frame);
-window.__acampada = { choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, newLevel: i => { cityIdx = i; newLevel(); } };
+window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
 </script>
 </body>
