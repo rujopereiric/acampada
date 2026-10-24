@@ -1526,7 +1526,7 @@ function nightEvents(dt) {
   const night = Math.floor((S.clock - 22) / 24), inWin = (((S.clock - 22) % 24) + 24) % 24 < 4;
   // never on day 1: the first night only counts after midnight
   if (S.fascNight !== night && inWin && night >= 0) { S.fascNight = night; let at = S.clock + rnd(0, 3.4); if (at < 24) at = rnd(24, 25.4); S.fascAt = Math.random() < .6 ? at : 0; }
-  if (S.fascAt && S.clock >= S.fascAt && !S.fasc && !S.raid && !S.van && !S.bikes && !S.ambush) { S.fascAt = 0; startFasc(); } // never during a bicicletada
+  if (S.fascAt && S.clock >= S.fascAt && !S.fasc && !S.raid && !S.van && !S.bikes && !S.ambush && !S.winning) { S.fascAt = 0; startFasc(); } // never during a bicicletada
   const f = S.fasc;
   if (f) {
     f.t += dt;
@@ -2038,8 +2038,8 @@ function update(dt) {
   // schedule
   const warnH = S.perks.has('vigias') ? 3 : 1.5;
   if (!S.raid && !S.warned && S.clock >= S.nextRaid - warnH) { S.warned = true; sfx('siren'); }
-  if (!S.raid && S.clock >= S.nextRaid) { startRaid(false); S.nextRaid += 24; }
-  if (S.clock >= S.nextPatrol) { if (S.city.patrols && !S.raid) startRaid(true); S.nextPatrol += 24; }
+  if (!S.raid && S.clock >= S.nextRaid && !S.winning) { startRaid(false); S.nextRaid += 24; }
+  if (S.clock >= S.nextPatrol) { if (S.city.patrols && !S.raid && !S.winning) startRaid(true); S.nextPatrol += 24; }
   if (S.clock >= S.nextLimit) { S.nextLimit += 24; const c = iso(CX, NY, 0); floatXY(c.x, 60, 'PSP: limite legal 00:30', '#9ecbff'); }
 
   // arrivals
@@ -2203,6 +2203,21 @@ function update(dt) {
   S.parts = S.parts.filter(q => q.life > 0);
 
   if (people() === 0 && S.riot && !S.riotAct && !S.wiped) { S.wiped = true; for (const st of [...S.stations]) removeStation(st); S.perks.delete('cartazes'); for (const o of S.police) o.state = 'back'; for (let i = 0; i < 2; i++) { const t = addTent(); if (t) { t.occ = 1; t.pop = 0; } } S.pressure = 0; S.morale = Math.max(20, Math.min(S.morale, 25)); S.supplies = 0; floatXY(0, 0, 'A polícia de choque levou tudo. Recomeçamos quase do zero', '#ff8aa8'); }
+  // a full Pressão bar wins the square: the police pull back, nothing new starts, and the win comes a few seconds
+  // later (it used to wait for the square to be calm, which during a raid could take a minute or more)
+  if (S.pressure >= 100 && !S.winning) {
+    S.winning = true; S.winT = 0;
+    if (S.raid || S.van || S.police.length || S.fasc) { const q = iso(CX, CY, 30); floatXY(q.x, q.y, 'A polícia recua!', '#b6ff3b'); }
+  }
+  if (S.winning) {
+    S.winT += dt;
+    for (const o of S.police) o.state = 'back';
+    if (S.van && S.van.state === 'arrive') S.van.state = 'leave';
+    if (S.fasc && S.fasc.state !== 'flee') fascLeave(true);
+    const still = S.raid || S.van || S.police.length || S.fasc;
+    if (S.winT >= 3 || (!still && S.winT >= 1.2)) { S.police = []; S.van = null; S.fasc = null; S.raid = false; return levelClear(); }
+    return;
+  }
   const busy = S.raid || S.van || S.police.length || S.fasc;
   S.calmT = busy ? 6 : Math.max(0, (S.calmT || 0) - dt);
   if (busy || S.calmT > 0) return;
