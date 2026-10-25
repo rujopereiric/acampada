@@ -2843,7 +2843,7 @@ const DIAS_LONG = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 
 function titleRally() {
   const r = nextRally(null); if (!r) return '';
   const day = r.when === 'HOJE' ? 'Hoje' : r.when === 'AMANHÃ' ? 'Amanhã' : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
-  return `<p class="help"><b>${r.city ? r.city + ': ' : ''}${r.title}</b><br>${day}, ${r.at} · ${r.where}</p>`;
+  return `<p class="help"><b>${r.city ? r.city + ': ' : ''}${r.title}</b><br>${r.note ? r.note + '<br>' : ''}${day}, ${r.at} · ${r.where}</p>`;
 }
 function titleScreen() {
   mode = 'title';
@@ -2891,7 +2891,7 @@ const ADS = [
     <div class="cols"><div>Terça<br><b>27 out. 2026</b><br><b>18:30</b></div><div><b>Assembleia<br>da República</b><br>Lisboa</div></div>
     <p class="src">No dia em que começa a votação do Orçamento do Estado: contra os cortes na habitação e a violência policial nas acampadas.</p>${CHECK}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">Informação</span><h2 class="center">Próximos<br><u>dias</u></h2><div class="agenda">
-    <div><span class="when">Dom 25 · 17:00</span><span class="what">Lisboa<small>Mais casas, menos bastão! Rossio, com assembleia popular às 19:00</small></span></div>
+    <div><span class="when">Dom 25 · 17:00</span><span class="what">Lisboa<small>Mais casas, menos bastão! Depois de mais uma carga policial esta madrugada, a acampada sobrevive e resiste. Volta à praça! Rossio, com assembleia popular às 19:00</small></span></div>
     <div><span class="when">Ter 27 · 18:30</span><span class="what">Lisboa<small>Todos ao Parlamento! Assembleia da República. Casa para Viver</small></span></div>
     <div><span class="when">Sáb 14 nov · 15:00</span><span class="what">Lisboa e Porto<small>Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês</small></span></div>
     <div><span class="when">Sáb 14 nov</span><span class="what">Aveiro, Viana, Ponta Delgada…<small>E dezenas de outras cidades</small></span></div>
@@ -2945,7 +2945,7 @@ const RALLIES = [
   { date: '2026-10-24', at: '15:00', city: 'Coimbra', title: 'Assembleia popular', where: 'Praça 8 de Maio' },
   { date: '2026-10-24', at: '15:00', city: 'Braga', title: 'Assembleia popular', where: 'Av. Central · Praça da República' },
   { date: '2026-10-24', at: '10:00', city: 'Faro', title: 'Concentração pela habitação', where: 'Praça da Liberdade (Pontinha)' },
-  { date: '2026-10-25', at: '17:00', city: 'Lisboa', title: 'Mais casas, menos bastão!', where: 'Rossio · 19h: assembleia popular' },
+  { date: '2026-10-25', at: '17:00', city: 'Lisboa', title: 'Mais casas, menos bastão!', note: 'Depois de mais uma carga policial esta madrugada, a acampada sobrevive e resiste. Volta à praça!', where: 'Rossio · 19h: assembleia popular' },
   { date: '2026-10-27', at: '18:30', city: 'Lisboa', title: 'Todos ao Parlamento!', where: 'Assembleia da República · Casa para Viver' },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Porto', title: 'Casa para viver', where: 'Praça do Marquês' },
