@@ -1711,11 +1711,12 @@ function startRaid(patrol, charge) {
   // pressure almost at the top, +15% in Porto; after a concert at night, 50% (65% in Porto)
   const pr = charge ? (S.city.violent ? .65 : .5) : .05 + (S.perks.has('cartazes') ? .03 : 0) + (S.pressure >= 85 ? .1 : 0) + (S.city.violent ? .15 : 0);
   S.riot = S.tents.length >= 15 && Math.random() < pr; S.riotAct = false; S.wiped = false; S.formT = 0;
-  S.van = { gx: -4, gy: NY + 1.15, tx: rnd(NX * .2, NX * .6), state: 'arrive', patrol };
+  S.van = { gx: -4, gy: NY + 1.15, tx: rnd(NX * .2, NX * .6), state: 'arrive', patrol, blue: !!S.riot };
   if (S.fasc) fascLeave(false);
   if (!patrol && !charge && !S.bikes && !S.fasc && S.support >= 12 && Math.random() < .7) { startBikes(); const c = iso(CX, NY, 20); floatXY(c.x, c.y - 42, 'Contra a rusga!', '#39e1ff'); }
 }
 function onRaidEnd() {
+  S.vans = [];
   S.swept = false; S.charge = false; S.riot = false;
   if (S.donkey === 'small') { S.donkey = 'binned'; S.tandemT = 18; const bin = S.city.deco.find(x => x.t === 'bin') || { gx: 1.6, gy: NY + .3 }, p = iso(bin.gx, bin.gy, 14); floatXY(p.x, p.y, 'Cabeça no lixo', '#c9c4b8'); }
   if (S.perks.has('legal') && S.raidDetained > 0) { S.releaseT = 14; S.releaseN = Math.ceil(S.raidDetained / 2); }
@@ -2126,10 +2127,11 @@ function update(dt) {
       if (S.bikes) { if (Math.random() < dt) { const q = iso(0, NY + 1); floatXY(q.x + 20, q.y - 30, 'Bicicletas travam a carrinha', '#39e1ff'); } }
       else if (moveEnt(v, v.tx, v.gy, 3, dt, true)) {
         v.state = 'parked';
+        if (S.riot) { v.blue = true; S.vans = [-1.9, 1.9].map(d => ({ gx: v.gx + d, gy: v.gy, blue: true })); } // a riot raid brings more vans
         let n = v.patrol ? 2 + Math.floor(cityIdx / 2) : Math.min(10, 3 + cityIdx + Math.floor(S.tents.length / 5));
         if (S.swept) n = Math.max(1, n - 2);
         if (S.charge) n = Math.min(18, n * 2 + 2); // the charge after a night concert: twice the officers, faster and staying longer
-        if (S.riot) { n = S.city.violent ? 10 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
+        if (S.riot) { n = S.city.violent ? 10 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, dog: i % 3 === 1, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
         else for (let i = 0; i < n; i++) S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'walk', target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true });
         const q = iso(CX, NY); floatXY(q.x, 64, S.riot ? 'Polícia de choque!' : v.patrol ? 'Patrulha!' : S.charge ? 'Carga policial!' : 'Rusga de madrugada!', '#ff8aa8');
       }
@@ -2224,7 +2226,7 @@ function update(dt) {
     if (S.van && S.van.state === 'arrive') S.van.state = 'leave';
     if (S.fasc && S.fasc.state !== 'flee') fascLeave(true);
     const still = S.raid || S.van || S.police.length || S.fasc;
-    if (S.winT >= 3 || (!still && S.winT >= 1.2)) { S.police = []; S.van = null; S.fasc = null; S.raid = false; return levelClear(); }
+    if (S.winT >= 3 || (!still && S.winT >= 1.2)) { S.police = []; S.van = null; S.vans = []; S.fasc = null; S.raid = false; return levelClear(); }
     return;
   }
   const busy = S.raid || S.van || S.police.length || S.fasc;
@@ -2376,9 +2378,29 @@ function drawPlayer() {
   const b = Math.floor(S.t * 3) % 2;
   R(x - 2, y - 22 - b, 5, 1, '#ff5fc8'); R(x - 1, y - 21 - b, 3, 1, '#ff5fc8'); R(x, y - 20 - b, 1, 1, '#ff5fc8');
 }
+// a police dog on a lead, beside its handler (side view, facing the way the officer faces); it barks now and then
+const DOG = [
+  '........K..K',
+  '........KK.KK',
+  '........KTTTK',
+  'K.......TTTTTN',
+  '.K.....KTTT..',
+  '.KKKKKKKKT...',
+  '.KKKKKKKKT...',
+  '..TTTTTTT....',
+  '..T.T...T.T..',
+  '..T.T...T.T..'
+].map(r => r.padEnd(14, '.'));
+const DOG_PAL = { K: '#3a2818', T: '#c08848', N: '#0b0a0a' };
+function drawDog(x, y, flip, t) {
+  R(x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)');
+  bmp(ctx, DOG, DOG_PAL, x - 7, y - 10, 1, flip);
+  if (Math.floor(t * 2.5) % 5 === 0) { const bx = flip ? x - 9 : x + 8; R(bx, y - 8, 1, 1, '#ffffff'); R(bx + (flip ? -1 : 1), y - 9, 1, 1, '#ffffff'); }
+}
 function drawCop(o) {
   if (o.riot) {
     const q = iso(o.gx, o.gy), x = Math.round(q.x), y = Math.round(q.y);
+    if (o.dog) { const dx = x + (o.flip ? -11 : 11), dy = y + 3, hx = x + (o.flip ? -2 : 2), ex = dx + (o.flip ? -5 : 5); drawDog(dx, dy, o.flip, S.t + o.step); ctx.fillStyle = '#0b0a0a'; for (let i = 1; i < 6; i++) ctx.fillRect(Math.round(hx + (ex - hx) * i / 6), Math.round(y - 7 + (dy - 8 - (y - 7)) * i / 6), 1, 1); } // the lead, from the hand to the collar
     guy(x, y, { skin: '#d9a37a', hair: '#0b0a0a', shirt: '#11151f', pants: '#0b0d14', moving: o.moving, step: o.step, flip: o.flip, back: o.back });
     R(x - 3, y - 17, 7, 5, '#0b0a0a'); if (!o.back) R(x - 2, y - 14, 5, 2, '#3a4a5a'); // helmet and visor
     ctx.fillStyle = 'rgba(160,190,220,.6)'; const sx = o.flip ? x - 6 : x + 2; ctx.fillRect(sx, y - 13, 5, 11); R(sx, y - 13, 5, 1, '#e6f6ff');
@@ -2623,11 +2645,12 @@ function drawTandem(t) {
   if (t.cargo) bmp(ctx, DONKEY, DPAL, x + (fl ? 5 : -5) - 18, y - 56, 2, false);
   if (t.state === 'wait' && Math.floor(S.t * 4) % 2) { R(x - 4, y - 66, 9, 8, '#1b1464'); R(x - 3, y - 65, 7, 6, '#ffd36b'); R(x, y - 64, 1, 3, '#1b1464'); R(x, y - 60, 1, 1, '#1b1464'); }
 }
-function drawVan() {
-  const v = S.van, gx = v.gx, gy = v.gy;
-  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 1, 5, '#eef0f6', '#d5d9e6', '#b7bccd');
-  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 6, 2, '#2f6bff', '#2f6bff', '#2552c8');
-  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 8, 7, '#f6f7fb', '#dde0ea', '#bfc4d4');
+// the patrol van is white with a blue stripe; riot raids come in dark blue vans (v.blue) with a white stripe
+function drawVan(v = S.van) {
+  const gx = v.gx, gy = v.gy, B = v.blue;
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 1, 5, B ? '#22306a' : '#eef0f6', B ? '#1b2656' : '#d5d9e6', B ? '#141d44' : '#b7bccd');
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 6, 2, B ? '#f2f4fa' : '#2f6bff', B ? '#e2e6f0' : '#2f6bff', B ? '#c8cede' : '#2552c8');
+  box(ctx, gx - .75, gy - .3, gx + .75, gy + .3, 8, 7, B ? '#2a3a7e' : '#f6f7fb', B ? '#22306a' : '#dde0ea', B ? '#1b2656' : '#bfc4d4');
   box(ctx, gx + .45, gy - .28, gx + .76, gy + .28, 10, 4, null, '#2a3550', '#24324f');
   const f = Math.floor(S.t * 6) % 2;
   box(ctx, gx - .15, gy - .12, gx, gy + .12, 15, 2, f ? '#3b7bff' : '#ff3b5c', f ? '#2f62cc' : '#cc2f49', f ? '#2f62cc' : '#cc2f49');
@@ -2736,7 +2759,8 @@ function draw() {
   // the human chain: drawn with the residents who form it (see update)
   if (S.bikes) S.bikes.riders.forEach((r, i, all) => r.vis !== false && addP(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); bike(q.x, q.y, r.flip, r.col, 5); const lead = S.bikes.path ? i === 0 : i === all.length - 1; if (lead && S.bikes.woman) drawLeader(q.x, q.y - 5, r.flip); else { guy(q.x, q.y - 5, { ...r.look, moving: true, step: S.t * 8, flip: r.flip }); if (lead) drawMegaphone(q.x, q.y - 5, r.flip); } }));
   if (S.tandem) add(S.tandem.gx, S.tandem.gy, () => drawTandem(S.tandem));
-  if (S.van) add(S.van.gx, S.van.gy, drawVan);
+  if (S.van) add(S.van.gx, S.van.gy, () => drawVan(S.van));
+  for (const v of S.vans || []) add(v.gx, v.gy, () => drawVan(v));
   if (S.fasc) { const f = S.fasc; if (!f.victim.hurt && (f.state !== 'flee' || !f.victim.joined)) addP(f.victim.gx, f.victim.gy, () => drawVictim(f.victim)); f.gang.forEach(g => addP(g.gx, g.gy, () => drawFascist(g))); add(f.car.gx, f.car.gy, () => drawPoliceCar(f.car)); }
   if (S.followers) S.followers.forEach(o => addP(o.gx, o.gy, () => { const q = iso(o.gx, o.gy); guy(q.x, q.y, { ...o.look, moving: o.moving, step: o.step, flip: o.flip, back: o.back }); if (S.fasc && S.fasc.state === 'beat') { const x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 20, 3, 1, '#b6ff3b'); R(x, y - 19, 1, 1, '#b6ff3b'); } }));
   if (S.journo) addP(S.journo.gx, S.journo.gy, () => drawJournalist(S.journo));
@@ -2867,7 +2891,7 @@ const ADS = [
     <div class="cols"><div>Terça<br><b>27 out. 2026</b><br><b>18:30</b></div><div><b>Assembleia<br>da República</b><br>Lisboa</div></div>
     <p class="src">No dia em que começa a votação do Orçamento do Estado: contra os cortes na habitação e a violência policial nas acampadas.</p>${CHECK}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">Informação</span><h2 class="center">Próximos<br><u>dias</u></h2><div class="agenda">
-    <div><span class="when">Dom 25 · 17:00</span><span class="what">Lisboa<small>A acampada sobreviveu e resiste. Rossio, com assembleia popular às 19:00</small></span></div>
+    <div><span class="when">Dom 25 · 17:00</span><span class="what">Lisboa<small>Mais casas, menos bastão! Rossio, com assembleia popular às 19:00</small></span></div>
     <div><span class="when">Ter 27 · 18:30</span><span class="what">Lisboa<small>Todos ao Parlamento! Assembleia da República. Casa para Viver</small></span></div>
     <div><span class="when">Sáb 14 nov · 15:00</span><span class="what">Lisboa e Porto<small>Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês</small></span></div>
     <div><span class="when">Sáb 14 nov</span><span class="what">Aveiro, Viana, Ponta Delgada…<small>E dezenas de outras cidades</small></span></div>
@@ -2921,7 +2945,7 @@ const RALLIES = [
   { date: '2026-10-24', at: '15:00', city: 'Coimbra', title: 'Assembleia popular', where: 'Praça 8 de Maio' },
   { date: '2026-10-24', at: '15:00', city: 'Braga', title: 'Assembleia popular', where: 'Av. Central · Praça da República' },
   { date: '2026-10-24', at: '10:00', city: 'Faro', title: 'Concentração pela habitação', where: 'Praça da Liberdade (Pontinha)' },
-  { date: '2026-10-25', at: '17:00', city: 'Lisboa', title: 'A acampada sobreviveu e resiste', where: 'Rossio · 19h: assembleia popular' },
+  { date: '2026-10-25', at: '17:00', city: 'Lisboa', title: 'Mais casas, menos bastão!', where: 'Rossio · 19h: assembleia popular' },
   { date: '2026-10-27', at: '18:30', city: 'Lisboa', title: 'Todos ao Parlamento!', where: 'Assembleia da República · Casa para Viver' },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Porto', title: 'Casa para viver', where: 'Praça do Marquês' },
