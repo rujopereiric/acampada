@@ -108,6 +108,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 #direto{ position:absolute; left:0; right:58px; bottom:0; z-index:2; background:#d8261c; color:#fff; padding:6px 10px 6px; font:700 14px/1.25 Jost, sans-serif; border-top:2px solid #0b0a0a; }
 #direto[hidden]{ display:none; } #direto b{ display:inline-block; background:#fff; color:#d8261c; font:800 11px/1 Jost, sans-serif; letter-spacing:1px; text-transform:uppercase; padding:3px 6px 2px; margin-right:8px; vertical-align:1px; animation:liveb 1s steps(2) infinite; } @keyframes liveb{ 50%{ opacity:.55; } }
 #direto small{ display:block; font:600 11px/1.2 Jost, sans-serif; opacity:.85; margin:3px 0 2px; }
+.ride{ background:var(--paper); color:var(--ink); padding:10px 12px 9px; margin-top:6px; border-left:8px solid #ffd23a; } .ride b{ display:block; font:800 16px/1.15 Jost, sans-serif; } .ride span{ display:block; font:600 14px/1.3 Jost, sans-serif; margin-top:3px; } .ride small{ display:block; font:700 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.5px; color:#5b554f; margin-top:5px; }
 .npcline{ margin:0 0 10px; font:600 17px/1.3 Jost, sans-serif; background:#fff; color:var(--ink); padding:9px 11px 8px; position:relative; }
 .npcline::after{ content:''; position:absolute; left:18px; bottom:-8px; border:8px solid transparent; border-top-color:#fff; border-bottom:0; }
 .opts{ grid-template-columns:1fr; } .opts button{ font-size:15px; }
@@ -574,14 +575,17 @@ const nearCravo = () => me && Math.hypot(me.x - 11, me.y - 11) < 3.4;
 
 /* ---------- passing in the street: the car with a tent on the roof and the bike ride (the same for everyone, from the clock) ---------- */
 const STREETS = [{ axis: 'x', c: 24.6, dir: 1 }, { axis: 'x', c: 23.4, dir: -1 }, { axis: 'y', c: 24.6, dir: 1 }, { axis: 'y', c: 23.4, dir: -1 }];
-const BICI_SHOUTS = [['Bicicletada pela habitação!', 'Bike ride for housing!'], ['Casa para viver!', 'Homes to live in!'], ['Pedala, pedala, a renda não se cala!', 'Pedal on, the rent won’t stop!'], ['Junta-te à bicicletada!', 'Join the bike ride!']];
+const BICI_N = 12; // riders in the bike ride (at least 10)
+const BICI_COLS = ['#ffd23a', '#3ec46d', '#2f8fff', '#ff7ad9', '#2ad1c9', '#ff8a2a', '#9a6bff', '#e2283b', '#c6ff4a', '#f2efe6'];
+const BICI_SHOUTS = [['Bicicletada pela habitação!', 'Bike ride for housing!'], ['Casa para viver!', 'Homes to live in!'], ['Pedala, pedala, a renda não se cala!', 'Pedal on, the rent won’t stop!'], ['Junta-te à pedalada!', 'Join the ride!']];
 function passing(kind, now = serverNow()) {
   if (cfg.npcs && cfg.npcs[kind] === false) return null;
   const car = kind === 'carro', P = car ? 170e3 : 260e3, off = car ? 0 : 97e3, slot = Math.floor((now + off) / P);
   if (hash(slot, car ? 11 : 23) > .75) return null; // not every time
-  const dur = car ? 11e3 : 24e3, start = slot * P - off + 15e3 + hash(slot, car ? 5 : 6) * (P - dur - 30e3), k = (now - start) / dur;
+  const dur = car ? 11e3 : 34e3, start = slot * P - off + 15e3 + hash(slot, car ? 5 : 6) * (P - dur - 30e3), k = (now - start) / dur;
   if (k < 0 || k > 1) return null;
-  const st = STREETS[Math.floor(hash(slot, car ? 7 : 8) * 4)], a = -7, b = 29, pos = st.dir > 0 ? a + (b - a) * k : b - (b - a) * k;
+  const st = STREETS[Math.floor(hash(slot, car ? 7 : 8) * 4)], a = car ? -7 : -21, b = car ? 29 : 43, // the bike ride is long: from well before the first rider to well after the last
+    pos = st.dir > 0 ? a + (b - a) * k : b - (b - a) * k;
   const at = d => st.axis === 'x' ? { gx: pos - d * st.dir, gy: st.c } : { gx: st.c, gy: pos - d * st.dir };
   const flip = st.axis === 'x' ? st.dir < 0 : st.dir > 0; // which way they face on the screen
   return { k, st, slot, at, flip, ...at(0) };
@@ -600,9 +604,9 @@ function drawTentCar(g, c, now) {
   const bump = Math.floor(now / 120) % 2; if (c.k > .3 && c.k < .62 && bump) { R(g, x + 9, y - 10, 2, 1, '#ffd23a'); R(g, x + 11, y - 12, 2, 1, '#ffd23a'); }
 }
 function drawBicicletada(g, b, now) {
-  for (let i = 5; i >= 0; i--) {
+  for (let i = BICI_N - 1; i >= 0; i--) {
     const p = b.at(i * 1.15), q = iso(p.gx, p.gy), lk = i === 0 ? { skin: '#a8714a', hair: '#16121a', shirt: '#e2283b', pants: '#2b2d55' } : lookOf(Math.floor(hash(b.slot, i) * LOOKS));
-    drawRider(g, Math.round(q.x), Math.round(q.y), lk, b.flip, now / 140 + i, ['#ffd23a', '#3ec46d', '#2f8fff', '#ff7ad9', '#2ad1c9', '#ff8a2a'][i]);
+    drawRider(g, Math.round(q.x), Math.round(q.y), lk, b.flip, now / 140 + i, BICI_COLS[i % BICI_COLS.length]);
     if (i === 0) { const hx = b.flip ? Math.round(q.x) - 7 : Math.round(q.x) + 3; R(g, hx, Math.round(q.y) - 17, 4, 3, '#e8e2d0'); R(g, b.flip ? hx - 2 : hx + 4, Math.round(q.y) - 18, 2, 5, '#e2283b'); }
   }
 }
@@ -998,6 +1002,7 @@ function targets() {
   const out = [];
   for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
   if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
+  const bici = passing('bicicletada'); if (bici) for (let i = 0; i < BICI_N; i++) { const p = bici.at(i * 1.15); out.push({ kind: 'bicicletada', id: 0, x: p.gx, y: p.gy, z: 12 }); }
   for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 11, c }); }
   return out;
 }
@@ -1013,6 +1018,7 @@ function hitTest(sx, sy) {
 const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
 function approach(t) {
   if (t.kind === 'cartaz') return showCartaz(t.c);
+  if (t.kind === 'bicicletada') return bikeRideInfo();
   if (!me) return toast(L('Só quem está na praça com um boneco pode falar com as personagens.', 'Only people in the square with an avatar can talk to the characters.'), 3000);
   if (distTo(t) <= REACH) return interact(t);
   const a = Math.atan2(me.y - t.y, me.x - t.x);
@@ -1083,6 +1089,16 @@ function showCartaz(c) {
     const who = document.createElement('div'); who.className = 'note'; const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(c.city);
     who.append(dot, ` ${c.name} · ${c.city}`); b.append(who);
     if (!myCartazes.has(c.id) && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
+  });
+}
+// tapping the bike ride: the real rides to join
+const RIDES = [
+  { n: 'Massa Crítica', w: ['Última sexta-feira do mês, às 18:30, no Marquês', 'Last Friday of the month, 6:30 pm, at the Marquês'], c: ['Lisboa e Porto', 'Lisbon and Porto'] },
+  { n: 'Lisbora · Social Ride', w: ['Todas as terças-feiras, às 20:00, no Atrium Saldanha', 'Every Tuesday, 8 pm, at Atrium Saldanha'], c: ['Lisboa', 'Lisbon'] }
+];
+function bikeRideInfo() {
+  dialog(L('Pedalada', 'Bike ride'), L('Gostaste? Pedala connosco na rua a sério:', 'Like it? Ride with us on the real streets:'), b => {
+    for (const r of RIDES) { const d = document.createElement('div'); d.className = 'ride'; const h = document.createElement('b'); h.textContent = '🚲 ' + r.n; const w = document.createElement('span'); w.textContent = L(r.w[0], r.w[1]); const c = document.createElement('small'); c.textContent = L(r.c[0], r.c[1]); d.append(h, w, c); b.append(d); }
   });
 }
 function makeCartazDialog() {
@@ -1438,7 +1454,7 @@ if (window.visualViewport) visualViewport.addEventListener('resize', () => { if 
 document.addEventListener('gesturestart', e => e.preventDefault());
 showStatus();
 requestAnimationFrame(frame);
-window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing };
+window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing, approach };
 })();
 </script>
 </body>
