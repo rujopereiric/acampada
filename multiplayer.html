@@ -91,7 +91,7 @@ button{ cursor:pointer; touch-action:manipulation; }
   #tMural{ display:none; }
   #muralSheet .x{ display:none; }
 }
-#toast{ position:absolute; left:50%; bottom:62px; transform:translateX(-50%); background:var(--ink); color:var(--lime); border:2px solid var(--lime); font:700 13px/1.2 Jost, sans-serif; padding:6px 10px 5px; text-transform:uppercase; letter-spacing:.4px; z-index:4; max-width:90%; text-align:center; pointer-events:none; }
+#toast{ position:absolute; left:50%; top:10px; transform:translateX(-50%); background:var(--ink); color:var(--lime); border:2px solid var(--lime); font:700 13px/1.2 Jost, sans-serif; padding:6px 10px 5px; text-transform:uppercase; letter-spacing:.4px; z-index:4; max-width:90%; text-align:center; pointer-events:none; }
 #toast[hidden]{ display:none; }
 #djTag{ position:absolute; left:8px; bottom:8px; background:rgba(11,10,10,.8); color:var(--lime); font:700 11px/1 Jost, sans-serif; text-transform:uppercase; padding:5px 7px 4px; letter-spacing:.4px; z-index:2; pointer-events:none; }
 #djTag[hidden]{ display:none; }
@@ -111,6 +111,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .npclab{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
 #npcBody{ overflow:auto; } #npcBody > button.ghost, .row2 .ghost{ margin-top:10px; background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:8px 10px 7px; }
 .redbtn{ margin-top:10px; background:var(--redbox); color:#fff; border:none; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; }
+.sheet.typing{ top:0; bottom:auto; border-top:0; border-bottom:2px solid var(--paper); }
 .cartazIn{ width:100%; resize:none; border:2px solid var(--paper); background:#fff; color:var(--ink); padding:8px; font:700 18px/1.2 Jost, sans-serif; }
 .cartaz{ background:#f2efe6; color:var(--ink); border:3px solid var(--ink); font:800 22px/1.15 Jost, sans-serif; text-transform:uppercase; padding:14px 12px; text-align:center; transform:rotate(-1.5deg); margin:4px 4px 10px; }
 .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid var(--ink); vertical-align:0; }
@@ -419,7 +420,7 @@ function drawPerson(g, p, now) {
   else if (e === 2 || e === 7) o.armUp2 = true;
   else if (e === 3) { o.armUp = o.armUp2 = Math.floor(t * 6) % 2 === 0; }
   else if (e === 5 || e === 6) { o.armUp = o.armUp2 = true; o.wob = o.wob2 = Math.floor(t * 4) % 2; }
-  if (p.b) { bike(g, x, y, p.flip, auraOf(p.c), 5); bob += 5; o.armUp = o.armUp2 = false; if (!p.moving) o.moving = false; }
+  if (p.b) { drawRider(g, x, y, lk, p.flip, p.moving ? p.step : 0, auraOf(p.c)); if (p.i) drawItem(g, x, y - 6, p.i, p.flip, t); if (e) { const hx = p.flip ? x + 2 : x - 2; R(g, hx, y - 23, 1, 5, lk.skin); } return; }
   guy(g, x, y - bob, o);
   if (p.i) drawItem(g, x, y - bob, p.i, p.flip, t);
   if (e === 2 && !p.back) R(g, x + 3, y - 17, 3, 3, lk.skin); // the raised fist
@@ -474,6 +475,30 @@ function bike(g, x, y, fl, col, len) {
   wheel(g, x - len, y - 3); wheel(g, x + len, y - 3);
   R(g, x - len, y - 4, len * 2, 1, col); R(g, x - len + 2, y - 6, len * 2 - 4, 1, col);
   const front = fl ? x - len : x + len - 1; R(g, front, y - 9, 1, 6, col); R(g, front - 1, y - 9, 3, 1, '#1b1464');
+}
+function line(g, x0, y0, x1, y1, c) { x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1); const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let e = dx + dy; g.fillStyle = c; for (let i = 0; i < 64; i++) { g.fillRect(x0, y0, 1, 1); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } } }
+// someone riding a bicycle, seen from the side: frame in their city's colour, legs turning the pedals
+function drawRider(g, x, y, lk, flip, step, col) {
+  const f = flip ? -1 : 1, X = d => x + d * f; // d > 0 is forwards
+  R(g, x - 9, y, 19, 1, 'rgba(30,10,70,.28)');
+  const rw = [X(-6), y - 3], fw = [X(6), y - 3], crank = [X(0), y - 4], seat = [X(-2), y - 10], bars = [X(4), y - 11];
+  // the far leg first (behind the frame)
+  const a = step * 1.6, p1 = [crank[0] + Math.cos(a) * 2 * f, crank[1] + Math.sin(a) * 2], p2 = [crank[0] - Math.cos(a) * 2 * f, crank[1] - Math.sin(a) * 2];
+  const knee = (p) => [ (seat[0] + p[0]) / 2 + 2 * f, Math.min(seat[1], p[1]) + 1 ];
+  const leg = (p, c) => { const k = knee(p); line(g, seat[0], seat[1] + 1, k[0], k[1], c); line(g, k[0], k[1], p[0], p[1], c); R(g, p[0] - (f > 0 ? 0 : 1), p[1], 2, 1, '#16121a'); };
+  leg(p2, shade(lk.pants, .75));
+  // wheels and frame
+  for (const w of [rw, fw]) { wheel(g, Math.round(w[0]), Math.round(w[1])); }
+  line(g, rw[0], rw[1], crank[0], crank[1], col); line(g, rw[0], rw[1], seat[0], seat[1], col); line(g, seat[0], seat[1], crank[0], crank[1], col);
+  line(g, seat[0], seat[1] + 1, bars[0] - f, bars[1] + 2, col); line(g, crank[0], crank[1], bars[0] - f, bars[1] + 2, col); line(g, bars[0], bars[1], fw[0], fw[1], col);
+  R(g, seat[0] - 1, seat[1] - 1, 3, 1, '#16121a'); R(g, bars[0] - (f > 0 ? 0 : 1), bars[1] - 1, 2, 1, '#16121a');
+  // the rider: leaning forwards, hands on the bars
+  const sh = [X(0), y - 16]; // shoulders
+  R(g, Math.min(seat[0], sh[0]) - 1, sh[1], 4, 6, lk.shirt); R(g, Math.min(seat[0], sh[0]) + (f > 0 ? 2 : 0), sh[1] + 1, 1, 5, shade(lk.shirt, .82));
+  line(g, sh[0] + f, sh[1] + 1, bars[0], bars[1], lk.skin);
+  R(g, sh[0] - 1, sh[1] - 4, 4, 4, lk.skin); R(g, sh[0] - 1, sh[1] - 5, 4, 2, lk.hair); R(g, f > 0 ? sh[0] - 1 : sh[0] + 2, sh[1] - 3, 1, 2, lk.hair);
+  R(g, f > 0 ? sh[0] + 2 : sh[0] - 1, sh[1] - 3, 1, 1, '#1b1464');
+  leg(p1, lk.pants);
 }
 // what people carry from the canteen
 function drawItem(g, x, y, i, flip, t) {
@@ -676,9 +701,9 @@ function onMsg(m) {
   if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
   if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
   if (m.t === 'foto') { flashAt = performance.now(); flashPos = { x: m.x, y: m.y }; shutter(); if (m.ids.includes(myId)) setTimeout(() => makePhoto(m.ids, m.x, m.y, m.ev), 350); return; }
-  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { myCartaz = m.c.id; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
+  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { clearTimeout(cartazWait); myCartaz = m.c.id; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
   if (m.t === 'cartaz-') { cartazes = cartazes.filter(c => c.id !== m.id); return; }
-  if (m.t === 'cartazno') { const w = NPC_NO[m.why] || (m.why === 'ja' ? ['Já tens um cartaz no cravo.', 'You already have a poster on the carnation.'] : null); const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e) e.textContent = t; else if (t) toast(t, 3000); return; }
+  if (m.t === 'cartazno') { clearTimeout(cartazWait); const gb = $('cartazGo'); if (gb) { gb.disabled = false; gb.textContent = L('Pendurar', 'Hang it'); } const w = NPC_NO[m.why] || (m.why === 'ja' ? ['Já tens um cartaz no cravo.', 'You already have a poster on the carnation.'] : null); const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e) e.textContent = t; else if (t) toast(t, 3000); return; }
   if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); return; }
   if (m.t === 'aviso') { setAviso(m.text || ''); return; }
   if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
@@ -965,14 +990,19 @@ function makeCartazDialog() {
     const ta = document.createElement('textarea'); ta.maxLength = 60; ta.rows = 2; ta.className = 'cartazIn'; ta.placeholder = L('Ex.: Casa para viver!', 'E.g. Homes to live in!');
     const cnt = document.createElement('div'); cnt.className = 'note'; const err = document.createElement('span'); err.className = 'err'; err.id = 'cartazErr'; const n = document.createElement('span'); n.textContent = '0/60'; cnt.append(err, n);
     ta.addEventListener('input', () => { n.textContent = `${ta.value.length}/60`; err.textContent = ''; });
-    const go = optBtn(L('Pendurar no cravo', 'Hang it on the carnation'), () => { const v = ta.value.trim(); if (v) send({ t: 'cartaz', text: v }); });
-    go.className = 'redbtn';
+    const go = optBtn(L('Pendurar', 'Hang it'), () => {
+      const v = ta.value.trim(); if (!v) { err.textContent = L('Escreve alguma coisa.', 'Write something.'); return; }
+      if (!ws || ws.readyState !== 1) { err.textContent = L('Sem ligação à praça. Tenta outra vez daqui a pouco.', 'Not connected to the square. Try again in a moment.'); return; }
+      send({ t: 'cartaz', text: v }); go.disabled = true; go.textContent = '…';
+      clearTimeout(cartazWait); cartazWait = setTimeout(() => { if (!go.isConnected) return; go.disabled = false; go.textContent = L('Pendurar', 'Hang it'); err.textContent = L('A praça não respondeu. Tenta outra vez.', 'The square didn’t answer. Try again.'); }, 5000);
+    });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
-    b.append(ta, cnt, go); setTimeout(() => ta.focus(), 50);
+    const row = document.createElement('div'); row.className = 'write'; row.append(ta, go); go.id = 'cartazGo';
+    b.append(row, cnt); setTimeout(() => ta.focus(), 50);
   });
 }
 // the button that shows up next to the carnation
-let ctxWas = '';
+let ctxWas = '', cartazWait = 0;
 function ctxSync() {
   const el = $('ctxBtn'); let t = '', dis = false;
   if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet'].every(id => $(id).hidden)) {
@@ -1088,8 +1118,8 @@ function music(dj) {
 }
 function blip(p) { if (!actx || muted || !me) return; const d = Math.hypot(p.x - me.x, p.y - me.y); if (d > 8) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(880, t + .05); g.gain.setValueAtTime(.025 * (1 - d / 8), t); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .14); }
 let avisoClosed = '';
-function setAviso(t) { aviso = t; $('avisoTxt').textContent = t; $('aviso').hidden = !t || avisoClosed === t; if (t && avisoClosed !== t) blipAviso(); }
-$('avisoX').addEventListener('click', () => { avisoClosed = aviso; $('aviso').hidden = true; });
+function setAviso(t) { aviso = t; $('avisoTxt').textContent = t; $('aviso').hidden = !t || avisoClosed === t; $('toast').style.top = $('aviso').hidden ? '' : '52px'; if (t && avisoClosed !== t) blipAviso(); }
+$('avisoX').addEventListener('click', () => { avisoClosed = aviso; $('aviso').hidden = true; $('toast').style.top = ''; });
 function blipAviso() { if (!actx || muted) return; const t = actx.currentTime; for (const [i, f] of [[0, 784], [1, 988]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.04, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .1); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .12); } }
 function renderMuralLock() {
   const ro = !!cfg.muralRO; $('muralIn').disabled = ro; $('muralSend').disabled = ro; $('muralIn').closest('.write').classList.toggle('ro', ro);
@@ -1178,6 +1208,7 @@ function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = m
 function bikeSync() { const b = $('bBike'); b.hidden = myMode !== 'praca' || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
 $('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
 $('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
+for (const id of ['npcSheet', 'muralSheet']) { const el = $(id); el.addEventListener('focusin', e => { if (e.target.matches('textarea, input') && matchMedia('(pointer: coarse)').matches && innerWidth < 900) el.classList.add('typing'); }); el.addEventListener('focusout', () => setTimeout(() => { if (!el.contains(document.activeElement)) el.classList.remove('typing'); }, 100)); }
 $('fotoShare').addEventListener('click', sharePhoto); $('fotoSave').addEventListener('click', savePhoto);
 let toastT = 0;
 function toast(t, ms) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); if (ms) toastT = setTimeout(hideToast, ms); }
