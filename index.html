@@ -93,7 +93,10 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .bub{ position:absolute; transform:translate(-50%, -100%); background:#fff; color:#8b2320; border:1px solid #0b0a0a; padding:3px 6px 2px; font:400 9px/1.2 Silkscreen, monospace; text-transform:uppercase; text-align:center; white-space:nowrap; }
 .bub::after{ content:''; position:absolute; left:50%; bottom:-5px; margin-left:-4px; border:4px solid transparent; border-top-color:#fff; border-bottom:0; }
 .camBtn{ position:absolute; right:8px; bottom:8px; z-index:2; width:46px; height:46px; display:grid; place-items:center; padding:0; background:#f4f1ea; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; font:800 14px/1 Jost, Futura, sans-serif; text-transform:uppercase; letter-spacing:.3px; cursor:pointer; }
-.camBtn[hidden]{ display:none; } .camBtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #0b0a0a; } #rotHint button{ flex:none; background:none; border:0; color:#f4f1ea; font-size:18px; line-height:1; padding:4px 6px; cursor:pointer; }
+.camBtn[hidden]{ display:none; } #padBtn{ bottom:62px; } #padBtn[aria-pressed="true"]{ background:#b6ff3b; }
+#pad{ position:absolute; left:10px; bottom:10px; z-index:3; width:132px; height:132px; display:grid; grid-template:repeat(3,44px) / repeat(3,44px); touch-action:none; user-select:none; -webkit-user-select:none; }
+#pad[hidden]{ display:none; } #pad button{ background:rgba(244,241,234,.82); color:#0b0a0a; border:2px solid #0b0a0a; font:700 18px/1 sans-serif; padding:0; touch-action:none; }
+#pad button.on{ background:#b6ff3b; } #pad [data-k=up]{ grid-area:1/2; } #pad [data-k=left]{ grid-area:2/1; } #pad [data-k=right]{ grid-area:2/3; } #pad [data-k=down]{ grid-area:3/2; } .camBtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #0b0a0a; } #rotHint button{ flex:none; background:none; border:0; color:#f4f1ea; font-size:18px; line-height:1; padding:4px 6px; cursor:pointer; }
 /* upright phones: the city name gets its own line so the header buttons always fit; narrow phones shrink the action labels */
 .cam:not(.land) .top{ flex-wrap:wrap; row-gap:3px; } .cam:not(.land) #city{ order:5; flex-basis:100%; }
 .cam:not(.land) .top .mini{ padding:0 6px; }
@@ -351,6 +354,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
     <div id="msgs" aria-live="polite"><div id="ban" hidden><span class="ar l">◀</span><span class="tx"></span><span class="ar r">▶</span></div></div>
     <div id="rotHint" hidden><span>↻ Roda o telemóvel para ver a praça maior</span><button type="button" id="rotHintX" aria-label="Fechar">✕</button></div>
     <button id="zoom" class="camBtn" type="button" hidden></button>
+    <button id="padBtn" class="camBtn" type="button" hidden aria-label="Setas" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="#0b0a0a" aria-hidden="true"><path d="M12 2l4 5h-8zM12 22l-4-5h8zM2 12l5-4v8zM22 12l-5 4V8z"/></svg></button>
+    <div id="pad" hidden><button data-k="up" aria-label="Cima">▲</button><button data-k="left" aria-label="Esquerda">◀</button><button data-k="right" aria-label="Direita">▶</button><button data-k="down" aria-label="Baixo">▼</button></div>
   </div>
   <div class="bottom">
   <nav class="actions" aria-label="Ações da acampada">
@@ -521,11 +526,11 @@ const VPAL = { W: '#f3eee2', s: '#d2cab6' };
 
 /* ================= cities (from reporting on each square) ================= */
 const CITIES = [
-  { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', violent: true, peopleK: .8, bikeK: .8, police: 1.0, patrols: false, helmets: true, cleaners: true,
+  { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', violent: true, peopleK: .8, bikeK: .8, police: 1.3, cops: 5, patrols: true, helmets: true, cleaners: true,
     // artists who played at the Porto acampada (from @acampadaporto's daily programmes, October 2026)
     artists: ['Manel Cruz', 'Emmy Curl', 'Clã', 'Capicua', 'Egoísticos Implacáveis', 'Unsafe Space Garden', 'Sapatrux', 'Roídos na Acampada'], tag: 'Capacetes azuis e a equipa de limpeza',
     intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.',
-    clear: 'O Porto aguentou as noites. No sábado, às 17:00, começam a chegar tendas ao Rossio.',
+    clear: 'O Porto aguentou as noites, debaixo da polícia mais violenta.',
     // as in the photos: the Palácio Atlântico (Millennium) on the west side, a raised road in front of it behind a granite
     // wall, stairs at the wall's ends with the two bronze horses on red granite pedestals, trees along the north side.
     // No tents on the road; when the square fills up people line the railing; the bicicletada rides along it
@@ -540,11 +545,11 @@ const CITIES = [
     L: [{ a: 0, b: 10, h: 64, style: 'atlantico', roof: '#b8ad94' }],
     R: [{ a: 2.6, b: 6.4, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 6.4, b: 10, h: 40, style: 'pombal', col: '#e3b54b', neon: '#ff5fc8' }],
     C: { h: 96, style: 'rialto', roof: '#b0a588' } },
-  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.12, patrols: false, donkey: true, dj: true, choir: true,
+  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true,
     // artists who played, or were announced, at the Rossio acampada (October 2026)
     artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro',
     intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.',
-    clear: 'O Rossio tornou-se uma pequena aldeia. Coimbra convoca uma assembleia na Praça 8 de Maio.',
+    clear: 'O Rossio tornou-se uma pequena aldeia. No Porto, a acampada monta-se entre o Rivoli e o Palácio Atlântico.',
     // the Rossio as it is: a long square (8 x 16 tiles) with rounded ends and wave pavement, streets all round,
     // Pombaline blocks behind the street on the west side and the Teatro D. Maria II closing the north end
     size: [8, 16], viewW: 320, fullW: 392, viewShift: 36, viewY: 88, setback: 2.4, layout: 'rossio', tentOk: (gx, gy) => rossioD(gx, gy) < -.05,
@@ -559,7 +564,7 @@ const CITIES = [
       { a: 18.4, b: 23, h: 46, style: 'pombal', col: '#e3b54b' }],
     R: [{ a: 0, b: 8, h: 46, style: 'theatre', roof: '#c4674a' }, { a: 10.4, b: 15, h: 46, style: 'pombal', col: '#f2efe6' }],
     C: { h: 36, style: 'pombal', col: '#d97a4a' } },
-  { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'coimbra', police: 1.25, patrols: true, students: true, drums: true, rents: true, tag: 'Os bombos e as rendas dos estudantes',
+  { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'coimbra', police: 1.0, patrols: true, students: true, drums: true, rents: true, tag: 'Os bombos e as rendas dos estudantes',
     intro: 'Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.',
     clear: 'Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.',
     // from the photos: the Igreja de Santa Cruz on the west side (Manueline front between two pinnacled turrets, low
@@ -586,9 +591,9 @@ const CITIES = [
     R: [{ a: 0, b: 3.6, h: 50, style: 'pombal', col: '#f1eee6', balc: true }, { a: 4.8, b: 8.2, h: 50, style: 'pombal', col: '#8eaad4', balc: true },
       { a: 8.2, b: 10, h: 54, style: 'pombal', col: '#efe1c2', balc: true }, { a: 10, b: 12, h: 58, style: 'pombal', col: '#e4875c', balc: true }],
     C: { h: 46, style: 'pombal', col: '#e9e2d0' } },
-  { name: 'Braga', bikeK: .6, place: 'Praça da República', ground: 'braga', police: 1.38, patrols: true, students: true, noTents: true, tag: 'Sem tendas: assembleia no chafariz',
+  { name: 'Braga', bikeK: .6, place: 'Praça da República', ground: 'braga', police: 1.0, patrols: true, students: true, noTents: true, tag: 'Sem tendas: assembleia no chafariz',
     intro: 'Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.',
-    clear: 'Braga aguentou sem uma única tenda.',
+    clear: 'Braga aguentou sem uma única tenda. No sábado, às 17:00, começam a chegar tendas ao Rossio.',
     // from the photos: the Arcada with the Igreja da Lapa at the back (north), café umbrellas in front of it, the round
     // fountain, light granite paving, a row of trees along the east side, flower beds and lawns towards the Avenida
     // Central (south-west). The player is a bald man with glasses; with some people, the banners go down on the ground
@@ -603,9 +608,9 @@ const CITIES = [
     L: [{ a: 0, b: 3.4, h: 50, style: 'pombal', col: '#ece2cd' }, { a: 3.4, b: 6.8, h: 58, style: 'atlantico', roof: '#9aa0a8' }, { a: 6.8, b: 10.4, h: 52, style: 'pombal', col: '#f2efe6' }, { a: 10.4, b: 14, h: 48, style: 'pombal', col: '#e6d6b8' }],
     R: [{ a: 0, b: 2.4, h: 52, style: 'pombal', col: '#f2ece0' }, { a: 2.4, b: 10, h: 40, style: 'arcada', roof: '#c4674a', col: '#e9dfc8', arc: '#d4c9b1', top: '#f6f1e6', lapa: true, lapaCol: '#e2d8c2' }],
     C: { h: 52, style: 'pombal', col: '#e3e5e8' } },
-  { name: 'Faro', bikeK: .6, place: 'Praça da Liberdade', ground: 'faro', police: 1.5, patrols: true, slowStart: true, tag: 'Um arranque lento, depois o Algarve resiste',
+  { name: 'Faro', bikeK: .6, place: 'Praça da Liberdade', ground: 'faro', police: 1.0, patrols: true, slowStart: true, tag: 'Um arranque lento, depois o Algarve resiste',
     intro: 'Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.',
-    clear: 'Viva o Algarve a resistir.',
+    clear: 'Viva o Algarve a resistir. Em Coimbra, os estudantes descem da universidade com as tendas.',
     // from the photos: light calçada with dark bands in big squares; to the south-west a panel framed in dark red with
     // rows of small dark grates; rings and half rings of dark stone to the east, a slanted skylight in one of them, a
     // kiosk with white umbrellas, granite benches, a tree in the north-west corner. West: the pink marble Polícia
@@ -673,14 +678,6 @@ const STYLES = {
     { const r = 3, x = m - 6.5, zz = z - 35; if (zz >= 0 && x * x + zz * zz * 1.6 <= r * r && zz < r) return z < 36 ? TR : GL; // half-moon attic windows
       if (Math.abs(m - .5) < 1 && z > 36 && z < 40) return '#cfcac0'; } // masks between them
     return ST; } }; },
-  rivoli: b => { const h = b.h; return { extra: 6, fn: (u, z, w, front) => {
-    if (z >= h) { if (!front) return null; return Math.abs(u - w / 2) < 10 ? '#f3e9cf' : null; }
-    if (z >= h - 3) return '#f3e9cf';
-    if (z < 12) { const m = u % 10; return (m >= 2 && m <= 7 && z < 10) ? '#2a2350' : '#d8c7a0'; }
-    if (front && z >= h - 14 && z < h - 7 && Math.abs(u - w / 2) < w * .3) return (u % 4 < 2) ? '#ff4f8b' : '#ffd0e0';
-    const m = u % 12; if (m < 2) return '#f6eedb';
-    if (m >= 4 && m <= 8 && z >= 14 && z < h - 16) return ((z - 14) % 10 < 1) ? '#eadcbc' : (z % 10 > 6 ? '#c9f6ff' : '#4f7fd0');
-    return '#eadcbc'; } }; },
   atlantico: b => { const h = b.h, col = '#d9cdb2'; return { extra: 0, fn: (u, z) => {
     if (z >= h) return null; if (z >= h - 2) return '#efe6d0';
     if (z < 11) { const m = u % 8; return m >= 2 && m <= 6 && z < 9 ? '#2a2350' : '#c8bb9e'; }
@@ -691,15 +688,6 @@ const STYLES = {
     if (z >= h - 8) return (u % 5 < 2) ? '#efe6d0' : '#bfb294';
     if (z < 11) return u % 8 < 5 && z < 9 ? '#2a2350' : '#bfb294';
     const m = u % 6, fz = (z - 11) % 8; if (m >= 2 && m <= 4 && fz >= 2 && fz <= 5) return (z > 60 && hash(u, z >> 3) > .6) ? '#ffe9a8' : (fz >= 5 ? '#c9f6ff' : '#4f7fd0');
-    return col; } }; },
-  church: b => { const h = b.h, col = '#f1ebdd'; return { extra: 5, fn: (u, z, w, front) => {
-    const mid = w / 2, d = Math.abs(u - mid);
-    if (z >= h) { if (!front) return null; return ((u >> 2) & 1) ? '#e9e2d2' : null; }
-    if (front && d < 12 && z < 46) {
-      if (d < 5 && z < 22) return z >= 19 - Math.round(d * d / 8) ? '#d8c89a' : '#2e2648';
-      return ((u + z) % 4 === 0) ? '#c9b77d' : ((u * 3 + z) % 7 === 0 ? '#bda96a' : '#e7dcc0'); }
-    if (front && d < 4 && z >= 49 && z < 55) return '#4f7fd0';
-    const m = u % 16; if (m >= 6 && m <= 9 && z >= 22 && z < 36) return '#3a3160';
     return col; } }; },
   // Igreja de Santa Cruz (Coimbra): golden stone, a Manueline portal of niches and statues under a big window, a
   // pointed gable with a cross and pinnacles; the turrets are their own boxes (see 'turret' and the city's fore list).
@@ -742,12 +730,6 @@ const STYLES = {
     if (z >= h) return null; const m = u % 14; if (m < 3) return SH;
     if (m >= 7 && m <= 9 && z >= 18 && z < 32) return z > 29 - Math.abs(m - 8) ? ST : '#3a3040';
     return z % 10 === 0 ? SH : ST; } }; },
-  camara: b => { const h = b.h, col = '#f2eee4'; return { extra: 0, fn: (u, z) => {
-    if (z >= h) return null; if (z >= h - 4) return z >= h - 2 ? '#ffffff' : '#e3ddcf';
-    if (z < 14) { const m = u % 12; return (m >= 3 && m <= 8 && z < 12) ? '#3a3160' : '#e3ddcf'; }
-    const m = u % 11, fz = (z - 14) % 15; if (m >= 4 && m <= 7 && fz >= 2 && fz <= 12) return fz >= 10 ? '#c9f6ff' : '#4f7fd0';
-    if (fz === 1 && m >= 3 && m <= 8) return '#2a2350';
-    return col; } }; },
   belfry: b => { const h = b.h; return { extra: 16, fn: (u, z, w) => { // the Lapa's bell tower: arched opening with the bell, a little dome and a cross
     const d = Math.abs(u - w / 2);
     if (z >= h) { const zz = z - h; if (zz < 6) return d < 5 - zz * .7 ? (d < 2 - zz * .3 ? '#d9cfba' : '#bdb4a2') : null; if (d < .8 && zz < 14) return '#3a3348'; if (zz === 10 && d < 2.6) return '#3a3348'; return null; }
@@ -827,9 +809,6 @@ const STYLES = {
     if (z >= h - 2) return '#ffffff';
     const fz = z % 10, m = u % 8; if (fz === 1) return '#9a98a2'; if (fz >= 3 && fz <= 7 && m >= 2 && m <= 5) return fz > 6 ? '#c9f6ff' : '#4f7fd0';
     return col; } }; },
-  ccdr: b => { const h = b.h, col = '#d6dbe3'; return { extra: 0, fn: (u, z) => {
-    if (z >= h) return null; if (z < 10) return u % 12 < 6 ? '#5a6a8a' : '#c3c9d6';
-    return (z % 10) < 4 ? ((u + z) % 7 === 0 ? '#e6fbff' : '#7fd8ff') : col; } }; }
 };
 function faceGX(g, gxc, ga, gb, z0, Hm, fn, f) {
   const xl = Math.round(iso(gxc, gb).x), xr = Math.round(iso(gxc, ga).x), w = xr - xl;
@@ -903,8 +882,6 @@ function drawPortico(g, b, cx, yf) {
 const PLAZA = {
   waves: (gx, gy) => { const v = gy + .3 * Math.sin(gx * Math.PI * 2 / 1.7); return (Math.floor(v * 3.2) & 1) ? [44, 42, 54] : [239, 233, 219]; },
   slabs: (gx, gy) => { if (gx > NX - .45 || gy > NY - .45) return (frac(gx * 4) < .15 || frac(gy * 4) < .15) ? [96, 94, 104] : [128, 126, 136]; if (frac(gx / 1.25) < .03 || frac(gy / 1.25) < .03) return [176, 168, 154]; const k = hash(Math.floor(gx / 1.25), Math.floor(gy / 1.25)); return k < .33 ? [226, 219, 203] : k < .66 ? [218, 210, 193] : [232, 226, 212]; },
-  granite: (gx, gy) => { if (frac(gx * 2) < .06 || frac(gy * 1.5) < .07) return [128, 130, 142]; const k = hash(Math.floor(gx * 2), Math.floor(gy * 1.5)); return k < .33 ? [185, 187, 197] : k < .66 ? [196, 198, 206] : [172, 174, 185]; },
-  mosaic: (gx, gy) => (frac((gx + gy) * 1.2) < .1 || frac((gx - gy) * 1.2) < .1) ? [90, 88, 104] : [234, 227, 209],
   braga: (gx, gy) => {
     // towards the Avenida Central: lawns along the west side and at the far end, with flower beds (big yellow flowers)
     if ((gx < 3.7 && gy > 5.4) || (gy > 9.9 && gx < 8.9)) {
@@ -941,8 +918,6 @@ const PLAZA = {
     } else if (frac(gx / 3) < .07 || frac(gy / 3) < .07) return [128, 126, 134];
     return hash(Math.floor(gx * 8), Math.floor(gy * 8)) < .5 ? [232, 227, 216] : [222, 217, 206];
   },
-  checker: (gx, gy) => { if (frac(gx) < .04 || frac(gy) < .04) return [140, 138, 150]; return ((Math.floor(gx) + Math.floor(gy)) & 1) ? [170, 168, 162] : [222, 218, 208]; },
-  rings: (gx, gy) => { const r = Math.hypot(gx - 5, gy - 5); return frac(r * 1.4) < .16 ? [214, 170, 96] : [243, 239, 228]; }
 };
 // Rossio: signed distance to the rounded rectangle of the square, negative inside
 function rossioD(gx, gy) {
@@ -1070,7 +1045,8 @@ function makeBG(city) {
 }
 function makeBG0(city) {
   const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
-  const img = g.createImageData(W, H), d = img.data, P = PLAZA[city.ground], blocks = cityBlocks(city);
+  const img = g.createImageData(W, H), d = img.data, P = PLAZA[city.ground], blocks = cityBlocks(city), bGrid = new Map();
+  for (const b of blocks) for (let x = Math.floor(b[0] - .4); x <= Math.floor(b[2] + .4); x++) for (let y = Math.floor(b[1] - .4); y <= Math.floor(b[3] + .4); y++) { const k = x * 4096 + y; if (!bGrid.has(k)) bGrid.set(k, []); bGrid.get(k).push(b); }
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const w = toWorld(x + .5, y + .5), gx = w.gx, gy = w.gy;
     let c3;
@@ -1088,7 +1064,8 @@ function makeBG0(city) {
     else if (gx < NX + .6 && gy < NY + .6) { c3 = [206, 200, 222]; if (frac(gx * 2) < .08 || frac(gy * 2) < .08) c3 = [184, 177, 204]; if (gx >= NX + .45 || gy >= NY + .45) c3 = [150, 140, 180]; }
     else { c3 = [64, 56, 96]; const lane = (gy >= NY + .6 && Math.abs(gy - (NY + 2)) < .07 && frac(gx * 1.2) < .5) || (gx >= NX + .6 && Math.abs(gx - (NX + 2)) < .07 && frac(gy * 1.2) < .5); if (lane) c3 = [230, 222, 250]; }
     // pavement round each block, courtyard inside (the block itself is drawn on top)
-    for (const [a0, b0, a1, b1] of blocks) if (gx > a0 - .4 && gx < a1 + .4 && gy > b0 - .4 && gy < b1 + .4) { c3 = (gx > a0 && gx < a1 && gy > b0 && gy < b1) ? [150, 138, 118] : (frac(gx * 2) < .08 || frac(gy * 2) < .08) ? [184, 177, 204] : [206, 200, 222]; break; }
+    const near = bGrid.get(Math.floor(gx) * 4096 + Math.floor(gy));
+    if (near) for (const [a0, b0, a1, b1] of near) if (gx > a0 - .4 && gx < a1 + .4 && gy > b0 - .4 && gy < b1 + .4) { c3 = (gx > a0 && gx < a1 && gy > b0 && gy < b1) ? [150, 138, 118] : (frac(gx * 2) < .08 || frac(gy * 2) < .08) ? [184, 177, 204] : [206, 200, 222]; break; }
     const n = (hash(x >> 1, y) - .5) * 12, i = (y * W + x) * 4;
     d[i] = clamp(c3[0] + n, 0, 255); d[i + 1] = clamp(c3[1] + n, 0, 255); d[i + 2] = clamp(c3[2] + n, 0, 255); d[i + 3] = 255;
   }
@@ -1250,6 +1227,7 @@ const PERKS = [
 
 /* ================= state ================= */
 let S = null, cityIdx = 0, mode = 'title', bg = null, hudT = 0;
+const ORDER = [4, 2, 3, 1, 0]; // chapters from easiest to hardest: Faro, Coimbra, Braga, Lisboa, Porto (indices into CITIES)
 let cleared = new Set();
 try { cleared = new Set(JSON.parse(localStorage.getItem('acampada3-cleared') || '[]')); } catch (e) {}
 function saveCleared() { try { localStorage.setItem('acampada3-cleared', JSON.stringify([...cleared])); } catch (e) {} }
@@ -1275,6 +1253,7 @@ function newLevel() {
     donkey: city.donkey ? 'small' : null, dj: null, djT: city.dj ? 35 : -1, helmets: 0, hcrate: null, helmetT: city.helmets ? 25 : -1, cleaners: null, swept: false, drums: null, drumT: city.drums ? 40 : -1, freeze: 0, singCd: 0, choir: null, choirDay: -1, artist: city.artists ? ri(0, city.artists.length - 1) : 0, rally: false, tandemT: 0, tip: null, tipT: 0,
     player: { gx: CX + 1.5, gy: CY + 3.6, tx: CX + 1.5, ty: CY + 3.6, step: 0, moving: false, flip: false, back: false } };
   for (const [a, b] of city.blocks) S.occ[b * NX + a] = 'X';
+  S.grafAt = rnd(20, 54); S.graf = null; S.tagged = false; // once per square: someone climbs the statue to spray it (see updGraf)
   // 'R' = street or pavement inside the grid: people walk there, but no tents or stations
   if (city.tentOk) for (let gy = 0; gy < NY; gy++) for (let gx = 0; gx < NX; gx++) if (!S.occ[gy * NX + gx] && !city.tentOk(gx + .5, gy + .5)) S.occ[gy * NX + gx] = 'R';
   bg = null; fit(); if (!bg) bg = makeBG(city); // the picture's width depends on the square
@@ -1301,7 +1280,7 @@ const people = () => S.tents.reduce((s, t) => s + t.occ, 0);
 const crowdMult = () => 6 + Math.floor(S.support / 10) * 2;
 const crowd = () => people() * crowdMult();
 const fmt = n => n.toLocaleString('pt-PT');
-const station = k => S.stations.find(s => s.kind === k);
+const station = k => S.stations.find(s => s.k === k);
 function float(gx, gy, text, color, z = 18) {
   const p = iso(gx, gy, z), plus = /^[+-]\d/.test(text);
   // the same "+24" close by: just refresh it; other messages close by: stack above instead of on top
@@ -1350,7 +1329,7 @@ function spawnArrival(opts = {}) {
   const side = Math.random() < .5;
   const gx = side ? rnd(.5, NX - .5) : NX + 1.6, gy = side ? NY + 1.6 : rnd(.5, NY - .5);
   const [tx, ty] = opts.target || randomSpot();
-  S.arrivals.push({ rent: S.city.rents ? pick([550, 600, 650, 700]) : 0, gx, gy, ex: gx, ey: gy, tx, ty, state: 'walk', wait: 12, auto: !!opts.auto, look: look(S.city.students), step: rnd(0, 9), flip: false, back: true, infoT: 0 });
+  S.arrivals.push({ rent: S.city.rents ? pick([550, 600, 650, 700]) : 0, gx, gy, ex: gx, ey: gy, tx, ty, state: 'walk', wait: 18, auto: !!opts.auto, look: look(S.city.students), step: rnd(0, 9), flip: false, back: true, infoT: 0 });
 }
 function spawnCrate() {
   const side = Math.random() < .5;
@@ -1359,7 +1338,7 @@ function spawnCrate() {
 function nearestStation(o) { let b = null, bd = 1e9; for (const t of S.stations) { const d = Math.hypot(t.gx - o.gx, t.gy - o.gy); if (d < bd) { bd = d; b = t; } } return b; }
 function removeStation(st) { const i = S.stations.indexOf(st); if (i < 0) return; S.stations.splice(i, 1); S.occ[st.ty * NX + st.tx] = null; float(st.gx, st.gy, 'Levaram a estrutura', '#ff8aa8', 22); sfx('hit'); }
 // Porto, riot police only: blood
-function blood(gx, gy) { const q = iso(gx, gy, 6); for (let i = 0; i < 6; i++) S.parts.push({ x: q.x, y: q.y, vx: rnd(-14, 14), vy: rnd(-18, -4), life: rnd(.4, .8), type: 'spark', col: pick(['#b3121b', '#7a0b12', '#d11f2a']) }); if ((S.stains ||= []).length < (S.city.violent ? 24 : 4)) S.stains.push({ gx: gx + rnd(-.2, .2), gy: gy + rnd(-.1, .2), t: 40 }); }
+function blood(gx, gy) { const q = iso(gx, gy, 6); for (let i = 0; i < 6; i++) S.parts.push({ x: q.x, y: q.y, vx: rnd(-14, 14), vy: rnd(-18, -4), life: rnd(.4, .8), type: 'spark', col: pick(['#b3121b', '#7a0b12', '#d11f2a']) }); if ((S.stains ||= []).length < (S.city.violent ? 24 : S.city.rough ? 10 : 4)) S.stains.push({ gx: gx + rnd(-.2, .2), gy: gy + rnd(-.1, .2), t: 40 }); }
 function nearestTent(o, avoidShield) {
   let b = null, bd = 1e9;
   for (const t of S.tents) {
@@ -1495,13 +1474,6 @@ function bikePos(s) {
   if (d < w) return [a + d, a]; d -= w; if (d < h) return [bx, a + d]; d -= h; if (d < w) return [bx - d, by]; d -= w; return [a, by - d];
 }
 /* ================= fascists and the orange-headed journalist ================= */
-// people near the player, counted the same way as the stats (tent occupants plus people walking in)
-function nearCrowd(r) {
-  const p = S.player; let n = 0;
-  for (const t of S.tents) if (gd(t, p) < r) n += t.occ;
-  for (const a of S.arrivals) if (a.state !== 'leave' && gd(a, p) < r) n++;
-  return n;
-}
 const FASC_NEED = 4, FASC_LEN = 22; // people who follow you (tap them) needed to make the fascists run
 function startFasc() {
   // which street: south and east are in front of the square; in Lisboa also west and north (streets all round).
@@ -1627,6 +1599,51 @@ function updFollowers(dt) {
   for (const o of F) if (o.gone && o.res) S.residents.push({ gx: o.gx, gy: o.gy, tx: o.gx, ty: o.gy, wait: 1, look: o.look, step: 0 });
   S.followers = F.filter(o => !o.gone);
 }
+// where the statue is in each square: [gx, gy, height the climber stands at]
+function statueSpot() {
+  const c = S.city, d = n => c.deco.find(x => x.t === n);
+  if (d('column')) return [CX + .45, CY + .45, 29];
+  if (d('corcel')) { const h = d('corcel'); return [h.gx + .1, h.gy + .1, (h.ph || 9) + 1]; }
+  if (d('fonte')) { const f = d('fonte'); return [f.gx + .2, f.gy + .2, 13]; }
+  if (d('kiosk')) { const k = d('kiosk'); return [k.gx + .2, k.gy + .2, 13]; }
+  if (d('chafariz')) { const f = d('chafariz'); return [f.gx + .3, f.gy + .3, 3]; }
+  return [CX, CY, 0];
+}
+const GRAF_NEED = 8, GRAF_LEN = 16;
+function updGraf(dt) {
+  if (S.grafAt && S.clock >= S.grafAt && !S.graf && !S.raid && !S.van && !S.fasc) {
+    S.grafAt = 0; const [gx, gy, z] = statueSpot();
+    S.graf = { gx, gy, z, t: 0, hits: 0, state: 'spray', look: look(S.city.students), col: pick(['#ff4f8b', '#39e1ff', '#b6ff3b', '#ffd23a', '#9a6bff']) };
+    floatXY(0, 0, 'Subiu à estátua para a grafitar!', '#ff8aa8', S.graf);
+    floatXY(0, 0, 'Toca nele várias vezes para o convencer a descer', '#ffd36b', S.graf);
+  }
+  const g = S.graf; if (!g) return;
+  g.t += dt;
+  if (g.state === 'spray') {
+    if (Math.random() < dt * 10) { const q = iso(g.gx, g.gy, g.z + 9); S.parts.push({ x: q.x + rnd(3, 6), y: q.y, vx: rnd(4, 14), vy: rnd(-6, 6), life: rnd(.3, .6), type: 'spark', col: g.col }); }
+    if (g.hits >= GRAF_NEED) { g.state = 'down'; g.t = 0; S.morale = Math.min(100, S.morale + 4); float(g.gx, g.gy, 'Desceu da estátua', '#b6ff3b', g.z + 24); sfx('join'); }
+    else if (g.t > GRAF_LEN) { g.state = 'down'; g.t = 0; S.tagged = true; S.support = Math.max(0, S.support - 12); float(g.gx, g.gy, 'Estátua grafitada: o apoio desce', '#ff8aa8', g.z + 24); sfx('lose'); }
+  } else if (g.t > 1.2) S.graf = null;
+}
+function tapGraf(e) {
+  const g = S.graf; if (!g || g.state !== 'spray') return false;
+  const r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H, q = iso(g.gx, g.gy, g.z), k = S.city.peopleK || 1;
+  if (Math.abs(sx - q.x) > 9 * k + 3 || sy < q.y - 22 * k - 6 || sy > q.y + 5) return false;
+  g.hits++; sparkle(g.gx, g.gy, 3, g.z + 10); tone(520 + g.hits * 40, .06, 'square', .03); return true;
+}
+function drawGraf() {
+  const g = S.graf;
+  if (S.tagged) { const [gx, gy, z] = statueSpot(), q = iso(gx, gy, z); const x = Math.round(q.x), y = Math.round(q.y); // the tag stays on the statue
+    R(x - 4, y + 1, 3, 1, '#ff4f8b'); R(x - 1, y + 2, 4, 1, '#39e1ff'); R(x - 3, y + 3, 2, 1, '#b6ff3b'); R(x + 1, y, 1, 2, '#ff4f8b'); }
+  if (!g) return;
+  const q = iso(g.gx, g.gy, g.z), x = Math.round(q.x), y = Math.round(q.y);
+  small(x, y, () => { guy(x, y, { ...g.look, flip: false, back: false, moving: g.state === 'down', step: S.t * 8 });
+    if (g.state === 'spray') { R(x + 3, y - 13, 1, 3, g.look.skin); R(x + 3, y - 15, 2, 3, '#e8e6e0'); R(x + 3, y - 16, 2, 1, g.col); } });
+  if (g.state === 'spray') { // the little bar above, filling up with every tap
+    const w = 22, bx = x - w / 2, by = y - 30 * (S.city.peopleK || 1) - 6;
+    R(bx - 1, by - 1, w + 2, 5, '#0b0a0a'); R(bx, by, w, 3, '#5a5060'); R(bx, by, Math.round(w * Math.min(1, g.hits / GRAF_NEED)), 3, '#b6ff3b');
+    R(bx, by + 3, Math.round(w * Math.max(0, 1 - g.t / GRAF_LEN)), 1, '#ff8aa8'); }
+}
 function updWounded(dt) {
   if (!S.wounded || !S.wounded.length) return;
   const p = S.player, aid = station('aid');
@@ -1705,11 +1722,14 @@ function drawJournalist(j) {
   if (j.state === 'shout' && Math.floor(S.t * 8) % 2) { R(mx + (j.flip ? -3 : 3), y - 14, 1, 1, '#ff9a2e'); R(mx + (j.flip ? -5 : 5), y - 15, 1, 3, '#ff9a2e'); }
   if (j.state !== 'leave') drawFloat({ x: q.x, y: q.y - 26, text: 'Imprensa', color: '#ff9a2e', t: 1 });
 }
+// squares already won, in any order: each one makes the police a little stronger
+const wins = () => cleared.size - (cleared.has(cityIdx) ? 1 : 0);
 function startRaid(patrol, charge) {
+  S.light = !patrol && !charge && !S.firstRaidDone; if (!patrol && !charge) S.firstRaidDone = true; // the first dawn raid of each square is light: a few officers, no riot police
   S.raid = true; S.raidT = 0; S.raidDetained = 0; S.warned = false; S.charge = !!charge;
   // riot police (rare): only with 15 tents or more. 5% of police actions, +3% with posters on the statue, +10% with the
   // pressure almost at the top, +15% in Porto; after a concert at night, 50% (65% in Porto)
-  const pr = charge ? (S.city.violent ? .65 : .5) : .05 + (S.perks.has('cartazes') ? .03 : 0) + (S.pressure >= 85 ? .1 : 0) + (S.city.violent ? .15 : 0);
+  const pr = S.light ? 0 : charge ? (S.city.violent ? .65 : .5) : .05 + (S.perks.has('cartazes') ? .03 : 0) + (S.pressure >= 85 ? .1 : 0) + (S.city.violent ? .15 : S.city.rough ? .07 : 0) + .02 * wins();
   S.riot = S.tents.length >= 15 && Math.random() < pr; S.riotAct = false; S.wiped = false; S.formT = 0;
   S.van = { gx: -4, gy: NY + 1.15, tx: rnd(NX * .2, NX * .6), state: 'arrive', patrol, blue: !!S.riot };
   if (S.fasc) fascLeave(false);
@@ -2057,7 +2077,7 @@ function update(dt) {
   const slow = S.city.slowStart ? clamp(.35 + people() / 28, .35, 1.6) : 1;
   S.arrivalT -= dt * night * evening * slow;
   if (S.arrivalT <= 0) { spawnArrival(); S.arrivalT = Math.max(1.1, 5.5 - S.support * .045) * rnd(.7, 1.3); }
-  const joinR = S.perks.has('megafone') ? 1.0 : .6, info = stationOf('info');
+  const joinR = S.perks.has('megafone') ? 1.3 : .9, info = stationOf('info');
   for (const a of S.arrivals) {
     if (a.state !== 'leave') {
       if (gd(a, p) < joinR) { a.gone = true; joinOne(a.gx, a.gy); continue; }
@@ -2106,7 +2126,7 @@ function update(dt) {
     if (S.eveDay !== day && hr >= 18) { S.eveDay = day; S.eveAt = rnd(18.5, 22.5); }
     if (S.eveAt && hr >= S.eveAt && hr < 24 && !S.bikes && !S.raid && !S.fasc) { S.eveAt = 0; startBikes(); } }
   nightEvents(dt);
-  updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt);
+  updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt);
 
   // donkey tandem (Lisboa)
   if (S.tandemT > 0) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY - .6], [CX + .6, CY + 2.3]], state: 'in', cargo: true, step: 0, flip: false }; floatXY(0, 0, 'Vem aí um tandem com a cabeça de burro', '#ffd36b', { gx: CX + .6, gy: CY + 2.3 }); } } // it rides into the square and stops next to the column
@@ -2128,21 +2148,21 @@ function update(dt) {
       else if (moveEnt(v, v.tx, v.gy, 3, dt, true)) {
         v.state = 'parked';
         if (S.riot) { v.blue = true; S.vans = [-1.9, 1.9].map(d => ({ gx: v.gx + d, gy: v.gy, blue: true })); } // a riot raid brings more vans
-        let n = v.patrol ? 2 + Math.floor(cityIdx / 2) : Math.min(10, 3 + cityIdx + Math.floor(S.tents.length / 5));
+        const base = S.city.cops || 3; let n = v.patrol ? base - 1 + Math.floor(wins() / 2) : S.light ? 2 + Math.floor(wins() / 2) : Math.min(14, base + Math.floor(S.tents.length / 5) + wins());
         if (S.swept) n = Math.max(1, n - 2);
         if (S.charge) n = Math.min(18, n * 2 + 2); // the charge after a night concert: twice the officers, faster and staying longer
-        if (S.riot) { n = S.city.violent ? 10 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, dog: i % 3 === 1, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
+        if (S.riot) { n = S.city.violent ? 10 : S.city.rough ? 9 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, dog: i % 3 === 1, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
         else for (let i = 0; i < n; i++) S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'walk', target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true });
-        const q = iso(CX, NY); floatXY(q.x, 64, S.riot ? 'Polícia de choque!' : v.patrol ? 'Patrulha!' : S.charge ? 'Carga policial!' : 'Rusga de madrugada!', '#ff8aa8');
+        const q = iso(CX, NY); floatXY(q.x, 64, S.riot ? 'Polícia de choque!' : v.patrol ? 'Patrulha!' : S.charge ? 'Carga policial!' : S.light ? 'Primeira rusga: poucos agentes' : 'Rusga de madrugada!', '#ff8aa8');
       }
     } else if (v.state === 'parked') { S.raidT += dt; if (!S.police.length) v.state = 'leave'; }
     else if (moveEnt(v, NX + 5, v.gy, 3, dt, true)) { S.van = null; S.raid = false; onRaidEnd(); }
   }
-  const spBase = 1.15 * S.city.police * (S.perks.has('vigias') ? .85 : 1) * (S.bikes ? .5 : 1) * (S.charge ? 1.3 : 1);
+  const spBase = 1.15 * S.city.police * (1 + .05 * wins()) * (S.perks.has('vigias') ? .85 : 1) * (S.bikes ? .5 : 1) * (S.charge ? 1.3 : 1);
   const shielded = t => S.chain && Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r;
   const pushOut = o => { const c = S.chain, dx = o.gx - c.gx, dy = o.gy - c.gy, d = Math.hypot(dx, dy) || 1; if (d < c.r + .25) { o.gx = c.gx + dx / d * (c.r + .25); o.gy = c.gy + dy / d * (c.r + .25); return true; } return false; };
   for (const o of S.police) {
-    if ((!S.riot || S.riotAct) && S.raidT > (S.charge ? 42 : S.swept ? 18 : 30) && o.state !== 'back') o.state = 'back'; // riot police nobody stands up to: they stay until everything is gone
+    if ((!S.riot || S.riotAct) && S.raidT > (S.charge ? 42 : S.light ? 15 : S.swept ? 18 : 30) && o.state !== 'back') o.state = 'back'; // riot police nobody stands up to: they stay until everything is gone
     if (S.freeze > 0) { o.moving = false; continue; }
     if (o.state === 'walk' || o.state === 'dismantle') {
       if (!o.target || !(S.tents.includes(o.target) || S.stations.includes(o.target))) { o.target = nearestTent(o, false) || (S.riot && !S.riotAct ? nearestStation(o) : null); o.state = 'walk'; o.prog = 0; if (!o.target) o.state = 'back'; }
@@ -2151,7 +2171,7 @@ function update(dt) {
       if (moveEnt(o, o.form[0], o.form[1], 1.4, dt, true)) { o.moving = false; o.flip = false; o.back = true; }
       S.formT += dt / S.police.length; if (S.formT > 3.5) o.state = 'walk'; continue;
     }
-    if (o.riot) { const bk = S.city.violent ? 1 : .1; o.hit = false; for (const r of S.residents) if (Math.hypot(r.gx - o.gx, r.gy - o.gy) < .8) { o.hit = true; if (Math.random() < dt * 1.5 * bk) blood(r.gx, r.gy); } if (o.state === 'dismantle' && Math.random() < dt * bk) blood(o.target.gx, o.target.gy); } // blood: Porto, and a tenth as much elsewhere
+    if (o.riot) { const bk = S.city.violent ? 1 : S.city.rough ? .3 : .1; o.hit = false; for (const r of S.residents) if (Math.hypot(r.gx - o.gx, r.gy - o.gy) < .8) { o.hit = true; if (Math.random() < dt * 1.5 * bk) blood(r.gx, r.gy); } if (o.state === 'dismantle' && Math.random() < dt * bk) blood(o.target.gx, o.target.gy); } // blood: Porto, and a tenth as much elsewhere
     if (o.state === 'walk') {
       const t = o.target; let sp = spBase; if (gd(o, p) < .9) sp *= .35;
       if (gd(o, t) < .4) { o.state = 'dismantle'; o.prog = 0; o.moving = false; }
@@ -2494,13 +2514,6 @@ function drawFonte(d) {
   // the figure
   const fy = y - 17; R(x - 1, fy - 16, 3, 16, '#56615e'); R(x + 1, fy - 16, 1, 16, '#3e4744'); R(x - 1, fy - 19, 3, 3, '#5e6a66'); R(x - 2, fy - 12, 1, 6, '#56615e'); R(x + 2, fy - 13, 1, 5, '#3e4744'); R(x - 1, fy - 18, 1, 1, '#8a9894');
 }
-function drawMoto(d) {
-  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), k = hash(Math.round(d.gx * 9), Math.round(d.gy * 9)), col = ['#b02a22', '#2a2a36', '#d8d4cc', '#3a5a8a', '#2a2a36'][Math.floor(k * 5)], f = k > .5;
-  R(x - 6, y, 13, 1, 'rgba(30,10,70,.2)');
-  for (const wx of [x - 5, x + 3]) { R(wx, y - 4, 3, 1, '#16121a'); R(wx - 1, y - 3, 1, 2, '#16121a'); R(wx + 3, y - 3, 1, 2, '#16121a'); R(wx, y - 1, 3, 1, '#16121a'); R(wx + 1, y - 2, 1, 1, '#9a9aa4'); }
-  R(x - 3, y - 6, 6, 2, col); R(x - 2, y - 4, 4, 1, '#55555f'); R(f ? x + 1 : x - 4, y - 7, 3, 1, '#16121a');
-  const hx = f ? x - 4 : x + 3; R(hx, y - 9, 1, 4, '#55555f'); R(hx - 1, y - 9, 3, 1, '#16121a');
-}
 function drawRail(d) {
   const a = iso(d.gx, d.gy - .25, 0), b = iso(d.gx, d.gy + .25, 0), c = '#4a4c5a';
   vl(ctx, Math.round(a.x), a.y - 8, a.y, c); vl(ctx, Math.round(b.x), b.y - 8, b.y, c);
@@ -2535,12 +2548,6 @@ function drawPool(d) {
   const j = Math.floor(S.t * 8) % 3; R(q.x, q.y - 9 + j, 1, 5, '#e6f8ff'); R(q.x - 2, q.y - 6, 5, 2, '#cfeefb');
 }
 function drawTree(d) { if (d.big) return drawBigTree(d); const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); ell(ctx, x, y, 9, 'rgba(30,10,70,.25)'); R(x - 1, y - 14, 2, 14, '#6b4a2b'); circ(ctx, x, y - 22, 9, '#2f8a50'); circ(ctx, x - 3, y - 25, 5, '#57c46e'); circ(ctx, x + 3, y - 19, 4, '#25703f'); R(x - 5, y - 28, 2, 1, '#b6ff3b'); }
-function drawPalm(d) {
-  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); ell(ctx, x, y, 8, 'rgba(30,10,70,.25)');
-  for (let i = 0; i < 26; i++) R(x + Math.round(Math.sin(i / 8) * 2), y - i, 2, 1, i % 3 ? '#9a7a4a' : '#7a5a32');
-  const tx = x + Math.round(Math.sin(26 / 8) * 2), ty = y - 26;
-  for (const [dx, dy] of [[1, 0], [-1, 0], [.7, -.5], [-.7, -.5], [.5, .4], [-.5, .4], [0, -1]]) for (let k = 0; k < 10; k++) R(tx + Math.round(dx * k), ty + Math.round(dy * k + k * k * .07), 2, 1, k > 6 ? '#57c46e' : '#2e9a5a');
-}
 function drawFountain(gx, gy, big) {
   const q = iso(gx, gy), r = big ? 20 : 13;
   cyl(ctx, q.x, q.y, r, 5, '#cfc8b6', '#dad3c2'); ell(ctx, q.x, q.y - 5, r - 2, '#59c3f5');
@@ -2608,14 +2615,13 @@ function drawMegaphone(x, y, fl) {
   const k = Math.floor(S.t * 4) % 3; for (let i = 0; i <= k; i++) R(mx + s * (5 + i * 2), y - 14 - i, 1, 4 + i * 2, 'rgba(255,255,255,.75)');
 }
 // voted in the assembly: posters go up on the square's monument (on the lamps where there is none)
-const MONUMENTS = ['column', 'corcel', 'chafariz', 'palm', 'fonte'];
+const MONUMENTS = ['column', 'corcel', 'chafariz', 'fonte'];
 function posterSpots(d) {
   const hasMon = S.city.deco.some(x => MONUMENTS.includes(x.t));
   if (d.t === 'column') return [[5.55, 4.75, 18, 1], [4.75, 5.55, 18, 2], [5.55, 5.3, 11, 0], [5.3, 5.55, 9, 3], [4.5, 5.55, 10, 0],
     [5.9, 4.35, 2, 0], [5.9, 5.45, 2, 3], [4.4, 5.9, 2, 0], [5, 5.9, 2, 1], [5.65, 5.9, 2, 0]].map(([a, b, z, k]) => [a + CX - 5, b + CY - 5, z, k]);
   if (d.t === 'corcel') { const z = d.ph ? 10 : 6; return [[d.gx + .32, d.gy - .05, z, 0], [d.gx, d.gy + .32, z, 1], [d.gx + .32, d.gy + .28, 2, 3]]; }
   if (d.t === 'chafariz') return [[d.gx + .55, d.gy + .2, 3, 0], [d.gx + .2, d.gy + .55, 3, 1], [d.gx + .5, d.gy + .5, 3, 3], [d.gx - .1, d.gy + .65, 3, 2]];
-  if (d.t === 'palm') return [[d.gx + .05, d.gy + .05, 9, 0], [d.gx + .05, d.gy + .05, 2, 3]];
   if (d.t === 'fonte') return [[d.gx + .95, d.gy + .25, 2, 0], [d.gx + .25, d.gy + .95, 2, 1], [d.gx + .75, d.gy + .75, 2, 3]];
   if (d.t === 'lamp' && !hasMon) return [[d.gx, d.gy + .02, 13, 0], [d.gx, d.gy + .02, 4, 1]];
   return null;
@@ -2718,14 +2724,6 @@ function syncMsgs() {
   MSG.floats.length = 0; MSG.bubs.length = 0;
 }
 function drawFloat(f) { MSG.floats.push(f); }
-function drawFloatOld(f) {
-  ctx.font = '6px Silkscreen, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const T = f.text.toUpperCase(), w = Math.ceil(ctx.measureText(T).width) + 6, x = clamp(Math.round(f.x - w / 2), Math.round(VIEW.x0) + 1, Math.round(VIEW.x1) - w - 1), y = clamp(Math.round(f.y - 4), Math.round(VIEW.y0) + 1, Math.round(VIEW.y1) - 10);
-  ctx.globalAlpha = Math.min(1, f.t * 2);
-  R(x, y, w, 9, '#0b0a0a'); R(x, y + 8, w, 1, f.color);
-  ctx.fillStyle = f.color; ctx.fillText(T, x + w / 2, y + 4.5);
-  ctx.globalAlpha = 1;
-}
 function draw() {
   const d = S.dark;
   const sky = ctx.createLinearGradient(0, SKYDY, 0, 140 + SKYDY);
@@ -2743,7 +2741,7 @@ function draw() {
   const add = (gx, gy, f) => list.push({ k: gx + gy, f });
   const addP = (gx, gy, f) => add(gx, gy, () => { const q = iso(gx, gy); small(q.x, q.y, f); });
   for (const dd of S.city.deco) {
-    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), palm: () => drawPalm(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), moto: () => drawMoto(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd) }[dd.t];
+    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd) }[dd.t];
     add(dd.gx, dd.gy, S.perks.has('cartazes') && posterSpots(dd) ? () => { fn(); if (dd.t === 'column') drawColumnProtest(); posterSpots(dd).forEach(([a, b, z, k]) => { const q = iso(a, b, z); drawPoster(q.x, q.y, k); }); } : fn);
   }
   drawFloorBanners();
@@ -2759,6 +2757,7 @@ function draw() {
   // the human chain: drawn with the residents who form it (see update)
   if (S.bikes) S.bikes.riders.forEach((r, i, all) => r.vis !== false && addP(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); bike(q.x, q.y, r.flip, r.col, 5); const lead = S.bikes.path ? i === 0 : i === all.length - 1; if (lead && S.bikes.woman) drawLeader(q.x, q.y - 5, r.flip); else { guy(q.x, q.y - 5, { ...r.look, moving: true, step: S.t * 8, flip: r.flip }); if (lead) drawMegaphone(q.x, q.y - 5, r.flip); } }));
   if (S.tandem) add(S.tandem.gx, S.tandem.gy, () => drawTandem(S.tandem));
+  if (S.graf || S.tagged) { const [gx, gy] = statueSpot(); add(gx + .3, gy + .3, drawGraf); }
   if (S.van) add(S.van.gx, S.van.gy, () => drawVan(S.van));
   for (const v of S.vans || []) add(v.gx, v.gy, () => drawVan(v));
   if (S.fasc) { const f = S.fasc; if (!f.victim.hurt && (f.state !== 'flee' || !f.victim.joined)) addP(f.victim.gx, f.victim.gy, () => drawVictim(f.victim)); f.gang.forEach(g => addP(g.gx, g.gy, () => drawFascist(g))); add(f.car.gx, f.car.gy, () => drawPoliceCar(f.car)); }
@@ -2848,14 +2847,14 @@ function titleRally() {
 function titleScreen() {
   mode = 'title';
   show(`<h2 class="p-red rough">PROTESTO</h2><p class="p-big rough">A acampada resiste</p><p class="p-mid rough">Junta-te a nós</p>${TENT}
-  <p class="p-info rough">Porto · Lisboa · Coimbra<br>Braga · Faro</p>
+  <p class="p-info rough">Faro · Coimbra · Braga<br>Lisboa · Porto</p>
   <p class="help">Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.</p>
   ${titleRally()}
   <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">Junta-te →</button><button class="btnp narrow red" data-a="info">Informação</button></div><button class="btnp narrow" data-a="rules" style="margin-top:8px">Como jogar?</button>${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
-  const rows = CITIES.map((c, i) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">CAP. ${i + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${c.tag.replace('&', '&amp;')}</span></span>${cleared.has(i) ? '<span class="ok">Resistiu</span>' : '<span></span>'}</button>`).join('');
+  const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">CAP. ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${c.tag.replace('&', '&amp;')}</span></span>${cleared.has(i) ? '<span class="ok">Resistiu</span>' : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">ESCOLHE</h2><p class="p-big rough">a tua praça</p><p class="help">Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.</p><div class="chaps">${rows}</div>
   <button class="btnp red" data-a="title">← Voltar</button>${cleared.size ? '<button class="btnp" data-a="reset">Recomeçar tudo</button>' : ''}`);
 }
@@ -3029,7 +3028,7 @@ function makeStory(o) {
   g.font = '400 36px Silkscreen, monospace'; const url = 'ACAMPADAPIXEL.PT', uw = g.measureText(url).width + 44;
   g.fillStyle = CREAM; g.fillRect(1080 - M - uw, y + 12, uw, 80); g.fillStyle = DARK; g.fillText(url, 1080 - M - uw + 22, y + 66);
   const fb = Math.max(y + 160, 1740);
-  g.font = '800 25px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText('PORTO · LISBOA · COIMBRA · BRAGA · FARO', M, fb);
+  g.font = '800 25px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText('FARO · COIMBRA · BRAGA · LISBOA · PORTO', M, fb);
   g.fillStyle = RED; g.textAlign = 'right'; g.fillText('#ACAMPADAPELAHABITAÇÃO', 1080 - M, fb); g.textAlign = 'left';
   return c;
 }
@@ -3068,7 +3067,7 @@ function openRules() {
   rulesReturn = mode; mode = 'rules';
   show(`<h2 class="p-red rough">COMO JOGAR</h2><p class="p-mid rough">Segura a praça</p><div class="rules">
   <h3>Objetivo</h3>
-  <p>Enche a barra de <b>Pressão</b> até ao fim para segurar a praça. Segura as cinco, Porto, Lisboa, Coimbra, Braga e Faro, para ganhar. Se toda a gente for para casa ou for detida, a acampada cai, mas podes voltar.</p>
+  <p>Enche a barra de <b>Pressão</b> até ao fim para segurar a praça. Segura as cinco, Faro, Coimbra, Braga, Lisboa e Porto, para ganhar. Se toda a gente for para casa ou for detida, a acampada cai, mas podes voltar.</p>
   <h3>Na praça</h3>
   <p>Toca (ou clica) na praça para andar. No computador também podes usar WASD ou as setas.</p>
   <p>Vai ter com quem chega à praça para se juntar à acampada, e apanha os <b>donativos</b> que aparecem nas bordas.</p>
@@ -3123,9 +3122,9 @@ function finishLevel() {
     prepStory(); return;
   }
   mode = 'clear';
-  let nxt = -1; for (let k = 1; k <= CITIES.length; k++) { const j = (cityIdx + k) % CITIES.length; if (!cleared.has(j)) { nxt = j; break; } }
+  let nxt = -1; const pos = ORDER.indexOf(cityIdx); for (let k = 1; k <= ORDER.length; k++) { const j = ORDER[(pos + k) % ORDER.length]; if (!cleared.has(j)) { nxt = j; break; } }
   show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">${S.city.name} resiste</span>
-  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} ${S.city.noTents ? 'grupos' : 'tendas'} · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} dias · ${cleared.size}/5 praças</p>
+  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} ${S.city.noTents ? (S.tents.length === 1 ? 'grupo' : 'grupos') : (S.tents.length === 1 ? 'tenda' : 'tendas')} · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} ${Math.floor((S.clock - 6) / 24) === 0 ? 'dia' : 'dias'} · ${cleared.size}/5 praças</p>
   <div>${SHARE_BTN}${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
   prepStory();
 }
@@ -3202,9 +3201,18 @@ function setTarget(e) {
   if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < NY; yy++) for (let xx = 0; xx < NX; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
   S.player.tx = gx; S.player.ty = gy;
 }
-cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapLook(e) || tapRecruit(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapGraf(e) || tapLook(e) || tapRecruit(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
 cv.addEventListener('pointermove', e => { if (dragging && mode === 'play') setTarget(e); });
 cv.addEventListener('pointerup', () => dragging = false); cv.addEventListener('pointercancel', () => dragging = false);
+// phones: arrows on screen, off by default (the button above the zoom turns them on); tapping the square still works
+let padOn = false; try { padOn = localStorage.getItem('acampada-pad') === '1'; } catch (e) {}
+function padShow() { $('padBtn').hidden = !CAM.on; $('pad').hidden = !(CAM.on && padOn); $('padBtn').setAttribute('aria-pressed', String(padOn)); if (!$('pad').hidden) return; for (const k of ['up', 'down', 'left', 'right']) keys[k] = false; }
+$('padBtn').addEventListener('click', () => { padOn = !padOn; try { localStorage.setItem('acampada-pad', padOn ? '1' : '0'); } catch (e) {} padShow(); });
+for (const b of $('pad').querySelectorAll('button')) {
+  const k = b.dataset.k, on = v => e => { e.preventDefault(); keys[k] = v; b.classList.toggle('on', v); if (v) { audioOn(); try { b.setPointerCapture(e.pointerId); } catch (_) {} } };
+  b.addEventListener('pointerdown', on(true)); for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, on(false));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
 const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
 addEventListener('keydown', e => {
   if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = true; if (mode === 'play') e.preventDefault(); return; }
@@ -3317,7 +3325,7 @@ function fit() {
   // phones (touch, no mouse): the square fills the screen, upright or on its side
   const cam = !pcMQ.matches, land = cam && innerWidth > innerHeight;
   document.documentElement.classList.toggle('cam', cam); document.documentElement.classList.toggle('land', land);
-  CAM.on = cam; CAM.land = land; $('zoom').hidden = !cam; zoomLabel(); if (!cam) { cv.style.transform = ''; cv.parentElement.style.background = ''; CAM.bg = ''; }
+  CAM.on = cam; CAM.land = land; $('zoom').hidden = !cam; zoomLabel(); padShow(); if (!cam) { cv.style.transform = ''; cv.parentElement.style.background = ''; CAM.bg = ''; }
   // the hint to turn the phone shows for 5 seconds each time the phone is (or turns) upright
   const upright = cam && !land;
   if (upright && !CAM.upright) showRotHint(); else if (!upright) $('rotHint').hidden = true;
@@ -3378,7 +3386,7 @@ function frame(now) {
 }
 cityIdx = 1; newLevel(); S.clock = 21.5; S.dark = 1;
 for (let i = 0; i < 9; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = 0; } }
-cityIdx = 0;
+cityIdx = ORDER[0];
 titleScreen();
 fit();
 requestAnimationFrame(frame);
