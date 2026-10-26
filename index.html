@@ -243,6 +243,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:18px; text-transform:uppercase; background:#fff; color:#0b0a0a; border:none; padding:11px 22px 9px; margin:16px 5px 0; cursor:pointer; }
 .btnp.red{ background:#8b2320; color:#fff; }
 .btnp.arrow{ padding:9px 13px 7px; margin:16px 0 0; }
+.infonav{ display:flex; justify-content:center; align-items:stretch; gap:6px; flex-wrap:nowrap; } .infonav .btnp{ margin:16px 0 0; } .infonav .btnp.arrow{ display:grid; place-items:center; padding:0 12px; font-size:18px; } .infonav .btnp.narrow{ padding-left:14px; padding-right:14px; } @media (max-width:360px){ .infonav{ gap:4px; } .infonav .btnp.narrow{ padding-left:9px; padding-right:9px; font-size:15px; } .infonav .btnp.arrow{ padding:0 8px; } }
+#ov.adred .btnp.red{ box-shadow:inset 0 0 0 2px #fff; } /* red buttons on the red poster: outlined so they read as buttons */
 .btnp.narrow{ margin:16px 0 0; white-space:nowrap; font-size:16px; padding:10px 12px 8px; }
 .btnp:active{ transform:translateY(2px); }
 #ov.needs{ background:#232425; color:#4ba36f; font-family:"Helvetica Neue", Arial, sans-serif; }
@@ -408,7 +410,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
     <canvas id="c" width="256" height="240" aria-label="A acampada vista de cima, em perspetiva"></canvas>
     <div id="tut" hidden><span class="tx"></span><button type="button" id="tutSkip">Saltar</button></div>
     <div id="tv" hidden aria-hidden="true"><span class="live">● Em direto</span><div class="pic"><canvas id="tvc" width="160" height="90"></canvas></div><div class="cap"><div class="tk"><span></span></div><div class="lt"><span class="al">Alerta</span><span class="sub"></span></div><div class="hd"></div></div></div>
-    <div id="msgs" aria-live="polite"><div id="ban" hidden><span class="ar l">◀</span><span class="tx"></span><span class="ar r">▶</span></div></div>
+    <div id="msgs" aria-live="polite"><div id="ban" hidden><span class="ar l">◀&#xFE0E;</span><span class="tx"></span><span class="ar r">▶&#xFE0E;</span></div></div>
     <div id="rotHint" hidden><span>↻ Roda o telemóvel para ver a praça maior</span><button type="button" id="rotHintX" aria-label="Fechar">✕</button></div>
     <button id="zoom" class="camBtn" type="button" hidden></button>
     <button id="padBtn" class="camBtn" type="button" hidden aria-label="Bola para andar" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0b0a0a" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="#0b0a0a"/></svg></button>
@@ -3715,7 +3717,7 @@ function openInfo(i) {
   const [variant, html] = ADS[infoIdx]();
   const main = variant === 'adred' ? '' : ' red', side = variant === 'adred' ? ' red' : '';
   const tag = L('Informação', 'Information');
-  show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}">◀</button><button class="btnp narrow${main}" data-a="infoclose">${L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}">▶</button></div>`, variant);
+  show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div class="infonav"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 2 4.5 8l6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><button class="btnp narrow${main}" data-a="infoclose">${L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button></div>`, variant);
 }
 // share the poster on screen as an image (1080 x 1350): the poster's own texts and colours, redrawn on a canvas
 function makePoster() {
@@ -3748,14 +3750,14 @@ function makePoster() {
   g.fillStyle = bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
   g.font = '700 26px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'left'; g.fillText(L('INFORMAÇÃO · ACAMPADA', 'INFORMATION · ACAMPADA'), M, 100);
   layout(k, true);
-  g.font = '800 34px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'center'; g.fillText('acampadapixel.pt · #acampadapelahabitação', 540, 1290);
+  g.font = '800 34px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'right'; g.fillText('acampadapixel.pt', 1080 - M, 1290); g.textAlign = 'left'; // the address, bottom right
   return c;
 }
 async function sharePoster(btn) {
   const c = makePoster(); if (!c) return;
   const blob = await new Promise(r => c.toBlob(r, 'image/png')); if (!blob) return;
-  const file = new File([blob], 'acampada-cartaz.png', { type: 'image/png' }), text = L('Junta-te à acampada: acampadapixel.pt #acampadapelahabitação', 'Join the camp: acampadapixel.pt #acampadapelahabitação');
-  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  const file = new File([blob], 'acampada-cartaz.png', { type: 'image/png' }); // just the picture: with a text, some apps share the site's link card instead
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'acampada-cartaz.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   if (btn) { btn.textContent = L('Imagem guardada', 'Image saved'); setTimeout(() => { if (btn.isConnected) btn.textContent = L('Partilhar', 'Share'); }, 2500); }
 }
