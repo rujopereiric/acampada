@@ -267,6 +267,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .btnp.arrow{ padding:9px 13px 7px; margin:16px 0 0; }
 .infonav{ display:flex; justify-content:center; align-items:stretch; gap:6px; flex-wrap:nowrap; } .infonav .btnp{ margin:16px 0 0; } .infonav .btnp.arrow{ display:grid; place-items:center; padding:0 12px; font-size:18px; } .infonav .btnp.narrow{ padding-left:14px; padding-right:14px; } @media (max-width:360px){ .infonav{ gap:4px; } .infonav .btnp.narrow{ padding-left:9px; padding-right:9px; font-size:15px; } .infonav .btnp.arrow{ padding:0 8px; } }
 #ov.adred .btnp.red{ box-shadow:inset 0 0 0 2px #fff; } /* red buttons on the red poster: outlined so they read as buttons */
+.btnp.praca{ background:transparent; color:#f4f1ea; box-shadow:inset 0 0 0 2px #f4f1ea; } .btnp.praca.on{ background:#b6ff3b; color:#0b0a0a; box-shadow:none; }
+.livedot{ display:inline-block; width:9px; height:9px; border-radius:50%; background:#d8261c; margin-right:7px; vertical-align:1px; animation:liveblink 1s steps(2) infinite; } @keyframes liveblink{ 50%{ opacity:.2; } }
 .btnp.narrow{ margin:16px 0 0; white-space:nowrap; font-size:16px; padding:10px 12px 8px; }
 .btnp:active{ transform:translateY(2px); }
 #ov.needs{ background:#232425; color:#4ba36f; font-family:"Helvetica Neue", Arial, sans-serif; }
@@ -3442,6 +3444,17 @@ function show(html, variant = '') { ov.className = variant; ov.innerHTML = `<div
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitOv); setTimeout(fitOv, 250); for (const im of ov.querySelectorAll('img')) if (!im.complete) im.addEventListener('load', fitOv, { once: true }); }
 // the next rally on the title screen, so it never goes out of date
 const DIAS_LONG = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+// the shared square (multiplayer.html): the button shows only once its server answers, lit while it is open
+const PRACA_SRV = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? `http://${location.hostname}:8787` : 'https://praca.acampadapixel.pt';
+let pracaState = null;
+function pracaCheck() {
+  if (location.protocol === 'file:') return;
+  fetch(PRACA_SRV + '/estado', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(st => { if (!st) return; pracaState = st; const el = document.getElementById('pracaSlot'); if (el && mode === 'title') el.innerHTML = pracaButton(); }).catch(() => {});
+}
+function pracaButton() {
+  if (!pracaState) return '';
+  return `<button class="btnp narrow praca${pracaState.open ? ' on' : ''}" data-a="praca" style="margin-top:8px">${pracaState.open ? `<i class="livedot"></i>${L('A Praça · aberta agora', 'The Square · open now')}` : L('A Praça · online', 'The Square · online')}</button>`;
+}
 function titleRally() {
   const r = nextRally(null); if (!r) return '';
   const day = r.when === 'HOJE' ? L('Hoje', 'Today') : r.when === 'AMANHÃ' ? L('Amanhã', 'Tomorrow') : LANG === 'en' ? `${DAYS_EN[r.d.getUTCDay()]} ${r.d.getUTCDate()} ${MONTHS_EN[r.d.getUTCMonth()]}` : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
@@ -3503,9 +3516,9 @@ function titleScreen() {
   <h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('A acampada resiste', 'The camp resists')}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
   <p class="p-info rough">Faro · Coimbra · Braga<br>Lisboa · Porto</p>
   <p class="help">${L('Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.', 'Keep the camp standing and hold the square when the police come at dawn.')}</p>
-  ${titleRally()}
+  <div id="rallyBox">${titleRally()}</div>
   ${installHint()}
-  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">${L('Junta-te →', 'Join →')}</button><button class="btnp narrow red" data-a="info">${L('Informação', 'Information')}</button></div><div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="rules" style="margin-top:8px">${L('Como jogar?', 'How to play?')}</button><button class="btnp narrow red" data-a="sharegame" style="margin-top:8px">${L('Partilhar o jogo', 'Share the game')}</button></div>${FOOT}`);
+  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">${L('Junta-te →', 'Join →')}</button><button class="btnp narrow red" data-a="info">${L('Informação', 'Information')}</button></div><div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="rules" style="margin-top:8px">${L('Como jogar?', 'How to play?')}</button><button class="btnp narrow red" data-a="sharegame" style="margin-top:8px">${L('Partilhar o jogo', 'Share the game')}</button></div><div id="pracaSlot">${pracaButton()}</div>${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
@@ -3905,6 +3918,7 @@ ov.addEventListener('click', e => {
   if (b.dataset.city) { cityIdx = +b.dataset.city; newLevel(); introScreen(); return; }
   if (a === 'lang') { LANG = b.dataset.l; try { localStorage.setItem('acampada-lang', LANG); } catch (e) {} applyLang(); titleScreen(); return; }
   if (a === 'sharegame') { shareGame(b); return; }
+  if (a === 'praca') { location.href = 'multiplayer.html'; return; }
   if (a === 'install') { const ev = installEvt; installEvt = null; if (ev) ev.prompt(); titleScreen(); }
   else if (a === 'chapters') chapterScreen();
   else if (a === 'title') titleScreen();
@@ -4205,6 +4219,13 @@ for (let i = 0; i < 9; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = 0
 cityIdx = ORDER[0];
 applyLang();
 titleScreen();
+// the protests: manifestacoes.json, the same file the shared square's server reads (the list in RALLIES is the offline copy)
+fetch('manifestacoes.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(list => {
+  if (!Array.isArray(list) || !list.length) return;
+  RALLIES.length = 0; for (const r of list) if (r && r.date && r.at && r.title) RALLIES.push(r);
+  const box = document.getElementById('rallyBox'); if (box && mode === 'title') box.innerHTML = titleRally();
+}).catch(() => {});
+pracaCheck(); setInterval(() => { if (mode === 'title') pracaCheck(); }, 120e3);
 fit();
 requestAnimationFrame(frame);
 // the texts in the page itself (the HUD, labels for screen readers), in the chosen language

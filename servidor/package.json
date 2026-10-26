@@ -1,0 +1,12 @@
+{
+  "name": "acampada-praca",
+  "private": true,
+  "description": "Acampada Pixel: o servidor da praça partilhada (multiplayer.html), na Cloudflare",
+  "scripts": {
+    "teste": "wrangler dev --var FORCE_OPEN:1",
+    "publicar": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.114.17"
+  }
+}
