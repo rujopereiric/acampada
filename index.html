@@ -271,7 +271,14 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .btnp.praca{ display:block; width:min(100%, 340px); margin:10px auto 0; background:transparent; color:#f4f1ea; box-shadow:inset 0 0 0 2px #f4f1ea; padding:11px 14px 9px; }
 .btnp.praca .pn{ display:block; font-size:17px; } .btnp.praca .pw{ display:block; margin-top:4px; font:700 13px/1.2 Jost, sans-serif; text-transform:none; letter-spacing:.2px; color:#c9c4c4; }
 .btnp.praca.on{ background:#b6ff3b; color:#0b0a0a; box-shadow:none; } .btnp.praca.on .pw{ color:#0b0a0a; }
+/* short phones (iPhone SE…): a more compact title so Joga, A Praça and the three icons all fit on the first screen */
+@media (max-height:700px){ #ov .tent{ max-height:110px; width:auto; } #ov .p-big{ font-size:clamp(28px, 8.6vw, 38px); } #ov .p-mid{ font-size:18px; } #ov .p-info{ font-size:17px; } #ov .btnp.play{ margin-top:12px; padding:12px 22px 10px; } #ov .btnp.praca{ padding:8px 12px 7px; } #ov .btnp.praca .pn{ font-size:14.5px; } #ov .icons{ margin-top:12px; } }
 .minis{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:14px auto 0; max-width:420px; }
+/* the title's small buttons: information, share, how to play, as icons */
+.icons{ display:flex; justify-content:center; gap:14px; margin:16px auto 0; }
+.ibtn{ width:58px; height:58px; display:grid; place-items:center; padding:0; border:0; cursor:pointer; text-decoration:none; box-sizing:border-box; background:transparent; color:#f4f1ea; font-family:Jost, sans-serif; font-weight:800; font-size:30px; line-height:1; box-shadow:inset 0 0 0 2px rgba(244,241,234,.7); }
+.ibtn:hover, .ibtn:focus-visible{ background:#f4f1ea; color:#0b0a0a; outline:none; }
+.ibtn:disabled{ opacity:.5; }
 .btnp.mini{ margin:0; font-size:12px; letter-spacing:.4px; padding:8px 10px 7px; background:transparent; color:#f4f1ea; box-shadow:inset 0 0 0 2px rgba(244,241,234,.7); }
 .livedot{ display:inline-block; width:9px; height:9px; border-radius:50%; background:#d8261c; margin-right:7px; vertical-align:1px; animation:liveblink 1s steps(2) infinite; } @keyframes liveblink{ 50%{ opacity:.2; } }
 .btnp.narrow{ margin:16px 0 0; white-space:nowrap; font-size:16px; padding:10px 12px 8px; }
@@ -3545,10 +3552,9 @@ function titleScreen() {
   <p class="p-info rough">Faro · Coimbra · Braga<br>Lisboa · Porto</p>
   <p class="help">${L('Monta tendas, junta gente e segura a praça até o governo ceder.', 'Pitch tents, grow the crowd and hold the square until the government gives in.')}</p>
   <div id="rallyBox">${titleRally()}</div>
-  ${installHint()}
-  <button class="btnp play" data-a="chapters">${L('Jogar →', 'Play →')}</button>
+  <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>
   <div id="pracaSlot">${pracaButton()}</div>
-  <div class="minis"><button class="btnp mini" data-a="rules">${L('Como jogar?', 'How to play?')}</button><button class="btnp mini" data-a="info">${L('Acampada – Informações', 'Camp – Information')}</button><button class="btnp mini" data-a="sharegame">${L('Partilhar o jogo', 'Share the game')}</button></div>${FOOT}`);
+  <div class="icons"><button class="ibtn" data-a="info" aria-label="${L('Informação', 'Information')}" title="${L('Informação', 'Information')}">i</button><button class="ibtn" data-a="sharegame" aria-label="${L('Partilhar o jogo', 'Share the game')}" title="${L('Partilhar o jogo', 'Share the game')}"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/><path d="M5 12v8h14v-8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><button class="ibtn" data-a="rules" aria-label="${L('Como jogar', 'How to play')}" title="${L('Como jogar', 'How to play')}">?</button><a class="ibtn" href="https://www.instagram.com/acampadapixel/" target="_blank" rel="noopener" aria-label="Instagram @acampadapixel" title="Instagram @acampadapixel"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="16.2" y="6.2" width="2.2" height="2.2" fill="currentColor"/></svg></a></div>${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
@@ -3826,7 +3832,7 @@ function rulesHTML(n) {
   ];
   [pages[2], pages[3]] = [pages[3], pages[2]]; // order: the square, your buttons, friends and dangers, a day in the square
   const last = n === pages.length - 1, dots = pages.map((_, i) => `<i class="${i === n ? 'on' : ''}"></i>`).join('');
-  return `<div class="cj"><p class="cj-top">${L('COMO JOGAR', 'HOW TO PLAY')} · ${n + 1}/${pages.length}</p>${pages[n]}
+  return `<div class="cj"><p class="cj-top">${L('COMO JOGAR', 'HOW TO PLAY')} · ${n + 1}/${pages.length}</p>${pages[n]}${last ? installHint() : ''}
     <div class="cj-nav">${n ? '<button class="btnp narrow" data-a="rulesprev">←</button>' : '<span></span>'}<span class="cj-dots">${dots}</span>
     <button class="btnp narrow${last ? ' red' : ''}" data-a="${last ? 'rulesclose' : 'rulesnext'}">${last ? L('Percebi, vamos!', 'Got it, let’s go!') : L('Seguinte →', 'Next →')}</button></div></div>`;
 }
