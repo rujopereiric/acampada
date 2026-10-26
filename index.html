@@ -150,6 +150,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .act.green{ background:var(--green); color:#0b0a0a; border-color:var(--green); }
 .act.ink{ background:var(--ink); color:var(--bg); }
 .act:focus-visible,.mini:focus-visible{ outline:3px solid #ffd23a; outline-offset:2px; }
+.act .key, #ctxBtn .key{ font-weight:600; opacity:.65; font-size:.62em; letter-spacing:0; margin-left:.3em; } .pc .act{ white-space:nowrap; }
 #ctxBtn{ width:100%; margin-top:8px; background:#fff; color:var(--redbox); border-color:#fff; font-size:17px; padding:9px 6px 7px; box-shadow:inset 0 0 0 2px var(--redbox); }
 #ctxBtn[hidden]{ display:none; }
 .actions{ display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px; }
@@ -420,7 +421,7 @@ function platCross(C, ax, ay, bx, by) {
     if (mxx > p.bb[0] - .05 && mnx < p.bb[1] + .05 && mxy > p.bb[2] - .05 && mny < p.bb[3] + .05) { near = true; break; } }
   if (!near) return false;
   const n = Math.max(1, Math.ceil(Math.hypot(bx - ax, by - ay) / .08)); let prev = platAt(C.plats, ax, ay)[0];
-  for (let i = 1; i <= n; i++) { const e = platAt(C.plats, ax + (bx - ax) * i / n, ay + (by - ay) * i / n)[0]; if (Math.abs(e - prev) > 3.5) return true; prev = e; }
+  for (let i = 1; i <= n; i++) { const e = platAt(C.plats, ax + (bx - ax) * i / n, ay + (by - ay) * i / n)[0]; if (Math.abs(e - prev) > 2.6) return true; prev = e; }
   return false;
 }
 // does the straight line a-b go through the wall, or off the side of the stairs?
@@ -574,7 +575,7 @@ const CITIES = [
     // raised pavement and the ramp down to the street behind a railing
     size: [12, 11], viewW: 304, fullW: 392, viewY: 86,
     plats: [{ x0: 0, y0: 0, x1: 3.6, y1: 2.6, h: 10, top: 'terrace', st: [[3.6, 4.4, .2, 1.6, 'x0'], [1.2, 2.4, 2.6, 3.4, 'y0']] },
-      { x0: 0, y0: 3.8, x1: 1.2, y1: 7, h: 3, top: 'steps', late: true, st: [[1.2, 1.7, 3.8, 7, 'x0']] },
+      { x0: 0, y0: 3.8, x1: 1.2, y1: 7, h: 2.5, top: 'steps', late: true, st: [[1.2, 1.7, 3.8, 7, 'x0']] },
       { x0: 0, y0: 8, x1: 2.1, y1: 11, h: 6, top: 'calcada', late: true, st: [[.3, 2.1, 7.4, 8, 'y1']] }],
     fences: [[3.5, 8.3, 3.5, 11.6]], upArea: [[.3, .3, 3.3, 2.3], [.2, 4, 1.1, 6.8], [.3, 8.6, 1.8, 10.7], [2.3, 8.6, 3.3, 10.9]], // esplanade, church steps, raised pavement, ramp
     fill: { depth: 1, gaps: [[3.6, 4.8]] }, hills: true,
@@ -1354,7 +1355,9 @@ function walkTile(x, y) { if (x < 0 || y < 0 || x >= GWX || y >= GWY) return fal
 function clearAt(gx, gy) { const m = .2; for (const [dx, dy] of [[0, 0], [m, 0], [-m, 0], [0, m], [0, -m]]) { const x = gx + dx, y = gy + dy; if (x < 0 || y < 0 || !walkTile(Math.floor(x), Math.floor(y))) return false; } return true; }
 function los(ax, ay, bx, by) { if (wallCross(ax, ay, bx, by)) return false; const d = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.ceil(d / .1)); for (let i = 1; i <= n; i++) { const t = i / n; if (!clearAt(ax + (bx - ax) * t, ay + (by - ay) * t)) return false; } return true; }
 function findPath(ax, ay, bx, by) {
-  const sx = clamp(Math.floor(ax), 0, GWX - 1), sy = clamp(Math.floor(ay), 0, GWY - 1);
+  let sx = clamp(Math.floor(ax), 0, GWX - 1), sy = clamp(Math.floor(ay), 0, GWY - 1);
+  // a tile can be half on a raised level and half below: start from a tile centre on our side of the wall
+  if (wallCross(ax, ay, sx + .5, sy + .5)) { let best = null, bd = 1e9; for (const [dx, dy] of DIRS) { const x = sx + dx, y = sy + dy; if (!walkTile(x, y) || wallCross(ax, ay, x + .5, y + .5)) continue; const d = Math.hypot(x + .5 - ax, y + .5 - ay); if (d < bd) { bd = d; best = [x, y]; } } if (best) [sx, sy] = best; }
   let tx = clamp(Math.floor(bx), 0, GWX - 1), ty = clamp(Math.floor(by), 0, GWY - 1);
   if (!walkTile(tx, ty)) { let b = null, bd = 1e9; for (let y = 0; y < GWY; y++) for (let x = 0; x < GWX; x++) if (walkTile(x, y)) { const d = Math.hypot(x + .5 - bx, y + .5 - by); if (d < bd) { bd = d; b = [x, y]; } } if (!b) return null; [tx, ty] = b; bx = tx + .5; by = ty + .5; }
   const prev = new Int16Array(GWX * GWY).fill(-1), start = sy * GWX + sx, goal = ty * GWX + tx; prev[start] = start; const q = [start];
@@ -1362,6 +1365,8 @@ function findPath(ax, ay, bx, by) {
     for (const [dx, dy] of DIRS) { const nx = cx + dx, ny = cy + dy; if (!walkTile(nx, ny)) continue; if (wallCross(cx + .5, cy + .5, nx + .5, ny + .5)) continue; if (dx && dy && (!walkTile(cx + dx, cy) || !walkTile(cx, cy + dy))) continue; const ni = ny * GWX + nx; if (prev[ni] !== -1) continue; prev[ni] = c; q.push(ni); } }
   if (prev[goal] === -1) return null;
   const pts = [[bx, by]]; let c = prev[goal]; if (goal !== start) while (c !== start) { pts.push([c % GWX + .5, ((c / GWX) | 0) + .5]); c = prev[c]; }
+  pts.push([sx + .5, sy + .5]); // the start tile's centre (reachable without a wall), so the first leg is safe too
+  { const last = pts.length > 1 ? pts[1] : pts[pts.length - 1]; if (wallCross(last[0], last[1], bx, by)) pts[0] = [tx + .5, ty + .5]; } // a target across a wall: stop at its tile's centre
   pts.reverse();
   const out = []; let cx = ax, cy = ay, i = 0;
   while (i < pts.length) { let j = pts.length - 1; while (j > i && !los(cx, cy, pts[j][0], pts[j][1])) j--; out.push(pts[j]); cx = pts[j][0]; cy = pts[j][1]; i = j + 1; }
@@ -1376,8 +1381,9 @@ function moveEnt(e, tx, ty, sp, dt, free) {
   const key = Math.round(tx * 8) + ',' + Math.round(ty * 8);
   e.repath = (e.repath || 0) - dt;
   if (!e.path || e.pathKey !== key || e.repath <= 0) { e.path = findPath(e.gx, e.gy, tx, ty); e.pathKey = key; e.repath = 1; }
-  if (!e.path || !e.path.length) { stepTo(e, tx, ty, sp, dt); return d <= sp * dt + .01; }
+  if (!e.path || !e.path.length) { const st = Math.min(d, sp * dt); if (wallCross(e.gx, e.gy, e.gx + (tx - e.gx) / d * st, e.gy + (ty - e.gy) / d * st)) { e.moving = false; e.path = null; return true; } stepTo(e, tx, ty, sp, dt); return d <= sp * dt + .01; }
   const w = e.path[0];
+  { const dd = Math.hypot(w[0] - e.gx, w[1] - e.gy) || 1, st = Math.min(dd, sp * dt); if (wallCross(e.gx, e.gy, e.gx + (w[0] - e.gx) / dd * st, e.gy + (w[1] - e.gy) / dd * st)) { e.path = null; e.repath = 0; e.moving = false; return true; } } // never walk through a wall
   if (stepTo(e, w[0], w[1], sp, dt)) { e.path.shift(); if (!e.path.length) { e.path = null; e.moving = false; return true; } }
   return false;
 }
@@ -1388,9 +1394,9 @@ function slideMove(e, tx, ty, sp, dt) {
   face(e, ux, uy); e.moving = true; e.step = (e.step || 0) + dt * 8;
   const nx = e.gx + ux * st, ny = e.gy + uy * st;
   if (!blockedAt(nx, ny) && !wallCross(e.gx, e.gy, nx, ny)) { e.gx = nx; e.gy = ny; }
-  else if (!blockedAt(e.gx + ux * st, e.gy)) e.gx += ux * st;
-  else if (!blockedAt(e.gx, e.gy + uy * st)) e.gy += uy * st;
-  else { const s = e.side || 1, px = -uy * s, py = ux * s; if (!blockedAt(e.gx + px * st, e.gy + py * st)) { e.gx += px * st; e.gy += py * st; } else e.side = -s; }
+  else if (!blockedAt(e.gx + ux * st, e.gy) && !wallCross(e.gx, e.gy, e.gx + ux * st, e.gy)) e.gx += ux * st;
+  else if (!blockedAt(e.gx, e.gy + uy * st) && !wallCross(e.gx, e.gy, e.gx, e.gy + uy * st)) e.gy += uy * st;
+  else { const s = e.side || 1, px = -uy * s, py = ux * s; if (!blockedAt(e.gx + px * st, e.gy + py * st) && !wallCross(e.gx, e.gy, e.gx + px * st, e.gy + py * st)) { e.gx += px * st; e.gy += py * st; } else e.side = -s; }
   return d <= sp * dt + .01;
 }
 function darkness(h) { if (h >= 19 && h < 21) return (h - 19) / 2; if (h >= 21 || h < 5) return 1; if (h >= 5 && h < 7) return 1 - (h - 5) / 2; return 0; }
@@ -2822,13 +2828,15 @@ function hud() {
   $('pmTear').style.display = pr >= 85 ? '' : 'none';
   $('pm').style.transform = ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
   $('pm').setAttribute('aria-label', 'Humor do governo: ' + ['contente', 'confuso', 'derrotado'][ps]);
-  const lab = (pt, en) => `${pt}<small>${en}</small>`;
-  const bc = $('btnChain'); bc.innerHTML = lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger'); bc.disabled = !play || S.chainCd > 0;
-  const bl = $('btnLive'); bl.innerHTML = lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir'); bl.disabled = !play || S.liveCd > 0;
+  // computer (mouse): each button shows its key, e.g. Cordão (C)
+  const kb = k => pcMQ.matches ? `<span class="key">(${k})</span>` : '', lab = (pt, en, k) => `${pt}${kb(k)}<small>${en}</small>`;
+  const bc = $('btnChain'); bc.innerHTML = lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger', 'Z'); bc.disabled = !play || S.chainCd > 0;
+  const bl = $('btnLive'); bl.innerHTML = lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir', 'X'); bl.disabled = !play || S.liveCd > 0;
+  { const h = lab('Montar', 'Construir', 'C'); if ($('btnBuild').innerHTML !== h) $('btnBuild').innerHTML = h; }
   $('btnBuild').disabled = !play || !Object.entries(STATIONS).some(([k, d]) => !stationOf(k) && S.supplies >= d.cost);
-  const bv = $('btnVote'); bv.innerHTML = lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar'); bv.disabled = !play || S.asmCd > 0;
+  const bv = $('btnVote'); bv.innerHTML = lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar', 'V'); bv.disabled = !play || S.asmCd > 0;
   ctxCache = contextAction(); const cb = $('ctxBtn');
-  if (ctxCache) { cb.hidden = false; cb.textContent = ctxCache.label; cb.disabled = !ctxCache.ok; } else cb.hidden = true;
+  if (ctxCache) { cb.hidden = false; cb.innerHTML = ctxCache.label + kb('Espaço'); cb.disabled = !ctxCache.ok; } else cb.hidden = true;
 }
 
 /* ================= screens ================= */
@@ -3086,7 +3094,7 @@ function openRules() {
   <h3>Grândola</h3>
   <p>Com 12 pessoas ou mais, vai ao centro e canta a <b>Grândola, Vila Morena</b>: a polícia fica parada enquanto se canta.</p>
   <h3>Teclas</h3>
-  <p>E ou Espaço: ação · C, L, B, V: botões · P ou Esc: pausa · I: cartazes · H: como jogar · F: ecrã inteiro</p>
+  <p>Espaço (ou clique no botão): ação · Z, X, C, V: botões · P ou Esc: pausa · I: cartazes · H: como jogar · F: ecrã inteiro</p>
   </div><button class="btnp" data-a="rulesclose">Percebi!</button>`);
 }
 function closeRules() {
@@ -3220,8 +3228,8 @@ addEventListener('keydown', e => {
   if (k === 'i') { if (mode === 'info') closeInfo(); else openInfo(0); return; }
   if (k === 'h' || k === '?') { openRules(); return; }
   if (k === 'f' && !$('full').hidden) { $('full').click(); return; }
-  if (k === 'c') doChain(); else if (k === 'l') doLive(); else if (k === 'b') buildMenu(); else if (k === 'v') assembly();
-  else if (k === 'e' || k === ' ') { if (k === ' ' && mode === 'play') e.preventDefault(); if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
+  if (k === 'z') doChain(); else if (k === 'x') doLive(); else if (k === 'c') buildMenu(); else if (k === 'v') assembly(); // the four buttons: Z X C V
+  else if (k === ' ') { /* act on what is nearby: Space, or click the button */ if (k === ' ' && mode === 'play') e.preventDefault(); if (mode === 'play' && ctxCache && ctxCache.ok) { ctxCache.fn(); e.preventDefault(); } }
   else if (k === 'p' || k === 'escape') { if (mode === 'play') pause(); else if (mode === 'paused' || mode === 'menu') { ov.hidden = true; mode = 'play'; } }
 });
 addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
@@ -3299,7 +3307,7 @@ function fit() {
   if (window.visualViewport) document.documentElement.style.setProperty('--vvh', Math.round(visualViewport.height) + 'px');
   const pc = isPC();
   document.documentElement.classList.toggle('pc', pc);
-  $('help').textContent = pcMQ.matches ? 'Clica na praça para andar · teclas: WASD ou setas, E, C, L, B, V, P, H' + (document.fullscreenEnabled ? ', F' : '') : 'Toca na praça para andar.';
+  $('help').textContent = pcMQ.matches ? 'Clica na praça para andar · teclas: WASD ou setas, Z X C V, Espaço, P, H' + (document.fullscreenEnabled ? ', F' : '') : 'Toca na praça para andar.';
   // wide windows: the square fills the window between the top and bottom bars; taller windows keep the phone column
   const wide = pc && innerWidth > innerHeight * 1.15;
   document.documentElement.classList.toggle('wide', wide);
