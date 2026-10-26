@@ -1,11 +1,13 @@
 // Acampada Pixel · the shared square (multiplayer.html)
-// One Worker in front of one Durable Object ("the square"). The square is only open around the protests listed in
-// manifestacoes.json (1 h before to `horas` after the start, 3 h by default); protests at the same time share it.
-// People in a protest or camp (any city) walk in the square; people elsewhere watch, are counted by city and write
-// on the mural. Nothing that identifies anyone is kept; the mural is deleted 24 h after the square closes.
+// One Worker in front of one Durable Object ("the square"). The square opens around the events in manifestacoes.json:
+// protests (1 h before to `horas` after the start, 3 h by default), the daily assembly (`dias`, `abre`, `fecha`), and the
+// openings the organisers add on the management page (/gestao). Events at the same time share the square.
+// People at a protest or a camp walk in the square; people elsewhere watch, are counted by city and write on the mural.
+// Nothing that identifies anyone is kept; the mural is deleted 24 h after the square closes.
+import { GESTAO_HTML } from './gestao.js';
 
 const OPEN_BEFORE = 60, DEFAULT_HOURS = 3, CLEANUP_AFTER = 24 * 3600e3;
-const MAX_AVATARS = 250, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MAX = 140, HIDE_REPORTS = 3;
+const MAX_AVATARS = 250, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MAX = 140, HIDE_REPORTS = 3, AVISO_MAX = 160;
 const W = 22, H = 22; // the square in tiles
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
 const LOOKS = 5 * 6 * 9; // skin x hair x shirt, the same colours as the game
@@ -13,14 +15,16 @@ const PHRASES = 14, GESTURES = 8; // as many as in multiplayer.html (PHRASES, GE
 // one address can be many people: phone networks put hundreds of phones behind one address (CGNAT), so the limits per
 // address are generous; they only stop one script from filling the square or the wall
 const PER_IP = 60, MURAL_PER_IP = 10; // connections, and wall messages per minute, from one address
+const DJ_ON = 180e3, DJ_CYCLE = 600e3; // the DJ p.45: 3 minutes in every 10 (multiplayer.html walks him from the same clock)
+const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 
 /* ---------- the schedule ---------- */
 let schedCache = { at: 0, list: [] };
 async function schedule(env) {
-  if (Date.now() - schedCache.at < 5 * 60e3 && schedCache.list.length) return schedCache.list;
+  if (Date.now() - schedCache.at < 5 * 60e3 && schedCache.at) return schedCache.list;
   try {
     const r = await fetch(env.SCHEDULE_URL, { cf: { cacheTtl: 300 } });
-    if (r.ok) schedCache = { at: Date.now(), list: await r.json() };
+    if (r.ok) { const j = await r.json(); schedCache = { at: Date.now(), list: Array.isArray(j) ? j : [] }; }
   } catch (e) {}
   return schedCache.list;
 }
@@ -32,21 +36,29 @@ function lisbon(date, at) {
   const [ah, am] = at.split(':').map(Number);
   return guess.getTime() - ((h * 60 + m) - (ah * 60 + am)) * 60e3;
 }
-function windows(list) {
-  return (list || []).filter(r => r && r.date && r.at).map(r => {
-    const start = lisbon(r.date, r.at);
-    return { ...r, start, open: start - OPEN_BEFORE * 60e3, close: start + (r.horas || DEFAULT_HOURS) * 3600e3 };
-  });
+const lisbonDate = (t = Date.now()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
+const addDays = (date, n) => { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const HHMM = /^\d{1,2}:\d{2}$/, DATE = /^\d{4}-\d{2}-\d{2}$/;
+// one event on one day: when the square opens and closes
+function windowOf(r, date) {
+  const start = lisbon(date, r.at);
+  const open = r.abre && HHMM.test(r.abre) ? lisbon(date, r.abre) : start - OPEN_BEFORE * 60e3;
+  let close = r.fecha && HHMM.test(r.fecha) ? lisbon(date, r.fecha) : start + (+r.horas || DEFAULT_HOURS) * 3600e3;
+  if (close <= open) close += 24 * 3600e3; // closes after midnight
+  return { city: r.city || null, title: String(r.title || ''), where: String(r.where || ''), date, at: r.at, start, open, close, dj: r.dj !== false, id: r.id || null };
 }
-function status(list, now = Date.now(), force = false) {
-  const ws = windows(list);
-  const live = ws.filter(w => now >= w.open && now < w.close);
-  const next = ws.filter(w => w.open > now).sort((a, b) => a.open - b.open)[0] || null;
-  if (force && !live.length) live.push({ city: null, title: 'Teste', where: '', open: now - 1, close: now + 3600e3, start: now });
-  const close = live.length ? Math.max(...live.map(w => w.close)) : 0;
-  const pick = w => w && { city: w.city || null, title: w.title, where: w.where || '', date: w.date, at: w.at, start: w.start, open: w.open, close: w.close };
-  return { open: live.length > 0, live: live.map(pick), next: pick(next), close };
+// every window from the list: one-off events (`date`) and repeating ones (`dias`: ["seg", ...]) for the next week
+function windows(list, now = Date.now()) {
+  const out = [], today = lisbonDate(now);
+  for (const r of list || []) {
+    if (!r || !r.at || !HHMM.test(r.at)) continue;
+    if (Array.isArray(r.dias)) {
+      for (let k = -1; k <= 8; k++) { const d = addDays(today, k); if (r.dias.includes(DIAS[new Date(d + 'T12:00:00Z').getUTCDay()])) out.push(windowOf(r, d)); }
+    } else if (r.date && DATE.test(r.date)) out.push(windowOf(r, r.date));
+  }
+  return out;
 }
+const pick = w => w && { city: w.city, title: w.title, where: w.where, date: w.date, at: w.at, start: w.start, open: w.open, close: w.close, dj: w.dj };
 
 /* ---------- the Worker ---------- */
 function cors(req, env) {
@@ -68,6 +80,9 @@ export default {
       const r = await stub.fetch(new Request(new URL(url.pathname, req.url), { method: 'GET' }));
       return new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
+    // the management page: same address, a pass-phrase kept in Cloudflare (GESTAO_FRASE), never in the code
+    if (url.pathname === '/gestao') return new Response(GESTAO_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' } });
+    if (url.pathname === '/gestao/api' && req.method === 'POST') return stub.fetch(req);
     return new Response('Acampada Pixel · praça', { headers: h });
   }
 };
@@ -84,6 +99,7 @@ function clean(text, max) {
   if (BADN.some(b => n.includes(' ' + b + ' ') || (b.includes(' ') && n.includes(b)))) return { ok: false, why: 'palavras' };
   return { ok: true, text: t };
 }
+const plain = (t, max) => String(t || '').replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, max);
 
 /* ---------- who is who, without keeping addresses: a hash of the address with a secret that changes every day ---------- */
 let SALT = null; // made on the first visit (Workers can't make random values before a request arrives)
@@ -94,21 +110,55 @@ async function addrKey(req) {
   const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(SALT + day + ip));
   return [...new Uint8Array(h).slice(0, 8)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
+async function samePhrase(a, b) { // compared as hashes, in constant time
+  const enc = new TextEncoder(), [x, y] = await Promise.all([crypto.subtle.digest('SHA-256', enc.encode(a)), crypto.subtle.digest('SHA-256', enc.encode(b))]);
+  return crypto.subtle.timingSafeEqual(x, y);
+}
 
 /* ---------- the square ---------- */
+// what the organisers set on /gestao, kept in the square's storage
+const CFG0 = { force: null, agenda: [], aviso: '', muralRO: false, dj: 'auto', policia: false, ciclistas: false, bans: [] };
 export class Praca {
   constructor(ctx, env) {
     this.ctx = ctx; this.env = env; this.sql = ctx.storage.sql;
     this.sql.exec(`CREATE TABLE IF NOT EXISTS mural (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, city TEXT, text TEXT, at INTEGER, expires INTEGER, reports INTEGER DEFAULT 0, hidden INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS reports (msg INTEGER, who TEXT, PRIMARY KEY (msg, who))`);
     this.people = new Map(); // socket -> person
-    this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false;
+    this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false; this.wasOpen = null;
     this.muralBy = new Map(); // address key -> times it wrote on the wall in the last minute
+    this.fails = new Map(); // address key -> wrong pass-phrases in the last 10 minutes
+    this.cfg = { ...CFG0 };
+    ctx.blockConcurrencyWhile(async () => { this.cfg = { ...CFG0, ...((await ctx.storage.get('cfg')) || {}) }; });
   }
-  async status() {
-    if (Date.now() - this.stateAt > 60e3 || !this.state) { this.state = status(await schedule(this.env), Date.now(), this.env.FORCE_OPEN === '1'); this.stateAt = Date.now(); }
+  async save() { await this.ctx.storage.put('cfg', this.cfg); }
+
+  /* when the square is open: the schedule, the organisers' openings, and their open/close switch */
+  async status(fresh = false) {
+    if (!fresh && this.state && Date.now() - this.stateAt < 60e3) return this.state;
+    const now = Date.now(), ws = windows(await schedule(this.env), now);
+    for (const a of this.cfg.agenda) ws.push({ city: null, title: a.title, where: a.where || '', date: lisbonDate(a.open), at: '', start: a.open, open: a.open, close: a.close, dj: true, id: a.id });
+    const f = this.cfg.force;
+    if (f && f.until && now >= f.until) { this.cfg.force = null; await this.save(); }
+    let live = ws.filter(w => now >= w.open && now < w.close);
+    this.liveSched = live; // what the schedule has on now (without the organisers' switch)
+    let next = ws.filter(w => w.open > now).sort((a, b) => a.open - b.open)[0] || null;
+    let close = live.length ? Math.max(...live.map(w => w.close)) : 0, by = null;
+    const force = this.cfg.force;
+    if (force && force.mode === 'fechada') { live = []; close = 0; by = 'fechada'; next = ws.filter(w => w.open >= force.until).sort((a, b) => a.open - b.open)[0] || next; }
+    if (force && force.mode === 'aberta') { by = 'aberta'; live.unshift({ city: null, title: force.title || 'Praça aberta', where: '', start: force.at, open: force.at, close: force.until || 0, dj: true }); close = force.until ? Math.max(close, force.until) : 0; }
+    if (this.env.FORCE_OPEN === '1' && !live.length && !(force && force.mode === 'fechada')) { live.push({ city: null, title: 'Teste', where: '', open: now - 1, close: now + 3600e3, start: now, dj: true }); close = now + 3600e3; }
+    this.state = { open: live.length > 0, live: live.map(pick), next: pick(next), close, by };
+    this.stateAt = now;
     return this.state;
   }
+  // the DJ: the organisers' switch, and no music once an event without DJ (the assembly) has started
+  djInfo(now = Date.now()) {
+    const mode = this.cfg.dj, st = this.state || { live: [] };
+    const ok = mode === 'off' ? false : mode === 'sempre' ? true : !st.live.some(w => w.dj === false && now >= w.start);
+    const k = now % DJ_CYCLE;
+    return { mode, ok, on: ok && (mode === 'sempre' || k < DJ_ON) };
+  }
+  pubCfg() { return { muralRO: this.cfg.muralRO, policia: this.cfg.policia, ciclistas: this.cfg.ciclistas }; }
   mural(all = false) {
     return this.sql.exec(`SELECT id, name, city, text, at FROM mural WHERE hidden = 0 AND expires > ? ORDER BY id DESC LIMIT ${all ? 300 : 120}`, Date.now()).toArray().reverse();
   }
@@ -117,16 +167,20 @@ export class Praca {
     for (const p of this.people.values()) { if (!p.name) continue; const o = p.mode === 'praca' ? praca : apoio; o[p.city] = (o[p.city] || 0) + 1; }
     return { praca, apoio };
   }
+  banned(dev) { const now = Date.now(); return !!dev && this.cfg.bans.some(b => b.dev === dev && b.until > now); }
+
   async fetch(req) {
-    const url = new URL(req.url), st = await this.status();
-    if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.dj() });
+    const url = new URL(req.url);
+    if (url.pathname === '/gestao/api') return this.admin(req);
+    const st = await this.status();
+    if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.djInfo(), aviso: this.cfg.aviso });
     if (url.pathname === '/mural') return Response.json({ mural: this.mural(true) });
     const key = await addrKey(req);
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
     server.accept();
-    if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
+    if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next, by: st.by })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
     if ([...this.people.values()].filter(q => q.key === key).length >= PER_IP) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
-    const p = { id: this.nextId++, key, ws: server, name: null, mode: 'apoio', city: '', x: W / 2, y: H - 2, look: 0, say: null, sayAt: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
+    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
     this.people.set(server, p);
     server.addEventListener('message', ev => this.onMessage(p, ev.data));
     const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); if (p.name && p.mode === 'praca') this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
@@ -139,13 +193,15 @@ export class Praca {
     const now = Date.now();
     if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) return; // flood guard
     if (m.t === 'hello' && !p.name) {
+      p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : '';
+      if (this.banned(p.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} return; }
       const n = clean(m.name, 16); p.name = n.ok ? n.text : 'Anónimo';
       const c = String(m.city || '').trim().slice(0, 24); const cc = clean(c, 24); p.city = CITIES.includes(c) ? c : cc.ok ? cc.text : 'Outra';
       const avatars = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length;
       p.mode = m.mode === 'praca' && avatars < MAX_AVATARS ? 'praca' : 'apoio';
       p.look = Math.abs(m.look | 0) % LOOKS; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.mode === 'praca').map(q => this.pub(q));
-      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.dj(), close: this.state.close, live: this.state.live, now: Date.now(), size: [W, H] });
+      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H] });
       if (p.mode === 'praca') this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
       return;
@@ -155,16 +211,17 @@ export class Praca {
     if (m.t === 'say' && p.mode === 'praca') { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
     if (m.t === 'emote' && p.mode === 'praca') { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
     if (m.t === 'mural') {
+      if (this.cfg.muralRO) return this.send(p, { t: 'muralno', why: 'fechado' });
       if (now - p.lastMural < MURAL_MS) return this.send(p, { t: 'muralno', why: 'espera', wait: Math.ceil((MURAL_MS - (now - p.lastMural)) / 1000) });
       const recent = (this.muralBy.get(p.key) || []).filter(t => now - t < 60e3);
       if (recent.length >= MURAL_PER_IP) return this.send(p, { t: 'muralno', why: 'espera', wait: Math.ceil((60e3 - (now - recent[0])) / 1000) });
       const c = clean(m.text, MURAL_MAX); if (!c.ok) return this.send(p, { t: 'muralno', why: c.why });
       p.lastMural = now; recent.push(now); this.muralBy.set(p.key, recent);
       if (this.muralBy.size > 5000) this.muralBy.clear();
-      const expires = (this.state.close || now) + CLEANUP_AFTER;
+      const expires = (this.state.close || now + 12 * 3600e3) + CLEANUP_AFTER;
       const row = this.sql.exec('INSERT INTO mural (name, city, text, at, expires) VALUES (?, ?, ?, ?, ?) RETURNING id', p.name, p.city, c.text, now, expires).one();
       this.broadcast({ t: 'mural+', m: { id: row.id, name: p.name, city: p.city, text: c.text, at: now }, by: p.id });
-      this.ctx.storage.getAlarm().then(a => { if (!a || a > expires) this.ctx.storage.setAlarm(expires); });
+      this.alarmAt(expires);
       return;
     }
     if (m.t === 'report') {
@@ -175,23 +232,90 @@ export class Praca {
       if (n >= HIDE_REPORTS) { this.sql.exec('UPDATE mural SET hidden = 1 WHERE id = ?', id); this.broadcast({ t: 'mural-', id }); }
     }
   }
+  alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
-  // DJ p.45: on the stage for 3 minutes in every 10 (the same for everyone, from the clock)
-  dj(now = Date.now()) { const k = now % 600e3; return { on: k < 180e3, until: now - k + (k < 180e3 ? 180e3 : 600e3) }; }
   start() { if (this.timer) return; this.lastDj = null; this.timer = setInterval(() => this.tick(), TICK_MS); }
   stop() { clearInterval(this.timer); this.timer = null; }
+  // everyone out: the square closed (by the clock or by the organisers)
+  closeAll(st) {
+    this.broadcast({ t: 'closed', next: st.next, by: st.by });
+    for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} }
+    this.people.clear(); this.stop();
+  }
+  async closedNow(st) { // bans last until the square closes
+    if (this.cfg.bans.length) { this.cfg.bans = []; await this.save(); }
+    this.closeAll(st);
+  }
   tick() {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
     const ch = []; for (const p of this.people.values()) if (p.dirty && p.name && p.mode === 'praca') { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote]); p.dirty = false; }
     if (ch.length) this.broadcast({ t: 'tick', p: ch });
-    const dj = this.dj(); if (!this.lastDj || this.lastDj.on !== dj.on) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
-    const st = this.state; if (st && st.close && !this.checking && Date.now() > st.close + 5e3 && Date.now() - this.stateAt > 60e3) { this.checking = true; this.status().finally(() => { this.checking = false; }).then(s => { if (!s.open) { this.broadcast({ t: 'closed', next: s.next }); for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} } this.people.clear(); this.stop(); } }); }
+    const dj = this.djInfo(); if (!this.lastDj || this.lastDj.ok !== dj.ok || this.lastDj.mode !== dj.mode) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
+    const st = this.state, now = Date.now();
+    const due = st && ((st.close && now > st.close + 5e3) || (this.cfg.force && this.cfg.force.until && now >= this.cfg.force.until));
+    if (due && !this.checking && now - this.stateAt > 5e3) { this.checking = true; this.status(true).then(s => { if (!s.open) return this.closedNow(s); }).finally(() => { this.checking = false; }); }
   }
   async alarm() { // 24 h after a square closed: its mural goes
     this.sql.exec('DELETE FROM reports WHERE msg IN (SELECT id FROM mural WHERE expires <= ?)', Date.now());
     this.sql.exec('DELETE FROM mural WHERE expires <= ?', Date.now());
     const next = this.sql.exec('SELECT MIN(expires) AS e FROM mural').one().e; if (next) this.ctx.storage.setAlarm(next);
+  }
+
+  /* ---------- /gestao: the organisers ---------- */
+  async admin(req) {
+    const key = await addrKey(req), now = Date.now();
+    const tries = (this.fails.get(key) || []).filter(t => now - t < 10 * 60e3);
+    if (tries.length >= 10) return Response.json({ erro: 'Demasiadas tentativas. Espera 10 minutos.' }, { status: 429 });
+    if (!this.env.GESTAO_FRASE) return Response.json({ erro: 'Falta criar a palavra-passe GESTAO_FRASE na Cloudflare.' }, { status: 503 });
+    let m; try { m = await req.json(); } catch (e) { return Response.json({ erro: 'Pedido inválido.' }, { status: 400 }); }
+    if (!(await samePhrase(String(m.frase || ''), this.env.GESTAO_FRASE))) { tries.push(now); this.fails.set(key, tries); return Response.json({ erro: 'Palavra-passe errada.' }, { status: 401 }); }
+    this.fails.delete(key);
+    const before = await this.status(true), c = this.cfg;
+    const live = this.liveSched || [];
+    switch (m.acao) {
+      case 'estado': break;
+      case 'abrir': { const h = +m.horas; c.force = { mode: 'aberta', at: now, until: h > 0 && h <= 24 ? now + h * 3600e3 : null, title: plain(m.titulo, 60) || 'Praça aberta' }; break; }
+      case 'fechar': { // until the end of what's on now; the next event opens as planned
+        const until = Math.max(now + 60e3, ...live.map(w => w.close));
+        c.force = { mode: 'fechada', at: now, until }; break; }
+      case 'horario': c.force = null; break;
+      case 'agendar': {
+        const d = String(m.data || ''), a = String(m.inicio || ''), b = String(m.fim || '');
+        if (!DATE.test(d) || !HHMM.test(a) || !HHMM.test(b)) return Response.json({ erro: 'Data ou horas inválidas.' }, { status: 400 });
+        const open = lisbon(d, a); let close = lisbon(d, b); if (close <= open) close += 24 * 3600e3;
+        if (close <= now) return Response.json({ erro: 'Essa abertura já passou.' }, { status: 400 });
+        c.agenda = c.agenda.filter(x => x.close > now); c.agenda.push({ id: crypto.randomUUID().slice(0, 8), title: plain(m.titulo, 60) || 'Praça aberta', where: plain(m.onde, 80), open, close });
+        c.agenda.sort((x, y) => x.open - y.open); c.agenda = c.agenda.slice(0, 50); break; }
+      case 'desagendar': c.agenda = c.agenda.filter(x => x.id !== m.id); break;
+      case 'banir': {
+        const target = [...this.people.values()].find(p => p.id === (m.id | 0)); if (!target) break;
+        const until = (before.close || now + 12 * 3600e3);
+        if (target.dev) { c.bans = c.bans.filter(b => b.until > now); c.bans.push({ dev: target.dev, name: target.name, until }); }
+        for (const p of [...this.people.values()]) if (p === target || (target.dev && p.dev === target.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} }
+        break; }
+      case 'desbanir': c.bans = c.bans.filter(b => b.dev !== m.dev); break;
+      case 'apagar': { const id = m.id | 0; this.sql.exec('UPDATE mural SET hidden = 2 WHERE id = ?', id); this.broadcast({ t: 'mural-', id }); break; }
+      case 'repor': {
+        const id = m.id | 0; this.sql.exec('UPDATE mural SET hidden = 0 WHERE id = ?', id); this.sql.exec('DELETE FROM reports WHERE msg = ?', id);
+        const r = this.sql.exec('SELECT id, name, city, text, at FROM mural WHERE id = ?', id).toArray()[0]; if (r) this.broadcast({ t: 'mural+', m: r, by: 0 });
+        break; }
+      case 'aviso': c.aviso = plain(m.texto, AVISO_MAX); this.broadcast({ t: 'aviso', text: c.aviso }); break;
+      case 'config': {
+        if (typeof m.muralRO === 'boolean') c.muralRO = m.muralRO;
+        if (['auto', 'sempre', 'off'].includes(m.dj)) c.dj = m.dj;
+        if (typeof m.policia === 'boolean') c.policia = m.policia;
+        if (typeof m.ciclistas === 'boolean') c.ciclistas = m.ciclistas;
+        this.broadcast({ t: 'cfg', cfg: this.pubCfg() }); break; }
+      default: return Response.json({ erro: 'Ação desconhecida.' }, { status: 400 });
+    }
+    if (m.acao !== 'estado') await this.save();
+    const st = await this.status(true);
+    if (before.open && !st.open) await this.closedNow(st);
+    const ws = windows(await schedule(this.env), now).filter(w => w.close > now).sort((a, b) => a.open - b.open).slice(0, 8).map(pick);
+    const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev }));
+    const mural = this.sql.exec('SELECT id, name, city, text, at, hidden FROM mural WHERE expires > ? ORDER BY id DESC LIMIT 200', now).toArray();
+    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force }, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })) });
   }
 }

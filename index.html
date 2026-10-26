@@ -4222,7 +4222,7 @@ titleScreen();
 // the protests: manifestacoes.json, the same file the shared square's server reads (the list in RALLIES is the offline copy)
 fetch('manifestacoes.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(list => {
   if (!Array.isArray(list) || !list.length) return;
-  RALLIES.length = 0; for (const r of list) if (r && r.date && r.at && r.title) RALLIES.push(r);
+  RALLIES.length = 0; for (const r of list) if (r && r.date && r.at && r.title && !r.so_praca && !r.dias) RALLIES.push(r); // the daily assembly is only for the shared square
   const box = document.getElementById('rallyBox'); if (box && mode === 'title') box.innerHTML = titleRally();
 }).catch(() => {});
 pracaCheck(); setInterval(() => { if (mode === 'title') pracaCheck(); }, 120e3);

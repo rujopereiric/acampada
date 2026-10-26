@@ -3,7 +3,7 @@
   "private": true,
   "description": "Acampada Pixel: o servidor da praça partilhada (multiplayer.html), na Cloudflare",
   "scripts": {
-    "teste": "wrangler dev --var FORCE_OPEN:1",
+    "teste": "wrangler dev --var FORCE_OPEN:1 --var GESTAO_FRASE:teste",
     "publicar": "wrangler deploy"
   },
   "devDependencies": {

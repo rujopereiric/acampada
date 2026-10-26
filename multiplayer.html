@@ -91,10 +91,14 @@ button{ cursor:pointer; touch-action:manipulation; }
   #tMural{ display:none; }
   #muralSheet .x{ display:none; }
 }
-#toast{ position:absolute; left:50%; top:10px; transform:translateX(-50%); background:var(--ink); color:var(--lime); border:2px solid var(--lime); font:700 13px/1.2 Jost, sans-serif; padding:6px 10px 5px; text-transform:uppercase; letter-spacing:.4px; z-index:4; max-width:90%; text-align:center; pointer-events:none; }
+#toast{ position:absolute; left:50%; bottom:62px; transform:translateX(-50%); background:var(--ink); color:var(--lime); border:2px solid var(--lime); font:700 13px/1.2 Jost, sans-serif; padding:6px 10px 5px; text-transform:uppercase; letter-spacing:.4px; z-index:4; max-width:90%; text-align:center; pointer-events:none; }
 #toast[hidden]{ display:none; }
 #djTag{ position:absolute; left:8px; bottom:8px; background:rgba(11,10,10,.8); color:var(--lime); font:700 11px/1 Jost, sans-serif; text-transform:uppercase; padding:5px 7px 4px; letter-spacing:.4px; z-index:2; pointer-events:none; }
 #djTag[hidden]{ display:none; }
+#aviso{ position:absolute; left:0; right:0; top:0; z-index:3; display:flex; align-items:center; gap:8px; background:var(--lime); color:var(--ink); font:800 15px/1.2 Jost, sans-serif; padding:8px 10px 7px; border-bottom:2px solid var(--ink); }
+#aviso[hidden]{ display:none; } #aviso span{ flex:1; } #aviso span::before{ content:'📣 '; }
+#aviso button{ background:none; border:none; font:800 16px/1 Jost, sans-serif; color:var(--ink); padding:2px 4px; }
+.write.ro textarea{ background:#d9d3c3; } .write.ro button{ opacity:.5; }
 .zoom{ position:absolute; right:8px; bottom:8px; z-index:2; width:44px; height:44px; background:var(--paper); color:var(--ink); border:2px solid var(--ink); font:800 22px/1 Jost, sans-serif; padding:0; }
 @media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } }
 
@@ -150,6 +154,7 @@ button{ cursor:pointer; touch-action:manipulation; }
     <canvas id="cv" aria-label="A praça partilhada"></canvas>
     <div id="toast" hidden></div>
     <div id="djTag" hidden></div>
+    <div id="aviso" hidden><span id="avisoTxt"></span><button id="avisoX" aria-label="Fechar">✕</button></div>
     <button id="bZoom" class="zoom" aria-label="Zoom">＋</button>
     <div class="sheet" id="phraseSheet" hidden><h3><span data-t="phrases"></span><button class="x" data-close>✕</button></h3><div class="grid" id="phraseGrid"></div></div>
     <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
@@ -234,7 +239,7 @@ function applyTexts() {
   for (const el of document.querySelectorAll('[data-t]')) { const t = TXT[el.dataset.t]; if (t) el.textContent = L(t[0], t[1]); }
   $('bLang').textContent = LANG === 'en' ? 'PT' : 'EN'; $('bLang').setAttribute('aria-label', L('Mudar para inglês', 'Switch to Portuguese'));
   $('muralIn').placeholder = L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
-  buildSheets(); renderWhere(); renderCounts(); renderMural();
+  buildSheets(); renderWhere(); renderCounts(); renderMural(); renderMuralLock();
 }
 
 /* ================= the world: an isometric square, drawn like the game ================= */
@@ -397,6 +402,8 @@ const DJ_LOOK = { skin: '#7a4a2c', hair: '#16121a', shirt: '#2f8a50', pants: '#2
 const DJ_ON = 180e3, DJ_CYCLE = 600e3, DJ_IN = 9e3;
 const serverNow = () => Date.now() + clockOff;
 function djPos(now = serverNow()) {
+  if (!djState.ok) return null; // switched off, or the assembly has started
+  if (djState.mode === 'sempre') { const a = Math.PI / 2 + now / 1000 * (Math.PI * 2 / 75), dx = -Math.sin(a), dy = Math.cos(a); return { gx: CXg + Math.cos(a) * 5, gy: CYg + Math.sin(a) * 5, moving: true, step: now / 260, flip: dx - dy < 0, back: dx + dy < 0 }; }
   const k = now % DJ_CYCLE; if (k >= DJ_ON) return null;
   const ring = a => ({ gx: CXg + Math.cos(a) * 5, gy: CYg + Math.sin(a) * 5 });
   const a0 = Math.PI / 2, a = a0 + (k - DJ_IN) / 1000 * (Math.PI * 2 / 75); // one lap every 75 s, along the painted circle
@@ -426,6 +433,9 @@ const people = new Map();
 let mural = [], mine = new Set(), reported = new Set(), counts = { praca: {}, apoio: {} };
 let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'null'); } catch (e) { return null; } })() || { name: '', city: '', other: '', mode: 'praca', look: Math.floor(Math.random() * LOOKS) };
 try { reported = new Set(JSON.parse(store.get('acampada-praca-rep') || '[]')); } catch (e) {}
+// a random name for this browser, so the organisers can ban someone until the square closes (it says nothing about who it is)
+const DEV = store.get('acampada-praca-dev') || (() => { const a = new Uint8Array(10); crypto.getRandomValues(a); const d = [...a].map(b => (b % 36).toString(36)).join(''); store.set('acampada-praca-dev', d); return d; })();
+let djState = { mode: 'auto', ok: true }, cfg = { muralRO: false, policia: false, ciclistas: false }, aviso = '', closedBy = null;
 
 let inside = false; // got into the square at least once this time (then drops reconnect on their own)
 function connect() {
@@ -433,9 +443,9 @@ function connect() {
   wantOpen = true; closedByServer = false;
   try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
-  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look })); };
+  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
-  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001) return; if (wantOpen) fail(); };
+  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
 }
 function fail() {
@@ -462,7 +472,8 @@ function onMsg(m) {
     if (m.size) { W = m.size[0]; H = m.size[1]; CXg = W / 2; CYg = H / 2; }
     people.clear(); for (const o of m.people || []) addPerson(o);
     me = null; if (myMode === 'praca') { me = addPerson(m.me); me.mine = true; camX = null; }
-    mural = m.mural || []; counts = m.counts || counts;
+    mural = m.mural || []; counts = m.counts || counts; closedBy = m.by || null;
+    if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
     hideToast();
     if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
@@ -476,12 +487,15 @@ function onMsg(m) {
   }
   if (m.t === 'say') { const p = people.get(m.id); if (p && PHRASES[m.k]) { p.say = m.k; p.sayAt = performance.now(); if (p !== me) blip(p); } return; }
   if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
-  if (m.t === 'dj') return;
+  if (m.t === 'dj') { djState = m.dj; return; }
+  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); return; }
+  if (m.t === 'aviso') { setAviso(m.text || ''); return; }
+  if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
   if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
-  if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
+  if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
   if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
-  if (m.t === 'closed') { inside = false; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
+  if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
 }
 
 /* ================= drawing the square ================= */
@@ -613,6 +627,7 @@ function bubble(text, x, y, age) {
 let djTagWas = '';
 function djTag(d) {
   const k = serverNow() % DJ_CYCLE, mins = Math.ceil((DJ_CYCLE - k) / 60e3);
+  if (!djState.ok) { if (!$('djTag').hidden) { $('djTag').hidden = true; djTagWas = ''; } return; }
   const t = d ? L('DJ p.45 na praça · aproxima-te para dançar', 'DJ p.45 in the square · get close to dance') : L(`DJ p.45 volta daqui a ${mins} min`, `DJ p.45 back in ${mins} min`);
   if (t !== djTagWas) { djTagWas = t; $('djTag').textContent = t; $('djTag').hidden = false; }
 }
@@ -684,6 +699,14 @@ function music(dj) {
   if (Math.abs(v - musicVol) > .01) { musicVol = v; master.gain.setTargetAtTime(v, actx.currentTime, .3); }
 }
 function blip(p) { if (!actx || muted || !me) return; const d = Math.hypot(p.x - me.x, p.y - me.y); if (d > 8) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(880, t + .05); g.gain.setValueAtTime(.025 * (1 - d / 8), t); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .14); }
+let avisoClosed = '';
+function setAviso(t) { aviso = t; $('avisoTxt').textContent = t; $('aviso').hidden = !t || avisoClosed === t; if (t && avisoClosed !== t) blipAviso(); }
+$('avisoX').addEventListener('click', () => { avisoClosed = aviso; $('aviso').hidden = true; });
+function blipAviso() { if (!actx || muted) return; const t = actx.currentTime; for (const [i, f] of [[0, 784], [1, 988]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.04, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .1); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .12); } }
+function renderMuralLock() {
+  const ro = !!cfg.muralRO; $('muralIn').disabled = ro; $('muralSend').disabled = ro; $('muralIn').closest('.write').classList.toggle('ro', ro);
+  $('muralIn').placeholder = ro ? L('O mural está só para leitura.', 'The wall is read-only for now.') : L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
+}
 function muralPing() { if ($('muralSheet').hidden) $('tMural').classList.add('new'); }
 $('bZoom').addEventListener('click', () => { zoom = !zoom; store.set('acampada-praca-zoom', zoom ? '1' : '0'); $('bZoom').textContent = zoom ? '－' : '＋'; camX = null; resize(); });
 $('bSound').addEventListener('click', () => { audioInit(); muted = !muted; store.set('acampada-praca-mute', muted ? '1' : '0'); $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; });
@@ -758,7 +781,7 @@ function renderCounts() {
 function renderWhere() {
   const w = live && live[0];
   const title = w ? (w.city ? w.city + ': ' : '') + w.title : L('Praça partilhada', 'Shared square');
-  const close = closeAt ? L(`fecha às ${hhmm(closeAt)}`, `closes at ${hhmm(closeAt)}`) : '';
+  const close = closeAt ? L(`fecha às ${hhmm(closeAt)}`, `closes at ${hhmm(closeAt)}`) : L('aberta até a organização fechar', 'open until the organisers close it');
   const meLine = myMode === 'praca' ? L('estás na praça', 'you’re in the square') : L('estás como apoio de longe', 'you’re supporting from afar');
   $('where').innerHTML = ''; $('where').append(title); const s = document.createElement('small'); s.textContent = [meLine, close].filter(Boolean).join(' · '); $('where').append(s);
 }
@@ -800,11 +823,17 @@ async function showStatus(st) {
   closedScreen(st);
 }
 function wireLang() { for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); showStatus(lastStatus); }); }
+function bannedScreen() {
+  $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
+  $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('A organização retirou-te da praça', 'The organisers removed you from the square')}</p><p class="help">${L('Podes voltar quando esta praça fechar e abrir a próxima.', 'You can come back once this square closes and the next one opens.')}</p>${FOOT()}`;
+  for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); bannedScreen(); });
+}
 function closedScreen(st) {
   const box = $('ovIn'), n = st.next;
-  box.innerHTML = `${langSw()}<span class="badge off">${L('Fechada', 'Closed')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-big rough">${L('Abre nas manifs', 'Opens at protests')}</p>
-  <p class="help">${L('A praça partilhada abre uma hora antes de cada manifestação pela habitação e fecha umas horas depois. Quem está na manif ou numa acampada entra com o seu boneco; quem está longe dá apoio e escreve no mural.', 'The shared square opens an hour before each housing protest and closes a few hours after. People at the protest or a camp walk in with their avatar; people far away send support and write on the wall.')}</p>
-  ${n ? `<p class="p-mid rough" id="ovCount" style="margin-top:16px !important">${L('Abre daqui a', 'Opens in')} ${esc(inTime(n.open - serverNow()))}</p>${liveCard(n)}` : `<p class="help">${L('Ainda não há manifestações marcadas. Volta em breve!', 'No protests are scheduled yet. Come back soon!')}</p>`}
+  box.innerHTML = `${langSw()}<span class="badge off">${L('Fechada', 'Closed')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-big rough">${L('Abre nas manifs e assembleias', 'Opens for protests and assemblies')}</p>
+  ${st.by === 'fechada' ? `<p class="p-mid rough" style="margin-top:10px !important">${L('Fechada pela organização', 'Closed by the organisers')}</p>` : ''}
+  <p class="help">${L('A praça partilhada abre antes das manifestações pela habitação e das assembleias. Quem está na manif ou numa acampada entra com o seu boneco; quem está longe dá apoio e escreve no mural.', 'The shared square opens before housing protests and assemblies. People at the protest or a camp walk in with their avatar; people far away send support and write on the wall.')}</p>
+  ${n ? `<p class="p-mid rough" id="ovCount" style="margin-top:16px !important">${L('Abre daqui a', 'Opens in')} ${esc(inTime(n.open - serverNow()))}</p>${liveCard(n)}` : `<p class="help">${L('Ainda não há nada marcado. Volta em breve!', 'Nothing is scheduled yet. Come back soon!')}</p>`}
   <div id="ovMural"></div>${FOOT()}`;
   wireLang();
   fetch(SRV + '/mural', { cache: 'no-store' }).then(r => r.json()).then(j => { const ms = j.mural || []; if (!ms.length) return; const b = $('ovMural'); if (!b) return; const h = document.createElement('p'); h.className = 'p-mid'; h.style.textAlign = 'center'; h.textContent = L('O mural da última praça', 'The wall from the last square'); b.append(h); for (const m of ms.slice(-40).reverse()) b.append(msgEl(m, false)); }).catch(() => {});
@@ -822,7 +851,8 @@ function entryScreen(st) {
   const opts = CITIES.map(c => `<option value="${c}"${p.city === c ? ' selected' : ''}>${c}</option>`).join('') + `<option value="_"${p.city === '_' ? ' selected' : ''}>${L('Outra cidade', 'Another city')}</option>`;
   box.innerHTML = `${langSw()}<span class="badge">${L('Aberta agora', 'Open now')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('Todas as acampadas, numa praça', 'Every camp, one square')}</p>
   ${(st.live || []).map(liveCard).join('')}
-  <p class="help">${L(`Fecha às ${hhmm(st.close)}. Agora: ${sum(st.counts && st.counts.praca)} na praça, ${sum(st.counts && st.counts.apoio)} de longe.`, `Closes at ${hhmm(st.close)}. Right now: ${sum(st.counts && st.counts.praca)} in the square, ${sum(st.counts && st.counts.apoio)} from afar.`)}</p>
+  <p class="help">${st.close ? L(`Fecha às ${hhmm(st.close)}.`, `Closes at ${hhmm(st.close)}.`) : L('Aberta até a organização fechar.', 'Open until the organisers close it.')} ${L(`Agora: ${sum(st.counts && st.counts.praca)} na praça, ${sum(st.counts && st.counts.apoio)} de longe.`, `Right now: ${sum(st.counts && st.counts.praca)} in the square, ${sum(st.counts && st.counts.apoio)} from afar.`)}</p>
+  ${st.aviso ? `<p class="live" style="border-left-color:var(--lime)"><b>📣 ${esc(st.aviso)}</b></p>` : ''}
   <div class="form">
     <div><label for="fName">${L('O teu nome na praça', 'Your name in the square')}</label><input id="fName" maxlength="16" autocomplete="nickname" value="${esc(p.name)}" placeholder="${L('Até 16 letras', 'Up to 16 letters')}"></div>
     <div><label for="fCity">${L('De que cidade és?', 'Which city are you from?')}</label><select id="fCity"><option value="">${L('Escolhe…', 'Choose…')}</option>${opts}</select>

@@ -1,5 +1,21 @@
 [
  {
+  "title": "Assembleia Geral",
+  "where": "Na praça",
+  "dias": [
+   "seg",
+   "ter",
+   "qua",
+   "qui",
+   "sex"
+  ],
+  "at": "19:00",
+  "abre": "18:30",
+  "fecha": "22:00",
+  "dj": false,
+  "so_praca": true
+ },
+ {
   "date": "2026-10-27",
   "at": "18:30",
   "city": "Lisboa",
