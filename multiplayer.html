@@ -44,6 +44,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .tb small{ display:block; font:500 11px/1 Jost, sans-serif; text-transform:none; margin-top:3px; color:#5b554f; }
 .tb.red{ background:var(--redbox); color:#fff; } .tb.red small{ color:#f0c9c4; }
 .tb.green{ background:var(--green); color:var(--ink); } .tb.green small{ color:#1f3a2a; }
+.tb.new{ position:relative; } .tb.new::after{ content:''; position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); }
 .tb.open{ outline:3px solid var(--lime); outline-offset:-3px; }
 .tb:active{ transform:translateY(2px); }
 
@@ -426,16 +427,23 @@ let mural = [], mine = new Set(), reported = new Set(), counts = { praca: {}, ap
 let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'null'); } catch (e) { return null; } })() || { name: '', city: '', other: '', mode: 'praca', look: Math.floor(Math.random() * LOOKS) };
 try { reported = new Set(JSON.parse(store.get('acampada-praca-rep') || '[]')); } catch (e) {}
 
+let inside = false; // got into the square at least once this time (then drops reconnect on their own)
 function connect() {
+  if (ws) return;
   wantOpen = true; closedByServer = false;
-  try { ws = new WebSocket(WS_URL); } catch (e) { return fail(); }
+  try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
   ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
-  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000) return; if (wantOpen) fail(); };
+  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
 }
 function fail() {
+  if (!inside) { // never got in: say so on the form, no endless retries behind it
+    wantOpen = false; hideToast();
+    const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Não foi possível entrar. Verifica a internet e tenta outra vez.', 'Couldn’t get in. Check your connection and try again.'); if (b) b.disabled = false;
+    return;
+  }
   retry++; const wait = Math.min(15, 2 ** Math.min(retry, 4));
   toast(L(`Sem ligação. A tentar outra vez em ${wait} s…`, `Disconnected. Trying again in ${wait} s…`), 0);
   setTimeout(() => { if (wantOpen && !ws) connect(); }, wait * 1000);
@@ -445,12 +453,12 @@ function addPerson(o) {
   const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
   p.n = o.n; p.c = o.c; p.look = lookOf(o.l);
   if (p.x === undefined) { p.x = o.x; p.y = o.y; }
-  p.tx = o.x; p.ty = o.y; if (o.e) { p.e = o.e; p.eAt = performance.now(); }
+  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); }
   people.set(o.id, p); return p;
 }
 function onMsg(m) {
   if (m.t === 'welcome') {
-    myId = m.id; myMode = m.mode; clockOff = (m.now || Date.now()) - Date.now(); closeAt = m.close || 0; live = m.live || live;
+    inside = true; myId = m.id; myMode = m.mode; clockOff = (m.now || Date.now()) - Date.now(); closeAt = m.close || 0; live = m.live || live;
     if (m.size) { W = m.size[0]; H = m.size[1]; CXg = W / 2; CYg = H / 2; }
     people.clear(); for (const o of m.people || []) addPerson(o);
     me = null; if (myMode === 'praca') { me = addPerson(m.me); me.mine = true; camX = null; }
@@ -463,16 +471,17 @@ function onMsg(m) {
   if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
   if (m.t === 'leave') { people.delete(m.id); return; }
   if (m.t === 'tick') {
-    for (const [id, x, y, e] of m.p) { if (id === myId) continue; const p = people.get(id); if (!p) continue; p.tx = x; p.ty = y; if (e !== p.e) { p.e = e; p.eAt = performance.now(); } }
+    for (const [id, x, y, e] of m.p) { if (id === myId) continue; const p = people.get(id); if (!p || !isFinite(x) || !isFinite(y)) continue; p.tx = x; p.ty = y; const g = GESTURES[e] ? e : 0; if (g !== p.e) { p.e = g; p.eAt = performance.now(); } }
     return;
   }
-  if (m.t === 'say') { const p = people.get(m.id); if (p) { p.say = m.k; p.sayAt = performance.now(); if (p !== me) blip(p); } return; }
+  if (m.t === 'say') { const p = people.get(m.id); if (p && PHRASES[m.k]) { p.say = m.k; p.sayAt = performance.now(); if (p !== me) blip(p); } return; }
   if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
   if (m.t === 'dj') return;
   if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
   if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
-  if (m.t === 'closed') { closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
+  if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
+  if (m.t === 'closed') { inside = false; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
 }
 
 /* ================= drawing the square ================= */
@@ -501,17 +510,17 @@ function viewOrigin() {
   camY = minY > maxY ? (top.y + bot.y) / 2 : clamp(camY, minY, maxY);
   return { ox: Math.round(camX - vw / 2), oy: Math.round(camY - vh / 2) };
 }
-let lastT = performance.now();
+let lastView = { ox: 0, oy: 0 };
+let lastT = performance.now(), duskAt = -1e9;
+const HOUR_FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hourCycle: 'h23' });
 function frame() {
   const now = performance.now(), dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
-  update(dt, now);
-  draw(now);
+  try { update(dt, now); draw(now); } catch (e) { console.error(e); }
   requestAnimationFrame(frame);
 }
 function update(dt, now) {
   // dusk: the protests run into the evening; the square follows the real time in Portugal
-  const h = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hourCycle: 'h23' }).format(new Date());
-  dusk = h >= 20 || h < 7 ? 1 : h >= 18 ? .5 : 0;
+  if (now - duskAt > 60e3) { duskAt = now; const h = +HOUR_FMT.format(new Date()); dusk = h >= 20 || h < 7 ? 1 : h >= 18 ? .5 : 0; }
   // me: keys or a target picked on the ground
   if (me) {
     let dx = 0, dy = 0;
@@ -548,7 +557,7 @@ function sendPos(now, stop) {
 }
 function draw(now) {
   if (!bg) return;
-  const { ox, oy } = viewOrigin();
+  const { ox, oy } = viewOrigin(); lastView = { ox, oy };
   vg.imageSmoothingEnabled = false; vg.setTransform(1, 0, 0, 1, 0, 0);
   vg.fillStyle = '#2a2440'; vg.fillRect(0, 0, vc.width, vc.height);
   vg.drawImage(bg, -ox, -oy);
@@ -579,7 +588,7 @@ function draw(now) {
     }
     const e = p.e && now - p.eAt < 4000 ? GESTURES[p.e] : null;
     if (e) { ctx.font = '20px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; ctx.fillText(e.i, q.x + 14, headY + 4); }
-    if (talking) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt);
+    if (talking && PHRASES[p.say]) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt);
   }
   const d = djPos();
   if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
@@ -619,7 +628,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = 0; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
 let drag = null;
-cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
+cv.addEventListener('pointerdown', e => { if (camX === null) return; drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
 cv.addEventListener('pointermove', e => {
   if (!drag || drag.id !== e.pointerId) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -631,7 +640,7 @@ cv.addEventListener('pointerup', e => {
   const moved = drag.moved; drag = null; if (moved) return;
   closeSheets();
   if (!me) return;
-  const r = cv.getBoundingClientRect(), { ox, oy } = viewOrigin();
+  const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
   const w = toWorld((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy + 3);
   me.goal = { gx: clamp(w.gx, .3, W - .3), gy: clamp(w.gy, .3, H - .3) }; camFree = 0;
   sendPos(performance.now());
@@ -675,7 +684,7 @@ function music(dj) {
   if (Math.abs(v - musicVol) > .01) { musicVol = v; master.gain.setTargetAtTime(v, actx.currentTime, .3); }
 }
 function blip(p) { if (!actx || muted || !me) return; const d = Math.hypot(p.x - me.x, p.y - me.y); if (d > 8) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(880, t + .05); g.gain.setValueAtTime(.025 * (1 - d / 8), t); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .14); }
-function muralPing() {}
+function muralPing() { if ($('muralSheet').hidden) $('tMural').classList.add('new'); }
 $('bZoom').addEventListener('click', () => { zoom = !zoom; store.set('acampada-praca-zoom', zoom ? '1' : '0'); $('bZoom').textContent = zoom ? '－' : '＋'; camX = null; resize(); });
 $('bSound').addEventListener('click', () => { audioInit(); muted = !muted; store.set('acampada-praca-mute', muted ? '1' : '0'); $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; });
 
@@ -698,7 +707,7 @@ function gesture(k) {
   if (!me) return; send({ t: 'emote', k }); me.e = k; me.eAt = performance.now(); closeSheets();
   clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
 }
-function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { renderMural(true); } } }
+function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
 function closeSheets() { for (const id of ['phraseSheet', 'gestSheet', 'muralSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open'); }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
 $('tGest').addEventListener('click', () => openSheet('gestSheet'));
@@ -795,12 +804,18 @@ function closedScreen(st) {
   const box = $('ovIn'), n = st.next;
   box.innerHTML = `${langSw()}<span class="badge off">${L('Fechada', 'Closed')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-big rough">${L('Abre nas manifs', 'Opens at protests')}</p>
   <p class="help">${L('A praça partilhada abre uma hora antes de cada manifestação pela habitação e fecha umas horas depois. Quem está na manif ou numa acampada entra com o seu boneco; quem está longe dá apoio e escreve no mural.', 'The shared square opens an hour before each housing protest and closes a few hours after. People at the protest or a camp walk in with their avatar; people far away send support and write on the wall.')}</p>
-  ${n ? `<p class="p-mid rough" style="margin-top:16px !important">${L('Abre daqui a', 'Opens in')} ${esc(inTime(n.open - serverNow()))}</p>${liveCard(n)}` : `<p class="help">${L('Ainda não há manifestações marcadas. Volta em breve!', 'No protests are scheduled yet. Come back soon!')}</p>`}
+  ${n ? `<p class="p-mid rough" id="ovCount" style="margin-top:16px !important">${L('Abre daqui a', 'Opens in')} ${esc(inTime(n.open - serverNow()))}</p>${liveCard(n)}` : `<p class="help">${L('Ainda não há manifestações marcadas. Volta em breve!', 'No protests are scheduled yet. Come back soon!')}</p>`}
   <div id="ovMural"></div>${FOOT()}`;
   wireLang();
   fetch(SRV + '/mural', { cache: 'no-store' }).then(r => r.json()).then(j => { const ms = j.mural || []; if (!ms.length) return; const b = $('ovMural'); if (!b) return; const h = document.createElement('p'); h.className = 'p-mid'; h.style.textAlign = 'center'; h.textContent = L('O mural da última praça', 'The wall from the last square'); b.append(h); for (const m of ms.slice(-40).reverse()) b.append(msgEl(m, false)); }).catch(() => {});
-  const wait = n ? clamp(n.open - serverNow() + 2000, 5000, 60e3) : 60e3;
-  statusTimer = setTimeout(() => showStatus(), wait);
+  const tick = async () => {
+    let s2 = null; try { s2 = await getStatus(); } catch (e) {}
+    if ($('ov').hidden) return;
+    if (s2) { lastStatus = s2; clockOff = (s2.now || Date.now()) - Date.now(); if (s2.open) return showStatus(s2); }
+    const c = $('ovCount'), nx = (s2 || st).next; if (c && nx) c.textContent = `${L('Abre daqui a', 'Opens in')} ${inTime(nx.open - serverNow())}`;
+    statusTimer = setTimeout(tick, nx ? clamp(nx.open - serverNow() + 2000, 5000, 60e3) : 60e3);
+  };
+  statusTimer = setTimeout(tick, n ? clamp(n.open - serverNow() + 2000, 5000, 60e3) : 60e3);
 }
 function entryScreen(st) {
   const box = $('ovIn'), p = profile;
@@ -833,6 +848,7 @@ function entryScreen(st) {
     if (!city || (city === '_' && !other)) { $('formErr').textContent = L('Escolhe a tua cidade.', 'Choose your city.'); $('fCity').focus(); return; }
     profile.name = name; profile.city = city; profile.other = other;
     store.set('acampada-praca', JSON.stringify(profile));
+    $('formErr').textContent = ''; $('enter').disabled = true; inside = false;
     audioInit(); connect();
   });
 }

@@ -9,6 +9,10 @@ const MAX_AVATARS = 250, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MA
 const W = 22, H = 22; // the square in tiles
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
 const LOOKS = 5 * 6 * 9; // skin x hair x shirt, the same colours as the game
+const PHRASES = 14, GESTURES = 8; // as many as in multiplayer.html (PHRASES, GESTURES): anything else is ignored
+// one address can be many people: phone networks put hundreds of phones behind one address (CGNAT), so the limits per
+// address are generous; they only stop one script from filling the square or the wall
+const PER_IP = 60, MURAL_PER_IP = 10; // connections, and wall messages per minute, from one address
 
 /* ---------- the schedule ---------- */
 let schedCache = { at: 0, list: [] };
@@ -53,10 +57,11 @@ function cors(req, env) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url), h = cors(req, env);
-    if (req.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Max-Age': '86400' } });
+    if (req.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '86400' } });
     const stub = env.PRACA.get(env.PRACA.idFromName('praca'));
     if (url.pathname === '/ws') {
       if (req.headers.get('Upgrade') !== 'websocket') return new Response('websocket', { status: 426 });
+      if (!cors(req, env)['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 }); // only the game's pages
       return stub.fetch(req);
     }
     if (url.pathname === '/estado' || url.pathname === '/mural') {
@@ -80,6 +85,16 @@ function clean(text, max) {
   return { ok: true, text: t };
 }
 
+/* ---------- who is who, without keeping addresses: a hash of the address with a secret that changes every day ---------- */
+let SALT = null; // made on the first visit (Workers can't make random values before a request arrives)
+async function addrKey(req) {
+  SALT ||= crypto.randomUUID();
+  const ip = req.headers.get('CF-Connecting-IP') || req.headers.get('X-Forwarded-For') || 'local';
+  const day = new Date().toISOString().slice(0, 10);
+  const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(SALT + day + ip));
+  return [...new Uint8Array(h).slice(0, 8)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 /* ---------- the square ---------- */
 export class Praca {
   constructor(ctx, env) {
@@ -87,7 +102,8 @@ export class Praca {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS mural (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, city TEXT, text TEXT, at INTEGER, expires INTEGER, reports INTEGER DEFAULT 0, hidden INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS reports (msg INTEGER, who TEXT, PRIMARY KEY (msg, who))`);
     this.people = new Map(); // socket -> person
-    this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0;
+    this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false;
+    this.muralBy = new Map(); // address key -> times it wrote on the wall in the last minute
   }
   async status() {
     if (Date.now() - this.stateAt > 60e3 || !this.state) { this.state = status(await schedule(this.env), Date.now(), this.env.FORCE_OPEN === '1'); this.stateAt = Date.now(); }
@@ -105,10 +121,12 @@ export class Praca {
     const url = new URL(req.url), st = await this.status();
     if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.dj() });
     if (url.pathname === '/mural') return Response.json({ mural: this.mural(true) });
+    const key = await addrKey(req);
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
     server.accept();
     if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
-    const p = { id: this.nextId++, ws: server, name: null, mode: 'apoio', city: '', x: W / 2, y: H - 2, look: 0, say: null, sayAt: 0, emote: 0, top: false, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
+    if ([...this.people.values()].filter(q => q.key === key).length >= PER_IP) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
+    const p = { id: this.nextId++, key, ws: server, name: null, mode: 'apoio', city: '', x: W / 2, y: H - 2, look: 0, say: null, sayAt: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
     this.people.set(server, p);
     server.addEventListener('message', ev => this.onMessage(p, ev.data));
     const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); if (p.name && p.mode === 'praca') this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
@@ -133,26 +151,31 @@ export class Praca {
       return;
     }
     if (!p.name) return;
-    if (m.t === 'pos' && p.mode === 'praca') { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.top = !!m.top && this.dj().on; p.dirty = true; } return; }
-    if (m.t === 'say' && p.mode === 'praca') { if (now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k: m.k | 0 }); return; }
-    if (m.t === 'emote' && p.mode === 'praca') { p.emote = (m.k | 0) % 8; p.dirty = true; return; }
+    if (m.t === 'pos' && p.mode === 'praca') { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
+    if (m.t === 'say' && p.mode === 'praca') { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
+    if (m.t === 'emote' && p.mode === 'praca') { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
     if (m.t === 'mural') {
       if (now - p.lastMural < MURAL_MS) return this.send(p, { t: 'muralno', why: 'espera', wait: Math.ceil((MURAL_MS - (now - p.lastMural)) / 1000) });
+      const recent = (this.muralBy.get(p.key) || []).filter(t => now - t < 60e3);
+      if (recent.length >= MURAL_PER_IP) return this.send(p, { t: 'muralno', why: 'espera', wait: Math.ceil((60e3 - (now - recent[0])) / 1000) });
       const c = clean(m.text, MURAL_MAX); if (!c.ok) return this.send(p, { t: 'muralno', why: c.why });
-      p.lastMural = now;
+      p.lastMural = now; recent.push(now); this.muralBy.set(p.key, recent);
+      if (this.muralBy.size > 5000) this.muralBy.clear();
       const expires = (this.state.close || now) + CLEANUP_AFTER;
       const row = this.sql.exec('INSERT INTO mural (name, city, text, at, expires) VALUES (?, ?, ?, ?, ?) RETURNING id', p.name, p.city, c.text, now, expires).one();
       this.broadcast({ t: 'mural+', m: { id: row.id, name: p.name, city: p.city, text: c.text, at: now }, by: p.id });
-      this.ctx.storage.setAlarm(expires);
+      this.ctx.storage.getAlarm().then(a => { if (!a || a > expires) this.ctx.storage.setAlarm(expires); });
       return;
     }
     if (m.t === 'report') {
-      const id = m.id | 0; try { this.sql.exec('INSERT INTO reports (msg, who) VALUES (?, ?)', id, String(p.id) + ':' + p.name); } catch (e) { return; }
+      // one report per address (reconnecting doesn't count twice), only for messages still on the wall
+      const id = m.id | 0; if (!this.sql.exec('SELECT id FROM mural WHERE id = ? AND hidden = 0', id).toArray().length) return;
+      try { this.sql.exec('INSERT INTO reports (msg, who) VALUES (?, ?)', id, p.key); } catch (e) { return; }
       const n = this.sql.exec('SELECT COUNT(*) AS n FROM reports WHERE msg = ?', id).one().n;
       if (n >= HIDE_REPORTS) { this.sql.exec('UPDATE mural SET hidden = 1 WHERE id = ?', id); this.broadcast({ t: 'mural-', id }); }
     }
   }
-  pub(p) { return { id: p.id, n: p.name, c: p.city, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, top: p.top }; }
+  pub(p) { return { id: p.id, n: p.name, c: p.city, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
   // DJ p.45: on the stage for 3 minutes in every 10 (the same for everyone, from the clock)
@@ -161,10 +184,10 @@ export class Praca {
   stop() { clearInterval(this.timer); this.timer = null; }
   tick() {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
-    const ch = []; for (const p of this.people.values()) if (p.dirty && p.name && p.mode === 'praca') { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.top ? 1 : 0]); p.dirty = false; }
+    const ch = []; for (const p of this.people.values()) if (p.dirty && p.name && p.mode === 'praca') { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote]); p.dirty = false; }
     if (ch.length) this.broadcast({ t: 'tick', p: ch });
     const dj = this.dj(); if (!this.lastDj || this.lastDj.on !== dj.on) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
-    const st = this.state; if (st && st.close && Date.now() > st.close + 5e3 && Date.now() - this.stateAt > 60e3) this.status().then(s => { if (!s.open) { this.broadcast({ t: 'closed', next: s.next }); for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} } this.people.clear(); this.stop(); } });
+    const st = this.state; if (st && st.close && !this.checking && Date.now() > st.close + 5e3 && Date.now() - this.stateAt > 60e3) { this.checking = true; this.status().finally(() => { this.checking = false; }).then(s => { if (!s.open) { this.broadcast({ t: 'closed', next: s.next }); for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} } this.people.clear(); this.stop(); } }); }
   }
   async alarm() { // 24 h after a square closed: its mural goes
     this.sql.exec('DELETE FROM reports WHERE msg IN (SELECT id FROM mural WHERE expires <= ?)', Date.now());
