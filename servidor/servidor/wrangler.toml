@@ -1,0 +1,21 @@
+# Acampada Pixel: the shared square (multiplayer.html). Free Cloudflare plan: a Worker and one Durable Object.
+name = "acampada-praca"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+
+# the address the page talks to (the domain is already on Cloudflare)
+routes = [{ pattern = "praca.acampadapixel.pt", custom_domain = true }]
+
+[vars]
+# where the list of protests lives (the same file the game reads)
+SCHEDULE_URL = "https://acampadapixel.pt/manifestacoes.json"
+# pages allowed to talk to the server
+ORIGINS = "https://acampadapixel.pt,https://www.acampadapixel.pt"
+
+[[durable_objects.bindings]]
+name = "PRACA"
+class_name = "Praca"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Praca"]

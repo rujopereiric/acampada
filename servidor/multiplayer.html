@@ -1,0 +1,1327 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Acampada Pixel · A Praça</title>
+<meta name="description" content="A praça partilhada da Acampada: abre durante as manifestações pela habitação. Entra com o teu boneco, canta, dança com o DJ p.45 e escreve no mural.">
+<meta name="theme-color" content="#0b0a0a">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Acampada · A Praça">
+<meta property="og:description" content="A praça partilhada abre durante as manifestações pela habitação. Entra, canta e escreve no mural.">
+<meta property="og:url" content="https://acampadapixel.pt/multiplayer.html">
+<meta property="og:image" content="https://acampadapixel.pt/og.jpg?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{ --ink:#0b0a0a; --paper:#f4f1ea; --red:#b02a22; --redbox:#8b2320; --green:#4ba36f; --lime:#b6ff3b; --muted:#a39d97; color-scheme:dark; }
+html{ height:100%; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+*,*::before,*::after{ box-sizing:border-box; }
+body{ margin:0; height:100%; overflow:hidden; background:var(--ink); color:var(--paper); font-family:Jost, Futura, "Trebuchet MS", sans-serif; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button, input, select, textarea{ font:inherit; }
+button{ cursor:pointer; touch-action:manipulation; }
+.rough{ filter:url(#rough); }
+
+/* the square: a bar on top, the square, the tools at the bottom (on wide screens the mural sits on the right) */
+#app{ position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); gap:6px; }
+#app[hidden]{ display:none; }
+#bar{ display:flex; align-items:center; gap:10px; background:var(--paper); color:var(--ink); border:2px solid var(--paper); padding:6px 8px; min-width:0; }
+.logo{ font-weight:800; font-size:20px; line-height:1; color:var(--red); letter-spacing:.3px; white-space:nowrap; }
+#where{ font:700 11px/1.15 Jost, sans-serif; text-transform:uppercase; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+#where small{ display:block; font-weight:500; color:#5b554f; text-transform:none; font-size:11px; }
+.cnt{ display:flex; gap:10px; font:800 18px/1 Jost, sans-serif; white-space:nowrap; }
+.cnt span small{ display:block; font:700 9px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.4px; color:#5b554f; margin-top:2px; }
+.ib{ background:#fff; color:var(--ink); border:2px solid var(--ink); font:800 12px/1 Jost, sans-serif; min-width:32px; height:30px; padding:0 7px; text-transform:uppercase; }
+.ib.on{ background:var(--ink); color:#fff; }
+#stage{ position:relative; min-height:0; overflow:hidden; border:2px solid var(--paper); background:#1d1830; }
+#cv{ position:absolute; inset:0; width:100%; height:100%; touch-action:none; cursor:pointer; }
+#tools{ display:flex; gap:6px; }
+.tb{ flex:1; border:none; background:var(--paper); color:var(--ink); font:800 16px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 6px 9px; }
+.tb small{ display:block; font:500 11px/1 Jost, sans-serif; text-transform:none; margin-top:3px; color:#5b554f; }
+.tb.red{ background:var(--redbox); color:#fff; } .tb.red small{ color:#f0c9c4; }
+.tb.green{ background:var(--green); color:var(--ink); } .tb.green small{ color:#1f3a2a; }
+.tb.new{ position:relative; } .tb.new::after{ content:''; position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); }
+.tb.open{ outline:3px solid var(--lime); outline-offset:-3px; }
+.tb:active{ transform:translateY(2px); }
+
+/* sheets over the bottom of the square: phrases, gestures, the mural */
+.sheet{ position:absolute; left:0; right:0; bottom:0; max-height:72%; display:flex; flex-direction:column; background:rgba(11,10,10,.94); border-top:2px solid var(--paper); padding:10px; z-index:3; }
+.sheet[hidden]{ display:none; }
+.sheet h3{ margin:0 0 8px; font:800 14px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.sheet h3 button{ background:none; border:2px solid var(--paper); color:var(--paper); font:800 12px/1 Jost, sans-serif; padding:4px 8px; }
+.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:6px; overflow:auto; }
+.grid button{ background:var(--paper); color:var(--ink); border:none; font:700 14px/1.15 Jost, sans-serif; padding:9px 8px 8px; text-align:left; }
+.grid button.wait{ opacity:.45; }
+.gest{ grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); }
+.gest button{ text-align:center; } .gest button b{ display:block; font-size:24px; line-height:1.1; font-weight:400; }
+
+/* the mural */
+#muralList{ flex:1; min-height:60px; overflow:auto; display:flex; flex-direction:column; gap:6px; padding-right:2px; }
+.msg{ background:var(--paper); color:var(--ink); padding:7px 9px 6px; position:relative; font:500 14px/1.3 "Helvetica Neue", Arial, sans-serif; word-wrap:break-word; }
+.msg .who{ display:flex; align-items:center; gap:5px; font:700 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.3px; margin-bottom:3px; color:#3a352e; }
+.msg .dot{ width:9px; height:9px; border-radius:50%; border:1px solid var(--ink); flex:none; }
+.msg .rep{ margin-left:auto; background:none; border:none; color:#8a837a; font:700 11px/1 Jost, sans-serif; padding:0 2px; }
+.msg .rep:disabled{ color:#c4bdb3; cursor:default; }
+.msg.mine{ background:#e4f5d6; }
+.empty{ color:var(--muted); font-size:13px; text-align:center; padding:14px 0; }
+.write{ display:flex; gap:6px; margin-top:8px; align-items:stretch; }
+.write textarea{ flex:1; resize:none; height:52px; border:2px solid var(--paper); background:#fff; color:var(--ink); padding:6px 8px; font:500 15px/1.25 "Helvetica Neue", Arial, sans-serif; }
+.write button{ border:none; background:var(--redbox); color:#fff; font:800 14px/1 Jost, sans-serif; text-transform:uppercase; padding:0 12px; }
+.note{ display:flex; justify-content:space-between; gap:8px; font-size:11px; color:var(--muted); margin-top:4px; }
+.note .err{ color:#ff9d8f; font-weight:700; }
+
+/* who is here, by city */
+.who-list{ display:flex; flex-wrap:wrap; gap:4px 10px; font:700 12px/1.3 Jost, sans-serif; margin:0 0 8px; }
+.who-list span{ display:inline-flex; align-items:center; gap:4px; } .who-list i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+#side{ display:contents; }
+/* wide screens: the mural is always on the right */
+@media (min-width: 900px) and (min-height: 520px){
+  #app{ grid-template-columns:1fr 330px; grid-template-rows:auto 1fr auto; }
+  #bar{ grid-column:1 / 3; }
+  #stage{ grid-column:1; grid-row:2; }
+  #tools{ grid-column:1; grid-row:3; }
+  #side{ display:block; grid-column:2; grid-row:2 / 4; min-height:0; }
+  #muralSheet{ position:static; max-height:none; height:100%; border:2px solid var(--paper); }
+  #muralSheet[hidden]{ display:flex; }
+  #tMural{ display:none; }
+  #muralSheet .x{ display:none; }
+}
+#toast{ position:absolute; left:50%; top:10px; transform:translateX(-50%); background:var(--ink); color:var(--lime); border:2px solid var(--lime); font:700 13px/1.2 Jost, sans-serif; padding:6px 10px 5px; text-transform:uppercase; letter-spacing:.4px; z-index:4; max-width:90%; text-align:center; pointer-events:none; }
+#toast[hidden]{ display:none; }
+#djTag{ position:absolute; left:8px; bottom:8px; background:rgba(11,10,10,.8); color:var(--lime); font:700 11px/1 Jost, sans-serif; text-transform:uppercase; padding:5px 7px 4px; letter-spacing:.4px; z-index:2; pointer-events:none; }
+#djTag[hidden]{ display:none; }
+#aviso{ position:absolute; left:0; right:0; top:0; z-index:3; display:flex; align-items:center; gap:8px; background:var(--lime); color:var(--ink); font:800 15px/1.2 Jost, sans-serif; padding:8px 10px 7px; border-bottom:2px solid var(--ink); }
+#aviso[hidden]{ display:none; } #aviso span{ flex:1; } #aviso span::before{ content:'📣 '; }
+#aviso button{ background:none; border:none; font:800 16px/1 Jost, sans-serif; color:var(--ink); padding:2px 4px; }
+.write.ro textarea{ background:#d9d3c3; } .write.ro button{ opacity:.5; }
+.ctx{ position:absolute; left:50%; bottom:62px; transform:translateX(-50%); z-index:2; background:var(--redbox); color:#fff; border:2px solid #fff; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; white-space:nowrap; box-shadow:0 3px 0 rgba(11,10,10,.5); }
+.zoom.on{ background:var(--lime); }
+.ctx:disabled{ background:#5b554f; } .ctx[hidden]{ display:none; }
+#direto{ position:absolute; left:0; right:58px; bottom:0; z-index:2; background:#d8261c; color:#fff; padding:6px 10px 6px; font:700 14px/1.25 Jost, sans-serif; border-top:2px solid #0b0a0a; }
+#direto[hidden]{ display:none; } #direto b{ display:inline-block; background:#fff; color:#d8261c; font:800 11px/1 Jost, sans-serif; letter-spacing:1px; text-transform:uppercase; padding:3px 6px 2px; margin-right:8px; vertical-align:1px; animation:liveb 1s steps(2) infinite; } @keyframes liveb{ 50%{ opacity:.55; } }
+#direto small{ display:block; font:600 11px/1.2 Jost, sans-serif; opacity:.85; margin:3px 0 2px; }
+.npcline{ margin:0 0 10px; font:600 17px/1.3 Jost, sans-serif; background:#fff; color:var(--ink); padding:9px 11px 8px; position:relative; }
+.npcline::after{ content:''; position:absolute; left:18px; bottom:-8px; border:8px solid transparent; border-top-color:#fff; border-bottom:0; }
+.opts{ grid-template-columns:1fr; } .opts button{ font-size:15px; }
+.npclab{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
+#npcBody{ overflow:auto; } #npcBody > button.ghost, .row2 .ghost{ margin-top:10px; background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:8px 10px 7px; }
+.redbtn{ margin-top:10px; background:var(--redbox); color:#fff; border:none; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; }
+.sheet.typing{ top:0; bottom:auto; border-top:0; border-bottom:2px solid var(--paper); }
+.cartazIn{ width:100%; resize:none; border:2px solid var(--paper); background:#fff; color:var(--ink); padding:8px; font:700 18px/1.2 Jost, sans-serif; }
+.cartaz{ background:#f2efe6; color:var(--ink); border:3px solid var(--ink); font:800 22px/1.15 Jost, sans-serif; text-transform:uppercase; padding:14px 12px; text-align:center; transform:rotate(-1.5deg); margin:4px 4px 10px; }
+.dot{ display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid var(--ink); vertical-align:0; }
+#fotoSheet{ top:0; max-height:none; } #fotoSheet h3{ flex:none; }
+#fotoImg{ display:block; flex:1 1 auto; min-height:0; width:100%; object-fit:contain; margin:0 auto 8px; } /* the picture shrinks so the buttons always fit */
+#fotoSheet .row2{ flex:none; } #fotoSheet .row2 .redbtn, #fotoSheet .row2 .ghost{ margin-top:0; }
+.row2{ display:flex; gap:8px; justify-content:center; } .row2 button{ flex:1; max-width:220px; }
+.zoom{ position:absolute; right:8px; bottom:8px; z-index:2; width:44px; height:44px; background:var(--paper); color:var(--ink); border:2px solid var(--ink); font:800 22px/1 Jost, sans-serif; padding:0; }
+@media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } }
+
+/* the entry and closed screens (the same poster style as the game's title screen) */
+#ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px calc(env(safe-area-inset-bottom,0px) + 16px); overflow:auto; text-align:center; background:var(--ink); }
+#ov[hidden]{ display:none; }
+#ov .wrapc{ margin:auto; width:100%; max-width:440px; }
+#ov h1,#ov h2,#ov p{ margin:0; }
+.langsw{ display:flex; justify-content:center; margin:0 auto 12px; } .langsw button{ background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 12px/1 Jost, sans-serif; letter-spacing:1px; padding:5px 10px 4px; } .langsw button + button{ border-left:0; } .langsw button.on{ background:var(--paper); color:var(--ink); }
+.p-red{ color:var(--red); font-weight:800; font-size:clamp(30px, 9.5vw, 42px); line-height:1; letter-spacing:.5px; text-transform:uppercase; }
+.p-big{ font-weight:800; font-size:clamp(28px, 9vw, 40px); line-height:1.02; text-transform:uppercase; }
+.p-mid{ font-weight:700; font-size:19px; line-height:1.15; margin-top:6px !important; text-transform:uppercase; }
+.help{ font-family:"Helvetica Neue", Arial, sans-serif; font-size:13px; line-height:1.4; color:#c9c4c4; margin:12px auto 0 !important; max-width:30em; }
+.live{ background:var(--paper); color:var(--ink); text-align:left; padding:10px 12px 9px; margin-top:14px; border-left:8px solid var(--red); }
+.live b{ display:block; font:800 16px/1.15 Jost, sans-serif; text-transform:uppercase; }
+.live span{ font:500 13px/1.35 "Helvetica Neue", Arial, sans-serif; }
+.live + .live{ margin-top:6px; }
+.badge{ display:inline-block; background:var(--lime); color:var(--ink); font:800 12px/1 Jost, sans-serif; letter-spacing:1px; text-transform:uppercase; padding:5px 8px 4px; margin-bottom:10px; }
+.badge.off{ background:var(--muted); }
+.form{ text-align:left; margin-top:16px; display:grid; gap:12px; }
+.form label{ display:block; font:800 12px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; margin-bottom:5px; }
+.form input, .form select{ width:100%; border:2px solid var(--paper); background:#fff; color:var(--ink); font:600 17px/1.2 Jost, sans-serif; padding:9px 10px 8px; border-radius:0; }
+.choice{ display:grid; gap:6px; }
+.choice button{ text-align:left; background:transparent; color:var(--paper); border:2px solid var(--paper); padding:10px 12px 9px; }
+.choice button b{ display:block; font:800 16px/1.1 Jost, sans-serif; text-transform:uppercase; }
+.choice button span{ font:500 13px/1.3 "Helvetica Neue", Arial, sans-serif; color:#c9c4c4; }
+.choice button.on{ background:var(--paper); color:var(--ink); } .choice button.on span{ color:#3a352e; }
+.lookrow{ display:flex; align-items:center; gap:12px; }
+#lookCv{ width:96px; height:96px; image-rendering:pixelated; background:#d9d3c3; border:2px solid var(--paper); }
+.btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:17px; text-transform:uppercase; background:#fff; color:var(--ink); border:none; padding:11px 18px 9px; margin:16px 4px 0; text-decoration:none; display:inline-block; }
+.btnp.red{ background:var(--redbox); color:#fff; }
+.btnp.sm{ font-size:13px; padding:8px 12px 7px; margin:0; }
+.btnp:active{ transform:translateY(2px); }
+.btnp:disabled{ opacity:.5; }
+.foot{ margin-top:18px !important; font-size:11px; color:var(--muted); font-family:"Helvetica Neue", Arial, sans-serif; }
+.foot a{ color:var(--paper); }
+#ovMural{ text-align:left; margin-top:14px; display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto; }
+:focus-visible{ outline:3px solid var(--lime); outline-offset:2px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.4"/></filter></svg>
+
+<div id="app" hidden>
+  <header id="bar">
+    <a class="logo rough" href="./" id="logo" title="Acampada">A PRAÇA</a>
+    <div id="where"></div>
+    <div class="cnt" id="cnt"></div>
+    <button class="ib" id="bSound" aria-label="Som">♪</button>
+    <button class="ib" id="bLang">EN</button>
+  </header>
+  <div id="stage">
+    <canvas id="cv" aria-label="A praça partilhada"></canvas>
+    <div id="toast" hidden></div>
+    <div id="djTag" hidden></div>
+    <div id="aviso" hidden><span id="avisoTxt"></span><button id="avisoX" aria-label="Fechar">✕</button></div>
+    <button id="bZoom" class="zoom" aria-label="Zoom">＋</button>
+    <button id="bBike" class="zoom" style="bottom:58px" aria-label="Bicicleta" hidden>🚲</button>
+    <button id="ctxBtn" class="ctx" hidden></button>
+    <div id="direto" hidden><b>● <span data-t="live"></span></b><small id="diretoQ"></small><span id="diretoTxt"></span></div>
+    <div class="sheet" id="npcSheet" hidden><h3><span id="npcTitle"></span><button class="x" data-close>✕</button></h3><div id="npcBody"></div></div>
+    <div class="sheet" id="fotoSheet" hidden><h3><span data-t="photo"></span><button class="x" data-close>✕</button></h3><img id="fotoImg" alt=""><div class="row2"><button class="redbtn" id="fotoShare" data-t="share"></button><button class="ghost" id="fotoSave" data-t="save"></button></div></div>
+    <div class="sheet" id="phraseSheet" hidden><h3><span data-t="phrases"></span><button class="x" data-close>✕</button></h3><div class="grid" id="phraseGrid"></div></div>
+    <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
+  </div>
+  <nav id="tools">
+    <button class="tb" id="tPhrase"><span data-t="say"></span><small data-t="sayS"></small></button>
+    <button class="tb green" id="tGest"><span data-t="gest"></span><small data-t="gestS"></small></button>
+    <button class="tb red" id="tMural"><span data-t="mural"></span><small data-t="muralS"></small></button>
+  </nav>
+  <aside id="side">
+    <div class="sheet" id="muralSheet" hidden>
+      <h3><span data-t="muralT"></span><button class="x" data-close>✕</button></h3>
+      <div class="who-list" id="whoList"></div>
+      <div id="muralList"></div>
+      <div class="write"><textarea id="muralIn" maxlength="140" rows="2"></textarea><button id="muralSend" data-t="send"></button></div>
+      <div class="note"><span id="muralErr"></span><span id="muralCnt">0/140</span></div>
+    </div>
+  </aside>
+</div>
+
+<div id="ov"><div class="wrapc" id="ovIn"></div></div>
+
+<script>
+(() => {
+'use strict';
+/* ================= Acampada Pixel · the shared square =================
+   Open only around the protests in manifestacoes.json (see the server in /servidor). People at a protest or a camp
+   walk in the square with a little avatar, glowing in their city's colour; people elsewhere count as support and
+   write on the mural. Phrases are a fixed list (nothing typed reaches the square), the mural is filtered and
+   reported by the people in it, and everything is deleted 24 h after the square closes. */
+
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+let LANG = store.get('acampada-lang') || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
+const L = (pt, en) => LANG === 'en' ? en : pt;
+
+const qs = new URLSearchParams(location.search);
+const SRV = qs.get('srv') || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? `http://${location.hostname}:8787` : 'https://praca.acampadapixel.pt');
+const WS_URL = SRV.replace(/^http/, 'ws') + '/ws';
+
+/* ---------- the same colours as the game ---------- */
+const SKIN = ['#f1c9a5', '#d9a37a', '#a8714a', '#7a4a2c', '#5a3520'];
+const HAIR = ['#2b1a10', '#1a1a24', '#6b3a1e', '#d9b46a', '#b03a5a', '#3a4fa8'];
+const SHIRTS = ['#ffd23a', '#3ec46d', '#2f8fff', '#9a6bff', '#ff7ad9', '#f2efe6', '#444a77', '#2ad1c9', '#ff8a2a'];
+const PANTS = ['#2b2d55', '#3a3a44', '#4a6fa5', '#5a3a6b'];
+const LOOKS = SKIN.length * HAIR.length * SHIRTS.length;
+const lookOf = n => { n = Math.abs(n | 0) % LOOKS; const s = n % 5, h = Math.floor(n / 5) % 6, c = Math.floor(n / 30) % 9; return { skin: SKIN[s], hair: HAIR[h], shirt: SHIRTS[c], pants: PANTS[(s + h + c) % 4] }; };
+const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
+const AURA = { Faro: '#7fd6ff', Coimbra: '#ff8a2a', Braga: '#3ec46d', Lisboa: '#e2283b', Porto: '#2f5bff' };
+const auraOf = c => AURA[c] || '#ffffff';
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+
+/* ---------- what people can say: a fixed list, shown in each person's language ---------- */
+const PHRASES = [
+  ['Casa para viver!', 'Homes to live in!'],
+  ['A habitação é um direito!', 'Housing is a right!'],
+  ['Baixem as rendas, subam os salários!', 'Lower rents, raise wages!'],
+  ['Paz, pão, saúde, habitação!', 'Peace, bread, health, housing!'],
+  ['Não temos casa, ficam as tendas!', 'No homes? Then the tents stay!'],
+  ['Na rua nos querem, na rua nos verão!', 'They want us on the street? Then they’ll see us there!'],
+  ['Ninguém fica sem casa!', 'Nobody left without a home!'],
+  ['Olá!', 'Hello!'],
+  ['De onde vens?', 'Where are you from?'],
+  ['Força!', 'Stay strong!'],
+  ['Obrigada!', 'Thank you!'],
+  ['Vamos dançar com o DJ?', 'Shall we dance with the DJ?'],
+  ['Até à próxima manif!', 'See you at the next protest!'],
+  ['Não estão sozinhos!', 'You are not alone!']
+];
+const GESTURES = [null,
+  { i: '👋', pt: 'Acenar', en: 'Wave' }, { i: '✊', pt: 'Punho', en: 'Fist' }, { i: '👏', pt: 'Palmas', en: 'Clap' },
+  { i: '❤️', pt: 'Coração', en: 'Heart' }, { i: '✌️', pt: 'Paz', en: 'Peace' }, { i: '🎉', pt: 'Festa', en: 'Party' }, { i: '📣', pt: 'Megafone', en: 'Megaphone' }];
+
+const TXT = {
+  phrases: ['Gritar uma palavra de ordem', 'Shout a slogan'], gestures: ['Fazer um gesto', 'Make a gesture'],
+  say: ['Gritar', 'Shout'], sayS: ['Palavras de ordem', 'Slogans'], gest: ['Gestos', 'Gestures'], gestS: ['Acenar, palmas…', 'Wave, clap…'],
+  mural: ['Mural', 'Wall'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
+};
+function applyTexts() {
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
+  for (const el of document.querySelectorAll('[data-t]')) { const t = TXT[el.dataset.t]; if (t) el.textContent = L(t[0], t[1]); }
+  $('bLang').textContent = LANG === 'en' ? 'PT' : 'EN'; $('bLang').setAttribute('aria-label', L('Mudar para inglês', 'Switch to Portuguese'));
+  $('muralIn').placeholder = L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
+  buildSheets(); renderWhere(); renderCounts(); renderMural(); renderMuralLock();
+}
+
+/* ================= the world: an isometric square, drawn like the game ================= */
+const TW = 12, TH = 6;
+let W = 22, H = 22, CXg = 11, CYg = 11;
+const G0 = -8, G1 = 30; // the world around the square, in tiles
+let OX = 0, OY = 0, WORLD_W = 0, WORLD_H = 0;
+const iso = (gx, gy, z = 0) => ({ x: OX + (gx - gy) * TW, y: OY + (gx + gy) * TH - z });
+const toWorld = (sx, sy) => { const a = (sx - OX) / TW, b = (sy - OY) / TH; return { gx: (a + b) / 2, gy: (b - a) / 2 }; };
+const lerpY = (P, Q, x) => P.y + (Q.y - P.y) * ((x - P.x) / ((Q.x - P.x) || 1));
+const hash = (x, y) => { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+const shadeCache = new Map();
+function shade(hex, f) { const k = hex + '|' + f; let o = shadeCache.get(k); if (o) return o; const n = parseInt(hex.slice(1, 7), 16), c = v => clamp(Math.round(v * f), 0, 255); o = '#' + ((1 << 24) | (c(n >> 16 & 255) << 16) | (c(n >> 8 & 255) << 8) | c(n & 255)).toString(16).slice(1); shadeCache.set(k, o); return o; }
+function R(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
+function vl(g, x, y0, y1, c) { const a = Math.round(y0), b = Math.round(y1); if (b < a) return; g.fillStyle = c; g.fillRect(x, a, 1, b - a + 1); }
+function box(g, x0, y0, x1, y1, z0, h, cT, cL, cR) {
+  const A = iso(x0, y0, z0 + h), B = iso(x1, y0, z0 + h), C = iso(x1, y1, z0 + h), D = iso(x0, y1, z0 + h);
+  if (cR) for (let sx = Math.round(C.x); sx < Math.round(B.x); sx++) { const gy = x1 - (sx + .5 - OX) / TW; const by = OY + (x1 + gy) * TH - z0; vl(g, sx, by - h, by, typeof cR === 'function' ? cR(sx) : cR); }
+  if (cL) for (let sx = Math.round(D.x); sx < Math.round(C.x); sx++) { const gx = (sx + .5 - OX) / TW + y1; const by = OY + (gx + y1) * TH - z0; vl(g, sx, by - h, by, typeof cL === 'function' ? cL(sx) : cL); }
+  if (cT) for (let sx = Math.round(D.x); sx < Math.round(B.x); sx++) { const xc = sx + .5; const t = xc < A.x ? lerpY(D, A, xc) : lerpY(A, B, xc); const b = xc < C.x ? lerpY(D, C, xc) : lerpY(C, B, xc); vl(g, sx, t, b, cT); }
+}
+function ell(g, cx, cy, r, c, ry = r / 2) { const n = Math.round(r); for (let dx = -n; dx < n; dx++) { const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / r) ** 2)); vl(g, Math.round(cx) + dx, cy - ry * e, cy + ry * e, c); } }
+function circ(g, cx, cy, r, c) { ell(g, cx, cy, r, c, r); }
+
+// facades: the colours of Portuguese squares (ochre, rose, azulejo blue, white), red tiled roofs
+const FACADES = ['#f2d7a0', '#e9b9a4', '#bcd3e6', '#f2efe6', '#d8e3c4', '#f0c98a', '#e4c9d9'];
+function building(g, x0, y0, x1, y1, h, col, faceL) {
+  const wall = col, dark = shade(col, .78), mid = shade(col, .9);
+  box(g, x0, y0, x1, y1, 0, h, null, faceL ? mid : null, faceL ? null : dark);
+  // windows on the face that looks at the square
+  const win = '#3a4f7a', lit = '#ffe9a3';
+  for (let z = 10; z < h - 6; z += 13) {
+    if (faceL) for (let gx = x0 + .6; gx < x1 - .3; gx += 1.05) { const p = iso(gx, y1, z); const on = hash(gx * 7 | 0, z) < .18; R(g, p.x - 1, p.y - 7, 3, 6, on ? lit : win); R(g, p.x - 1, p.y - 1, 3, 1, shade(col, .7)); }
+    else for (let gy = y0 + .6; gy < y1 - .3; gy += 1.05) { const p = iso(x1, gy, z); const on = hash(gy * 7 | 0, z + 3) < .18; R(g, p.x - 1, p.y - 7, 3, 6, on ? lit : win); R(g, p.x - 1, p.y - 1, 3, 1, shade(col, .62)); }
+  }
+  // ground floor: doors and shop fronts
+  if (faceL) for (let gx = x0 + .9; gx < x1 - .4; gx += 2.1) { const p = iso(gx, y1, 0); R(g, p.x - 2, p.y - 8, 4, 8, '#5a3a2b'); }
+  else for (let gy = y0 + .9; gy < y1 - .4; gy += 2.1) { const p = iso(x1, gy, 0); R(g, p.x - 2, p.y - 8, 4, 8, '#4a2f24'); }
+  // roof: cornice, then red tiles
+  box(g, x0 - .08, y0 - .08, x1 + .08, y1 + .08, h, 2, '#e9e3d6', '#d8d1bf', '#c3bba7');
+  box(g, x0, y0, x1, y1, h + 2, 5, '#b5533c', '#9c4532', '#87392a');
+  for (let k = 0; k < 3; k++) box(g, x0 + .3 + k * .2, y0 + .3 + k * .2, x1 - .3 - k * .2, y1 - .3 - k * .2, h + 7 + k * 2, 2, shade('#c0603f', 1 - k * .05));
+  void wall;
+}
+let bg = null;
+function makeBG() {
+  OX = (G1 - G0) * TW; OY = 110 - (G0 + G0) * TH;
+  WORLD_W = (G1 - G0) * 2 * TW; WORLD_H = OY + (G1 + G1) * TH + 20;
+  bg = document.createElement('canvas'); bg.width = WORLD_W; bg.height = WORLD_H;
+  const g = bg.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.fillStyle = '#2a2440'; g.fillRect(0, 0, WORLD_W, WORLD_H);
+  // streets and pavements
+  box(g, G0, G0, G1, G1, 0, 0, '#46405a');
+  for (let i = G0; i < G1; i += 2) { box(g, i + .2, W + 1.9, i + 1, W + 2.05, 0, 0, '#cfc9b8'); box(g, H + 1.9, i + .2, H + 2.05, i + 1, 0, 0, '#cfc9b8'); }
+  box(g, -1.4, -1.4, W + 1.0, H + 1.0, 0, 0, '#b9b2a3');
+  // the square: calçada portuguesa, light stones with dark waves
+  for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
+    box(g, x, y, x + 1, y + 1, 0, 0, hash(x, y) < .5 ? '#ece6d6' : '#e4decd');
+  }
+  // the waves of black basalt, drawn stone by stone (half a tile each)
+  for (let x = 0; x < W; x += .5) for (let y = 0; y < H; y += .5) {
+    const v = (y + Math.sin(x * .45) * 1.6) / 3.2, f = v - Math.floor(v);
+    if (f < .17) box(g, x + .04, y + .04, x + .46, y + .46, 0, 0, hash(x * 2, y * 2) < .5 ? '#3c3a48' : '#46435a');
+  }
+  // the square's edge: a granite kerb
+  box(g, -.25, -.25, W + .25, 0, 0, 2, '#d9d3c3', '#c9c2b0', '#b4ac99'); box(g, -.25, 0, 0, H + .25, 0, 2, '#d9d3c3', '#c9c2b0', '#b4ac99');
+  // buildings on the two far sides, one block per street front
+  let k = 0;
+  for (let gx = G0; gx < W + 2; ) { const w = 3 + Math.floor(hash(gx, 1) * 3), h = 44 + Math.floor(hash(gx, 2) * 4) * 10; building(g, gx, -7.5, Math.min(gx + w, W + 2), -2.6, h, FACADES[k++ % FACADES.length], true); gx += w; }
+  for (let gy = -2.6; gy < H + 2; ) { const w = 3 + Math.floor(hash(3, gy) * 3), h = 44 + Math.floor(hash(4, gy) * 4) * 10; building(g, -7.5, gy, -2.6, Math.min(gy + w, H + 2), h, FACADES[k++ % FACADES.length], false); gy += w; }
+  // the near streets: a low row of trees and bollards (they never hide anyone)
+  for (let i = -1; i < W + 2; i += 1.5) { const p = iso(i, H + 1.1, 0); R(g, p.x, p.y - 4, 2, 4, '#2b2836'); const q = iso(W + 1.1, i, 0); R(g, q.x, q.y - 4, 2, 4, '#2b2836'); }
+  // a painted circle where the DJ dances
+  for (let a = 0; a < Math.PI * 2; a += .05) { const p = iso(CXg + Math.cos(a) * 5, CYg + Math.sin(a) * 5); R(g, p.x, p.y, 2, 1, 'rgba(255,210,58,.75)'); }
+}
+// things in the square that people walk around and behind: lamps, benches, two trees
+let DECOR = [];
+function makeDecor() {
+  DECOR = [];
+  for (const [x, y] of [[1, 1], [W - 1, 1], [1, H - 1], [W - 1, H - 1], [CXg, .8], [.8, CYg], [W - .8, CYg], [CXg, H - .8]]) DECOR.push({ gx: x, gy: y, k: 'lamp' });
+  for (const [x, y, r] of [[4, 2, 0], [2, 5, 1], [2, H - 6, 1], [W - 2, 5, 1], [W - 2, H - 6, 1]]) DECOR.push({ gx: x, gy: y, k: 'bench', r });
+  for (const [x, y] of [[W - 3, 3], [3, H - 3]]) DECOR.push({ gx: x, gy: y, k: 'tree' });
+  DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' }); // the giant carnation of the 25th of April, in the middle
+  DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' }); // the fountain (the characters walk round it: personagens.js OBST)
+  DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' }); // the canteen's table
+}
+function drawDecor(g, d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+  if (d.k === 'cravo') return drawCravo(g, d);
+  if (d.k === 'fonte') return drawFonte(g, d);
+  if (d.k === 'cantina') return drawCantina(g, d);
+  if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
+  else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
+  else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
+}
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1 }[d.k]));
+// the statue: a granite plinth, a bronze-green stem with two leaves and a huge red carnation on top
+function drawCravo(g, d) {
+  const c = d.gx, r = d.gy;
+  box(g, c - 1.5, r - 1.5, c + 1.5, r + 1.5, 0, 4, '#d9d3c3', '#c9c2b0', '#b4ac99');
+  box(g, c - 1.1, r - 1.1, c + 1.1, r + 1.1, 4, 12, '#e6e0d1', '#cfc8b6', '#b9b19e');
+  const pl = iso(c - .3, r + 1.5, 1); R(g, pl.x - 8, pl.y - 3, 12, 3, '#3a3160'); R(g, pl.x - 7, pl.y - 2, 10, 1, '#c9b46a'); // the plaque: 25 de Abril
+  drawCartazes(g);
+  const q = iso(c, r, 16), x = Math.round(q.x), y = Math.round(q.y);
+  // stem, slightly bent, and the leaves
+  for (let i = 0; i < 92; i++) { const sx = x + Math.round(Math.sin(i / 28) * 4); R(g, sx - 2, y - i, 4, 1, i % 9 < 2 ? '#2f7a45' : '#3e9a57'); R(g, sx + 1, y - i, 1, 1, '#25603a'); }
+  for (let i = 0; i < 22; i++) { R(g, x - 3 - i, y - 30 - Math.round(i * .8 - (i * i) / 50), 3, 2, '#46a862'); R(g, x + 5 + i, y - 52 - Math.round(i * .7 - (i * i) / 55), 3, 2, '#3a9152'); }
+  // the calyx: a long green tube with pointed tips
+  const fy = y - 92, fx = x + Math.round(Math.sin(92 / 28) * 4);
+  for (let i = 0; i < 16; i++) R(g, fx - 4 + (i > 11 ? -1 : 0), fy - i, 9 + (i > 11 ? 2 : 0), 1, i % 4 === 0 ? '#2f7a45' : '#3e9a57');
+  // the flower: a fan of frilled petals opening upwards from the calyx, in blocks of 2 pixels
+  const base = fy - 14, P = 3;
+  const top = c => 11 - Math.abs(c) * .45 + (hash(c + 30, 7) < .5 ? 1 : 0);
+  for (let row = 0; row <= 12; row++) {
+    const w = Math.min(8, 1.2 + row * 1.25);
+    for (let c = -8; c <= 8; c++) {
+      if (Math.abs(c) > w || row > top(c)) continue;
+      const edge = row > top(c) - 1.2, fold = (c + row * 2) % 3 === 0;
+      const col = row < 2 ? '#7a0b12' : edge ? (c % 2 ? '#ff5a62' : '#ff7a80') : fold ? '#b3121b' : row < 5 ? '#c81824' : '#e8303a';
+      R(g, fx + c * P - 1, base - row * P, P, P, col);
+    }
+  }
+  // two petals curling over the sides
+  for (const sd of [-1, 1]) for (let i = 0; i < 4; i++) R(g, fx + sd * (26 + i * 3) - 1, base - 21 - i * 3 + i * i * 2, P, P, i === 3 ? '#ff5a62' : '#d11f2a');
+  // the serrated tips along the top
+  for (let c = -7; c <= 7; c += 1) if (hash(c + 11, 3) < .55) R(g, fx + c * P - 1, base - (top(c) + 1) * P, 2, 2, '#ff9aa0');
+}
+
+/* ---------- people ---------- */
+function guy(g, x, y, o) {
+  x = Math.round(x); y = Math.round(y);
+  const f = o.moving ? (Math.floor(o.step || 0) % 3) : 0, lp = o.pants || '#2b2d55';
+  R(g, x - 3, y - 1, 7, 2, 'rgba(30,10,70,.28)');
+  R(g, x - 2, y - 5 + (f === 1 ? 1 : 0), 2, 4 - (f === 1 ? 1 : 0), lp); R(g, x + 1, y - 5 + (f === 2 ? 1 : 0), 2, 4 - (f === 2 ? 1 : 0), lp);
+  R(g, x - 3, y - 10, 7, 5, o.shirt); R(g, x + 1, y - 10, 2, 5, shade(o.shirt, .82));
+  if (!o.armUp) R(g, x - 3, y - 6, 1, 1, o.skin);
+  if (!o.armUp2) R(g, x + 3, y - 6, 1, 1, o.skin);
+  R(g, x - 2, y - 14, 5, 4, o.skin);
+  if (o.back) R(g, x - 2, y - 15, 5, 4, o.hair);
+  else { R(g, x - 2, y - 15, 5, 2, o.hair); R(g, o.flip ? x + 2 : x - 2, y - 13, 1, 2, o.hair); R(g, x - 1, y - 12, 1, 1, '#1b1464'); R(g, x + 1, y - 12, 1, 1, '#1b1464'); }
+  if (o.armUp) R(g, x - 4, y - 15 - (o.wob || 0), 1, 6, o.skin);
+  if (o.armUp2) R(g, x + 4, y - 15 - (o.wob2 || 0), 1, 6, o.skin);
+}
+function drawPerson(g, p, now) {
+  const q = iso(p.x, p.y), x = Math.round(q.x), y = Math.round(q.y), lk = p.look;
+  // the city aura: a glowing ring on the ground
+  const a = auraOf(p.c);
+  ell(g, x, y, 8, rgba(a, .22)); ell(g, x, y, 6, rgba(a, .38)); ell(g, x, y, 4, rgba(a, .5));
+  const t = now / 1000, ph = Math.floor(t * 4 + Math.abs(p.id)) % 4;
+  const o = { ...lk, moving: p.moving, step: p.step, flip: p.flip, back: p.back };
+  let bob = 0;
+  if (p.dancing && !p.moving && !p.b) { bob = ph % 2; o.moving = bob === 0; o.step = ph; o.flip = ph > 1; o.back = false; o.armUp = ph % 2 === 0; o.armUp2 = ph % 2 === 1; }
+  const e = p.e && now - p.eAt < 4000 ? p.e : 0;
+  if (e === 1) { o.armUp2 = true; o.wob2 = Math.floor(t * 6) % 2; }
+  else if (e === 2 || e === 7) o.armUp2 = true;
+  else if (e === 3) { o.armUp = o.armUp2 = Math.floor(t * 6) % 2 === 0; }
+  else if (e === 5 || e === 6) { o.armUp = o.armUp2 = true; o.wob = o.wob2 = Math.floor(t * 4) % 2; }
+  if (p.b) { drawRider(g, x, y, lk, p.flip, p.moving ? p.step : 0, auraOf(p.c)); if (p.i) drawItem(g, x, y - 6, p.i, p.flip, t); if (e) { const hx = p.flip ? x + 2 : x - 2; R(g, hx, y - 23, 1, 5, lk.skin); } return; }
+  guy(g, x, y - bob, o);
+  if (p.i) drawItem(g, x, y - bob, p.i, p.flip, t);
+  if (e === 2 && !p.back) R(g, x + 3, y - 17, 3, 3, lk.skin); // the raised fist
+  if (e === 7) { R(g, x + 3, y - 17, 4, 3, '#e8e2d0'); R(g, x + 6, y - 18, 2, 5, '#e2283b'); } // a megaphone
+}
+
+/* ---------- the DJ p.45: in the square 3 minutes in every 10, the same for everyone (the server's clock) ---------- */
+const DJ_LOOK = { skin: '#7a4a2c', hair: '#16121a', shirt: '#2f8a50', pants: '#2a2a3a' };
+const DJ_ON = 180e3, DJ_CYCLE = 600e3, DJ_IN = 9e3;
+const serverNow = () => Date.now() + clockOff;
+function djPos(now = serverNow()) {
+  if (!djState.ok) return null; // switched off, or the assembly has started
+  if (djState.mode === 'sempre') { const a = Math.PI / 2 + now / 1000 * (Math.PI * 2 / 75), dx = -Math.sin(a), dy = Math.cos(a); return { gx: CXg + Math.cos(a) * 5, gy: CYg + Math.sin(a) * 5, moving: true, step: now / 260, flip: dx - dy < 0, back: dx + dy < 0 }; }
+  const k = now % DJ_CYCLE; if (k >= DJ_ON) return null;
+  const ring = a => ({ gx: CXg + Math.cos(a) * 5, gy: CYg + Math.sin(a) * 5 });
+  const a0 = Math.PI / 2, a = a0 + (k - DJ_IN) / 1000 * (Math.PI * 2 / 75); // one lap every 75 s, along the painted circle
+  const door = { gx: CXg, gy: H + 2.5 };
+  if (k < DJ_IN) { const s = k / DJ_IN, r = ring(a0); return { gx: door.gx + (r.gx - door.gx) * s, gy: door.gy + (r.gy - door.gy) * s, moving: true, step: k / 180 }; }
+  const out = DJ_ON - DJ_IN;
+  if (k > out) { const r = ring(a0 + (out - DJ_IN) / 1000 * (Math.PI * 2 / 75)), s = (k - out) / DJ_IN; return { gx: r.gx + (door.gx - r.gx) * s, gy: r.gy + (door.gy - r.gy) * s, moving: true, step: k / 180, leaving: true }; }
+  const r = ring(a), dx = -Math.sin(a), dy = Math.cos(a);
+  return { gx: r.gx, gy: r.gy, moving: true, step: k / 260, flip: dx - dy < 0, back: dx + dy < 0 };
+}
+function drawDJ(g, d, now) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), bob = Math.floor(now / 250) % 2;
+  ell(g, x, y, 12, 'rgba(182,255,59,.18)');
+  const pack = () => { const px = d.flip ? x + 2 : x - 6; R(g, px, y - 12 - bob, 5, 8, '#16121a'); circ(g, px + 2.5, y - 10 - bob, 1.5, '#39e1ff'); circ(g, px + 2.5, y - 6 - bob, 1.2, '#39e1ff'); R(g, px + 4, y - 17 - bob, 1, 5, '#9aa0ad'); R(g, px + 4, y - 18 - bob, 1, 1, '#ff3b4e'); };
+  if (!d.back) pack();
+  guy(g, x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
+  if (d.back) pack();
+  R(g, x - 3, y - 18 - bob, 7, 1, '#e2283b'); R(g, x - 3, y - 17 - bob, 7, 1, '#ffd23a'); R(g, x - 3, y - 16 - bob, 7, 1, '#3ec46d');
+  // music notes floating up from the speaker
+  for (let i = 0; i < 3; i++) { const tt = ((now / 1400) + i / 3) % 1, nx = x - 4 + Math.sin(tt * 6 + i) * 4, ny = y - 20 - tt * 18; if (tt < .9) { R(g, nx, ny, 2, 2, i % 2 ? '#b6ff3b' : '#39e1ff'); R(g, nx + 1, ny - 4, 1, 4, i % 2 ? '#b6ff3b' : '#39e1ff'); } }
+}
+const DANCE_R = 3.6;
+
+/* ================= the characters (the square moves them: see personagens.js on the server) ================= */
+function cyl(g, cx, cy, r, h, col, top) {
+  const n = Math.round(r);
+  for (let dx = -n; dx < n; dx++) { const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / r) ** 2)); const k = (dx + .5) / r; const f = k < -.35 ? 1.04 : k < .35 ? .92 : .76; vl(g, Math.round(cx) + dx, cy - h, cy + r / 2 * e, shade(col, f)); }
+  ell(g, cx, cy - h, r, top || shade(col, 1.1));
+}
+function bmp(g, rows, pal, x, y, flip = false, vflip = false) {
+  const w = rows[0].length, hgt = rows.length; x = Math.round(x); y = Math.round(y);
+  for (let r = 0; r < hgt; r++) { const row = rows[vflip ? hgt - 1 - r : r]; for (let c = 0; c < w; c++) { const col = pal[row[c]]; if (!col) continue; g.fillStyle = col; g.fillRect(x + (flip ? w - 1 - c : c), y + r, 1, 1); } }
+}
+const WHEEL = [[-1, -3], [0, -3], [1, -3], [2, -2], [3, -1], [3, 0], [3, 1], [2, 2], [1, 3], [0, 3], [-1, 3], [-2, 2], [-3, 1], [-3, 0], [-3, -1], [-2, -2]];
+function wheel(g, cx, cy) { for (const [a, b] of WHEEL) R(g, cx + a, cy + b, 1, 1, '#1b1464'); R(g, cx, cy, 1, 1, '#9aa0ad'); }
+function bike(g, x, y, fl, col, len) {
+  x = Math.round(x); y = Math.round(y);
+  R(g, x - len - 2, y, len * 2 + 5, 1, 'rgba(30,10,70,.25)');
+  wheel(g, x - len, y - 3); wheel(g, x + len, y - 3);
+  R(g, x - len, y - 4, len * 2, 1, col); R(g, x - len + 2, y - 6, len * 2 - 4, 1, col);
+  const front = fl ? x - len : x + len - 1; R(g, front, y - 9, 1, 6, col); R(g, front - 1, y - 9, 3, 1, '#1b1464');
+}
+function line(g, x0, y0, x1, y1, c) { x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1); const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1; let e = dx + dy; g.fillStyle = c; for (let i = 0; i < 64; i++) { g.fillRect(x0, y0, 1, 1); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } } }
+// someone riding a bicycle, seen from the side: frame in their city's colour, legs turning the pedals
+function drawRider(g, x, y, lk, flip, step, col) {
+  const f = flip ? -1 : 1, X = d => x + d * f; // d > 0 is forwards
+  R(g, x - 9, y, 19, 1, 'rgba(30,10,70,.28)');
+  const rw = [X(-6), y - 3], fw = [X(6), y - 3], crank = [X(0), y - 4], seat = [X(-2), y - 10], bars = [X(4), y - 11];
+  // the far leg first (behind the frame)
+  const a = step * 1.6, p1 = [crank[0] + Math.cos(a) * 2 * f, crank[1] + Math.sin(a) * 2], p2 = [crank[0] - Math.cos(a) * 2 * f, crank[1] - Math.sin(a) * 2];
+  const knee = (p) => [ (seat[0] + p[0]) / 2 + 2 * f, Math.min(seat[1], p[1]) + 1 ];
+  const leg = (p, c) => { const k = knee(p); line(g, seat[0], seat[1] + 1, k[0], k[1], c); line(g, k[0], k[1], p[0], p[1], c); R(g, p[0] - (f > 0 ? 0 : 1), p[1], 2, 1, '#16121a'); };
+  leg(p2, shade(lk.pants, .75));
+  // wheels and frame
+  for (const w of [rw, fw]) { wheel(g, Math.round(w[0]), Math.round(w[1])); }
+  line(g, rw[0], rw[1], crank[0], crank[1], col); line(g, rw[0], rw[1], seat[0], seat[1], col); line(g, seat[0], seat[1], crank[0], crank[1], col);
+  line(g, seat[0], seat[1] + 1, bars[0] - f, bars[1] + 2, col); line(g, crank[0], crank[1], bars[0] - f, bars[1] + 2, col); line(g, bars[0], bars[1], fw[0], fw[1], col);
+  R(g, seat[0] - 1, seat[1] - 1, 3, 1, '#16121a'); R(g, bars[0] - (f > 0 ? 0 : 1), bars[1] - 1, 2, 1, '#16121a');
+  // the rider: leaning forwards, hands on the bars
+  const sh = [X(0), y - 16]; // shoulders
+  R(g, Math.min(seat[0], sh[0]) - 1, sh[1], 4, 6, lk.shirt); R(g, Math.min(seat[0], sh[0]) + (f > 0 ? 2 : 0), sh[1] + 1, 1, 5, shade(lk.shirt, .82));
+  line(g, sh[0] + f, sh[1] + 1, bars[0], bars[1], lk.skin);
+  R(g, sh[0] - 1, sh[1] - 4, 4, 4, lk.skin); R(g, sh[0] - 1, sh[1] - 5, 4, 2, lk.hair); R(g, f > 0 ? sh[0] - 1 : sh[0] + 2, sh[1] - 3, 1, 2, lk.hair);
+  R(g, f > 0 ? sh[0] + 2 : sh[0] - 1, sh[1] - 3, 1, 1, '#1b1464');
+  leg(p1, lk.pants);
+}
+// what people carry from the canteen
+function drawItem(g, x, y, i, flip, t) {
+  const hx = flip ? x - 6 : x + 3;
+  if (i === 1) { R(g, hx, y - 8, 4, 2, '#f2efe6'); R(g, hx, y - 9, 4, 1, '#ff8a2a'); if (Math.floor(t * 2) % 2) R(g, hx + 1, y - 12, 1, 2, 'rgba(255,255,255,.7)'); }
+  else if (i === 2) { R(g, hx, y - 9, 2, 3, '#f2efe6'); R(g, hx, y - 10, 2, 1, '#6b3a1e'); if (Math.floor(t * 2) % 2) R(g, hx, y - 13, 1, 2, 'rgba(255,255,255,.7)'); }
+  else if (i === 3) { R(g, hx - 1, y - 9, 6, 2, '#d9a35a'); R(g, hx, y - 10, 4, 1, '#e8bd78'); }
+}
+// the fountain, in the near corner
+function drawFonte(g, d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), t = performance.now() / 1000;
+  ell(g, x + 2, y + 3, 27, 'rgba(30,10,70,.2)');
+  cyl(g, x, y, 22, 5, '#cfc8b6', '#dad3c2'); ell(g, x, y - 5, 19, '#4fb6e8'); ell(g, x, y - 5, 15, '#6fc9ec');
+  for (let i = 0; i < 6; i++) { const a = i + t * .7; R(g, x + Math.cos(a) * 12, y - 5 + Math.sin(a) * 4, 2, 1, '#d8f3ff'); }
+  cyl(g, x, y - 5, 3, 13, '#e2dccb'); cyl(g, x, y - 18, 8, 3, '#d9d3c3'); ell(g, x, y - 21, 6, '#6fc9ec');
+  for (let i = 0; i < 8; i++) { const k = (t * 1.3 + i / 8) % 1, a = i / 8 * Math.PI * 2; R(g, x + Math.cos(a) * (4 + k * 11), y - 22 - Math.sin(k * Math.PI) * 7 + k * 17 + Math.sin(a) * k * 4, 1, 2, '#bfe9ff'); }
+}
+// the canteen: a table, a big pot, the banner behind
+function drawCantina(g, d) {
+  const c = d.gx, r = d.gy, t = performance.now() / 1000;
+  const b0 = iso(c - .9, r - .9, 0), b1 = iso(c + .6, r - 1.2, 0);
+  vl(g, Math.round(b0.x), b0.y - 30, b0.y, '#6b4a2b'); vl(g, Math.round(b1.x), b1.y - 30, b1.y, '#6b4a2b');
+  for (let x = Math.round(b0.x); x <= Math.round(b1.x); x++) { const yy = b0.y + (b1.y - b0.y) * (x - b0.x) / (b1.x - b0.x || 1) - 30; vl(g, x, yy, yy + 7, '#b3121b'); if ((x - Math.round(b0.x)) % 3 === 1) R(g, x, yy + 3, 1, 1, '#f2efe6'); }
+  box(g, c - .75, r - .35, c + .75, r + .35, 0, 7, '#f2efe6', '#d8d1bf', '#c3bba7');
+  const p = iso(c - .2, r, 7); cyl(g, p.x, p.y, 5, 6, '#9aa0ad', '#c9a46a');
+  for (let i = 0; i < 3; i++) { const k = (t * .8 + i / 3) % 1; R(g, p.x - 2 + i * 2 + Math.sin(k * 6) , p.y - 8 - k * 12, 1, 2, `rgba(255,255,255,${.7 * (1 - k)})`); }
+  const cup = iso(c + .45, r + .1, 7); R(g, cup.x - 1, cup.y - 3, 2, 3, '#f2efe6'); R(g, cup.x + 2, cup.y - 3, 2, 3, '#f2efe6'); R(g, cup.x - 4, cup.y - 2, 4, 2, '#d9a35a');
+}
+
+/* ---------- posters on the carnation ---------- */
+let cartazes = [], CARTAZ_SLOTS = 8, myCartaz = null;
+const CARTAZ_SPOTS = []; // 4 on each face of the plinth that looks at the square
+for (let i = 0; i < 4; i++) CARTAZ_SPOTS.push({ gx: 11 - .82 + i * .55, gy: 11 + 1.1 });
+for (let j = 0; j < 4; j++) CARTAZ_SPOTS.push({ gx: 11 + 1.1, gy: 11 + .82 - j * .55 });
+const CARTAZ_COL = ['#f2efe6', '#ffe36a', '#ffb3c7', '#bfe7ff', '#d6f5b0'];
+function drawCartazes(g) {
+  for (const c of cartazes) {
+    const s = CARTAZ_SPOTS[c.slot]; if (!s) continue;
+    const p = iso(s.gx, s.gy, 14), x = Math.round(p.x) - 3, y = Math.round(p.y), h = (c.id * 7) % 5;
+    R(g, x, y, 7, 8, '#0b0a0a'); R(g, x, y, 6, 7, CARTAZ_COL[c.id % CARTAZ_COL.length]);
+    R(g, x + 1, y + 2, 4, 1, h % 2 ? '#b3121b' : '#1b1464'); R(g, x + 1, y + 4, 3 + (h % 2), 1, '#1b1464'); R(g, x + 2, y, 2, 1, '#9aa0ad');
+  }
+}
+const nearCravo = () => me && Math.hypot(me.x - 11, me.y - 11) < 3.4;
+
+/* ---------- the characters ---------- */
+const npcs = new Map(); let ball = null;
+const npcSay = new Map(); // id -> { text, at }: what a character just said
+function addNpc(o) {
+  const n = npcs.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false };
+  n.k = o.k; n.s = o.s; n.g = o.g; n.vr = o.vr || 0; if (n.x === undefined) { n.x = o.x; n.y = o.y; } n.tx = o.x; n.ty = o.y;
+  npcs.set(o.id, n);
+}
+const LOOK_OPERADOR = { skin: '#d9a37a', hair: '#1a1a24', shirt: '#2a2a33', pants: '#3a3a44' };
+const LOOK_FOTO = { skin: '#a8714a', hair: '#b03a5a', shirt: '#9a6bff', pants: '#2b2d55' };
+const LOOK_SOPA = { skin: '#d9a37a', hair: '#6b3a1e', shirt: '#e2283b', pants: '#3a3a44' };
+const DOG = ['........K..K', '........KK.KK', '........KTTTK', 'K.......TTTTTN', '.K.....KTTT..', '.KKKKKKKKT...', '.KKKKKKKKT...', '..TTTTTTT....', '..T.T...T.T..', '..T.T...T.T..'].map(r => r.padEnd(14, '.'));
+const DOG2 = DOG.slice(0, 8).concat(['...T.T.T.T...', '...T.T.T.T...']).map(r => r.padEnd(14, '.'));
+const DOG_SIT = ['', '', '.......K..K', '.......KK.KK', '.......KTTTK', 'K......TTTTTN', '.K....KTTT..', '..KKKKKKT...', '..KKKKKKT...', '..TTTTTT....'].map(r => r.padEnd(14, '.'));
+const DOG_PAL = { K: '#c99a52', T: '#e8c27a', N: '#2a1a10' };
+function drawNpc(g, n, now) {
+  const q = iso(n.x, n.y), x = Math.round(q.x), y = Math.round(q.y), t = now / 1000;
+  if (n.k === 'jornalista') {
+    const flee = n.s === 5;
+    guy(g, x, y, { skin: '#f08a24', hair: '#f08a24', shirt: '#cfc6b4', pants: '#3a3f55', moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp: flee, armUp2: flee, wob: flee ? Math.floor(t * 8) % 2 : 0 });
+    R(g, x - 3, y - 14, 7, 4, '#f08a24'); R(g, x - 2, y - 16, 5, 2, '#f39a3a'); R(g, x, y - 18, 1, 2, '#5a3a1a'); R(g, x + 1, y - 18, 2, 1, '#3f9a4a');
+    if (!n.back) { R(g, x - 1, y - 13, 1, 1, '#1b1464'); R(g, x + 1, y - 13, 1, 1, '#1b1464'); }
+    if (!flee) { const mx = n.flip ? x - 5 : x + 4; R(g, mx, y - 10, 1, 4, '#16121a'); R(g, mx - 1, y - 12, 3, 2, '#3a3a44'); }
+    return;
+  }
+  if (n.k === 'operador') {
+    guy(g, x, y, { ...LOOK_OPERADOR, moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    const cx = n.flip ? x - 6 : x + 1; R(g, cx, y - 15, 6, 4, '#16121a'); R(g, n.flip ? cx - 2 : cx + 6, y - 14, 2, 2, '#5a6a8a');
+    if (n.s === 1 && Math.floor(t * 2) % 2) R(g, cx + 1, y - 16, 1, 1, '#ff3b3b');
+    return;
+  }
+  if (n.k === 'fotografa') {
+    guy(g, x, y, { ...LOOK_FOTO, moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    R(g, x - 3, y - 16, 7, 2, '#e2283b'); R(g, x + 1, y - 17, 2, 1, '#e2283b');
+    const cx = n.flip ? x - 4 : x + 1; R(g, cx, y - 13, 4, 3, '#16121a'); R(g, cx + 1, y - 12, 2, 1, '#5a6a8a');
+    if (n.s === 6 && !inPhoto && Math.floor(t * 10) % 3 === 0) { circ(g, cx + 2, y - 12, 6, 'rgba(255,255,255,.85)'); }
+    return;
+  }
+  if (n.k === 'cantina') {
+    guy(g, x, y, { ...LOOK_SOPA, moving: false, flip: false, back: false, armUp2: n.s === 1, wob2: Math.floor(t * 6) % 2 });
+    R(g, x - 2, y - 10, 5, 6, '#f2efe6'); R(g, x - 2, y - 16, 5, 2, '#ffd23a');
+    return;
+  }
+  if (n.k === 'curioso') {
+    const lk = lookOf(Math.floor(n.vr / 4)), v = n.vr % 4, old = v === 1 || v === 3;
+    const o = { ...lk, hair: old ? '#c9c4c4' : lk.hair, moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp2: n.s === 7 };
+    if (v === 2 && !n.back) R(g, n.flip ? x + 3 : x - 5, y - 11, 3, 6, '#2f8fff');
+    guy(g, x, y, o);
+    if (v === 0) { const sx = n.flip ? x - 8 : x + 4; R(g, sx, y - 6, 4, 6, '#c0503a'); R(g, sx + 1, y - 8, 2, 2, '#3a3a44'); R(g, x - 4, y - 16, 9, 1, '#f2d7a0'); R(g, x - 2, y - 17, 5, 1, '#f2d7a0'); }
+    else if (v === 1 && n.s !== 7) { R(g, n.flip ? x - 7 : x + 2, y - 11, 5, 4, '#f2efe6'); R(g, n.flip ? x - 6 : x + 3, y - 10, 3, 1, '#9aa0ad'); }
+    else if (v === 2 && n.back) R(g, x - 3, y - 11, 7, 6, '#2f8fff');
+    else if (v === 3) vl(g, n.flip ? x - 4 : x + 4, y - 8, y, '#6b4a2b');
+    if (n.g) { const px = x + 4; vl(g, px, y - 26, y - 9, '#6b4a2b'); R(g, px - 6, y - 32, 13, 8, '#0b0a0a'); R(g, px - 6, y - 32, 12, 7, '#f2efe6'); R(g, px - 4, y - 30, 8, 1, '#b3121b'); R(g, px - 4, y - 28, 6, 1, '#1b1464'); }
+    return;
+  }
+  if (n.k === 'cao') {
+    R(g, x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)');
+    if (n.s === 2) { bmp(g, DOG_SIT, DOG_PAL, x - 7, y - 10, n.flip); for (let i = 0; i < 2; i++) { const k = (t * .9 + i / 2) % 1; heart(g, x - 2 + i * 5, y - 14 - k * 10, k); } }
+    else if (n.s === 3) { bmp(g, DOG, DOG_PAL, x - 7, y - 9 + (Math.floor(t * 6) % 2), Math.floor(t * 3) % 2 === 0, true); }
+    else { bmp(g, n.moving && Math.floor(n.step) % 2 ? DOG2 : DOG, DOG_PAL, x - 7, y - 10, n.flip);
+      if (n.s === 4) { const mx = n.flip ? x - 9 : x + 6; R(g, mx, y - 8, 3, 1, '#16121a'); R(g, n.flip ? mx - 2 : mx + 3, y - 9, 2, 2, '#3a3a44'); } }
+  }
+}
+function heart(g, x, y, k) { const c = `rgba(255,79,139,${1 - k})`; R(g, x, y, 1, 1, c); R(g, x + 2, y, 1, 1, c); R(g, x, y + 1, 3, 1, c); R(g, x + 1, y + 2, 1, 1, c); }
+function drawBall(g, b, now) {
+  const q = iso(b.x, b.y), x = Math.round(q.x), y = Math.round(q.y);
+  const hop = b.moving ? Math.abs(Math.sin(now / 90)) * 5 : 0;
+  ell(g, x, y + 1, 3, 'rgba(30,10,70,.3)'); circ(g, x, y - 2 - hop, 2.5, '#e2283b'); R(g, x - 1, y - 4 - hop, 1, 1, '#ffb3b3');
+}
+// talking to them: ready answers (the journalist also takes your own words)
+const INTERVIEW = [
+  { q: ['Porque é que está aqui hoje?', 'Why are you here today?'], a: [['Porque a casa é um direito, não é um luxo.', 'Because a home is a right, not a luxury.'], ['Porque metade do meu salário vai para a renda.', 'Because half my wage goes on rent.'], ['Porque ninguém devia viver numa tenda.', 'Because nobody should have to live in a tent.']] },
+  { q: ['O que pede ao governo?', 'What are you asking the government for?'], a: [['Tetos às rendas, já!', 'Rent caps, now!'], ['Casas vazias para quem precisa.', 'Empty homes for those who need them.'], ['Habitação pública a sério.', 'Real public housing.']] },
+  { q: ['Vão ficar até quando?', 'How long will you stay?'], a: [['Até haver casa para todos.', 'Until there are homes for everyone.'], ['O tempo que for preciso.', 'As long as it takes.'], ['Hoje, amanhã e depois.', 'Today, tomorrow and the day after.']] }
+];
+const CURIOUS_Q = [['O que se passa aqui? É algum festival?', 'What’s going on here? Is it a festival?'], ['Isto é por causa das rendas?', 'Is this about the rents?'], ['Posso perguntar o que estão a fazer?', 'May I ask what you’re doing?'], ['No meu tempo também se acampava... porquê?', 'We camped too in my day... why now?']];
+const EXPLAIN = [['As rendas estão impossíveis e estamos a lutar por casa.', 'Rents are impossible and we’re fighting for homes.'], ['É uma acampada pela habitação. Junta-te a nós!', 'It’s a camp for housing. Join us!'], ['Ninguém devia ter de escolher entre comer e pagar a renda.', 'Nobody should have to choose between eating and paying rent.']];
+const NPC_NAME = { jornalista: ['Jornalista Laranja', 'Orange Journalist'], operador: ['Jornalista Laranja', 'Orange Journalist'], fotografa: ['Fotógrafa', 'Photographer'], cantina: ['Cantina', 'Canteen'], curioso: ['Curioso', 'Passer-by'], cao: ['Labrador', 'Labrador'] };
+
+/* ================= the connection ================= */
+let ws = null, myId = 0, myMode = 'praca', me = null, clockOff = 0, closeAt = 0, live = [], wantOpen = false, retry = 0, closedByServer = false;
+const people = new Map();
+let mural = [], mine = new Set(), reported = new Set(), counts = { praca: {}, apoio: {} };
+let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'null'); } catch (e) { return null; } })() || { name: '', city: '', other: '', mode: 'praca', look: Math.floor(Math.random() * LOOKS) };
+try { reported = new Set(JSON.parse(store.get('acampada-praca-rep') || '[]')); } catch (e) {}
+// a random name for this browser, so the organisers can ban someone until the square closes (it says nothing about who it is)
+const DEV = store.get('acampada-praca-dev') || (() => { const a = new Uint8Array(10); crypto.getRandomValues(a); const d = [...a].map(b => (b % 36).toString(36)).join(''); store.set('acampada-praca-dev', d); return d; })();
+let convencidos = 0, djState = { mode: 'auto', ok: true }, cfg = { muralRO: false, policia: false, ciclistas: false }, aviso = '', closedBy = null;
+
+let inside = false; // got into the square at least once this time (then drops reconnect on their own)
+function connect() {
+  if (ws) return;
+  wantOpen = true; closedByServer = false;
+  try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
+  toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
+  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike })); };
+  ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
+  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002) return; if (wantOpen) fail(); };
+  ws.onerror = () => {};
+}
+function fail() {
+  if (!inside) { // never got in: say so on the form, no endless retries behind it
+    wantOpen = false; hideToast();
+    const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Não foi possível entrar. Verifica a internet e tenta outra vez.', 'Couldn’t get in. Check your connection and try again.'); if (b) b.disabled = false;
+    return;
+  }
+  retry++; const wait = Math.min(15, 2 ** Math.min(retry, 4));
+  toast(L(`Sem ligação. A tentar outra vez em ${wait} s…`, `Disconnected. Trying again in ${wait} s…`), 0);
+  setTimeout(() => { if (wantOpen && !ws) connect(); }, wait * 1000);
+}
+const send = m => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
+function addPerson(o) {
+  const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
+  p.n = o.n; p.c = o.c; p.look = lookOf(o.l);
+  if (p.x === undefined) { p.x = o.x; p.y = o.y; }
+  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); } p.i = o.i || 0; p.b = !!o.b;
+  people.set(o.id, p); return p;
+}
+function onMsg(m) {
+  if (m.t === 'welcome') {
+    inside = true; myId = m.id; myMode = m.mode; clockOff = (m.now || Date.now()) - Date.now(); closeAt = m.close || 0; live = m.live || live;
+    if (m.size) { W = m.size[0]; H = m.size[1]; CXg = W / 2; CYg = H / 2; }
+    people.clear(); for (const o of m.people || []) addPerson(o);
+    me = null; if (myMode === 'praca') { me = addPerson(m.me); me.mine = true; camX = null; }
+    mural = m.mural || []; counts = m.counts || counts; closedBy = m.by || null;
+    if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
+    npcs.clear(); for (const o of m.npcs || []) addNpc(o);
+    ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
+    cartazes = m.cartazes || []; CARTAZ_SLOTS = m.slots || CARTAZ_SLOTS; convencidos = m.convencidos || 0;
+    hideToast();
+    if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
+    else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
+    showApp(); renderAll(); return;
+  }
+  if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
+  if (m.t === 'leave') { people.delete(m.id); return; }
+  if (m.t === 'tick') {
+    for (const [id, x, y, e, i, b] of m.p || []) { const p = people.get(id); if (!p) continue; p.i = i || 0; p.b = !!b; if (id === myId || !isFinite(x) || !isFinite(y)) continue; p.tx = x; p.ty = y; const g = GESTURES[e] ? e : 0; if (g !== p.e) { p.e = g; p.eAt = performance.now(); } }
+    for (const [id, x, y, s, g] of m.n || []) { const n = npcs.get(id); if (!n || !isFinite(x) || !isFinite(y)) continue; n.tx = x; n.ty = y; n.s = s; n.g = g; }
+    if (m.b) { if (!ball) ball = { x: m.b[0], y: m.b[1] }; ball.tx = m.b[0]; ball.ty = m.b[1]; ball.held = !!m.b[2]; }
+    return;
+  }
+  if (m.t === 'say') { const p = people.get(m.id); if (p && PHRASES[m.k]) { p.say = m.k; p.sayAt = performance.now(); if (p !== me) blip(p); } return; }
+  if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
+  if (m.t === 'dj') { djState = m.dj; return; }
+  if (m.t === 'npc+') { addNpc(m.n); return; }
+  if (m.t === 'npc-') { npcs.delete(m.id); return; }
+  if (m.t === 'ball') { ball = m.b ? { x: m.b[0], y: m.b[1], tx: m.b[0], ty: m.b[1], held: !!m.b[2] } : null; return; }
+  if (m.t === 'pergunta') { journalistDialog(m.q); return; }
+  if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
+  if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && m.d.n === (me && me.n)) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
+  if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
+  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
+  if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
+  if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
+  if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
+  if (m.t === 'foto') { flashAt = performance.now(); flashPos = { x: m.x, y: m.y }; shutter(); if (m.ids.includes(myId)) setTimeout(() => makePhoto(m.ids, m.x, m.y, m.ev), 350); return; }
+  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { clearTimeout(cartazWait); myCartaz = m.c.id; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
+  if (m.t === 'cartaz-') { cartazes = cartazes.filter(c => c.id !== m.id); return; }
+  if (m.t === 'cartazno') { clearTimeout(cartazWait); const gb = $('cartazGo'); if (gb) { gb.disabled = false; gb.textContent = L('Pendurar', 'Hang it'); } const w = NPC_NO[m.why] || (m.why === 'ja' ? ['Já tens um cartaz no cravo.', 'You already have a poster on the carnation.'] : null); const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e) e.textContent = t; else if (t) toast(t, 3000); return; }
+  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); return; }
+  if (m.t === 'aviso') { setAviso(m.text || ''); return; }
+  if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
+  if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
+  if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
+  if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
+  if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
+  if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
+}
+
+/* ================= drawing the square ================= */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const vc = document.createElement('canvas'), vg = vc.getContext('2d');
+let zoom = store.get('acampada-praca-zoom') ? store.get('acampada-praca-zoom') === '1' : innerWidth > 900, scale = 2, dpr = 1, cssW = 0, cssH = 0, camX = null, camY = null, camFree = 0, dusk = 0;
+function resize() {
+  const r = $('stage').getBoundingClientRect(); cssW = Math.max(1, r.width); cssH = Math.max(1, r.height); dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+  scale = clamp(Math.min(cssW / 430, cssH / 270), 1.6, 4.5) * (zoom ? 1.6 : 1);
+  vc.width = Math.ceil(cssW / scale) + 2; vc.height = Math.ceil(cssH / scale) + 2;
+}
+function viewOrigin() {
+  const vw = cssW / scale, vh = cssH / scale;
+  let tx, ty;
+  const whole = vw >= (W + H) * TW + 20; // the whole square fits: keep it still, the statue in view
+  if (me && !camFree && !whole) { const q = iso(me.x, me.y); tx = q.x; ty = q.y - 40; }
+  else if (camX !== null && camFree) { tx = camX; ty = camY; }
+  else { const q = iso(CXg, CYg); tx = q.x; ty = q.y - 60; }
+  if (camX === null) { camX = tx; camY = ty; }
+  if (!camFree) { camX += (tx - camX) * .12; camY += (ty - camY) * .12; }
+  const sq0 = iso(0, H + 1.5), sq1 = iso(W + 1.5, 0), top = iso(-3, -3, 70), bot = iso(W + 2, H + 2);
+  const minX = sq0.x + vw / 2 - 30, maxX = sq1.x - vw / 2 + 30;
+  camX = minX > maxX ? (sq0.x + sq1.x) / 2 : clamp(camX, minX, maxX);
+  const minY = top.y + vh / 2, maxY = bot.y - vh / 2 + 20;
+  camY = minY > maxY ? (top.y + bot.y) / 2 : clamp(camY, minY, maxY);
+  return { ox: Math.round(camX - vw / 2), oy: Math.round(camY - vh / 2) };
+}
+let lastView = { ox: 0, oy: 0 };
+let lastT = performance.now(), duskAt = -1e9;
+const HOUR_FMT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', hourCycle: 'h23' });
+function frame() {
+  const now = performance.now(), dt = Math.min(.1, (now - lastT) / 1000); lastT = now;
+  try { update(dt, now); draw(now); } catch (e) { console.error(e); }
+  requestAnimationFrame(frame);
+}
+function update(dt, now) {
+  // dusk: the protests run into the evening; the square follows the real time in Portugal
+  if (now - duskAt > 60e3) { duskAt = now; const h = +HOUR_FMT.format(new Date()); dusk = h >= 20 || h < 7 ? 1 : h >= 18 ? .5 : 0; }
+  // me: keys or a target picked on the ground
+  if (me) {
+    let dx = 0, dy = 0;
+    if (keys.up) { dx -= 1; dy -= 1; } if (keys.down) { dx += 1; dy += 1; } if (keys.left) { dx -= 1; dy += 1; } if (keys.right) { dx += 1; dy -= 1; }
+    if (dx || dy) { const n = Math.hypot(dx, dy); dx /= n; dy /= n; me.goal = null; camFree = 0; }
+    else if (me.goal) { const ex = me.goal.gx - me.x, ey = me.goal.gy - me.y, d = Math.hypot(ex, ey); if (d < .08) me.goal = null; else { dx = ex / d; dy = ey / d; } }
+    const sp = me.b ? 3.75 : 3; // a bicycle is 25% faster
+    if (dx || dy) {
+      const nx = clamp(me.x + dx * sp * dt, .3, W - .3), ny = clamp(me.y + dy * sp * dt, .3, H - .3);
+      if (!blocked(nx, ny)) { me.x = nx; me.y = ny; } else if (!blocked(nx, me.y)) me.x = nx; else if (!blocked(me.x, ny)) me.y = ny; else me.goal = null;
+      face(me, dx, dy); me.moving = true; me.step += dt * 8;
+      if (now - (me.sentAt || 0) > 600) sendPos(now);
+    } else { if (me.moving) sendPos(now, true); me.moving = false; }
+  }
+  // the others walk to where they said they were going
+  for (const p of people.values()) {
+    if (p === me) continue;
+    const ex = p.tx - p.x, ey = p.ty - p.y, d = Math.hypot(ex, ey);
+    if (d > 8) { p.x = p.tx; p.y = p.ty; p.moving = false; continue; }
+    if (d > .05) { const s = Math.min(d, (p.b ? 4.3 : 3.4) * dt); p.x += ex / d * s; p.y += ey / d * s; face(p, ex, ey); p.moving = true; p.step += dt * 8; } else p.moving = false;
+  }
+  // the characters: towards where the square says they are (4 times a second)
+  for (const n of npcs.values()) {
+    const ex = n.tx - n.x, ey = n.ty - n.y, d = Math.hypot(ex, ey);
+    if (d > 6) { n.x = n.tx; n.y = n.ty; continue; }
+    if (d > .03) { const s = Math.min(d, Math.max(1.2, d * 5) * dt); n.x += ex / d * s; n.y += ey / d * s; face(n, ex, ey); n.moving = true; n.step += dt * 8; } else n.moving = false;
+  }
+  if (ball) { const ex = ball.tx - ball.x, ey = ball.ty - ball.y, d = Math.hypot(ex, ey); if (d > .03) { const s = Math.min(d, Math.max(3, d * 6) * dt); ball.x += ex / d * s; ball.y += ey / d * s; ball.moving = !ball.held; } else ball.moving = false; }
+  checkPending(); ctxSync(); diretoSync(now);
+  // dancing: anyone near the DJ
+  const dj = djPos();
+  for (const p of people.values()) p.dancing = !!dj && !dj.leaving && Math.hypot(p.x - dj.gx, p.y - dj.gy) < DANCE_R;
+  music(dj);
+}
+function face(p, dx, dy) { const sx = dx - dy, sy = dx + dy; if (Math.abs(sx) > .05) p.flip = sx < 0; p.back = sy < -.05; }
+function sendPos(now, stop) {
+  if (!me) return; me.sentAt = now;
+  // while walking, say where we'll be in a moment, so the others walk along smoothly; when stopping, where we are
+  const ahead = stop ? 0 : .9, dir = me.goal ? { gx: me.goal.gx - me.x, gy: me.goal.gy - me.y } : { gx: (keys.right - keys.left + keys.down - keys.up), gy: (keys.down - keys.up + keys.left - keys.right) };
+  const n = Math.hypot(dir.gx, dir.gy) || 1, fx = me.goal && Math.hypot(me.goal.gx - me.x, me.goal.gy - me.y) < ahead ? me.goal.gx : me.x + dir.gx / n * ahead, fy = me.goal && Math.hypot(me.goal.gx - me.x, me.goal.gy - me.y) < ahead ? me.goal.gy : me.y + dir.gy / n * ahead;
+  send({ t: 'pos', x: +clamp(fx, .3, W - .3).toFixed(2), y: +clamp(fy, .3, H - .3).toFixed(2) });
+}
+function draw(now) {
+  if (!bg) return;
+  const { ox, oy } = viewOrigin(); lastView = { ox, oy };
+  renderScene(vg, ox, oy, vc.width, vc.height, now);
+  if (dusk) { vg.fillStyle = `rgba(18,8,64,${.18 * dusk})`; vg.fillRect(0, 0, vc.width, vc.height); }
+  // up to the screen, pixel by pixel; then the words, sharp
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(vc, 0, 0, vc.width, vc.height, 0, 0, vc.width * scale * dpr, vc.height * scale * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const S = (gx, gy, z) => { const q = iso(gx, gy, z); return { x: (q.x - ox) * scale, y: (q.y - oy) * scale }; };
+  const many = people.size > 40;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
+  for (const p of people.values()) {
+    const near = me && Math.hypot(p.x - me.x, p.y - me.y) < 4;
+    const talking = p.say !== undefined && now - p.sayAt < 4200;
+    const q = S(p.x, p.y, 0), headY = q.y - 19 * scale;
+    if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
+    if (p === me) { ctx.fillStyle = '#b6ff3b'; ctx.beginPath(); ctx.moveTo(q.x - 5, headY - 18); ctx.lineTo(q.x + 5, headY - 18); ctx.lineTo(q.x, headY - 11); ctx.fill(); }
+    if (!many || near || p === me || talking) {
+      ctx.font = '700 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(p.n, q.x, headY - (p === me ? 20 : 3));
+      ctx.fillStyle = p === me ? '#b6ff3b' : '#ffffff'; ctx.fillText(p.n, q.x, headY - (p === me ? 20 : 3));
+    }
+    const e = p.e && now - p.eAt < 4000 ? GESTURES[p.e] : null;
+    if (e) { ctx.font = '20px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; ctx.fillText(e.i, q.x + 14, headY + 4); }
+    if (talking && PHRASES[p.say]) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt);
+  }
+  // the characters: who they are, a speech mark when you can talk to them, what they just said
+  for (const n of npcs.values()) {
+    const q = S(n.x, n.y, 0); if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
+    const head = q.y - (n.k === 'cao' ? 12 : 21) * scale, lab = { jornalista: L('Imprensa', 'Press'), fotografa: L('Fotógrafa', 'Photographer'), cantina: L('Cantina', 'Canteen') }[n.k];
+    if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
+    if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
+    const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
+  }
+  if (now - flashAt < 260 && flashPos) { ctx.fillStyle = `rgba(255,255,255,${.75 * (1 - (now - flashAt) / 260)})`; ctx.fillRect(0, 0, cssW, cssH); }
+  const d = djPos();
+  if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
+  djTag(d);
+}
+function bubble(text, x, y, age) {
+  ctx.font = '700 13px Jost, sans-serif';
+  const words = text.split(' '), lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 150 && cur) { lines.push(cur); cur = w; } else cur = t; }
+  lines.push(cur);
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 15 + 8, a = age > 3600 ? Math.max(0, 1 - (age - 3600) / 600) : 1;
+  const bx = clamp(x - w / 2, 4, cssW - w - 4), by = Math.max(4, y - h);
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0a0a'; ctx.lineWidth = 2;
+  ctx.fillRect(bx, by, w, h); ctx.strokeRect(bx, by, w, h);
+  ctx.beginPath(); ctx.moveTo(clamp(x, bx + 8, bx + w - 8) - 5, by + h - 1); ctx.lineTo(clamp(x, bx + 8, bx + w - 8), by + h + 6); ctx.lineTo(clamp(x, bx + 8, bx + w - 8) + 5, by + h - 1); ctx.fill(); ctx.stroke();
+  ctx.fillRect(clamp(x, bx + 8, bx + w - 8) - 4, by + h - 2, 8, 2);
+  ctx.fillStyle = '#0b0a0a'; ctx.textAlign = 'center';
+  lines.forEach((l, i) => ctx.fillText(l, bx + w / 2, by + 16 + i * 15));
+  ctx.globalAlpha = 1;
+}
+let djTagWas = '';
+function djTag(d) {
+  const k = serverNow() % DJ_CYCLE, mins = Math.ceil((DJ_CYCLE - k) / 60e3);
+  if (!djState.ok) { if (!$('djTag').hidden) { $('djTag').hidden = true; djTagWas = ''; } return; }
+  const t = d ? L('DJ p.45 na praça · aproxima-te para dançar', 'DJ p.45 in the square · get close to dance') : L(`DJ p.45 volta daqui a ${mins} min`, `DJ p.45 back in ${mins} min`);
+  if (t !== djTagWas) { djTagWas = t; $('djTag').textContent = t; $('djTag').hidden = false; }
+}
+
+/* ================= input ================= */
+const keys = { up: 0, down: 0, left: 0, right: 0 };
+const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right' };
+addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea, select')) return;
+  const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
+  if (e.key === 'Escape') closeSheets();
+  if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden) { // talk to whoever is closest, or make a poster by the carnation
+    const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
+    if (t) { e.preventDefault(); interact(t[0]); } else if (nearCravo() && !$('ctxBtn').hidden && !$('ctxBtn').disabled) { e.preventDefault(); makeCartazDialog(); }
+  }
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = 0; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
+let drag = null;
+cv.addEventListener('pointerdown', e => { if (camX === null) return; drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
+cv.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) > 10) drag.moved = true;
+  if (drag.moved) { camFree = 1; camX = drag.cx - dx / scale; camY = drag.cy - dy / scale; }
+});
+cv.addEventListener('pointerup', e => {
+  if (!drag || drag.id !== e.pointerId) return;
+  const moved = drag.moved; drag = null; if (moved) return;
+  const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
+  const hit = hitTest(e.clientX - r.left, e.clientY - r.top); if (hit) { approach(hit); return; }
+  closeSheets(); pending = null;
+  if (!me) return;
+  const w = toWorld((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy + 3);
+  me.goal = { gx: clamp(w.gx, .3, W - .3), gy: clamp(w.gy, .3, H - .3) }; camFree = 0;
+  sendPos(performance.now());
+});
+cv.addEventListener('pointercancel', () => { drag = null; });
+
+/* ================= talking to the characters, posters, the live interview, the group photo ================= */
+let pending = null; // a character we're walking to, to talk to when we get there
+const REACH = 2.4;
+function targets() {
+  const out = [];
+  for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
+  if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
+  for (const c of cartazes) { const s = CARTAZ_SPOTS[c.slot]; if (s) out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 10, c }); }
+  return out;
+}
+function hitTest(sx, sy) {
+  const { ox, oy } = lastView; let best = null, bd = 1e9;
+  for (const t of targets()) {
+    const q = iso(t.x, t.y, t.z), px = (q.x - ox) * scale, py = (q.y - oy) * scale, d = Math.hypot(px - sx, py - sy);
+    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : 11) * scale + 6;
+    if (d < r && d < bd) { bd = d; best = t; }
+  }
+  return best;
+}
+const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
+function approach(t) {
+  if (t.kind === 'cartaz') return showCartaz(t.c);
+  if (!me) return toast(L('Só quem está na praça com um boneco pode falar com as personagens.', 'Only people in the square with an avatar can talk to the characters.'), 3000);
+  if (distTo(t) <= REACH) return interact(t);
+  const a = Math.atan2(me.y - t.y, me.x - t.x);
+  me.goal = { gx: clamp(t.x + Math.cos(a) * 1.2, .3, W - .3), gy: clamp(t.y + Math.sin(a) * 1.2, .3, H - .3) }; camFree = 0;
+  pending = { kind: t.kind, id: t.id }; sendPos(performance.now());
+}
+function checkPending() {
+  if (!pending || !me) return;
+  const t = targets().find(x => x.kind === pending.kind && (pending.kind === 'bola' || x.id === pending.id));
+  if (!t) { pending = null; return; }
+  if (distTo(t) <= REACH - .2) { pending = null; me.goal = null; interact(t); }
+  else if (!me.goal) pending = null;
+}
+function interact(t) {
+  audioInit();
+  if (t.kind === 'jornalista') { send({ t: 'entrevista' }); return; }
+  if (t.kind === 'curioso') { const n = npcs.get(t.id); if (n && n.g) return say(t.id, L('Já estou convosco! ✊', 'I’m with you already! ✊')); return curiousDialog(t.id); }
+  if (t.kind === 'fotografa') return photoDialog();
+  if (t.kind === 'cantina') return canteenDialog();
+  if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
+  if (t.kind === 'bola') { send({ t: 'bola' }); return; }
+}
+function say(id, text) { npcSay.set(id, { text, at: performance.now() }); }
+function dialog(title, line, build) {
+  closeSheets();
+  $('npcTitle').textContent = title; const b = $('npcBody'); b.innerHTML = '';
+  if (line) { const p = document.createElement('p'); p.className = 'npcline'; p.textContent = line; b.append(p); }
+  build(b); $('npcSheet').hidden = false;
+}
+function optBtn(text, fn) { const x = document.createElement('button'); x.textContent = text; x.addEventListener('click', fn); return x; }
+function optGrid(parent) { const g = document.createElement('div'); g.className = 'grid opts'; parent.append(g); return g; }
+function journalistDialog(q) {
+  const Q = INTERVIEW[q]; if (!Q) return;
+  dialog(L('Jornalista Laranja · em direto', 'Orange Journalist · live'), L(Q.q[0], Q.q[1]), b => {
+    const g = optGrid(b);
+    Q.a.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'resposta', a: i }); interviewOpen = false; closeSheets(); })));
+    const lab = document.createElement('label'); lab.className = 'npclab'; lab.textContent = L('Ou responde por palavras tuas:', 'Or answer in your own words:'); b.append(lab);
+    const row = document.createElement('div'); row.className = 'write';
+    const ta = document.createElement('textarea'); ta.maxLength = 100; ta.rows = 2; ta.placeholder = L('Até 100 letras, passa em direto para toda a praça', 'Up to 100 letters, goes live to the whole square');
+    const go = optBtn(L('Responder', 'Answer'), () => { const v = ta.value.trim(); if (!v) return; npcErr.textContent = ''; send({ t: 'resposta', text: v }); pendingFree = true; });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
+    row.append(ta, go); b.append(row);
+    const npcErr = document.createElement('div'); npcErr.className = 'note err'; npcErr.id = 'npcErr'; b.append(npcErr);
+    const no = optBtn(L('Agora não, obrigado/a', 'Not now, thanks'), () => closeSheets()); no.className = 'ghost'; b.append(no);
+  });
+  interviewOpen = true;
+}
+let interviewOpen = false, pendingFree = false;
+function curiousDialog(id) {
+  const n = npcs.get(id); if (!n) return;
+  const Q = CURIOUS_Q[n.vr % 4];
+  dialog(L('Curioso', 'Passer-by'), L(Q[0], Q[1]), b => { const g = optGrid(b); EXPLAIN.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'explicar', id, a: i }); closeSheets(); }))); });
+}
+function photoDialog() {
+  dialog(L('Fotógrafa', 'Photographer'), L('Querem uma foto de grupo? Juntem-se perto de mim e sorriam!', 'Want a group photo? Gather round me and smile!'), b => {
+    const g = optGrid(b); g.append(optBtn(L('📸 Tira-nos uma foto!', '📸 Take our photo!'), () => { send({ t: 'foto' }); $('npcSheet').hidden = true; })); // (a photo that arrives meanwhile stays open)
+  });
+}
+function canteenDialog() {
+  dialog(L('Cantina', 'Canteen'), L('Sopa quente, café ou pão? É tudo de graça, camarada.', 'Hot soup, coffee or bread? It’s all free, comrade.'), b => {
+    const g = optGrid(b); g.classList.add('gest');
+    [['🍲', 'Sopa', 'Soup'], ['☕', 'Café', 'Coffee'], ['🥖', 'Pão', 'Bread']].forEach(([i, pt, en], k) => { const x = optBtn('', () => { send({ t: 'cantina', k: k + 1 }); closeSheets(); }); x.innerHTML = `<b>${i}</b>`; x.append(L(pt, en)); g.append(x); });
+  });
+}
+function showCartaz(c) {
+  dialog(L('Cartaz no cravo', 'Poster on the carnation'), '', b => {
+    const p = document.createElement('div'); p.className = 'cartaz'; p.textContent = c.text; b.append(p);
+    const who = document.createElement('div'); who.className = 'note'; const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(c.city);
+    who.append(dot, ` ${c.name} · ${c.city}`); b.append(who);
+    if (c.id !== myCartaz && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
+  });
+}
+function makeCartazDialog() {
+  dialog(L('Fazer um cartaz', 'Make a poster'), L('Escreve uma frase curta. O cartaz fica pendurado no cravo enquanto a praça estiver aberta.', 'Write a short line. The poster hangs on the carnation while the square is open.'), b => {
+    const ta = document.createElement('textarea'); ta.maxLength = 60; ta.rows = 2; ta.className = 'cartazIn'; ta.placeholder = L('Ex.: Casa para viver!', 'E.g. Homes to live in!');
+    const cnt = document.createElement('div'); cnt.className = 'note'; const err = document.createElement('span'); err.className = 'err'; err.id = 'cartazErr'; const n = document.createElement('span'); n.textContent = '0/60'; cnt.append(err, n);
+    ta.addEventListener('input', () => { n.textContent = `${ta.value.length}/60`; err.textContent = ''; });
+    const go = optBtn(L('Pendurar', 'Hang it'), () => {
+      const v = ta.value.trim(); if (!v) { err.textContent = L('Escreve alguma coisa.', 'Write something.'); return; }
+      if (!ws || ws.readyState !== 1) { err.textContent = L('Sem ligação à praça. Tenta outra vez daqui a pouco.', 'Not connected to the square. Try again in a moment.'); return; }
+      send({ t: 'cartaz', text: v }); go.disabled = true; go.textContent = '…';
+      clearTimeout(cartazWait); cartazWait = setTimeout(() => { if (!go.isConnected) return; go.disabled = false; go.textContent = L('Pendurar', 'Hang it'); err.textContent = L('A praça não respondeu. Tenta outra vez.', 'The square didn’t answer. Try again.'); }, 5000);
+    });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
+    const row = document.createElement('div'); row.className = 'write'; row.append(ta, go); go.id = 'cartazGo';
+    b.append(row, cnt); setTimeout(() => ta.focus(), 50);
+  });
+}
+// the button that shows up next to the carnation
+let ctxWas = '', cartazWait = 0;
+function ctxSync() {
+  const el = $('ctxBtn'); let t = '', dis = false;
+  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet'].every(id => $(id).hidden)) {
+    if (myCartaz && cartazes.some(c => c.id === myCartaz)) t = '';
+    else if (cartazes.length >= CARTAZ_SLOTS) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
+    else t = L('🪧 Fazer um cartaz', '🪧 Make a poster');
+  }
+  const k = t + dis; if (k === ctxWas) return; ctxWas = k;
+  el.hidden = !t; el.textContent = t; el.disabled = dis;
+}
+// the live interview ticker: one answer at a time
+const diretos = []; let diretoNow = null, diretoUntil = 0;
+function diretoText(d) {
+  const Q = INTERVIEW[d.q], ans = d.text != null ? d.text : Q && Q.a[d.a] ? L(Q.a[d.a][0], Q.a[d.a][1]) : '';
+  return `${d.n} (${d.c}): «${ans}»`;
+}
+function diretoSync(now) {
+  if (diretoNow && now > diretoUntil) { diretoNow = null; $('direto').hidden = true; }
+  if (!diretoNow && diretos.length) { diretoNow = diretos.shift(); diretoUntil = now + 9000; const Q = INTERVIEW[diretoNow.q]; $('diretoQ').textContent = Q ? L(Q.q[0], Q.q[1]) : ''; $('diretoTxt').textContent = diretoText(diretoNow); $('direto').hidden = false; }
+}
+// the group photo: a picture of the moment, to share
+let flashAt = 0, flashPos = null, lastPhoto = null, inPhoto = false;
+function renderScene(g, ox, oy, vw, vh, now) {
+  g.imageSmoothingEnabled = false; g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#2a2440'; g.fillRect(0, 0, vw, vh);
+  g.drawImage(bg, -ox, -oy);
+  g.translate(-ox, -oy);
+  const list = [];
+  for (const d of DECOR) list.push([d.gx + d.gy, () => drawDecor(g, d)]);
+  for (const p of people.values()) list.push([p.x + p.y, () => drawPerson(g, p, now)]);
+  for (const n of npcs.values()) list.push([n.x + n.y, () => drawNpc(g, n, now)]);
+  if (ball) list.push([ball.x + ball.y + .01, () => drawBall(g, ball, now)]);
+  const dj = djPos(); if (dj) list.push([dj.gx + dj.gy, () => drawDJ(g, dj, now)]);
+  list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+async function makePhoto(ids, fx, fy, ev) {
+  const inShot = ids.map(id => people.get(id)).filter(Boolean); if (!inShot.length) return;
+  const cx = inShot.reduce((a, p) => a + p.x, 0) / inShot.length, cy = inShot.reduce((a, p) => a + p.y, 0) / inShot.length;
+  const sw = 176, sh = 120, sc = document.createElement('canvas'); sc.width = sw; sc.height = sh;
+  const q = iso(cx, cy); inPhoto = true; try { renderScene(sc.getContext('2d'), Math.round(q.x - sw / 2), Math.round(q.y - sh * .64), sw, sh, performance.now()); } finally { inPhoto = false; }
+  try { await document.fonts.load('800 60px Jost'); } catch (e) {}
+  const C = document.createElement('canvas'); C.width = 1080; C.height = 1350; const g = C.getContext('2d');
+  g.fillStyle = '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
+  g.textAlign = 'center'; g.fillStyle = '#f4f1ea'; g.font = '800 62px Jost, sans-serif'; g.fillText(L('EU ESTIVE NA', 'I WAS IN THE'), 540, 120);
+  g.fillStyle = '#d0302a'; g.font = '800 150px Jost, sans-serif'; g.fillText(L('PRAÇA', 'SQUARE'), 540, 262);
+  g.save(); g.translate(540, 680); g.rotate(-.025);
+  g.fillStyle = '#f4f1ea'; g.fillRect(-470, -350, 940, 770);
+  g.imageSmoothingEnabled = false; g.drawImage(sc, -440, -320, 880, 600);
+  const d = new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  g.fillStyle = '#0b0a0a'; g.font = '800 40px Jost, sans-serif'; g.fillText(((ev || L('A Praça', 'The Square')) + ' · ' + d).slice(0, 48), 0, 345);
+  g.restore();
+  const names = inShot.map(p => p.n).slice(0, 6).join(' · ') + (inShot.length > 6 ? ' …' : '');
+  g.fillStyle = '#f4f1ea'; g.font = '700 38px Jost, sans-serif'; g.fillText(names, 540, 1160);
+  g.strokeStyle = '#f4f1ea'; g.lineWidth = 5; g.strokeRect(300, 1205, 480, 84); g.font = '800 46px Jost, sans-serif'; g.fillText('ACAMPADAPIXEL.PT', 540, 1263);
+  const blob = await new Promise(ok => C.toBlob(ok, 'image/png'));
+  if (!blob) return;
+  if (lastPhoto) URL.revokeObjectURL(lastPhoto.url);
+  lastPhoto = { blob, url: URL.createObjectURL(blob) };
+  closeSheets(); $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false;
+}
+async function sharePhoto() {
+  if (!lastPhoto) return;
+  const file = new File([lastPhoto.blob], 'praca-acampada.png', { type: 'image/png' });
+  const text = L('Eu estive na praça da Acampada! Junta-te: https://acampadapixel.pt/multiplayer.html #acampadapelahabitação', 'I was in the Acampada square! Join in: https://acampadapixel.pt/multiplayer.html #acampadapelahabitação');
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); } catch (e) {} return; }
+  savePhoto();
+}
+function savePhoto() { if (!lastPhoto) return; const a = document.createElement('a'); a.href = lastPhoto.url; a.download = 'praca-acampada.png'; document.body.append(a); a.click(); a.remove(); }
+const NPC_NO = {
+  longe: ['Chega-te mais perto.', 'Get a bit closer.'], ocupada: ['Está ocupada agora. Tenta daqui a pouco.', 'Busy right now. Try again in a moment.'],
+  ausente: ['Não está na praça agora.', 'Not in the square right now.'], ja: ['Já está convencido!', 'Already convinced!'],
+  pensar: ['Ainda está a pensar no que lhe disseste.', 'Still thinking about what you said.'], palavras: ['Essa resposta não passa no filtro da praça.', 'That answer doesn’t pass the square’s filter.'],
+  links: ['Sem links nem endereços, por favor.', 'No links or addresses, please.'], vazio: ['Escreve alguma coisa.', 'Write something.'],
+  off: ['As bicicletas estão desligadas pela organização.', 'Bicycles are switched off by the organisers.'], cheio: ['O cravo está cheio de cartazes.', 'The carnation is full of posters.']
+};
+
+/* ================= sound: the DJ's ska loop, louder the closer you are ================= */
+let actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
+function audioInit() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = actx.createGain(); master.gain.value = 0; master.connect(actx.destination);
+  setInterval(schedule, 40);
+}
+function note(f, d, type, v, t, slide) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g).connect(master); o.start(t); o.stop(t + d + .02);
+}
+// G - Em - C - D, two eighths per beat at 150 bpm: bass on the beat, the guitar skank on the off-beat
+const PROG = [[98, [392, 494, 587]], [82.4, [330, 392, 494]], [65.4, [262, 330, 392]], [73.4, [294, 370, 440]]];
+const STEP = 60 / 150 / 2;
+function schedule() {
+  if (!actx || !master) return;
+  if (nextT < actx.currentTime) nextT = actx.currentTime + .05;
+  while (nextT < actx.currentTime + .2) {
+    const bar = Math.floor(step / 8) % 4, s = step % 8, [root, ch] = PROG[bar], t = nextT;
+    if (s === 0 || s === 4) note(150, .14, 'sine', .5, t, 45);
+    if (s === 0 || s === 3 || s === 4 || s === 6) note(s === 6 ? root * 1.5 : root, .2, 'triangle', .32, t);
+    if (s % 2 === 1) for (const f of ch) note(f, .07, 'square', .045, t);
+    if (s === 7 && bar === 3) note(784, .09, 'square', .04, t);
+    nextT += STEP; step++;
+  }
+}
+let musicVol = 0;
+function music(dj) {
+  if (!actx || !master) return;
+  let v = 0;
+  if (dj && !muted && document.visibilityState === 'visible') v = me ? clamp(1 - Math.hypot(me.x - dj.gx, me.y - dj.gy) / 16, .12, 1) * .5 : .25;
+  if (Math.abs(v - musicVol) > .01) { musicVol = v; master.gain.setTargetAtTime(v, actx.currentTime, .3); }
+}
+function blip(p) { if (!actx || muted || !me) return; const d = Math.hypot(p.x - me.x, p.y - me.y); if (d > 8) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(880, t + .05); g.gain.setValueAtTime(.025 * (1 - d / 8), t); g.gain.exponentialRampToValueAtTime(.0001, t + .12); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .14); }
+let avisoClosed = '';
+function setAviso(t) { aviso = t; $('avisoTxt').textContent = t; $('aviso').hidden = !t || avisoClosed === t; $('toast').style.top = $('aviso').hidden ? '' : '52px'; if (t && avisoClosed !== t) blipAviso(); }
+$('avisoX').addEventListener('click', () => { avisoClosed = aviso; $('aviso').hidden = true; $('toast').style.top = ''; });
+function blipAviso() { if (!actx || muted) return; const t = actx.currentTime; for (const [i, f] of [[0, 784], [1, 988]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.04, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .1); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .12); } }
+function renderMuralLock() {
+  const ro = !!cfg.muralRO; $('muralIn').disabled = ro; $('muralSend').disabled = ro; $('muralIn').closest('.write').classList.toggle('ro', ro);
+  $('muralIn').placeholder = ro ? L('O mural está só para leitura.', 'The wall is read-only for now.') : L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
+}
+function shutter() { if (!actx || muted || !me) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(1800, t); o.frequency.setValueAtTime(900, t + .03); g.gain.setValueAtTime(.03, t); g.gain.exponentialRampToValueAtTime(.0001, t + .09); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .1); }
+function muralPing() { if ($('muralSheet').hidden) $('tMural').classList.add('new'); }
+$('bZoom').addEventListener('click', () => { zoom = !zoom; store.set('acampada-praca-zoom', zoom ? '1' : '0'); $('bZoom').textContent = zoom ? '－' : '＋'; camX = null; resize(); });
+$('bSound').addEventListener('click', () => { audioInit(); muted = !muted; store.set('acampada-praca-mute', muted ? '1' : '0'); $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; });
+
+/* ================= the panels ================= */
+let lastSay = 0;
+function buildSheets() {
+  const pg = $('phraseGrid'); pg.innerHTML = '';
+  PHRASES.forEach((p, k) => { const b = document.createElement('button'); b.textContent = L(p[0], p[1]); b.addEventListener('click', () => sayIt(k)); pg.appendChild(b); });
+  const gg = $('gestGrid'); gg.innerHTML = '';
+  GESTURES.forEach((g, k) => { if (!g) return; const b = document.createElement('button'); b.innerHTML = `<b>${g.i}</b>`; b.append(L(g.pt, g.en)); b.addEventListener('click', () => gesture(k)); gg.appendChild(b); });
+}
+function sayIt(k) {
+  if (!me) return; const now = performance.now();
+  if (now - lastSay < 2600) return; lastSay = now;
+  send({ t: 'say', k }); me.say = k; me.sayAt = now; closeSheets();
+  for (const b of $('phraseGrid').children) b.classList.add('wait'); setTimeout(() => { for (const b of $('phraseGrid').children) b.classList.remove('wait'); }, 2600);
+}
+let gestTimer = 0;
+function gesture(k) {
+  if (!me) return; send({ t: 'emote', k }); me.e = k; me.eAt = performance.now(); closeSheets();
+  clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
+}
+function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
+function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open'); }
+$('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
+$('tGest').addEventListener('click', () => openSheet('gestSheet'));
+$('tMural').addEventListener('click', () => openSheet('muralSheet'));
+for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', closeSheets);
+$('bLang').addEventListener('click', () => { LANG = LANG === 'en' ? 'pt' : 'en'; store.set('acampada-lang', LANG); applyTexts(); if (!$('ov').hidden) showStatus(lastStatus); });
+
+/* ---------- the mural ---------- */
+const hhmm = t => new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
+function msgEl(m, canReport) {
+  const d = document.createElement('div'); d.className = 'msg' + (mine.has(m.id) ? ' mine' : '');
+  const who = document.createElement('div'); who.className = 'who';
+  const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(m.city);
+  who.append(dot, `${m.name} · ${m.city} · ${hhmm(m.at)}`);
+  if (canReport && !mine.has(m.id)) {
+    const r = document.createElement('button'); r.className = 'rep'; r.textContent = reported.has(m.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'); r.disabled = reported.has(m.id);
+    r.title = L('Três denúncias escondem a mensagem', 'Three reports hide the message');
+    r.addEventListener('click', () => { send({ t: 'report', id: m.id }); reported.add(m.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; });
+    who.append(r);
+  }
+  const tx = document.createElement('div'); tx.textContent = m.text;
+  d.append(who, tx); return d;
+}
+function renderMural(scroll) {
+  const box = $('muralList'); if (!box) return;
+  const atEnd = box.scrollTop + box.clientHeight > box.scrollHeight - 30;
+  box.innerHTML = '';
+  if (!mural.length) { const e = document.createElement('div'); e.className = 'empty'; e.textContent = L('Ainda ninguém escreveu. Sê a primeira pessoa!', 'Nobody has written yet. Be the first!'); box.appendChild(e); }
+  for (const m of mural) box.appendChild(msgEl(m, true));
+  if (scroll || atEnd) box.scrollTop = box.scrollHeight;
+}
+function sendMural() {
+  const t = $('muralIn').value.trim(); if (!t) return;
+  $('muralErr').textContent = ''; send({ t: 'mural', text: t }); $('muralIn').value = ''; $('muralCnt').textContent = '0/140';
+}
+$('muralSend').addEventListener('click', sendMural);
+$('muralIn').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMural(); } });
+$('muralIn').addEventListener('input', () => { $('muralCnt').textContent = `${$('muralIn').value.length}/140`; $('muralErr').textContent = ''; });
+
+/* ---------- the top bar ---------- */
+const sum = o => Object.values(o || {}).reduce((a, b) => a + b, 0);
+function renderCounts() {
+  $('cnt').innerHTML = `<span>${sum(counts.praca)}<small>${L('Na praça', 'In the square')}</small></span><span>${sum(counts.apoio)}<small>${L('De longe', 'From afar')}</small></span>`;
+  const all = {}; for (const k of ['praca', 'apoio']) for (const [c, n] of Object.entries(counts[k] || {})) all[c] = (all[c] || 0) + n;
+  const wl = $('whoList'); wl.innerHTML = '';
+  for (const [c, n] of Object.entries(all).sort((a, b) => b[1] - a[1])) { const s = document.createElement('span'); const i = document.createElement('i'); i.style.background = auraOf(c); s.append(i, `${c} ${n}`); wl.appendChild(s); }
+}
+function renderWhere() {
+  const w = live && live[0];
+  const title = w ? (w.city ? w.city + ': ' : '') + w.title : L('Praça partilhada', 'Shared square');
+  const close = closeAt ? L(`fecha às ${hhmm(closeAt)}`, `closes at ${hhmm(closeAt)}`) : L('aberta até a organização fechar', 'open until the organisers close it');
+  const meLine = myMode === 'praca' ? L('estás na praça', 'you’re in the square') : L('estás como apoio de longe', 'you’re supporting from afar');
+  $('where').innerHTML = ''; $('where').append(title); const s = document.createElement('small'); s.textContent = [meLine, close].filter(Boolean).join(' · '); $('where').append(s);
+}
+function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = myMode !== 'praca'; bikeSync(); }
+function bikeSync() { const b = $('bBike'); b.hidden = myMode !== 'praca' || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
+$('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
+$('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
+for (const id of ['npcSheet', 'muralSheet']) { const el = $(id); el.addEventListener('focusin', e => { if (e.target.matches('textarea, input') && matchMedia('(pointer: coarse)').matches && innerWidth < 900) el.classList.add('typing'); }); el.addEventListener('focusout', () => setTimeout(() => { if (!el.contains(document.activeElement)) el.classList.remove('typing'); }, 100)); }
+$('fotoShare').addEventListener('click', sharePhoto); $('fotoSave').addEventListener('click', savePhoto);
+let toastT = 0;
+function toast(t, ms) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); if (ms) toastT = setTimeout(hideToast, ms); }
+function hideToast() { $('toast').hidden = true; }
+function showApp() { $('ov').hidden = true; $('app').hidden = false; requestAnimationFrame(() => { resize(); }); }
+
+/* ================= the entry and closed screens ================= */
+let lastStatus = null;
+const fmtWhen = t => new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
+function inTime(ms) {
+  const m = Math.max(1, Math.round(ms / 60e3)), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), mm = m % 60;
+  const parts = []; if (d) parts.push(L(`${d} ${d === 1 ? 'dia' : 'dias'}`, `${d} ${d === 1 ? 'day' : 'days'}`)); if (h) parts.push(`${h} h`); if (!d && mm) parts.push(`${mm} min`);
+  return parts.join(' ');
+}
+async function getStatus() {
+  const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 6000);
+  try { const r = await fetch(SRV + '/estado', { signal: ctl.signal, cache: 'no-store' }); if (!r.ok) throw 0; return await r.json(); } finally { clearTimeout(to); }
+}
+function langSw() { return `<div class="langsw" role="group" aria-label="Idioma / Language"><button data-l="pt" class="${LANG === 'pt' ? 'on' : ''}">PT</button><button data-l="en" class="${LANG === 'en' ? 'on' : ''}">EN</button></div>`; }
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function liveCard(w) { return `<div class="live"><b>${esc(w.city ? w.city + ': ' : '')}${esc(w.title)}</b><span>${esc(fmtWhen(w.start))}${w.where ? ' · ' + esc(w.where) : ''}</span></div>`; }
+const FOOT = () => `<p class="foot">${L('Não guardamos nada que te identifique. O mural é apagado 24 horas depois de a praça fechar.', 'Nothing that identifies you is kept. The wall is deleted 24 hours after the square closes.')}<br><a href="./">${L('← Voltar ao jogo', '← Back to the game')}</a></p>`;
+let statusTimer = 0;
+async function showStatus(st) {
+  $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
+  const box = $('ovIn');
+  if (!st) {
+    box.innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="help">${L('A ver se a praça está aberta…', 'Checking whether the square is open…')}</p>`; wireLang();
+    try { st = await getStatus(); } catch (e) {
+      box.innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('Sem ligação à praça', 'Can’t reach the square')}</p><p class="help">${L('Verifica a internet e tenta outra vez.', 'Check your connection and try again.')}</p><button class="btnp" id="again">${L('Tentar outra vez', 'Try again')}</button>${FOOT()}`;
+      wireLang(); $('again').addEventListener('click', () => showStatus()); return;
+    }
+  }
+  lastStatus = st; clockOff = (st.now || Date.now()) - Date.now();
+  if (st.open) { live = st.live || []; closeAt = st.close; return entryScreen(st); }
+  closedScreen(st);
+}
+function wireLang() { for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); showStatus(lastStatus); }); }
+function bannedScreen() {
+  $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
+  $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('A organização retirou-te da praça', 'The organisers removed you from the square')}</p><p class="help">${L('Podes voltar quando esta praça fechar e abrir a próxima.', 'You can come back once this square closes and the next one opens.')}</p>${FOOT()}`;
+  for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); bannedScreen(); });
+}
+function closedScreen(st) {
+  const box = $('ovIn'), n = st.next;
+  box.innerHTML = `${langSw()}<span class="badge off">${L('Fechada', 'Closed')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-big rough">${L('Abre nas manifs e assembleias', 'Opens for protests and assemblies')}</p>
+  ${st.by === 'fechada' ? `<p class="p-mid rough" style="margin-top:10px !important">${L('Fechada pela organização', 'Closed by the organisers')}</p>` : ''}
+  <p class="help">${L('A praça partilhada abre antes das manifestações pela habitação e das assembleias. Quem está na manif ou numa acampada entra com o seu boneco; quem está longe dá apoio e escreve no mural.', 'The shared square opens before housing protests and assemblies. People at the protest or a camp walk in with their avatar; people far away send support and write on the wall.')}</p>
+  ${n ? `<p class="p-mid rough" id="ovCount" style="margin-top:16px !important">${L('Abre daqui a', 'Opens in')} ${esc(inTime(n.open - serverNow()))}</p>${liveCard(n)}` : `<p class="help">${L('Ainda não há nada marcado. Volta em breve!', 'Nothing is scheduled yet. Come back soon!')}</p>`}
+  <div id="ovMural"></div>${FOOT()}`;
+  wireLang();
+  fetch(SRV + '/mural', { cache: 'no-store' }).then(r => r.json()).then(j => { const ms = j.mural || []; if (!ms.length) return; const b = $('ovMural'); if (!b) return; const h = document.createElement('p'); h.className = 'p-mid'; h.style.textAlign = 'center'; h.textContent = L('O mural da última praça', 'The wall from the last square'); b.append(h); for (const m of ms.slice(-40).reverse()) b.append(msgEl(m, false)); }).catch(() => {});
+  const tick = async () => {
+    let s2 = null; try { s2 = await getStatus(); } catch (e) {}
+    if ($('ov').hidden) return;
+    if (s2) { lastStatus = s2; clockOff = (s2.now || Date.now()) - Date.now(); if (s2.open) return showStatus(s2); }
+    const c = $('ovCount'), nx = (s2 || st).next; if (c && nx) c.textContent = `${L('Abre daqui a', 'Opens in')} ${inTime(nx.open - serverNow())}`;
+    statusTimer = setTimeout(tick, nx ? clamp(nx.open - serverNow() + 2000, 5000, 60e3) : 60e3);
+  };
+  statusTimer = setTimeout(tick, n ? clamp(n.open - serverNow() + 2000, 5000, 60e3) : 60e3);
+}
+function entryScreen(st) {
+  const box = $('ovIn'), p = profile;
+  const opts = CITIES.map(c => `<option value="${c}"${p.city === c ? ' selected' : ''}>${c}</option>`).join('') + `<option value="_"${p.city === '_' ? ' selected' : ''}>${L('Outra cidade', 'Another city')}</option>`;
+  box.innerHTML = `${langSw()}<span class="badge">${L('Aberta agora', 'Open now')}</span><h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('Todas as acampadas, numa praça', 'Every camp, one square')}</p>
+  ${(st.live || []).map(liveCard).join('')}
+  <p class="help">${st.close ? L(`Fecha às ${hhmm(st.close)}.`, `Closes at ${hhmm(st.close)}.`) : L('Aberta até a organização fechar.', 'Open until the organisers close it.')} ${L(`Agora: ${sum(st.counts && st.counts.praca)} na praça, ${sum(st.counts && st.counts.apoio)} de longe.`, `Right now: ${sum(st.counts && st.counts.praca)} in the square, ${sum(st.counts && st.counts.apoio)} from afar.`)}</p>
+  ${st.aviso ? `<p class="live" style="border-left-color:var(--lime)"><b>📣 ${esc(st.aviso)}</b></p>` : ''}
+  <div class="form">
+    <div><label for="fName">${L('O teu nome na praça', 'Your name in the square')}</label><input id="fName" maxlength="16" autocomplete="nickname" value="${esc(p.name)}" placeholder="${L('Até 16 letras', 'Up to 16 letters')}"></div>
+    <div><label for="fCity">${L('De que cidade és?', 'Which city are you from?')}</label><select id="fCity"><option value="">${L('Escolhe…', 'Choose…')}</option>${opts}</select>
+      <input id="fOther" maxlength="24" placeholder="${L('Qual?', 'Which one?')}" value="${esc(p.other)}" style="margin-top:6px" ${p.city === '_' ? '' : 'hidden'}></div>
+    <div><label>${L('Onde estás agora?', 'Where are you now?')}</label><div class="choice">
+      <button type="button" data-m="praca" class="${p.mode !== 'apoio' ? 'on' : ''}"><b>${L('Na manif ou na acampada', 'At the protest or a camp')}</b><span>${L('Entras na praça com o teu boneco, a brilhar na cor da tua cidade.', 'You walk into the square with your avatar, glowing in your city’s colour.')}</span></button>
+      <button type="button" data-m="apoio" class="${p.mode === 'apoio' ? 'on' : ''}"><b>${L('Longe, a apoiar', 'Far away, supporting')}</b><span>${L('Contas como apoio, vês a praça e escreves no mural.', 'You count as support, watch the square and write on the wall.')}</span></button>
+    </div></div>
+    <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="32" height="32"></canvas><button type="button" class="btnp sm" id="reroll">🎲 ${L('Outro visual', 'Another look')}</button></div>
+      <label style="margin-top:12px">${L('Como andas na praça?', 'How do you get around?')}</label><div class="choice" style="grid-template-columns:1fr 1fr">
+      <button type="button" data-bk="0" class="${profile.bike ? '' : 'on'}"><b>🚶 ${L('A pé', 'On foot')}</b></button><button type="button" data-bk="1" class="${profile.bike ? 'on' : ''}"><b>🚲 ${L('De bicicleta', 'By bike')}</b><span>${L('25% mais rápido', '25% faster')}</span></button></div></div>
+  </div>
+  <button class="btnp red" id="enter">${L('Entrar na praça →', 'Enter the square →')}</button><p class="help" id="formErr" style="color:#ff9d8f"></p>
+  ${FOOT()}`;
+  wireLang();
+  const drawLook = () => { const c = $('lookCv'), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#d9d3c3'; g.fillRect(0, 0, 32, 32); const city = $('fCity').value, a = auraOf(city === '_' ? '' : city); ell(g, 16, 27, 9, rgba(a, .3)); ell(g, 16, 27, 6, rgba(a, .55)); guy(g, 16, 27, { ...lookOf(profile.look) }); };
+  const modeSync = () => { $('lookBox').hidden = profile.mode === 'apoio'; };
+  for (const b of box.querySelectorAll('[data-bk]')) b.addEventListener('click', () => { profile.bike = b.dataset.bk === '1'; for (const x of box.querySelectorAll('[data-bk]')) x.classList.toggle('on', x === b); });
+  $('fCity').addEventListener('change', () => { $('fOther').hidden = $('fCity').value !== '_'; drawLook(); });
+  $('reroll').addEventListener('click', () => { profile.look = Math.floor(Math.random() * LOOKS); drawLook(); });
+  for (const b of box.querySelectorAll('[data-m]')) b.addEventListener('click', () => { profile.mode = b.dataset.m; for (const x of box.querySelectorAll('[data-m]')) x.classList.toggle('on', x === b); modeSync(); });
+  drawLook(); modeSync();
+  $('enter').addEventListener('click', () => {
+    const name = $('fName').value.trim(), city = $('fCity').value, other = $('fOther').value.trim();
+    if (!name) { $('formErr').textContent = L('Escreve um nome (pode ser inventado).', 'Write a name (it can be made up).'); $('fName').focus(); return; }
+    if (!city || (city === '_' && !other)) { $('formErr').textContent = L('Escolhe a tua cidade.', 'Choose your city.'); $('fCity').focus(); return; }
+    profile.name = name; profile.city = city; profile.other = other;
+    store.set('acampada-praca', JSON.stringify(profile));
+    $('formErr').textContent = ''; $('enter').disabled = true; inside = false;
+    audioInit(); connect();
+  });
+}
+
+/* ================= start ================= */
+makeDecor(); makeBG(); applyTexts();
+$('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; $('bZoom').textContent = zoom ? '－' : '＋';
+addEventListener('resize', () => { if (!$('app').hidden) resize(); });
+if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (!$('app').hidden) resize(); });
+document.addEventListener('gesturestart', e => e.preventDefault());
+showStatus();
+requestAnimationFrame(frame);
+window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; } };
+})();
+</script>
+</body>
+</html>
