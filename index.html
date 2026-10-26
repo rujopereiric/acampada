@@ -92,6 +92,7 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 #rotHint[hidden]{ display:none; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
 #tut[hidden]{ display:none; }
+#upd{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); transform:translateX(-50%); z-index:50; background:#0b0a0a; color:#f4f1ea; border:2px solid #f4f1ea; padding:8px 8px 8px 14px; font:700 13px/1 Jost, sans-serif; display:flex; align-items:center; gap:10px; white-space:nowrap; box-shadow:0 4px 0 rgba(11,10,10,.4); } #upd button{ background:#b6ff3b; color:#0b0a0a; border:0; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 10px 6px; cursor:pointer; }
 .langsw{ display:flex; justify-content:center; gap:0; margin:0 auto 10px; } .langsw button{ background:transparent; color:#f4f1ea; border:2px solid #f4f1ea; font:800 12px/1 Jost, sans-serif; letter-spacing:1px; padding:5px 10px 4px; cursor:pointer; } .langsw button + button{ border-left:0; } .langsw button.on{ background:#f4f1ea; color:#0b0a0a; } .langsw button:focus-visible{ outline:3px solid #ffd23a; outline-offset:2px; }
 .install{ max-width:330px; margin:12px auto 0; padding:7px 10px; border:1px dashed rgba(244,241,234,.45); color:#d6d0c4; font-size:12.5px; line-height:1.35; text-transform:none; }
 .cj .bang, #tut .bang{ display:inline-block; min-width:16px; height:18px; margin:0 1px; background:#fff; border:2px solid #1b1464; box-shadow:inset 0 3px 0 #c9f6ff; color:#ff3b8b; font:800 13px/15px Jost, sans-serif; text-align:center; vertical-align:-4px; } #tut button{ flex:none; background:#0b0a0a; color:#ffd23a; border:0; font:700 11px Jost, sans-serif; padding:5px 7px; cursor:pointer; text-transform:uppercase; }
@@ -3717,7 +3718,7 @@ function openInfo(i) {
   const [variant, html] = ADS[infoIdx]();
   const main = variant === 'adred' ? '' : ' red', side = variant === 'adred' ? ' red' : '';
   const tag = L('Informação', 'Information');
-  show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div class="infonav"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 2 4.5 8l6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><button class="btnp narrow${main}" data-a="infoclose">${L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button></div>`, variant);
+  show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div class="infonav"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 2 4.5 8l6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><button class="btnp narrow${main}" data-a="infoclose">${infoReturn === 'title' ? L('← Início', '← Home') : L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button></div>`, variant);
 }
 // share the poster on screen as an image (1080 x 1350): the poster's own texts and colours, redrawn on a canvas
 function makePoster() {
@@ -3910,6 +3911,15 @@ function joyMove(e) {
   JOY.x = dx / JOY_R; JOY.y = dy / JOY_R; $('joy').firstChild.style.transform = `translate(${dx}px, ${dy}px)`; return true;
 }
 function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; JOY.id = null; JOY.x = JOY.y = 0; $('joy').hidden = true; return true; }
+// phones: swipe left / right to turn the information posters and the Como jogar pages
+{ let sx = null, sy = 0;
+  ov.addEventListener('touchstart', e => { if ((mode === 'info' || mode === 'rules') && e.touches.length === 1) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; } else sx = null; }, { passive: true });
+  ov.addEventListener('touchend', e => {
+    if (sx === null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // a real sideways swipe, not a scroll
+    const d = dx < 0 ? 1 : -1;
+    if (mode === 'info') openInfo(infoIdx + d); else if (mode === 'rules' && rulesPage + d >= 0 && rulesPage + d <= 3) rulesGo(d);
+  }, { passive: true }); }
 $('tutSkip').addEventListener('click', e => { e.stopPropagation(); if (S && S.tut) tutEnd(); });
 const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
 addEventListener('keydown', e => {
@@ -4129,7 +4139,13 @@ document.addEventListener('touchmove', e => { if (e.touches && e.touches.length 
 if (window.visualViewport) visualViewport.addEventListener('resize', () => {
   if (visualViewport.scale > 1.01) { const m = $('vp'), c = m.content; m.content = c + ', minimum-scale=1'; setTimeout(() => { m.content = c; }, 300); }
 });
-if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {}));
+  // the app opened from the copy on the phone and a newer game has arrived: offer to reload
+  navigator.serviceWorker.addEventListener('message', e => { if (e.data !== 'acampada-update' || document.getElementById('upd')) return;
+    const d = document.createElement('div'); d.id = 'upd'; d.innerHTML = `${L('Há uma versão nova', 'There’s a new version')} <button type="button">${L('Atualizar', 'Update')}</button>`;
+    d.querySelector('button').addEventListener('click', () => location.reload()); document.body.appendChild(d); });
+}
 window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
 </script>
