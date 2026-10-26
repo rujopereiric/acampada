@@ -3692,6 +3692,7 @@ function rulesHTML(n) {
        <div class="cj-card">${I('tania')}<b>Jornalista Laranja</b><span>foge dela! tira apoio</span></div></div></div>
      <p class="cj-small"><b>Porto e Lisboa:</b> com a Pressão cheia, a polícia cerca a praça e leva tudo. Volta a montar um terço das tendas, com a Moral acima de 80, para ganhar.</p>`
   ];
+  [pages[2], pages[3]] = [pages[3], pages[2]]; // order: the square, your buttons, friends and dangers, a day in the square
   const last = n === pages.length - 1, dots = pages.map((_, i) => `<i class="${i === n ? 'on' : ''}"></i>`).join('');
   return `<div class="cj"><p class="cj-top">${L('COMO JOGAR', 'HOW TO PLAY')} · ${n + 1}/${pages.length}</p>${pages[n]}
     <div class="cj-nav">${n ? '<button class="btnp narrow" data-a="rulesprev">←</button>' : '<span></span>'}<span class="cj-dots">${dots}</span>
