@@ -2,7 +2,7 @@
 <html lang="pt-PT">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" id="vp" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Acampada</title>
 <meta name="description" content="Jogo pixel-art sobre as acampadas pela habitação. Monta as tendas, junta a multidão e segura a praça no Porto, em Lisboa, Coimbra, Braga e Faro.">
 <meta name="theme-color" content="#0b0a0a">
@@ -46,7 +46,7 @@
 html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; -webkit-text-size-adjust:100%; text-size-adjust:100%; } /* iPhone landscape: no automatic text enlarging (it pushed the side panel off the screen) */
 *,*::before,*::after{ box-sizing:border-box; }
 button{ touch-action:manipulation; }
-body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-family:Jost, Futura, "Trebuchet MS", sans-serif; -webkit-tap-highlight-color:transparent; }
+body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-family:Jost, Futura, "Trebuchet MS", sans-serif; -webkit-tap-highlight-color:transparent; }
 .wrap{ width:min(calc(100vw - 14px), 460px, max(300px, calc((100dvh - 260px) * 1.0667))); margin:6px auto 14px; }
 /* computers: the column keeps its phone width and is scaled up to fill the window (see fit()) */
 .pc body{ min-height:0; }
@@ -92,6 +92,7 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 #rotHint[hidden]{ display:none; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
 #tut[hidden]{ display:none; }
+.langsw{ display:flex; justify-content:center; gap:0; margin:0 auto 10px; } .langsw button{ background:transparent; color:#f4f1ea; border:2px solid #f4f1ea; font:800 12px/1 Jost, sans-serif; letter-spacing:1px; padding:5px 10px 4px; cursor:pointer; } .langsw button + button{ border-left:0; } .langsw button.on{ background:#f4f1ea; color:#0b0a0a; } .langsw button:focus-visible{ outline:3px solid #ffd23a; outline-offset:2px; }
 .install{ max-width:330px; margin:12px auto 0; padding:7px 10px; border:1px dashed rgba(244,241,234,.45); color:#d6d0c4; font-size:12.5px; line-height:1.35; text-transform:none; }
 .cj .bang, #tut .bang{ display:inline-block; min-width:16px; height:18px; margin:0 1px; background:#fff; border:2px solid #1b1464; box-shadow:inset 0 3px 0 #c9f6ff; color:#ff3b8b; font:800 13px/15px Jost, sans-serif; text-align:center; vertical-align:-4px; } #tut button{ flex:none; background:#0b0a0a; color:#ffd23a; border:0; font:700 11px Jost, sans-serif; padding:5px 7px; cursor:pointer; text-transform:uppercase; }
 .cam #tut{ bottom:auto; top:52px; font-size:13px; max-width:calc(100% - 20px); }
@@ -124,9 +125,8 @@ body{ margin:0; min-height:100%; color:var(--ink); background:var(--bg); font-fa
 .bub::after{ content:''; position:absolute; left:50%; bottom:-5px; margin-left:-4px; border:4px solid transparent; border-top-color:#fff; border-bottom:0; }
 .camBtn{ position:absolute; right:8px; bottom:8px; z-index:2; width:46px; height:46px; display:grid; place-items:center; padding:0; background:#f4f1ea; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; font:800 14px/1 Jost, Futura, sans-serif; text-transform:uppercase; letter-spacing:.3px; cursor:pointer; }
 .camBtn[hidden]{ display:none; } #padBtn{ bottom:62px; } #padBtn[aria-pressed="true"]{ background:#b6ff3b; }
-#pad{ position:absolute; left:10px; bottom:10px; z-index:3; width:132px; height:132px; display:grid; grid-template:repeat(3,44px) / repeat(3,44px); touch-action:none; user-select:none; -webkit-user-select:none; }
-#pad[hidden]{ display:none; } #pad button{ background:rgba(244,241,234,.82); color:#0b0a0a; border:2px solid #0b0a0a; font:700 18px/1 sans-serif; padding:0; touch-action:none; }
-#pad button.on{ background:#b6ff3b; } #pad [data-k=up]{ grid-area:1/2; } #pad [data-k=left]{ grid-area:2/1; } #pad [data-k=right]{ grid-area:2/3; } #pad [data-k=down]{ grid-area:3/2; } .camBtn:active{ transform:translateY(2px); box-shadow:0 1px 0 #0b0a0a; } #rotHint button{ flex:none; background:none; border:0; color:#f4f1ea; font-size:18px; line-height:1; padding:4px 6px; cursor:pointer; }
+#joy{ position:absolute; z-index:3; width:112px; height:112px; margin:-56px 0 0 -56px; border-radius:50%; background:rgba(244,241,234,.18); border:2px solid rgba(244,241,234,.7); box-shadow:0 0 0 2px rgba(11,10,10,.35); pointer-events:none; } /* the walking ball (phones) */
+#joy[hidden]{ display:none; } #joy i{ position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px; border-radius:50%; background:rgba(244,241,234,.9); border:2px solid #0b0a0a; }
 /* upright phones: the city name gets its own line so the header buttons always fit; narrow phones shrink the action labels */
 .cam:not(.land) .top{ flex-wrap:wrap; row-gap:3px; } .cam:not(.land) #city{ order:5; flex-basis:100%; }
 .cam:not(.land) .top .mini{ padding:0 6px; }
@@ -378,7 +378,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
           <ellipse cx="67" cy="30" rx="3.6" ry="3.2" fill="#fff"/><circle cx="67" cy="30" r="1.6" fill="#2a1a14"/>
           <path d="M54.5 44.5 Q60 49.5 65.5 44.5 Q60 42.5 54.5 44.5 Z" fill="#3a1414"/>
           <use href="#o1" fill="url(#dots)" opacity=".2"/><use class="red" href="#o1" fill="#e0201c" opacity="0" style="mix-blend-mode:multiply"/>
-          <g><rect x="76" y="2" width="44" height="15" fill="#fff" stroke="#0b0a0a" stroke-width="1.6"/><path d="M84 17 L80 23 L90 17 Z" fill="#fff" stroke="#0b0a0a" stroke-width="1.2"/><text x="98" y="12.8" text-anchor="middle" font-family="Jost, Futura, sans-serif" font-weight="800" font-size="10" fill="#8b2320">O QUÊ?</text></g>
+          <g><rect x="76" y="2" width="44" height="15" fill="#fff" stroke="#0b0a0a" stroke-width="1.6"/><path d="M84 17 L80 23 L90 17 Z" fill="#fff" stroke="#0b0a0a" stroke-width="1.2"/><text x="98" y="12.8" text-anchor="middle" font-family="Jost, Futura, sans-serif" font-weight="800" font-size="10" fill="#8b2320" id="pmQ">O QUÊ?</text></g>
         </g>
         <g id="pose2" style="display:none">
           <use href="#o2" fill="#8a6234" transform="translate(2.5 2)"/><use href="#o2" fill="#c99a5e" stroke="#c99a5e" stroke-width="6" stroke-linejoin="round"/>
@@ -411,8 +411,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
     <div id="msgs" aria-live="polite"><div id="ban" hidden><span class="ar l">◀</span><span class="tx"></span><span class="ar r">▶</span></div></div>
     <div id="rotHint" hidden><span>↻ Roda o telemóvel para ver a praça maior</span><button type="button" id="rotHintX" aria-label="Fechar">✕</button></div>
     <button id="zoom" class="camBtn" type="button" hidden></button>
-    <button id="padBtn" class="camBtn" type="button" hidden aria-label="Setas" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="#0b0a0a" aria-hidden="true"><path d="M12 2l4 5h-8zM12 22l-4-5h8zM2 12l5-4v8zM22 12l-5 4V8z"/></svg></button>
-    <div id="pad" hidden><button data-k="up" aria-label="Cima">▲</button><button data-k="left" aria-label="Esquerda">◀</button><button data-k="right" aria-label="Direita">▶</button><button data-k="down" aria-label="Baixo">▼</button></div>
+    <button id="padBtn" class="camBtn" type="button" hidden aria-label="Bola para andar" aria-pressed="false"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0b0a0a" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="#0b0a0a"/></svg></button>
+    <div id="joy" hidden aria-hidden="true"><i></i></div>
   </div>
   <div class="bottom">
   <nav class="actions" aria-label="Ações da acampada">
@@ -443,6 +443,37 @@ const ri = (a, b) => Math.floor(rnd(a, b + 1));
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const gd = (a, b) => Math.hypot(a.gx - b.gx, a.gy - b.gy);
+
+/* ================= language: Português / English (chosen on the title screen) ================= */
+let LANG = 'pt';
+try { LANG = localStorage.getItem('acampada-lang') || ((navigator.language || 'pt').toLowerCase().startsWith('pt') ? 'pt' : 'en'); } catch (e) {}
+const L = (pt, en) => LANG === 'en' ? en : pt; // for the screens: both texts side by side
+const EN = {"Sopa": "Soup", "Água": "Water", "Bifanas": "Pork rolls", "Mantas": "Blankets", "Café": "Coffee", "Pão": "Bread", "Fruta": "Fruit", "Arroz": "Rice", "Cozinha popular": "Community kitchen", "Transforma os donativos em refeições e mantém a moral em alta. Também podes cozinhar mais à mão.": "Turns donations into meals and keeps morale high. You can also cook more by hand.", "Ponto de informação": "Info point", "Quem passa por perto junta-se sozinho. Faz conversas de boas-vindas para quem está à espera.": "People passing by join on their own. Holds welcome chats for those waiting.", "Primeiros socorros": "First aid", "Numa rusga, uma pessoa por tenda escapa em vez de ser detida.": "In a raid, one person per tent gets away instead of being arrested.", "Palco": "Stage", "Concertos que trazem gente, apoio e pressão.": "Concerts that bring people, support and pressure.", "Vigias": "Lookouts", "As sirenes ouvem-se mais cedo e os agentes andam 15% mais devagar.": "Sirens are heard earlier and officers move 15% slower.", "Grupos de afinidade": "Affinity groups", "Os cordões humanos duram mais 3 segundos e chegam mais longe.": "Human chains last 3 seconds longer and reach further.", "Caixa de solidariedade": "Solidarity fund", "+6 materiais já, e os donativos aparecem mais vezes.": "+6 supplies now, and donations turn up more often.", "Comunicado": "Press release", "+15 de apoio imediato.": "+15 support right away.", "Turnos": "Shifts", "A moral desce 30% mais devagar.": "Morale drops 30% slower.", "Megafone": "Megaphone", "Acolhe quem chega a partir de mais longe.": "Welcome newcomers from further away.", "Equipa legal": "Legal team", "Metade das pessoas detidas em cada rusga volta depois.": "Half the people arrested in each raid come back later.", "Cartazes na estátua": "Posters on the statue", "A pressão sobe 20% mais depressa.": "Pressure rises 20% faster.", "O Algarve aguentou.": "The Algarve held out.", "Grupos": "Groups", "Tendas": "Tents", "Praça cheia!": "Square full!", "Viral!": "Viral!", "Levaram a estrutura": "They took the structure", "Estás fora do cerco": "You are outside the kettle", "Precisas de 6 pessoas": "You need 6 people", "Precisas de 8 pessoas": "You need 8 people", "Capacetes azuis!": "Blue helmets!", "Sem espaço": "No room", "Içaram sem ti!": "They raised it without you!", "Burro gigante!": "Giant donkey!", "Travar o grafíti": "Stop the graffiti", "Ajudar a içar a cabeça de burro": "Help raise the donkey head", "Cantar Grândola · falta gente": "Sing Grândola · need more people", "Cantar Grândola": "Sing Grândola", "Cozinhar uma refeição, 1 material": "Cook a meal, 1 supply", "Refeição servida": "Meal served", "Concerto a decorrer": "Concert on", "Dar um concerto": "Put on a concert", "Conversa de boas-vindas": "Welcome chat", "Ninguém à espera": "Nobody waiting", "Curar feridos": "Treat the wounded", "Ferido tratado": "Wounded treated", "Turno de descanso": "Rest shift", "Descansados": "Rested", "Concerto!": "Concert!", "A polícia ouviu o concerto": "The police heard the concert", "Bicicletada!": "Bike ride!", "Fascistas atrás do carro da polícia!": "Fascists behind the police car!", "Fascistas fogem!": "Fascists run away!", "Agrediram um manifestante": "They beat up a protester", "Há um ferido: cura-o no posto médico": "Someone is hurt: treat them at the first-aid post", "Há um ferido: monta os primeiros socorros": "Someone is hurt: set up first aid", "Jovens delinquentes!": "Young delinquents!", "Entrevista": "Interview", "Correu bem: +apoio": "It went well: +support", "Cortaram o que disseste: -apoio": "They cut what you said: -support", "Imprensa": "Press", "Subiu à estátua para a grafitar!": "Climbed the statue to tag it!", "Toca nele várias vezes para o convencer a descer": "Tap him several times to talk him down", "Desceu da estátua": "Came down from the statue", "Estátua grafitada: o apoio desce": "Statue tagged: support drops", "Usa as setas ou WASD para andar (ou clica na praça)": "Use the arrows or WASD to walk (or click the square)", "Toca na praça para andar": "Tap the square to walk", "Arrasta à esquerda para andar": "Drag on the left to walk", "Quem tem ! quer acampar: passa ao lado para o acolheres": "Whoever has a ! wants to camp: walk past to welcome them", "Vem aí gente: espera por quem tem !": "People are coming: wait for whoever has a !", "Apanha a caixa de donativos": "Pick up the donation box", "Monta a cozinha: carrega em Montar (C)": "Build the kitchen: press Build (C)", "Monta a cozinha: carrega em Montar": "Build the kitchen: press Build", "Às 6h vem a polícia: Cordão (Z) + Direto (X)": "Police come at 6:00: Chain (Z) + Live (X)", "Às 6h vem a polícia: Cordão + Direto": "Police come at 6:00: Chain + Live", "Cura no posto médico": "Treat at the first-aid post", "Precisas de primeiros socorros": "You need first aid", "Levado para o hospital": "Taken to hospital", "Estenderam as faixas no chão": "Banners laid out on the ground", "Cerco! Ninguém entra nem sai": "Kettle! Nobody in, nobody out", "Ficaste fora do cerco": "You were left outside the kettle", "A polícia de choque retira-se": "The riot police pull back", "Ficaste sem ver nada": "You can’t see a thing", "Granada atordoante!": "Stun grenade!", "Taser!": "Taser!", "Vergonha!": "Shame!", "Deixem-nos passar!": "Let us through!", "A rua é nossa!": "The street is ours!", "Estamos a filmar!": "We’re filming!", "Não estão sozinhos!": "You’re not alone!", "Não consegues entrar": "You can’t get in", "Contra a rusga!": "Against the raid!", "Cabeça no lixo: a pressão sobe mais devagar": "Head in the bin: pressure rises slower", "Com o Coro da Achada!": "With the Coro da Achada!", "Muita gente: canta Grândola no centro": "Lots of people: sing Grândola in the middle", "Capacetes!": "Helmets!", "Capacetes: próximos 2 cordões": "Helmets: next 2 chains", "Limpeza: sem desculpas": "Cleaning: no excuses", "Praça limpa: rusga mais curta": "Clean square: shorter raid", "Viva o Algarve a resistir!": "Long live the Algarve resisting!", "O bairro está com a acampada!": "The neighbourhood stands with the camp!", "Eu quero um teto, eu quero um chão!": "I want a roof, I want a floor!", "A tuna académica canta pela habitação!": "The student band sings for housing!", "O DJ p.45 está na praça": "DJ p.45 is in the square", "Conga!": "Conga!", "Pista de dança!": "Dance floor!", "Coro da Achada: ensaio aberto": "Coro da Achada: open rehearsal", "PSP: limite legal 00:30": "Police: legal limit 00:30", "Vem aí um tandem com a cabeça de burro": "A tandem is coming with the donkey head", "Ajuda a içar o burro (Espaço): a pressão sobe mais depressa": "Help raise the donkey (Space): pressure rises faster", "Ajuda a içar o burro: a pressão sobe mais depressa": "Help raise the donkey: pressure rises faster", "Voltaram os que foram para casa": "Those who went home are back", "Bicicletas travam a carrinha": "Bikes block the van", "Polícia de choque: estão a cercar a praça!": "Riot police: they’re kettling the square!", "Polícia de choque!": "Riot police!", "Patrulha!": "Patrol!", "Carga policial!": "Police charge!", "Primeira rusga: poucos agentes": "First raid: few officers", "Rusga de madrugada!": "Dawn raid!", "A polícia de choque forma uma linha…": "The riot police form a line…", "Carga!": "Charge!", "Foi para casa": "Went home", "Faleceu Art.º 65": "RIP Article 65 (right to housing)", "A polícia de choque levou tudo. Recomeçamos quase do zero": "The riot police took everything. We start again almost from scratch", "O governo cede! A praça é nossa": "The government gives in! The square is ours", "A polícia recua!": "The police back off!", "Agressão fascista!": "Fascist attack!", "Ficaste no chão": "You’re on the ground", "Sirenes antes do amanhecer": "Sirens before dawn", "Burro +25%": "Donkey +25%", "Burro +10%": "Donkey +10%", "Cordão": "Chain", "Proteger": "Protect", "Direto": "Live", "● Direto": "● Live", "Transmitir": "Stream", "No ar": "On air", "Montar": "Build", "Construir": "Set up", "Assembleia": "Assembly", "Votar": "Vote", "Espaço": "Space", "Setas ou WASD para andar": "Arrows or WASD to walk", "Toca para andar": "Tap to walk", "Vem comigo!": "Come with me!", "Vão salvar o camarada!": "They’re going to save the comrade!", "Polícia avança sobre a acampada": "Police move in on the camp", "Negociações em curso": "Negotiations under way", "Manifestantes desafiam a polícia": "Protesters defy the police", "DJ p.45": "DJ p.45", "Concerto": "Concert", "Capacetes azuis": "Blue helmets", "Daqui não saio, daqui ninguém me tira": "I’m not leaving, nobody is moving me", "Montenegro, presta atenção, a tua casa vai virar ocupação": "Montenegro, pay attention, your house will become an occupation", "Carlos Moedas, presta atenção, a tua casa vai virar ocupação": "Carlos Moedas, pay attention, your house will become an occupation", "Pedro Duarte, presta atenção, a tua casa vai virar ocupação": "Pedro Duarte, pay attention, your house will become an occupation", "A barricada, greve geral, ação direta que derruba o capital": "To the barricades, general strike, direct action that brings down capital", "Não dá mais? Então monta a tua tenda!": "Can’t take it any more? Then pitch your tent!", "Casa é para morar, não é para especular": "Homes are for living in, not for speculation", "Rendas de luxo, ordenados de lixo": "Luxury rents, rubbish wages", "Gente despejada e tanta casa vazia!": "People evicted and so many empty homes!", "Baixem as rendas, subam os salários": "Lower the rents, raise the wages", "Paz, pão, saúde, habitação": "Peace, bread, health, housing", "Na rua nos querem, na rua nos verão": "They want us on the street, on the street they’ll see us", "Não temos casa, ficam as tendas!": "We have no homes, so the tents stay!", "Manifestação pela habitação": "March for housing", "Assembleia popular": "People’s assembly", "Concentração pela habitação": "Rally for housing", "Mais casas, menos bastão!": "More homes, fewer batons!", "Depois de mais uma carga policial esta madrugada, a acampada sobrevive e resiste. Volta à praça!": "After another police charge this morning, the camp survives and resists. Back to the square!", "Rossio · 19h: assembleia popular": "Rossio · 7 pm: people’s assembly", "Todos ao Parlamento!": "Everyone to Parliament!", "Casa para viver": "Homes to live in", "Lisboa · Porto · Aveiro · Viana · Ponta Delgada · e dezenas de cidades": "Lisboa · Porto · Aveiro · Viana · Ponta Delgada · and dozens of towns"};
+// messages built with numbers or names: [pattern, English]
+const EN_RX = [
+  [/^([\d\s.,  ]+) detidas?$/, '$1 arrested'], [/^([\d\s.,  ]+) libertadas$/, '$1 released'],
+  [/^([\d\s.,  ]+) juntaram-se à acampada$/, '$1 joined the camp'], [/^([\d\s.,  ]+) juntaram-se$/, '$1 joined'],
+  [/^Somos poucos: vieram (\d+) de (\d+)$/, 'Too few of us: $1 of $2 came'], [/^(\d+) de (\d+)( · Enter)?$/, '$1 of $2$3'],
+  [/^(\d+)€ quarto$/, '€$1 room'], [/^Curar feridos \((\d+)\)$/, 'Treat the wounded ($1)'],
+  [/^Levaram tudo: ([\d\s.,  ]+) detidas\. O país inteiro viu: reconstruir até (\d+) tendas$/, 'They took everything: $1 arrested. The whole country saw it: rebuild to $2 tents'],
+  [/^Levaram tudo: ([\d\s.,  ]+) detidas\. Quem ficou de fora volta a montar$/, 'They took everything: $1 arrested. Those left outside are setting up again'],
+  [/^Reconstruir: (\d+) de (\d+) tendas · moral acima de (\d+)$/, 'Rebuild: $1 of $2 tents · morale above $3'],
+  [/^Pressão no máximo: sobe a moral acima de (\d+) para ganhar$/, 'Pressure at the top: get morale above $1 to win'],
+  [/^Concerto a decorrer$/, 'Concert on'], [/^(.+) a tocar$/, '$1 playing'], [/^Concerto (.+)$/, 'Concert: $1']
+];
+const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and a crew sweeps the square so the police have no excuse.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia. No Porto, a acampada monta-se entre o Rivoli e o Palácio Atlântico.": "Rossio became a small village. In Porto, the camp goes up between the Rivoli and the Palácio Atlântico.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.": "Coimbra held out. Students from the University of Minho pack their bags for Braga.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda. No sábado, às 17:00, começam a chegar tendas ao Rossio.": "Braga held out without a single tent. On Saturday at 17:00, tents start arriving at Rossio.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir. Em Coimbra, os estudantes descem da universidade com as tendas.": "Long live the Algarve resisting. In Coimbra, students come down from the university with their tents."};
+function T(s) { // English for a message, when the game is in English
+  if (LANG !== 'en' || typeof s !== 'string') return s;
+  if (EN[s] != null) return EN[s];
+  if (CITY_EN[s] != null) return CITY_EN[s];
+  let m;
+  if ((m = s.match(/^(.*) \(a polícia vai ouvir\)$/))) return T(m[1]) + ' (the police will hear)';
+  if ((m = s.match(/^(.*?) (\d+s)$/)) && EN[m[1]] != null) return EN[m[1]] + ' ' + m[2]; // a cooldown
+  if ((m = s.match(/^(.*) ([+-]\d+)$/)) && EN[m[1]] != null) return EN[m[1]] + ' ' + m[2]; // "Sopa +2"
+  if ((m = s.match(/^(.*)!$/)) && EN[m[1]] != null) return EN[m[1]] + '!';
+  for (const [rx, en] of EN_RX) if (rx.test(s)) return s.replace(rx, en);
+  return s;
+}
 let ELEV_ON = true; // off while the background is drawn (the terrace is painted there on its own)
 // Porto: the west side is a raised road (along the Palácio Atlântico) behind a wall, w tiles wide, h pixels high.
 // It comes from between the buildings to the north (from y0) and ramps down to the south street; stairs go down
@@ -585,7 +616,7 @@ const VPAL = { W: '#f3eee2', s: '#d2cab6' };
 const CITIES = [
   { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', violent: true, peopleK: .8, bikeK: .8, police: 1.3, cops: 5, patrols: true, helmets: true, cleaners: true,
     // artists who played at the Porto acampada (from @acampadaporto's daily programmes, October 2026)
-    artists: ['Manel Cruz', 'Emmy Curl', 'Clã', 'Capicua', 'Egoísticos Implacáveis', 'Unsafe Space Garden', 'Sapatrux', 'Roídos na Acampada'], tag: 'Capacetes azuis e a equipa de limpeza',
+    artists: ['Manel Cruz', 'Emmy Curl', 'Clã', 'Capicua', 'Egoísticos Implacáveis', 'Unsafe Space Garden', 'Sapatrux', 'Roídos na Acampada'], tag: 'Capacetes azuis e a equipa de limpeza', tagEn: 'Blue helmets and the cleaning crew',
     intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.',
     clear: 'O Porto aguentou as noites, debaixo da polícia mais violenta.',
     // as in the photos: the Palácio Atlântico (Millennium) on the west side, a raised road in front of it behind a granite
@@ -604,7 +635,7 @@ const CITIES = [
     C: { h: 96, style: 'rialto', roof: '#b0a588' } },
   { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true,
     // artists who played, or were announced, at the Rossio acampada (October 2026)
-    artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro',
+    artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro', tagEn: 'DJ p.45 and the donkey head',
     intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.',
     clear: 'O Rossio tornou-se uma pequena aldeia. No Porto, a acampada monta-se entre o Rivoli e o Palácio Atlântico.',
     // the Rossio as it is: a long square (8 x 16 tiles) with rounded ends and wave pavement, streets all round,
@@ -621,7 +652,7 @@ const CITIES = [
       { a: 18.4, b: 23, h: 46, style: 'pombal', col: '#e3b54b' }],
     R: [{ a: 0, b: 8, h: 46, style: 'theatre', roof: '#c4674a' }, { a: 10.4, b: 15, h: 46, style: 'pombal', col: '#f2efe6' }],
     C: { h: 36, style: 'pombal', col: '#d97a4a' } },
-  { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'coimbra', police: 1.0, patrols: true, students: true, drums: 'bombos', rents: true, tag: 'Os bombos e as rendas dos estudantes',
+  { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'coimbra', police: 1.0, patrols: true, students: true, drums: 'bombos', rents: true, tag: 'Os bombos e as rendas dos estudantes', tagEn: 'The drums and the students’ rents',
     intro: 'Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.',
     clear: 'Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.',
     // from the photos: the Igreja de Santa Cruz on the west side (Manueline front between two pinnacled turrets, low
@@ -648,7 +679,7 @@ const CITIES = [
     R: [{ a: 0, b: 3.6, h: 50, style: 'pombal', col: '#f1eee6', balc: true }, { a: 4.8, b: 8.2, h: 50, style: 'pombal', col: '#8eaad4', balc: true },
       { a: 8.2, b: 10, h: 54, style: 'pombal', col: '#efe1c2', balc: true }, { a: 10, b: 12, h: 58, style: 'pombal', col: '#e4875c', balc: true }],
     C: { h: 46, style: 'pombal', col: '#e9e2d0' } },
-  { name: 'Braga', bikeK: .6, place: 'Praça da República', ground: 'braga', police: 1.0, patrols: true, students: true, noTents: true, drums: 'tuna', tag: 'Sem tendas: assembleia no chafariz',
+  { name: 'Braga', bikeK: .6, place: 'Praça da República', ground: 'braga', police: 1.0, patrols: true, students: true, noTents: true, drums: 'tuna', tag: 'Sem tendas: assembleia no chafariz', tagEn: 'No tents: an assembly at the fountain',
     intro: 'Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.',
     clear: 'Braga aguentou sem uma única tenda. No sábado, às 17:00, começam a chegar tendas ao Rossio.',
     // from the photos: the Arcada with the Igreja da Lapa at the back (north), café umbrellas in front of it, the round
@@ -665,7 +696,7 @@ const CITIES = [
     L: [{ a: 0, b: 3.4, h: 50, style: 'pombal', col: '#ece2cd' }, { a: 3.4, b: 6.8, h: 58, style: 'atlantico', roof: '#9aa0a8' }, { a: 6.8, b: 10.4, h: 52, style: 'pombal', col: '#f2efe6' }, { a: 10.4, b: 14, h: 48, style: 'pombal', col: '#e6d6b8' }],
     R: [{ a: 0, b: 2.4, h: 52, style: 'pombal', col: '#f2ece0' }, { a: 2.4, b: 10, h: 40, style: 'arcada', roof: '#c4674a', col: '#e9dfc8', arc: '#d4c9b1', top: '#f6f1e6', lapa: true, lapaCol: '#e2d8c2' }],
     C: { h: 52, style: 'pombal', col: '#e3e5e8' } },
-  { name: 'Faro', bikeK: .6, place: 'Praça da Liberdade', ground: 'faro', police: 1.0, patrols: true, slowStart: true, drums: 'marcha', tag: 'Um arranque lento, depois o Algarve resiste',
+  { name: 'Faro', bikeK: .6, place: 'Praça da Liberdade', ground: 'faro', police: 1.0, patrols: true, slowStart: true, drums: 'marcha', tag: 'Um arranque lento, depois o Algarve resiste', tagEn: 'A slow start, then the Algarve resists',
     intro: 'Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.',
     clear: 'Viva o Algarve a resistir. Em Coimbra, os estudantes descem da universidade com as tendas.',
     // from the photos: light calçada with dark bands in big squares; to the south-west a panel framed in dark red with
@@ -1322,7 +1353,7 @@ function newLevel() {
   bg = null; fit(); if (!bg) bg = makeBG(city); // the picture's width depends on the square
   for (let i = 0; i < 3; i++) { const t = addTent(); t.occ = 2; t.pop = 0; }
   $('city').textContent = city.name + ', ' + city.place;
-  $('sT').previousElementSibling.textContent = city.noTents ? 'Grupos' : 'Tendas';
+  $('sT').previousElementSibling.textContent = T(city.noTents ? 'Grupos' : 'Tendas');
 }
 const idx = (gx, gy) => Math.floor(gy) * NX + Math.floor(gx);
 function blockedAt(gx, gy) {
@@ -1342,9 +1373,10 @@ const people = () => S.tents.reduce((s, t) => s + t.occ, 0);
 // each person you see stands for a crowd: the multiplier grows with public support
 const crowdMult = () => 6 + Math.floor(S.support / 10) * 2;
 const crowd = () => people() * crowdMult();
-const fmt = n => n.toLocaleString('pt-PT');
+const fmt = n => n.toLocaleString(LANG === 'en' ? 'en-GB' : 'pt-PT');
 const station = k => S.stations.find(s => s.k === k);
 function float(gx, gy, text, color, z = 18) {
+  text = T(text);
   const p = iso(gx, gy, z), plus = /^[+-]\d/.test(text);
   // the same "+24" close by: just refresh it; other messages close by: stack above instead of on top
   for (const f of S.floats) if (f.t > .5 && Math.abs(f.x - p.x) < 26 && Math.abs(f.y - p.y) < 10) { if (plus && f.text === text) { f.t = 1.1; return; } p.y = Math.min(p.y, f.y) - 9; }
@@ -1352,6 +1384,7 @@ function float(gx, gy, text, color, z = 18) {
 }
 // announcements wait their turn and show one at a time at the top of the square (see drawBanner)
 function floatXY(x, y, text, color, target) {
+  text = T(text);
   const q = (S.banners ||= []);
   if ((S.bannerNow && S.bannerNow.text === text) || q.some(b => b.text === text)) return;
   // messages that point at something are urgent: they go to the front of the queue (in order)
@@ -1720,13 +1753,13 @@ function drawGraf() {
 // the tutorial (first square only): 1 walk, 2 welcome someone, 3 pick up a donation, 4 build the kitchen, 5 the first raid
 function tutEnd() { S.tut = null; try { localStorage.setItem('acampada-tut', '1'); } catch (e) {} tutShow(null); }
 function tutShow(text, pulse) {
-  const el = $('tut'); el.hidden = !text; if (text && el._t !== text) { el.querySelector('.tx').innerHTML = text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]).replace(/(^|\s)!(?=\s|$|:)/g, '$1<span class="bang" aria-label="ponto de exclamação">!</span>'); el._t = text; } // a lone ! is the sign above the people who want to camp
+  text = T(text); const el = $('tut'); el.hidden = !text; if (text && el._t !== text) { el.querySelector('.tx').innerHTML = text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]).replace(/(^|\s)!(?=\s|$|:)/g, '$1<span class="bang" aria-label="ponto de exclamação">!</span>'); el._t = text; } // a lone ! is the sign above the people who want to camp
   for (const id of ['btnBuild', 'btnChain', 'btnLive']) $(id).classList.toggle('tutpulse', !!pulse && pulse.includes(id));
 }
 function updTut(dt) {
   const T = S.tut; if (!T) return; T.t += dt; const p = S.player, pc = pcMQ.matches;
   T.target = null;
-  if (T.step === 1) { tutShow(pc ? 'Usa as setas ou WASD para andar (ou clica na praça)' : 'Toca na praça para andar'); T.target = p;
+  if (T.step === 1) { tutShow(pc ? 'Usa as setas ou WASD para andar (ou clica na praça)' : joyOn() ? 'Arrasta à esquerda para andar' : 'Toca na praça para andar'); T.target = p;
     if (Math.hypot(p.gx - T.x0, p.gy - T.y0) > 1.2 || T.t > 12) { T.step = 2; T.t = 0; T.p0 = people(); } }
   else if (T.step === 2) { const a = S.arrivals.filter(a => a.state !== 'leave').sort((u, v) => gd(u, p) - gd(v, p))[0];
     tutShow(a ? 'Quem tem ! quer acampar: passa ao lado para o acolheres' : 'Vem aí gente: espera por quem tem !'); T.target = a || null;
@@ -1788,8 +1821,8 @@ function drawFloorBanners() {
   const rect = (x0, y0, x1, y1, c) => { ctx.fillStyle = c; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); };
   // the yellow one: NÃO DÁ MAIS / PRA VIVER ASSIM, and a drawing of a crowd on the right
   rect(4.75, 6.55, 8.9, 8.0, 'rgba(30,10,70,.25)'); rect(4.7, 6.5, 8.85, 7.95, '#f3d23a');
-  ctx.textBaseline = 'middle'; ctx.fillStyle = '#d12a2a'; ctx.font = '800 .52px Jost, sans-serif'; ctx.fillText('NÃO DÁ MAIS', 4.85, 6.92);
-  ctx.fillStyle = '#16121a'; ctx.font = '800 .4px Jost, sans-serif'; ctx.fillText('PRA VIVER ASSIM', 4.85, 7.5);
+  ctx.textBaseline = 'middle'; ctx.fillStyle = '#d12a2a'; ctx.font = '800 .52px Jost, sans-serif'; ctx.fillText(L('NÃO DÁ MAIS', 'ENOUGH'), 4.85, 6.92);
+  ctx.fillStyle = '#16121a'; ctx.font = '800 .4px Jost, sans-serif'; ctx.fillText(L('PRA VIVER ASSIM', 'WE CAN’T LIVE LIKE THIS'), 4.85, 7.5);
   rect(7.55, 6.65, 8.7, 7.8, '#e8e6e0'); for (let i = 0; i < 24; i++) { const x = 7.62 + (i % 6) * .18, y = 6.75 + Math.floor(i / 6) * .26; rect(x, y, x + .11, y + .15, '#5a5a62'); }
   // the white one, written by hand
   rect(4.75, 5.35, 7.6, 6.3, 'rgba(30,10,70,.25)'); rect(4.7, 5.3, 7.55, 6.25, '#f1efe8');
@@ -1992,7 +2025,7 @@ function updCrowd(K, dt) {
     if (moveEnt(m, m.tx, m.ty, 2.6, dt, true)) { m.moving = false; face(m, -m.n[0], -m.n[1]); }
   }
   if (K.crowd) K.crowd = K.crowd.filter(m => !m.gone);
-  if (K.phase === 'wait' || K.phase === 'charge') { K.shoutT -= dt; if (K.shoutT <= 0 && K.crowd.length) { K.shoutT = rnd(1.6, 3); const m = pick(K.crowd); if (S.floats.filter(f => CROWD_SHOUTS.includes(f.text)).length < 2) float(m.gx, m.gy, pick(CROWD_SHOUTS), '#ffffff', 24); } }
+  if (K.phase === 'wait' || K.phase === 'charge') { K.shoutT -= dt; if (K.shoutT <= 0 && K.crowd.length) { K.shoutT = rnd(1.6, 3); const m = pick(K.crowd); if (S.floats.filter(f => CROWD_SHOUTS.some(x => T(x) === f.text)).length < 2) float(m.gx, m.gy, pick(CROWD_SHOUTS), '#ffffff', 24); } }
 }
 function drawNeg(m) {
   const q = iso(m.gx, m.gy), x = Math.round(q.x), y = Math.round(q.y), f = m.flip ? -1 : 1, blink = Math.floor(S.t * 3 + m.step) % 2;
@@ -2019,11 +2052,12 @@ function tvSync() {
   const lis = S.city.name === 'Lisboa';
   if (el.hidden) {
     el.hidden = false;
-    el.querySelector('.tk span').textContent = `Última hora: polícia avança ${lis ? 'no Porto' : 'em Lisboa'}… · Manifestações em várias cidades · Acompanhe em direto`;
-    el.querySelector('.sub').textContent = `Manifestações ${lis ? 'em Lisboa' : 'no Porto'} · em direto`;
+    el.querySelector('.tk span').textContent = L(`Última hora: polícia avança ${lis ? 'no Porto' : 'em Lisboa'}… · Manifestações em várias cidades · Acompanhe em direto`, `Breaking: police move in ${lis ? 'in Porto' : 'in Lisbon'}… · Protests in several cities · Follow it live`);
+    el.querySelector('.al').textContent = L('Alerta', 'Alert'); el.querySelector('.live').textContent = L('● Em direto', '● Live');
+    el.querySelector('.sub').textContent = L(`Manifestações ${lis ? 'em Lisboa' : 'no Porto'} · em direto`, `Protests ${lis ? 'in Lisbon' : 'in Porto'} · live`);
   }
-  const heads = [`Polícia cerca a acampada ${TV_PLACE[S.city.name] || ''}`, 'Negociações em curso', 'Manifestantes desafiam a polícia']; // in turn, 4 s each, from the moment the ring closes
-  const h = K.phase === 'charge' ? 'Polícia avança sobre a acampada' : heads[Math.floor((S.t - (K.tvAt || 0)) / 4) % heads.length], hd = el.querySelector('.hd');
+  const heads = [L(`Polícia cerca a acampada ${TV_PLACE[S.city.name] || ''}`, `Police kettle the camp ${S.city.name === 'Lisboa' ? 'at Rossio' : 'at Praça D. João I'}`), T('Negociações em curso'), T('Manifestantes desafiam a polícia')]; // in turn, 4 s each, from the moment the ring closes
+  const h = K.phase === 'charge' ? T('Polícia avança sobre a acampada') : heads[Math.floor((S.t - (K.tvAt || 0)) / 4) % heads.length], hd = el.querySelector('.hd');
   if (hd.textContent !== h) hd.textContent = h;
   if (CAM.on || !K.nc) return; // phones: captions only
   const ng = (K.neg || []).find(m => m.kind === 'neg') || { gx: K.nc[0], gy: K.nc[1] }; // the close-up: the negotiator, being interviewed
@@ -2506,7 +2540,7 @@ function drawChorister(m, c) {
   guy(x, y - bob, { ...m.look, moving: m.moving, step: m.step, flip: m.flip, back: m.back });
   if (!m.back) { R(x - 2, y - 8 - bob, 5, 3, '#b02a22'); R(x - 2, y - 8 - bob, 5, 1, '#d8473d'); if (singing) R(x, y - 11 - bob, 1, 1, '#5a1414'); }
 }
-function drawBubble(x, y, lines, cls) { MSG.bubs.push({ x, y: y - 3, lines: lines.map(l => l.toUpperCase()), cls }); }
+function drawBubble(x, y, lines, cls) { MSG.bubs.push({ x, y: y - 3, lines: lines.map(l => T(l).toUpperCase()), cls }); }
 function drawChoirBubble() {
   const c = S.choir; if (!c || c.state !== 'sing') return;
   const q = iso(c.cx, c.cy, 26);
@@ -2522,9 +2556,12 @@ function update(dt) {
   S.t += dt; S.clock += dt / HOUR;
   const hr = S.clock % 24; S.dark = darkness(hr);
   const p = S.player;
-  const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0), jm = Math.hypot(JOY.x, JOY.y);
   if (p.down > 0 || p.talk > 0) { if (p.down > 0) p.down -= dt; else p.talk -= dt; p.moving = false; p.path = null; p.tx = p.gx; p.ty = p.gy; }
-  else if (kx || ky) { // screen-relative keys to world
+  else if (jm > .2) { // the walking ball: the screen direction turned into the square's (tiles are twice as wide as tall)
+    let wx = JOY.x * .5 + JOY.y, wy = JOY.y - JOY.x * .5; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
+    slideMove(p, p.gx + wx, p.gy + wy, 3 * Math.min(1, jm), dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
+  } else if (kx || ky) { // screen-relative keys to world
     let wx = (kx + ky) / 2, wy = (ky - kx) / 2; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3, dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
   } else if (!moveEnt(p, p.tx, p.ty, 3, dt)) {} else p.moving = false;
@@ -3219,7 +3256,7 @@ function syncMsgs() {
   });
   MSG.floats.length = 0; MSG.bubs.length = 0;
 }
-function drawFloat(f) { MSG.floats.push(f); }
+function drawFloat(f) { MSG.floats.push(LANG === 'en' ? { ...f, text: T(f.text) } : f); }
 function draw() {
   const d = S.dark;
   const sky = ctx.createLinearGradient(0, SKYDY, 0, 140 + SKYDY);
@@ -3320,7 +3357,7 @@ let ctxCache = null;
 function hud() {
   $('sT').textContent = S.tents.length; $('sP').textContent = fmt(crowd()); $('sSup').textContent = S.supplies; $('sD').textContent = S.detained;
   const h = Math.floor(S.clock % 24), m = Math.floor((S.clock % 1) * 60 / 10) * 10;
-  $('clock').textContent = `DIA ${1 + Math.floor((S.clock - 6) / 24)} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  $('clock').textContent = `${L('DIA', 'DAY')} ${1 + Math.floor((S.clock - 6) / 24)} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   $('bM').style.width = S.morale + '%'; $('bS').style.width = S.support + '%'; $('bP').style.width = S.pressure + '%';
   { const d = S.city.donkey && (S.donkey === 'giant' ? 'Burro +25%' : S.donkey === 'small' ? 'Burro +10%' : ''), el = $('dTag'); el.hidden = !d; if (d && el.textContent !== d) el.textContent = d; } // Lisboa: the donkey's bonus on the pressure
   const play = mode === 'play';
@@ -3329,16 +3366,16 @@ function hud() {
   document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', (pr / 100 * .75).toFixed(2)));
   $('pmTear').style.display = pr >= 85 ? '' : 'none';
   $('pm').style.transform = ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
-  $('pm').setAttribute('aria-label', 'Humor do governo: ' + ['contente', 'confuso', 'derrotado'][ps]);
+  $('pm').setAttribute('aria-label', L('Humor do governo: ', 'Government’s mood: ') + (LANG === 'en' ? ['pleased', 'confused', 'defeated'] : ['contente', 'confuso', 'derrotado'])[ps]);
   // computer (mouse): each button shows its key, e.g. Cordão (C)
-  const kb = k => pcMQ.matches ? `<span class="key">(${k})</span>` : '', lab = (pt, en, k) => `${pt}${kb(k)}<small>${en}</small>`;
+  const kb = k => pcMQ.matches ? `<span class="key">(${k})</span>` : '', lab = (pt, sub, k) => `${T(pt)}${kb(k)}<small>${T(sub)}</small>`;
   const bc = $('btnChain'); bc.innerHTML = lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger', 'Z'); bc.disabled = !play || S.chainCd > 0;
   const bl = $('btnLive'); bl.innerHTML = lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir', 'X'); bl.disabled = !play || S.liveCd > 0;
   { const h = lab('Montar', 'Construir', 'C'); if ($('btnBuild').innerHTML !== h) $('btnBuild').innerHTML = h; }
   $('btnBuild').disabled = !play || !Object.entries(STATIONS).some(([k, d]) => !stationOf(k) && S.supplies >= d.cost);
   const bv = $('btnVote'); bv.innerHTML = lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar', 'V'); bv.disabled = !play || S.asmCd > 0;
   ctxCache = contextAction(); const cb = $('ctxBtn');
-  if (ctxCache) { cb.hidden = false; cb.innerHTML = ctxCache.label + kb('Espaço'); cb.disabled = !ctxCache.ok; } else cb.hidden = true;
+  if (ctxCache) { cb.hidden = false; cb.innerHTML = T(ctxCache.label) + kb(T('Espaço')); cb.disabled = !ctxCache.ok; } else cb.hidden = true;
 }
 
 /* ================= screens ================= */
@@ -3353,44 +3390,46 @@ function show(html, variant = '') { ov.className = variant; ov.innerHTML = `<div
 const DIAS_LONG = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 function titleRally() {
   const r = nextRally(null); if (!r) return '';
-  const day = r.when === 'HOJE' ? 'Hoje' : r.when === 'AMANHÃ' ? 'Amanhã' : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
-  return `<p class="help"><b>${r.city ? r.city + ': ' : ''}${r.title}</b><br>${r.note ? r.note + '<br>' : ''}${day}, ${r.at} · ${r.where}</p>`;
+  const day = r.when === 'HOJE' ? L('Hoje', 'Today') : r.when === 'AMANHÃ' ? L('Amanhã', 'Tomorrow') : LANG === 'en' ? `${DAYS_EN[r.d.getUTCDay()]} ${r.d.getUTCDate()} ${MONTHS_EN[r.d.getUTCMonth()]}` : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
+  return `<p class="help"><b>${r.city ? r.city + ': ' : ''}${T(r.title)}</b><br>${r.note ? T(r.note) + '<br>' : ''}${day}, ${r.at} · ${T(r.where)}</p>`;
 }
+const DAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 // installing the game (phones, only while it runs in the browser): Android offers its own button, iPhone needs Share
 const installed = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
 let installEvt = null;
 addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (mode === 'title') titleScreen(); });
 function installHint() {
   if (pcMQ.matches || installed()) return '';
-  if (installEvt) return '<button class="btnp narrow" data-a="install">Instalar o jogo</button>';
+  if (installEvt) return `<button class="btnp narrow" data-a="install">${L('Instalar o jogo', 'Install the game')}</button>`;
   const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  return `<p class="install">${ios ? 'Instala o jogo: toca em <b>Partilhar</b> e depois em <b>Adicionar ao ecrã principal</b>.' : 'Instala o jogo: no menu do navegador, <b>Instalar app</b> ou <b>Adicionar ao ecrã principal</b>.'} Abre em ecrã inteiro e funciona sem internet.</p>`;
+  return `<p class="install">${ios ? L('Instala o jogo: toca em <b>Partilhar</b> e depois em <b>Adicionar ao ecrã principal</b>.', 'Install the game: tap <b>Share</b>, then <b>Add to Home Screen</b>.') : L('Instala o jogo: no menu do navegador, <b>Instalar app</b> ou <b>Adicionar ao ecrã principal</b>.', 'Install the game: in the browser menu, <b>Install app</b> or <b>Add to Home screen</b>.')} ${L('Abre em ecrã inteiro e funciona sem internet.', 'It opens full screen and works offline.')}</p>`;
 }
 function titleScreen() {
   mode = 'title';
-  show(`<h2 class="p-red rough">PROTESTO</h2><p class="p-big rough">A acampada resiste</p><p class="p-mid rough">Junta-te a nós</p>${TENT}
+  show(`<div class="langsw" role="group" aria-label="Idioma / Language"><button data-a="lang" data-l="pt" class="${LANG === 'pt' ? 'on' : ''}">PT</button><button data-a="lang" data-l="en" class="${LANG === 'en' ? 'on' : ''}">EN</button></div>
+  <h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('A acampada resiste', 'The camp resists')}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
   <p class="p-info rough">Faro · Coimbra · Braga<br>Lisboa · Porto</p>
-  <p class="help">Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.</p>
+  <p class="help">${L('Mantém a acampada de pé e segura a praça quando a polícia chegar de madrugada.', 'Keep the camp standing and hold the square when the police come at dawn.')}</p>
   ${titleRally()}
   ${installHint()}
-  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">Junta-te →</button><button class="btnp narrow red" data-a="info">Informação</button></div><button class="btnp narrow" data-a="rules" style="margin-top:8px">Como jogar?</button>${FOOT}`);
+  <div style="display:flex;justify-content:center;gap:8px"><button class="btnp narrow" data-a="chapters">${L('Junta-te →', 'Join →')}</button><button class="btnp narrow red" data-a="info">${L('Informação', 'Information')}</button></div><button class="btnp narrow" data-a="rules" style="margin-top:8px">${L('Como jogar?', 'How to play?')}</button>${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
-  const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">CAP. ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${c.tag.replace('&', '&amp;')}</span></span>${cleared.has(i) ? '<span class="ok">Resistiu</span>' : '<span></span>'}</button>`).join('');
-  show(`<h2 class="p-red rough">ESCOLHE</h2><p class="p-big rough">a tua praça</p><p class="help">Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.</p><div class="chaps">${rows}</div>
-  <button class="btnp red" data-a="title">← Voltar</button>${cleared.size ? '<button class="btnp" data-a="reset">Recomeçar tudo</button>' : ''}`);
+  const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span></span>${cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
+  show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
+  <button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}`);
 }
 function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
-  show(`<h2 class="p-red rough">PROTESTO</h2><p class="p-big rough">Acampada ${c.name}</p><p class="p-mid rough">Junta-te a nós</p>${TENT}
-  <p class="p-info rough">Dia 1<br>17 horas<br>${c.place}</p><p class="help">${c.intro}</p><button class="btnp" data-a="go">Lá estaremos!</button>${FOOT}`);
+  show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
+  <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p><button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button>${FOOT}`);
 }
 function buildMenu() {
   if (mode !== 'play') return; mode = 'menu';
   const list = Object.entries(STATIONS).map(([k, d]) => { const has = !!stationOf(k), dis = has || S.supplies < d.cost;
-    return `<button class="need" data-build="${k}" ${dis ? 'disabled' : ''}>${d.name} <span class="c">${has ? '✓' : '· ' + d.cost}</span><small>${d.desc}</small></button>`; }).join('');
-  show(`<h2>Coisas que<br>precisamos:</h2>${list}<p class="help" style="color:#b6c7bc">Tens ${S.supplies} materiais. Monta-se mesmo ao teu lado.${pcMQ.matches ? '<br>Setas ou W/S para escolher, Espaço para montar, Esc para fechar.' : ''}</p><button class="btnp" data-a="resume">Fechar</button>`, 'needs');
+    return `<button class="need" data-build="${k}" ${dis ? 'disabled' : ''}>${T(d.name)} <span class="c">${has ? '✓' : '· ' + d.cost}</span><small>${T(d.desc)}</small></button>`; }).join('');
+  show(`<h2>${L('Coisas que<br>precisamos:', 'Things<br>we need:')}</h2>${list}<p class="help" style="color:#b6c7bc">${L(`Tens ${S.supplies} materiais. Monta-se mesmo ao teu lado.`, `You have ${S.supplies} supplies. It goes up right next to you.`)}${pcMQ.matches ? L('<br>Setas ou W/S para escolher, Espaço para montar, Esc para fechar.', '<br>Arrows or W/S to choose, Space to build, Esc to close.') : ''}</p><button class="btnp" data-a="resume">${L('Fechar', 'Close')}</button>`, 'needs');
 }
 function assembly() {
   if (mode !== 'play' || S.asmCd > 0) return;
@@ -3400,46 +3439,46 @@ function assembly() {
   if (!S.asmPool || S.asmPool.some(id => S.perks.has(id))) S.asmPool = PERKS.filter(p => !S.perks.has(p.id)).sort(() => Math.random() - .5).slice(0, 3).map(p => p.id);
   const pool = S.asmPool.map(id => PERKS.find(p => p.id === id));
   if (!pool.length) { mode = 'play'; return; }
-  show(`<h2>Assembleia<br><u>popular 19:00</u></h2><p class="help">Todas as pessoas têm voz. Vota no que a acampada faz a seguir.</p>
-  <div class="slots one">${pool.map(p => `<button class="slot" data-perk="${p.id}"><span class="n">${p.name}</span><span class="d">${p.desc}</span></button>`).join('')}</div><button class="btnp" data-a="resume">Mais tarde</button>`, 'green');
+  show(`<h2>${L('Assembleia<br><u>popular 19:00</u>', 'People’s<br><u>assembly 19:00</u>')}</h2><p class="help">${L('Todas as pessoas têm voz. Vota no que a acampada faz a seguir.', 'Everyone has a say. Vote on what the camp does next.')}</p>
+  <div class="slots one">${pool.map(p => `<button class="slot" data-perk="${p.id}"><span class="n">${T(p.name)}</span><span class="d">${T(p.desc)}</span></button>`).join('')}</div><button class="btnp" data-a="resume">${L('Mais tarde', 'Later')}</button>`, 'green');
 }
 /* ================= informative posters between levels ================= */
 let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
-const CHECK = '<p class="src">Datas e horas podem mudar: confirma nas redes dos movimentos.</p>';
+const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
-  () => ['adred', `<div class="ad"><span class="adtag">Informação</span><p class="k">Manifestação | Casa para Viver</p><div class="rule"></div>
-    <p class="t">Todos ao Parlamento!</p><div class="rule"></div>
-    <div class="cols"><div>Terça<br><b>27 out. 2026</b><br><b>18:30</b></div><div><b>Assembleia<br>da República</b><br>Lisboa</div></div>
-    <p class="src">No dia em que começa a votação do Orçamento do Estado: contra os cortes na habitação e a violência policial nas acampadas.</p>${CHECK}</div>`],
-  () => ['green', `<div class="ad"><span class="adtag">Informação</span><h2 class="center">Próximos<br><u>dias</u></h2><div class="agenda">
-    <div><span class="when">Dom 25 · 17:00</span><span class="what">Lisboa<small>Mais casas, menos bastão! Depois de mais uma carga policial esta madrugada, a acampada sobrevive e resiste. Volta à praça! Rossio, com assembleia popular às 19:00</small></span></div>
-    <div><span class="when">Dom 25 · 19:00</span><span class="what">Porto<small>Concentração pela habitação. Praça D. João I</small></span></div>
-    <div><span class="when">Ter 27 · 18:30</span><span class="what">Lisboa<small>Todos ao Parlamento! Assembleia da República. Casa para Viver</small></span></div>
-    <div><span class="when">Sáb 14 nov · 15:00</span><span class="what">Lisboa e Porto<small>Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês</small></span></div>
-    <div><span class="when">Sáb 14 nov</span><span class="what">Aveiro, Viana, Ponta Delgada…<small>E dezenas de outras cidades</small></span></div>
-  </div>${CHECK}</div>`],
-  () => ['', `<div class="ad center"><span class="adtag">Informação</span><h2 class="p-red rough">14 de novembro</h2><p class="p-big rough">Casa para viver</p>
-    <p class="p-mid rough">Não nos vão roubar<br>o direito a morar</p>
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Manifestação', 'Protest')} | Casa para Viver</p><div class="rule"></div>
+    <p class="t">${L('Todos ao Parlamento!', 'Everyone to Parliament!')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Terça<br><b>27 out. 2026</b>', 'Tuesday<br><b>27 Oct 2026</b>')}<br><b>18:30</b></div><div><b>Assembleia<br>da República</b><br>Lisboa</div></div>
+    <p class="src">${L('No dia em que começa a votação do Orçamento do Estado: contra os cortes na habitação e a violência policial nas acampadas.', 'On the day the vote on the State Budget begins: against housing cuts and police violence at the camps.')}</p>${CHECK()}</div>`],
+  () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
+    <div><span class="when">${L('Dom 25', 'Sun 25')} · 17:00</span><span class="what">Lisboa<small>${L('Mais casas, menos bastão! Depois de mais uma carga policial esta madrugada, a acampada sobrevive e resiste. Volta à praça! Rossio, com assembleia popular às 19:00', 'More homes, fewer batons! After another police charge this morning, the camp survives and resists. Back to the square! Rossio, people’s assembly at 19:00')}</small></span></div>
+    <div><span class="when">${L('Dom 25', 'Sun 25')} · 19:00</span><span class="what">Porto<small>${L('Concentração pela habitação. Praça D. João I', 'Rally for housing. Praça D. João I')}</small></span></div>
+    <div><span class="when">${L('Ter 27', 'Tue 27')} · 18:30</span><span class="what">Lisboa<small>${L('Todos ao Parlamento! Assembleia da República. Casa para Viver', 'Everyone to Parliament! Assembleia da República. Casa para Viver')}</small></span></div>
+    <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês', 'Homes to live in. Alameda D. Afonso Henriques and Praça do Marquês')}</small></span></div>
+    <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')}</span><span class="what">Aveiro, Viana, Ponta Delgada…<small>${L('E dezenas de outras cidades', 'And dozens of other towns')}</small></span></div>
+  </div>${CHECK()}</div>`],
+  () => ['', `<div class="ad center"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="p-red rough">${L('14 de novembro', '14 November')}</h2><p class="p-big rough">${L('Casa para viver', 'Homes to live in')}</p>
+    <p class="p-mid rough">${L('Não nos vão roubar<br>o direito a morar', 'They won’t steal<br>our right to a home')}</p>
     <div class="agenda" style="color:#fff"><div><span class="when">15:00</span><span class="what">Lisboa<small>Alameda D. Afonso Henriques</small></span></div>
     <div><span class="when">15:00</span><span class="what">Porto<small>Praça do Marquês</small></span></div>
-    <div><span class="when">Hora a anunciar</span><span class="what">Aveiro<small>Da Estação à Praça Dr. Joaquim de Melo Freitas</small></span></div>
-    <div><span class="when">Hora a anunciar</span><span class="what">Viana do Castelo<small>Praça da República</small></span></div>
-    <div><span class="when">Hora a anunciar</span><span class="what">Ponta Delgada<small>Portas da Cidade</small></span></div>
-    <div><span class="when">+</span><span class="what">Dezenas de cidades<small>O Porta a Porta espera que se juntem cerca de 30</small></span></div></div>
-    <p class="src">Plataforma Casa Para Viver (@casaparaviver.pt) com Porta a Porta (@portaaportadh).</p>${CHECK}</div>`],
-  () => ['', `<div class="ad center"><span class="adtag">Informação</span><h2 class="p-red rough">Sabias que…</h2>
-    <p class="big rough">+16,5%</p><p class="p-mid rough">Subida dos preços das casas<br>num ano, a maior da UE</p>
-    <p class="help">2.º trimestre de 2026 face ao mesmo período de 2025. Fonte: Eurostat, 1 de outubro de 2026.</p>
-    <p class="big rough" style="margin-top:14px">~2%</p><p class="p-mid rough">das casas são<br>habitação pública</p>
-    <p class="help">Fonte: inquérito à habitação do INE (dados de 2015), um número muito citado pelo governo e pelos movimentos pela habitação.</p></div>`]
+    <div><span class="when">${L('Hora a anunciar', 'Time TBA')}</span><span class="what">Aveiro<small>${L('Da Estação à Praça Dr. Joaquim de Melo Freitas', 'From the station to Praça Dr. Joaquim de Melo Freitas')}</small></span></div>
+    <div><span class="when">${L('Hora a anunciar', 'Time TBA')}</span><span class="what">Viana do Castelo<small>Praça da República</small></span></div>
+    <div><span class="when">${L('Hora a anunciar', 'Time TBA')}</span><span class="what">Ponta Delgada<small>Portas da Cidade</small></span></div>
+    <div><span class="when">+</span><span class="what">${L('Dezenas de cidades', 'Dozens of towns')}<small>${L('O Porta a Porta espera que se juntem cerca de 30', 'Porta a Porta expects around 30 to join')}</small></span></div></div>
+    <p class="src">${L('Plataforma Casa Para Viver (@casaparaviver.pt) com Porta a Porta (@portaaportadh).', 'Casa Para Viver platform (@casaparaviver.pt) with Porta a Porta (@portaaportadh).')}</p>${CHECK()}</div>`],
+  () => ['', `<div class="ad center"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="p-red rough">${L('Sabias que…', 'Did you know…')}</h2>
+    <p class="big rough">+16,5%</p><p class="p-mid rough">${L('Subida dos preços das casas<br>num ano, a maior da UE', 'Rise in house prices<br>in a year, the highest in the EU')}</p>
+    <p class="help">${L('2.º trimestre de 2026 face ao mesmo período de 2025. Fonte: Eurostat, 1 de outubro de 2026.', 'Q2 2026 compared with the same period of 2025. Source: Eurostat, 1 October 2026.')}</p>
+    <p class="big rough" style="margin-top:14px">~2%</p><p class="p-mid rough">${L('das casas são<br>habitação pública', 'of homes are<br>public housing')}</p>
+    <p class="help">${L('Fonte: inquérito à habitação do INE (dados de 2015), um número muito citado pelo governo e pelos movimentos pela habitação.', 'Source: INE housing survey (2015 data), a figure often quoted by the government and by the housing movements.')}</p></div>`]
 ];
 function showAd(next) {
   mode = 'ad'; adNext = next;
   const [variant, html] = ADS[adIdx % ADS.length](); adIdx++;
   try { localStorage.setItem('acampada3-ad', String(adIdx)); } catch (e) {}
   sfx('win');
-  show(`${html}<div class="center" style="text-align:center"><button class="btnp${variant === 'adred' ? '' : ' red'}" data-a="adnext">Continua a lutar!</button></div>`, variant);
+  show(`${html}<div class="center" style="text-align:center"><button class="btnp${variant === 'adred' ? '' : ' red'}" data-a="adnext">${L('Continua a lutar!', 'Keep fighting!')}</button></div>`, variant);
 }
 function levelClear() { snapScene(); showAd(finishLevel); }
 
@@ -3494,7 +3533,7 @@ function nextRally(city, now) {
 function nextSlogan(city) {
   const pool = SLOGANS.filter(x => typeof x === 'string' || x.city === city).map(x => typeof x === 'string' ? x : x.t);
   let k = 0; try { k = +(localStorage.getItem('acampada-slogan') || 0) || 0; localStorage.setItem('acampada-slogan', String(k + 1)); } catch (e) {}
-  return pool[k % pool.length];
+  return T(pool[k % pool.length]);
 }
 // the square as it was won (the canvas has no text on it: messages are HTML above it)
 let shot = null;
@@ -3519,8 +3558,8 @@ function makeStory(o) {
   const head = o.city.toUpperCase(), hs = fitFont(head, 168, 620);
   g.fillStyle = RED; g.fillText(head, M - 6, 150 + hs * .82);
   let y = 150 + hs * .82 + 104;
-  g.font = '800 104px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText('RESISTE!', M, y);
-  y += 58; const sub = `Segurei ${PLACE_ART[o.city] || ''}${o.place} na Acampada Pixel`.toUpperCase();
+  g.font = '800 104px Jost, sans-serif'; g.fillStyle = CREAM; g.fillText(L('RESISTE!', 'RESISTS!'), M, y);
+  y += 58; const sub = L(`Segurei ${PLACE_ART[o.city] || ''}${o.place} na Acampada Pixel`, `I held ${o.place} in Acampada Pixel`).toUpperCase();
   fitFont(sub, 38, fw, 700); g.fillStyle = CREAM; g.fillText(sub, M, y);
   // the square
   const fy = y + 34, fh = 540;
@@ -3528,7 +3567,7 @@ function makeStory(o) {
   if (o.scene) { const sc = o.scene, k = Math.max(fw / sc.width, fh / sc.height), sw = fw / k, sh = fh / k;
     g.imageSmoothingEnabled = false; g.drawImage(sc, (sc.width - sw) / 2, (sc.height - sh) / 2, sw, sh, M, fy, fw, fh); g.imageSmoothingEnabled = true; }
   else { g.fillStyle = '#1b1430'; g.fillRect(M, fy, fw, fh); }
-  const st = `${o.stats.tents} ${o.stats.unit} · ${o.stats.people} PESSOAS · ${o.stats.days} ${o.stats.days === 1 ? 'DIA' : 'DIAS'}`;
+  const st = `${o.stats.tents} ${o.stats.unit} · ${o.stats.people} ${L('PESSOAS', 'PEOPLE')} · ${o.stats.days} ${o.stats.days === 1 ? L('DIA', 'DAY') : L('DIAS', 'DAYS')}`;
   g.font = '400 30px Silkscreen, monospace'; const tw = g.measureText(st).width + 32;
   g.fillStyle = DARK; g.fillRect(M + 18, fy + fh - 66, tw, 48); g.fillStyle = CREAM; g.fillText(st, M + 34, fy + fh - 31);
   y = fy + fh + 60;
@@ -3541,13 +3580,13 @@ function makeStory(o) {
   const r = nextRally(o.city);
   if (r) {
     const rh = 196; g.strokeStyle = CREAM; g.lineWidth = 4; g.strokeRect(M - 6, y, fw + 12, rh);
-    g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText(`${r.when} · ${r.time}${r.city ? ' · ' + r.city.toUpperCase() : ''}`, M + 22, y + 62);
-    g.fillStyle = CREAM; fitFont(r.title.toUpperCase(), 46, fw - 40); g.fillText(r.title.toUpperCase(), M + 22, y + 120);
-    const wh = r.where + (r.elsewhere ? ' · e noutras cidades' : ''); fitFont(wh, 34, fw - 40, 700); g.fillText(wh, M + 22, y + 170);
+    g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText(`${LANG === 'en' ? (r.when === 'HOJE' ? 'TODAY' : r.when === 'AMANHÃ' ? 'TOMORROW' : `${DAYS_EN[r.d.getUTCDay()].slice(0, 3).toUpperCase()} ${r.d.getUTCDate()} ${MONTHS_EN[r.d.getUTCMonth()].toUpperCase()}`) : r.when} · ${LANG === 'en' ? r.at : r.time}${r.city ? ' · ' + r.city.toUpperCase() : ''}`, M + 22, y + 62);
+    g.fillStyle = CREAM; fitFont(T(r.title).toUpperCase(), 46, fw - 40); g.fillText(T(r.title).toUpperCase(), M + 22, y + 120);
+    const wh = T(r.where) + (r.elsewhere ? L(' · e noutras cidades', ' · and in other towns') : ''); fitFont(wh, 34, fw - 40, 700); g.fillText(wh, M + 22, y + 170);
     y += rh + 40;
   }
   // call to play
-  g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText('ENTRA NESTA', M, y + 42); g.fillText('SIMULAÇÃO DIGITAL', M, y + 94);
+  g.font = '800 46px Jost, sans-serif'; g.fillStyle = RED; g.fillText(L('ENTRA NESTA', 'JOIN THIS'), M, y + 42); g.fillText(L('SIMULAÇÃO DIGITAL', 'DIGITAL SIMULATION'), M, y + 94);
   g.font = '400 36px Silkscreen, monospace'; const url = 'ACAMPADAPIXEL.PT', uw = g.measureText(url).width + 44;
   g.fillStyle = CREAM; g.fillRect(1080 - M - uw, y + 12, uw, 80); g.fillStyle = DARK; g.fillText(url, 1080 - M - uw + 22, y + 66);
   const fb = Math.max(y + 160, 1740);
@@ -3559,7 +3598,7 @@ function makeStory(o) {
 // (iPhone only allows sharing right after a tap)
 let storyJob = null;
 function prepStory() {
-  const city = S.city, stats = { tents: S.tents.length, unit: city.noTents ? 'GRUPOS' : 'TENDAS', people: fmt(crowd()), days: 1 + Math.floor((S.clock - 6) / 24) };
+  const city = S.city, stats = { tents: S.tents.length, unit: city.noTents ? L('GRUPOS', 'GROUPS') : L('TENDAS', 'TENTS'), people: fmt(crowd()), days: 1 + Math.floor((S.clock - 6) / 24) };
   const slogan = nextSlogan(city.name), scene = shot;
   storyJob = { slogan, city: city.name, file: null, blob: null };
   const job = storyJob;
@@ -3573,14 +3612,14 @@ function saveStory(job) {
 }
 async function shareStory(btn) {
   const job = storyJob; if (!job) return;
-  if (!job.blob) { btn.disabled = true; btn.firstChild.textContent = 'A preparar…'; await job.ready; btn.disabled = false; btn.firstChild.textContent = 'Partilha'; }
+  if (!job.blob) { btn.disabled = true; btn.firstChild.textContent = L('A preparar…', 'Preparing…'); await job.ready; btn.disabled = false; btn.firstChild.textContent = L('Partilha', 'Share'); }
   if (!job.blob) return;
-  const text = `«${job.slogan}» Entra na acampada: acampadapixel.pt #acampadapelahabitação`;
+  const text = `«${job.slogan}» ${L('Entra na acampada', 'Join the camp')}: acampadapixel.pt #acampadapelahabitação`;
   if (job.file && navigator.canShare && navigator.canShare({ files: [job.file] })) {
     try { await navigator.share({ files: [job.file], text }); } catch (e) { if (e.name !== 'AbortError') saveStory(job); }
   } else saveStory(job);
 }
-const SHARE_BTN = '<button class="btnp red" data-a="share">Partilha<small style="display:block;font-size:11px;font-weight:700;opacity:.85">story para o Instagram</small></button>';
+const shareBtn = () => `<button class="btnp red" data-a="share">${L('Partilha', 'Share')}<small style="display:block;font-size:11px;font-weight:700;opacity:.85">${L('story para o Instagram', 'Instagram story')}</small></button>`;
 
 /* ================= Como jogar ================= */
 let rulesReturn = null;
@@ -3589,7 +3628,37 @@ const RULE_IMG = {tent: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAaC
 let rulesPage = 0;
 function rulesHTML(n) {
   const I = k => `<img class="cj-img" src="${RULE_IMG[k]}" alt="">`, K = k => pcMQ.matches ? ` <span class="cj-key">${k}</span>` : '';
-  const pages = [
+  const pages = LANG === 'en' ? [
+    `<h2 class="p-red rough cj-h">Hold the square</h2><p class="cj-sub">in 3 steps</p>
+     <div class="cj-step"><span class="cj-n">1</span>${I('arrival')}<div><b>Welcome newcomers</b><span>Whoever has a <span class="bang">!</span> is waiting for a spot. Walk past them and they pitch a tent.</span></div></div>
+     <div class="cj-step"><span class="cj-n">2</span>${I('crate')}<div><b>Pick up donations</b><span>Each box gives supplies to build the kitchen, the stage…</span></div></div>
+     <div class="cj-step"><span class="cj-n">3</span>${I('police')}<div><b>Survive the raid</b><span>The police come at 6:00. Stay by the tents and use the Chain.</span></div></div>
+     <div class="cj-goal"><b>Goal: full Pressure and Morale above 80</b><div class="cj-bar"><i></i></div><span>Pressure rises on its own with more tents and more support. With it full and Morale above the 80 mark, the government gives in and the square is yours. You lose if the square empties.</span></div>
+     <p class="cj-small"><b>Morale</b> low? People go home: food and music help. <b>Support</b> brings more people.</p>`,
+    `<h2 class="p-red rough cj-h">Your buttons</h2><p class="cj-sub">and when to use each one</p>
+     <div class="cj-btn"><span class="cj-b w">Chain${K('Z')}</span><div><span class="cj-when">When the police arrive</span>People link arms around you. Tents inside it <b>can’t be taken</b>.</div></div>
+     <div class="cj-btn"><span class="cj-b r">Live${K('X')}</span><div><span class="cj-when">During the raid</span>Every tent taken on a live stream <b>goes viral</b>: lots of support and more people.</div></div>
+     <div class="cj-btn"><span class="cj-b g">Build${K('C')}</span><div><span class="cj-when">When you have supplies</span><b>Kitchen</b> (morale), <b>Info</b> (welcomes on its own), <b>First aid</b> (treats the wounded), <b>Stage</b> (concerts).</div></div>
+     <div class="cj-btn"><span class="cj-b k">Assembly${K('V')}</span><div><span class="cj-when">Every so often</span>The camp votes for an <b>upgrade</b> that lasts until the end of the square.</div></div>
+     <p class="cj-small">Near something? An extra button appears: cook, sing Grândola, treat the wounded…${pcMQ.matches ? ' Press <b>Space</b> or click it.' : ''}</p>`,
+    `<h2 class="p-red rough cj-h">A day in the square</h2><p class="cj-sub">what to expect and when</p>
+     <div class="cj-tl"><div class="cj-ev"><span class="cj-t">17:00</span><div><b>The camp begins</b>A few tents. Welcome as many people as you can.</div></div>
+     <div class="cj-ev"><span class="cj-t">18–22</span><div><b>Rush hour</b>More people arrive. A bike ride may pass by and slow the police down.</div></div>
+     <div class="cj-ev"><span class="cj-t n">NIGHT</span><div><b>Quiet… or not</b>Fewer people come. After the first raid, fascists may show up at night.</div></div>
+     <div class="cj-ev"><span class="cj-t d">06:00</span><div><b>Raid!</b>You hear the sirens first. Chain and Live. The first raid in each square is light.</div></div>
+     <div class="cj-ev"><span class="cj-t">14:00</span><div><b>Patrol</b>A few officers walk through the square.</div></div></div>`,
+    `<h2 class="p-red rough cj-h">Friends and dangers</h2><p class="cj-sub">spot them in the square</p>
+     <div class="cj-cols"><div><p class="cj-ok">They help</p>
+       <div class="cj-card">${I('chain')}<b>Chain</b><span>protects the tents</span></div>
+       <div class="cj-card">${I('aid')}<b>First aid</b><span>treats the wounded and saves people in a raid</span></div>
+       <div class="cj-card">${I('kitchen')}<b>Kitchen</b><span>raises morale</span></div></div>
+      <div><p class="cj-bad">Watch out</p>
+       <div class="cj-card">${I('riot')}<b>Riot police</b><span>take everything if nobody stands up to them</span></div>
+       <div class="cj-card">${I('fasc')}<b>Fascists</b><span>pick 4 activists${pcMQ.matches ? ' (arrows and Enter)' : ' (tap them)'} and go</span></div>
+       <div class="cj-card">${I('wounded')}<b>Wounded</b><span>treat them at the post within 60 s</span></div>
+       <div class="cj-card">${I('tania')}<b>Orange Journalist</b><span>run from her! she costs support</span></div></div></div>
+     <p class="cj-small"><b>Porto and Lisboa:</b> with Pressure full, the police kettle the square and take everything. Set up a third of the tents again, with Morale above 80, to win.</p>`
+  ] : [
     `<h2 class="p-red rough cj-h">Segura a praça</h2><p class="cj-sub">em 3 passos</p>
      <div class="cj-step"><span class="cj-n">1</span>${I('arrival')}<div><b>Acolhe quem chega</b><span>Quem tem <span class="bang">!</span> está à espera de lugar. Passa ao lado e monta tenda.</span></div></div>
      <div class="cj-step"><span class="cj-n">2</span>${I('crate')}<div><b>Apanha donativos</b><span>Cada caixa dá materiais para montar a cozinha, o palco…</span></div></div>
@@ -3617,13 +3686,13 @@ function rulesHTML(n) {
        <div class="cj-card">${I('riot')}<b>Polícia de choque</b><span>leva tudo se ninguém fizer frente</span></div>
        <div class="cj-card">${I('fasc')}<b>Fascistas</b><span>escolhe 4 ativistas${pcMQ.matches ? ' (setas e Enter)' : ' (toca neles)'} e vai lá</span></div>
        <div class="cj-card">${I('wounded')}<b>Feridos</b><span>cura-os no posto em 60 s</span></div>
-       <div class="cj-card">${I('tania')}<b>Tânia Laranjo</b><span>foge dela! tira apoio</span></div></div></div>
+       <div class="cj-card">${I('tania')}<b>Jornalista Laranja</b><span>foge dela! tira apoio</span></div></div></div>
      <p class="cj-small"><b>Porto e Lisboa:</b> com a Pressão cheia, a polícia cerca a praça e leva tudo. Volta a montar um terço das tendas, com a Moral acima de 80, para ganhar.</p>`
   ];
   const last = n === pages.length - 1, dots = pages.map((_, i) => `<i class="${i === n ? 'on' : ''}"></i>`).join('');
-  return `<div class="cj"><p class="cj-top">COMO JOGAR · ${n + 1}/${pages.length}</p>${pages[n]}
+  return `<div class="cj"><p class="cj-top">${L('COMO JOGAR', 'HOW TO PLAY')} · ${n + 1}/${pages.length}</p>${pages[n]}
     <div class="cj-nav">${n ? '<button class="btnp narrow" data-a="rulesprev">←</button>' : '<span></span>'}<span class="cj-dots">${dots}</span>
-    <button class="btnp narrow${last ? ' red' : ''}" data-a="${last ? 'rulesclose' : 'rulesnext'}">${last ? 'Percebi, vamos!' : 'Seguinte →'}</button></div></div>`;
+    <button class="btnp narrow${last ? ' red' : ''}" data-a="${last ? 'rulesclose' : 'rulesnext'}">${last ? L('Percebi, vamos!', 'Got it, let’s go!') : L('Seguinte →', 'Next →')}</button></div></div>`;
 }
 function openRules() {
   if (mode === 'rules') return closeRules();
@@ -3645,7 +3714,8 @@ function openInfo(i) {
   mode = 'info'; infoIdx = (i + ADS.length) % ADS.length;
   const [variant, html] = ADS[infoIdx]();
   const main = variant === 'adred' ? '' : ' red', side = variant === 'adred' ? ' red' : '';
-  show(`${html.replace('Informação</span>', `Informação · ${infoIdx + 1}/${ADS.length}</span>`)}<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap"><button class="btnp arrow${side}" data-a="infoprev" aria-label="Cartaz anterior">◀</button><button class="btnp narrow${main}" data-a="infoclose">← Voltar</button><button class="btnp narrow${side}" data-a="infoshare">Partilhar</button><button class="btnp arrow${side}" data-a="infonext" aria-label="Próximo cartaz">▶</button></div>`, variant);
+  const tag = L('Informação', 'Information');
+  show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}">◀</button><button class="btnp narrow${main}" data-a="infoclose">${L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}">▶</button></div>`, variant);
 }
 // share the poster on screen as an image (1080 x 1350): the poster's own texts and colours, redrawn on a canvas
 function makePoster() {
@@ -3676,7 +3746,7 @@ function makePoster() {
   };
   while (layout(k, false) > 1180 && k > .8) k *= .92;
   g.fillStyle = bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
-  g.font = '700 26px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'left'; g.fillText('INFORMAÇÃO · ACAMPADA', M, 100);
+  g.font = '700 26px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'left'; g.fillText(L('INFORMAÇÃO · ACAMPADA', 'INFORMATION · ACAMPADA'), M, 100);
   layout(k, true);
   g.font = '800 34px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'center'; g.fillText('acampadapixel.pt · #acampadapelahabitação', 540, 1290);
   return c;
@@ -3684,10 +3754,10 @@ function makePoster() {
 async function sharePoster(btn) {
   const c = makePoster(); if (!c) return;
   const blob = await new Promise(r => c.toBlob(r, 'image/png')); if (!blob) return;
-  const file = new File([blob], 'acampada-cartaz.png', { type: 'image/png' }), text = 'Junta-te à acampada: acampadapixel.pt #acampadapelahabitação';
+  const file = new File([blob], 'acampada-cartaz.png', { type: 'image/png' }), text = L('Junta-te à acampada: acampadapixel.pt #acampadapelahabitação', 'Join the camp: acampadapixel.pt #acampadapelahabitação');
   if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'acampada-cartaz.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-  if (btn) { btn.textContent = 'Imagem guardada'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Partilhar'; }, 2500); }
+  if (btn) { btn.textContent = L('Imagem guardada', 'Image saved'); setTimeout(() => { if (btn.isConnected) btn.textContent = L('Partilhar', 'Share'); }, 2500); }
 }
 function closeInfo() {
   const r = infoReturn; infoReturn = null;
@@ -3701,34 +3771,36 @@ function finishLevel() {
   const first = !cleared.has(cityIdx); cleared.add(cityIdx); saveCleared();
   if (cleared.size === CITIES.length && first) {
     mode = 'win';
-    show(`<h2 class="p-red rough">VITÓRIA</h2><p class="p-big rough">A luta continua</p>${TENT}<p class="p-info rough">Cinco praças<br>uma exigência:<br>casas para viver</p>
-    <p class="help">Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.</p>${SHARE_BTN}<button class="btnp" data-a="chapters">Escolher praça</button>${FOOT}`);
+    show(`<h2 class="p-red rough">${L('VITÓRIA', 'VICTORY')}</h2><p class="p-big rough">${L('A luta continua', 'The struggle goes on')}</p>${TENT}<p class="p-info rough">${L('Cinco praças<br>uma exigência:<br>casas para viver', 'Five squares<br>one demand:<br>homes to live in')}</p>
+    <p class="help">${L('Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.', 'With camps in all five squares and support still growing, the government backs down and opens talks on housing.')}</p>${shareBtn()}<button class="btnp" data-a="chapters">${L('Escolher praça', 'Choose a square')}</button>${FOOT}`);
     prepStory(); return;
   }
   mode = 'clear';
   let nxt = -1; const pos = ORDER.indexOf(cityIdx); for (let k = 1; k <= ORDER.length; k++) { const j = ORDER[(pos + k) % ORDER.length]; if (!cleared.has(j)) { nxt = j; break; } }
-  show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">${S.city.name} resiste</span>
-  <p class="help">${S.city.clear || 'O Algarve aguentou.'}</p><p class="stat rough">${S.tents.length} ${S.city.noTents ? (S.tents.length === 1 ? 'grupo' : 'grupos') : (S.tents.length === 1 ? 'tenda' : 'tendas')} · ${fmt(crowd())} pessoas · ${1 + Math.floor((S.clock - 6) / 24)} ${Math.floor((S.clock - 6) / 24) === 0 ? 'dia' : 'dias'} · ${cleared.size}/5 praças</p>
-  <div>${SHARE_BTN}${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">Próxima: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+  const n = S.tents.length, days = 1 + Math.floor((S.clock - 6) / 24);
+  const unit = S.city.noTents ? (n === 1 ? L('grupo', 'group') : L('grupos', 'groups')) : (n === 1 ? L('tenda', 'tent') : L('tendas', 'tents'));
+  show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${S.city.name} ${L('resiste', 'resists')}</span>
+  <p class="help">${T(S.city.clear || 'O Algarve aguentou.')}</p><p class="stat rough">${n} ${unit} · ${fmt(crowd())} ${L('pessoas', 'people')} · ${days} ${days === 1 ? L('dia', 'day') : L('dias', 'days')} · ${cleared.size}/5 ${L('praças', 'squares')}</p>
+  <div>${shareBtn()}${nxt >= 0 ? `<button class="btnp" data-city="${nxt}">${L('Próxima', 'Next')}: ${CITIES[nxt].name} →</button>` : ''}<button class="btnp" data-a="chapters">${L('Escolher praça', 'Choose a square')}</button></div>`, 'comunicado');
   prepStory();
 }
 function gameOver() {
   sfx('lose'); mode = 'over';
-  show(`<span class="box-red rough">Comunicado<br>de imprensa</span><br><span class="box-white rough">Sobre a<br>repressão policial</span>
-  <p class="help">Ao amanhecer, enquanto a maioria das pessoas dormia, a polícia levou as tendas de ${S.city.place}. ${S.detained} pessoas detidas.</p>
-  <p class="help">A acampada foi desmontada. A assembleia popular já decidiu: a acampada resiste, com ou sem tendas.</p>
-  <div><button class="btnp" data-a="retry">Voltamos às 19h</button><button class="btnp red" data-a="chapters">Escolher praça</button></div>`, 'comunicado');
+  show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${L('Sobre a<br>repressão policial', 'On police<br>repression')}</span>
+  <p class="help">${L(`Ao amanhecer, enquanto a maioria das pessoas dormia, a polícia levou as tendas de ${S.city.place}. ${S.detained} pessoas detidas.`, `At dawn, while most people were asleep, the police took the tents from ${S.city.place}. ${S.detained} people arrested.`)}</p>
+  <p class="help">${L('A acampada foi desmontada. A assembleia popular já decidiu: a acampada resiste, com ou sem tendas.', 'The camp was taken down. The people’s assembly has already decided: the camp resists, with or without tents.')}</p>
+  <div><button class="btnp" data-a="retry">${L('Voltamos às 19h', 'Back at 7 pm')}</button><button class="btnp red" data-a="chapters">${L('Escolher praça', 'Choose a square')}</button></div>`, 'comunicado');
 }
 function pause() {
   if (mode !== 'play') return; mode = 'paused';
   const day = 1 + Math.floor((S.clock - 6) / 24);
-  show(`<h2>Acampada<br><u>Dia ${day}</u></h2>
-  <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">Assembleia popular</span></div>
-  <div class="slot"><span class="t">18:00</span><span class="n">Coros</span><span class="d">(ensaio aberto)</span></div><div class="slot"><span class="t">20:30</span><span class="n">Jantar popular</span></div></div>
-  <p class="help">Em pausa.</p><button class="btnp" data-a="resume">Voltar →</button><button class="btnp" data-a="rules">Como jogar</button><button class="btnp" data-a="chapters">Praças</button><button class="btnp" data-a="title">Menu inicial</button>`, 'green');
+  show(`<h2>${L('Acampada', 'Camp')}<br><u>${L('Dia', 'Day')} ${day}</u></h2>
+  <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">${L('Assembleia popular', 'People’s assembly')}</span></div>
+  <div class="slot"><span class="t">18:00</span><span class="n">${L('Coros', 'Choirs')}</span><span class="d">${L('(ensaio aberto)', '(open rehearsal)')}</span></div><div class="slot"><span class="t">20:30</span><span class="n">${L('Jantar popular', 'Community dinner')}</span></div></div>
+  <p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="chapters">${L('Praças', 'Squares')}</button><button class="btnp" data-a="title">${L('Menu inicial', 'Main menu')}</button>`, 'green');
 }
 function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
-function begin() { ov.hidden = true; mode = 'play'; if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : 'Toca para andar', '#ffffff', 26); }
+function begin() { ov.hidden = true; mode = 'play'; if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : joyOn() ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : 'Toca para andar', '#ffffff', 26); }
 ov.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; audioOn();
   if (b.dataset.build) { build(b.dataset.build); ov.hidden = true; mode = 'play'; return; }
@@ -3737,6 +3809,7 @@ ov.addEventListener('click', e => {
     const pk = PERKS.find(p => p.id === id); float(S.player.gx, S.player.gy, pk.name, '#c9b8ff', 26); ov.hidden = true; mode = 'play'; return; }
   const a = b.dataset.a;
   if (b.dataset.city) { cityIdx = +b.dataset.city; newLevel(); introScreen(); return; }
+  if (a === 'lang') { LANG = b.dataset.l; try { localStorage.setItem('acampada-lang', LANG); } catch (e) {} applyLang(); titleScreen(); return; }
   if (a === 'install') { const ev = installEvt; installEvt = null; if (ev) ev.prompt(); titleScreen(); }
   else if (a === 'chapters') chapterScreen();
   else if (a === 'title') titleScreen();
@@ -3810,18 +3883,31 @@ function setTarget(e) {
   if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < NY; yy++) for (let xx = 0; xx < NX; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
   S.player.tx = gx; S.player.ty = gy;
 }
-cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapGraf(e) || tapLook(e) || tapRecruit(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
-cv.addEventListener('pointermove', e => { if (dragging && mode === 'play') setTarget(e); });
-cv.addEventListener('pointerup', () => dragging = false); cv.addEventListener('pointercancel', () => dragging = false);
-// phones: arrows on screen, off by default (the button above the zoom turns them on); tapping the square still works
-let padOn = false; try { padOn = localStorage.getItem('acampada-pad') === '1'; } catch (e) {}
-function padShow() { $('padBtn').hidden = !CAM.on; $('pad').hidden = !(CAM.on && padOn); $('padBtn').setAttribute('aria-pressed', String(padOn)); if (!$('pad').hidden) return; for (const k of ['up', 'down', 'left', 'right']) keys[k] = false; }
-$('padBtn').addEventListener('click', () => { padOn = !padOn; try { localStorage.setItem('acampada-pad', padOn ? '1' : '0'); } catch (e) {} padShow(); });
-for (const b of $('pad').querySelectorAll('button')) {
-  const k = b.dataset.k, on = v => e => { e.preventDefault(); keys[k] = v; b.classList.toggle('on', v); if (v) { audioOn(); try { b.setPointerCapture(e.pointerId); } catch (_) {} } };
-  b.addEventListener('pointerdown', on(true)); for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(ev, on(false));
-  b.addEventListener('contextmenu', e => e.preventDefault());
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapGraf(e) || tapLook(e) || tapRecruit(e) || joyStart(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+cv.addEventListener('pointermove', e => { if (joyMove(e)) return; if (dragging && mode === 'play') setTarget(e); });
+for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(ev, e => { if (!joyEnd(e)) dragging = false; });
+// phones: a ball to walk with. Touch the left half of the square and drag: the ball appears under the thumb, the
+// further you drag the faster you walk, letting go stops. On by default with the phone on its side; the button
+// above the zoom turns it on or off (remembered). Tapping a spot still works on the right half.
+const JOY = { id: null, x0: 0, y0: 0, x: 0, y: 0 }, JOY_R = 48;
+let joyPref = null; try { const v = localStorage.getItem('acampada-joy'); joyPref = v === null ? null : v === '1'; } catch (e) {}
+const joyOn = () => CAM.on && (joyPref ?? CAM.land);
+function padShow() { $('padBtn').hidden = !CAM.on; $('padBtn').setAttribute('aria-pressed', String(joyOn())); $('padBtn').setAttribute('aria-label', L('Bola para andar', 'Walking ball')); if (!joyOn()) joyEnd(); }
+$('padBtn').addEventListener('click', () => { joyPref = !joyOn(); try { localStorage.setItem('acampada-joy', joyPref ? '1' : '0'); } catch (e) {} padShow(); float(S.player.gx, S.player.gy, joyPref ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : L('Toca na praça para andar', 'Tap the square to walk'), '#ffffff', 26); });
+function joyStart(e) {
+  const r = cv.parentElement.getBoundingClientRect();
+  if (!joyOn() || JOY.id !== null || e.clientX - r.left > r.width * .5) return false;
+  JOY.id = e.pointerId; JOY.x0 = e.clientX - r.left; JOY.y0 = e.clientY - r.top; JOY.x = JOY.y = 0;
+  const el = $('joy'); el.style.left = JOY.x0 + 'px'; el.style.top = JOY.y0 + 'px'; el.hidden = false; el.firstChild.style.transform = '';
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {} return true;
 }
+function joyMove(e) {
+  if (e.pointerId !== JOY.id) return false;
+  const r = cv.parentElement.getBoundingClientRect(); let dx = e.clientX - r.left - JOY.x0, dy = e.clientY - r.top - JOY.y0; const d = Math.hypot(dx, dy);
+  if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
+  JOY.x = dx / JOY_R; JOY.y = dy / JOY_R; $('joy').firstChild.style.transform = `translate(${dx}px, ${dy}px)`; return true;
+}
+function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; JOY.id = null; JOY.x = JOY.y = 0; $('joy').hidden = true; return true; }
 $('tutSkip').addEventListener('click', e => { e.stopPropagation(); if (S && S.tut) tutEnd(); });
 const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
 addEventListener('keydown', e => {
@@ -3860,7 +3946,7 @@ $('ctxBtn').addEventListener('click', () => { const c = contextAction(); if (c &
 $('info').addEventListener('click', () => openInfo(0));
 $('rules').addEventListener('click', openRules);
 $('pauseBtn').addEventListener('click', () => { if (mode === 'play') pause(); else if (mode === 'paused') { ov.hidden = true; mode = 'play'; } });
-$('mute').addEventListener('click', () => { muted = !muted; if (muted) winSongStop(); $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? 'Ligar o som' : 'Desligar o som'); });
+$('mute').addEventListener('click', () => { muted = !muted; if (muted) winSongStop(); $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? L('Ligar o som', 'Sound on') : L('Desligar o som', 'Sound off')); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
 
 /* ================= bigger on computers ================= */
@@ -3925,7 +4011,7 @@ function fit() {
   if (window.visualViewport) document.documentElement.style.setProperty('--vvh', Math.round(visualViewport.height) + 'px');
   const pc = isPC();
   document.documentElement.classList.toggle('pc', pc);
-  $('help').textContent = pcMQ.matches ? 'Andar: setas ou WASD (ou clique) · Z Cordão · X Direto · C Montar · V Assembleia · Espaço: ação · P pausa · H como jogar · M som' + (document.fullscreenEnabled ? ' · F ecrã inteiro' : '') : 'Toca na praça para andar.';
+  $('help').textContent = pcMQ.matches ? L('Andar: setas ou WASD (ou clique) · Z Cordão · X Direto · C Montar · V Assembleia · Espaço: ação · P pausa · H como jogar · M som', 'Walk: arrows or WASD (or click) · Z Chain · X Live · C Build · V Assembly · Space: action · P pause · H how to play · M sound') + (document.fullscreenEnabled ? L(' · F ecrã inteiro', ' · F full screen') : '') : L('Toca na praça para andar.', 'Tap the square to walk.');
   // wide windows: the square fills the window between the top and bottom bars; taller windows keep the phone column
   const wide = pc && innerWidth > innerHeight * 1.15;
   document.documentElement.classList.toggle('wide', wide);
@@ -3986,7 +4072,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 // full screen button, only where the browser supports it (not on iPhone)
 function zoomLabel() {
   $('zoom').innerHTML = `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#0b0a0a" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M15 15l6 6M7 10h6${CAM.all ? 'M10 7v6' : ''}"/></svg>`;
-  $('zoom').setAttribute('aria-label', CAM.all ? 'Aproximar' : 'Ver a praça toda');
+  $('zoom').setAttribute('aria-label', CAM.all ? L('Aproximar', 'Zoom in') : L('Ver a praça toda', 'See the whole square'));
 }
 $('zoom').addEventListener('click', () => { CAM.all = !CAM.all; if (!CAM.all && S) { const q = iso(S.player.gx, S.player.gy); CAM.x = q.x; CAM.y = q.y - 12; } zoomLabel(); });
 let rotHintT = 0;
@@ -3997,7 +4083,7 @@ const fullEl = document.documentElement;
 if (document.fullscreenEnabled && pcMQ.matches) {
   $('full').hidden = false;
   $('full').addEventListener('click', () => { if (document.fullscreenElement) document.exitFullscreen(); else fullEl.requestFullscreen().catch(() => {}); });
-  document.addEventListener('fullscreenchange', () => $('full').setAttribute('aria-label', document.fullscreenElement ? 'Sair do ecrã inteiro' : 'Ecrã inteiro'));
+  document.addEventListener('fullscreenchange', () => $('full').setAttribute('aria-label', document.fullscreenElement ? L('Sair do ecrã inteiro', 'Exit full screen') : L('Ecrã inteiro', 'Full screen')));
 }
 
 /* ================= loop ================= */
@@ -4013,9 +4099,34 @@ function frame(now) {
 cityIdx = 1; newLevel(); S.clock = 21.5; S.dark = 1;
 for (let i = 0; i < 9; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = 0; } }
 cityIdx = ORDER[0];
+applyLang();
 titleScreen();
 fit();
 requestAnimationFrame(frame);
+// the texts in the page itself (the HUD, labels for screen readers), in the chosen language
+function applyLang() {
+  document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
+  const dts = document.querySelectorAll('.stats dt'); [L('Tendas', 'Tents'), L('Pessoas', 'People'), L('Materiais', 'Supplies'), L('Detidos', 'Arrested')].forEach((t, i) => { if (dts[i]) dts[i].textContent = t; });
+  if (S) $('sT').previousElementSibling.textContent = T(S.city.noTents ? 'Grupos' : 'Tendas');
+  const bars = document.querySelectorAll('.bar > span'); [L('Moral', 'Morale'), L('Apoio', 'Support'), L('Pressão', 'Pressure')].forEach((t, i) => { if (bars[i]) bars[i].textContent = t; });
+  document.querySelector('.bar i.goal').title = L('Para ganhar: moral acima de 80', 'To win: morale above 80');
+  const fc = document.querySelector('.pm figcaption'); if (fc) fc.textContent = L('Governo', 'Government');
+  const pq = document.getElementById('pmQ'); if (pq) pq.textContent = L('O QUÊ?', 'WHAT?');
+  $('info').setAttribute('aria-label', L('Informação: ver os cartazes', 'Information: see the posters')); $('rules').setAttribute('aria-label', L('Como jogar', 'How to play'));
+  $('pauseBtn').setAttribute('aria-label', L('Pausa e menu', 'Pause and menu')); $('mute').setAttribute('aria-label', muted ? L('Ligar o som', 'Sound on') : L('Desligar o som', 'Sound off'));
+  $('tutSkip').textContent = L('Saltar', 'Skip'); $('rotHint').querySelector('span').textContent = L('↻ Roda o telemóvel para ver a praça maior', '↻ Turn your phone to see the square bigger'); $('rotHintX').setAttribute('aria-label', L('Fechar', 'Close'));
+  if ($('full')) $('full').setAttribute('aria-label', document.fullscreenElement ? L('Sair do ecrã inteiro', 'Exit full screen') : L('Ecrã inteiro', 'Full screen'));
+  const nav = document.querySelector('.actions'); if (nav) nav.setAttribute('aria-label', L('Ações da acampada', 'Camp actions'));
+  $('tut')._t = null; // the tutorial line is redrawn in the new language
+  fit(); zoomLabel(); if (S) hud();
+}
+// a game, not a page: no pinch zoom (iPhone ignores the viewport setting, so the gesture itself is stopped), and
+// if the page got zoomed anyway, it snaps back to normal size
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+  if (visualViewport.scale > 1.01) { const m = $('vp'), c = m.content; m.content = c + ', minimum-scale=1'; setTimeout(() => { m.content = c; }, 300); }
+});
 if ('serviceWorker' in navigator && location.protocol === 'https:') addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
