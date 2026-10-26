@@ -153,8 +153,12 @@ button{ cursor:pointer; touch-action:manipulation; }
 .choice button b{ display:block; font:800 16px/1.1 Jost, sans-serif; text-transform:uppercase; }
 .choice button span{ font:500 13px/1.3 "Helvetica Neue", Arial, sans-serif; color:#c9c4c4; }
 .choice button.on{ background:var(--paper); color:var(--ink); } .choice button.on span{ color:#3a352e; }
-.lookrow{ display:flex; align-items:center; gap:12px; }
-#lookCv{ width:96px; height:96px; image-rendering:pixelated; background:#d9d3c3; border:2px solid var(--paper); }
+.lookrow{ display:flex; align-items:center; gap:12px; } .lookbtns{ display:flex; flex-direction:column; gap:8px; }
+#lookEditor{ margin-top:6px; } #lookEditor label{ margin:12px 0 6px; }
+.lookopts{ display:flex; flex-wrap:wrap; gap:6px; }
+.lookopts .sw{ width:32px; height:32px; border:2px solid var(--paper); padding:0; } .lookopts .sw.on{ outline:3px solid var(--lime); outline-offset:2px; }
+.lookopts .chip{ background:transparent; color:var(--paper); border:2px solid var(--paper); font:700 13px/1 Jost, sans-serif; padding:7px 9px 6px; } .lookopts .chip.on{ background:var(--paper); color:var(--ink); }
+#lookCv{ width:120px; height:120px; image-rendering:pixelated; background:#d9d3c3; border:2px solid var(--paper); }
 .btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:17px; text-transform:uppercase; background:#fff; color:var(--ink); border:none; padding:11px 18px 9px; margin:16px 4px 0; text-decoration:none; display:inline-block; }
 .btnp.red{ background:var(--redbox); color:#fff; }
 .btnp.sm{ font-size:13px; padding:8px 12px 7px; margin:0; }
@@ -230,12 +234,24 @@ const SRV = qs.get('srv') || (/^(localhost|127\.0\.0\.1)$/.test(location.hostnam
 const WS_URL = SRV.replace(/^http/, 'ws') + '/ws';
 
 /* ---------- the same colours as the game ---------- */
-const SKIN = ['#f1c9a5', '#d9a37a', '#a8714a', '#7a4a2c', '#5a3520'];
-const HAIR = ['#2b1a10', '#1a1a24', '#6b3a1e', '#d9b46a', '#b03a5a', '#3a4fa8'];
-const SHIRTS = ['#ffd23a', '#3ec46d', '#2f8fff', '#9a6bff', '#ff7ad9', '#f2efe6', '#444a77', '#2ad1c9', '#ff8a2a'];
+const SKIN = ['#ffe0c4', '#f1c9a5', '#d9a37a', '#a8714a', '#7a4a2c', '#5a3520', '#3d2416'];
+const HAIR = ['#2b1a10', '#1a1a24', '#6b3a1e', '#d9b46a', '#b03a5a', '#3a4fa8', '#c9c4c4', '#c0502a', '#3fa9f5'];
+const SHIRTS = ['#ffd23a', '#3ec46d', '#2f8fff', '#9a6bff', '#ff7ad9', '#f2efe6', '#444a77', '#2ad1c9', '#ff8a2a', '#e2283b'];
 const PANTS = ['#2b2d55', '#3a3a44', '#4a6fa5', '#5a3a6b'];
-const LOOKS = SKIN.length * HAIR.length * SHIRTS.length;
-const lookOf = n => { n = Math.abs(n | 0) % LOOKS; const s = n % 5, h = Math.floor(n / 5) % 6, c = Math.floor(n / 30) % 9; return { skin: SKIN[s], hair: HAIR[h], shirt: SHIRTS[c], pants: PANTS[(s + h + c) % 4] }; };
+const BIKE_COLS = ['#ffd23a', '#3ec46d', '#2f8fff', '#ff7ad9', '#2ad1c9', '#ff8a2a', '#9a6bff', '#e2283b', '#f2efe6', '#16121a'];
+const LOOKS = 5 * 6 * 9; // old looks were one number (skin x hair x shirt); passers-by still use them
+// s skin, hs hair style, h hair colour, t top colour, tp top pattern, b bottom (trousers, shorts, skirt), bc its colour,
+// a1/a2 accessories (0 none), bk bike colour (0 = the city's)
+const LOOK_RANGES = { s: 7, hs: 8, h: 9, t: 10, tp: 4, b: 3, bc: 4, a1: 9, a2: 9, bk: 11 };
+function lookObj(o) {
+  if (typeof o === 'number' || o == null) { const n = Math.abs(o | 0) % LOOKS, s = n % 5, h = Math.floor(n / 5) % 6, c = Math.floor(n / 30) % 9; return { s: s + 1, hs: 0, h, t: c, tp: 0, b: 0, bc: (s + h + c) % 4, a1: 0, a2: 0, bk: 0 }; }
+  const out = {}; for (const [k, n] of Object.entries(LOOK_RANGES)) { const v = o[k] | 0; out[k] = v >= 0 && v < n ? v : 0; } return out;
+}
+function lookOf(o) {
+  const k = lookObj(o);
+  return { skin: SKIN[k.s], hair: HAIR[k.h], shirt: k.tp === 3 ? '#f2efe6' : SHIRTS[k.t], pants: PANTS[k.bc], hs: k.hs, tp: k.tp, b: k.b, acc: [k.a1, k.a2].filter(Boolean), bk: k.bk };
+}
+function randomLook() { const r = n => Math.floor(Math.random() * n), o = {}; for (const [k, n] of Object.entries(LOOK_RANGES)) o[k] = r(n); if (Math.random() < .5) o.a1 = 0; if (Math.random() < .7) o.a2 = 0; if (o.a2 === o.a1) o.a2 = 0; if (Math.random() < .6) o.bk = 0; if (Math.random() < .5) o.tp = 0; return o; }
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
 const AURA = { Faro: '#7fd6ff', Coimbra: '#ff8a2a', Braga: '#3ec46d', Lisboa: '#e2283b', Porto: '#2f5bff' };
 const auraOf = c => AURA[c] || '#ffffff';
@@ -405,17 +421,49 @@ function drawCravo(g, d) {
 /* ---------- people ---------- */
 function guy(g, x, y, o) {
   x = Math.round(x); y = Math.round(y);
-  const f = o.moving ? (Math.floor(o.step || 0) % 3) : 0, lp = o.pants || '#2b2d55';
+  const f = o.moving ? (Math.floor(o.step || 0) % 3) : 0, lp = o.pants || '#2b2d55', acc = o.acc || [], has = k => acc.includes(k);
   R(g, x - 3, y - 1, 7, 2, 'rgba(30,10,70,.28)');
-  R(g, x - 2, y - 5 + (f === 1 ? 1 : 0), 2, 4 - (f === 1 ? 1 : 0), lp); R(g, x + 1, y - 5 + (f === 2 ? 1 : 0), 2, 4 - (f === 2 ? 1 : 0), lp);
-  R(g, x - 3, y - 10, 7, 5, o.shirt); R(g, x + 1, y - 10, 2, 5, shade(o.shirt, .82));
+  // legs: trousers, shorts (knees bare) or a skirt
+  const l1 = 4 - (f === 1 ? 1 : 0), l2 = 4 - (f === 2 ? 1 : 0), y1 = y - 5 + (f === 1 ? 1 : 0), y2 = y - 5 + (f === 2 ? 1 : 0);
+  if (o.b === 1) { R(g, x - 2, y1, 2, l1, o.skin); R(g, x + 1, y2, 2, l2, o.skin); R(g, x - 2, y1, 2, 2, lp); R(g, x + 1, y2, 2, 2, lp); }
+  else if (o.b === 2) { R(g, x - 2, y1, 2, l1, o.skin); R(g, x + 1, y2, 2, l2, o.skin); R(g, x - 3, y - 6, 7, 3, lp); R(g, x - 4, y - 4, 9, 1, lp); }
+  else { R(g, x - 2, y1, 2, l1, lp); R(g, x + 1, y2, 2, l2, lp); }
+  if (has(5) && !o.back) R(g, o.flip ? x + 3 : x - 5, y - 10, 2, 5, '#6b4a2b'); // the backpack, peeking out
+  R(g, x - 3, y - 10, 7, o.b === 2 ? 4 : 5, o.shirt); R(g, x + 1, y - 10, 2, o.b === 2 ? 4 : 5, shade(o.shirt, .82));
+  if (!o.back) {
+    if (o.tp === 1) { R(g, x - 3, y - 9, 7, 1, shade(o.shirt, .7)); R(g, x - 3, y - 7, 7, 1, shade(o.shirt, .7)); }
+    else if (o.tp === 2) { R(g, x - 2, y - 9, 1, 1, '#e2283b'); R(g, x - 2, y - 8, 1, 1, '#3e9a57'); }
+    else if (o.tp === 3) { R(g, x - 2, y - 9, 5, 1, '#b3121b'); R(g, x - 2, y - 7, 4, 1, '#b3121b'); }
+  } else if (has(5)) R(g, x - 2, y - 10, 5, 5, '#6b4a2b');
+  if (has(8)) { R(g, x - 3, y - 10, 7, 5, '#c6ff4a'); R(g, x - 3, y - 8, 7, 1, '#e8e8e8'); if (!o.back) R(g, x, y - 10, 1, 5, o.shirt); }
   if (!o.armUp) R(g, x - 3, y - 6, 1, 1, o.skin);
   if (!o.armUp2) R(g, x + 3, y - 6, 1, 1, o.skin);
+  if (has(3)) { R(g, x - 3, y - 11, 7, 2, '#f2efe6'); for (let i = 0; i < 7; i += 2) R(g, x - 3 + i, y - 11 + (i % 4 ? 1 : 0), 1, 1, '#0b0a0a'); }
+  else if (has(4)) { R(g, x - 2, y - 11, 5, 1, '#e2283b'); if (!o.back) R(g, x + 1, y - 10, 1, 2, '#e2283b'); }
   R(g, x - 2, y - 14, 5, 4, o.skin);
-  if (o.back) R(g, x - 2, y - 15, 5, 4, o.hair);
-  else { R(g, x - 2, y - 15, 5, 2, o.hair); R(g, o.flip ? x + 2 : x - 2, y - 13, 1, 2, o.hair); R(g, x - 1, y - 12, 1, 1, '#1b1464'); R(g, x + 1, y - 12, 1, 1, '#1b1464'); }
+  hairOn(g, x - 2, y - 14, 5, o);
+  if (!o.back && o.hs !== undefined) { // eyes, then glasses over them
+    if (has(2)) R(g, x - 2, y - 12, 5, 1, '#0b0a0a');
+    else if (has(1)) { R(g, x - 2, y - 12, 5, 1, '#1b1464'); R(g, x - 1, y - 12, 1, 1, '#bfe7ff'); R(g, x + 1, y - 12, 1, 1, '#bfe7ff'); }
+  }
   if (o.armUp) R(g, x - 4, y - 15 - (o.wob || 0), 1, 6, o.skin);
   if (o.armUp2) R(g, x + 4, y - 15 - (o.wob2 || 0), 1, 6, o.skin);
+  if (has(6)) { const px = o.flip ? x - 5 : x + 4; R(g, px, y - 24, 1, 18, '#6b4a2b'); R(g, o.flip ? px - 6 : px + 1, y - 24, 6, 4, '#e2283b'); R(g, o.flip ? px - 6 : px + 1, y - 24, 2, 4, '#3ec46d'); }
+  if (has(7)) { const px = o.flip ? x - 5 : x + 4; R(g, px, y - 9, 1, 3, '#3e9a57'); R(g, px - 1, y - 11, 3, 2, '#e2283b'); }
+}
+// the hair or hat on a head whose top-left is (hx, hy), w wide (5 standing, 4 on a bike)
+function hairOn(g, hx, hy, w, o) {
+  const c = o.hair, hs = o.hs || 0, back = o.back, side = o.flip ? hx + w - 1 : hx, eyes = () => { if (o.hs === undefined || !(o.acc || []).some(a => a === 1 || a === 2)) { R(g, hx + 1, hy + 2, 1, 1, '#1b1464'); if (w > 4) R(g, hx + 3, hy + 2, 1, 1, '#1b1464'); } };
+  if (hs === 4) { if (!back) eyes(); return; } // bald
+  if (hs === 3) { R(g, hx - 1, hy - 3, w + 2, 4, c); R(g, hx - 1, hy + 1, 1, 2, c); R(g, hx + w, hy + 1, 1, 2, c); if (back) R(g, hx, hy, w, 4, c); else eyes(); return; } // afro
+  if (hs === 5) { R(g, hx, hy - 2, w, 3, c); R(g, hx + (w >> 1), hy - 3, 1, 1, '#f2efe6'); if (back) R(g, hx, hy, w, 3, c); else eyes(); return; } // beanie
+  if (hs === 6) { R(g, hx, hy - 1, w, 2, c); if (!back) { R(g, o.flip ? hx - 2 : hx + w - 1, hy, 3, 1, shade(c, .7)); eyes(); } else R(g, hx, hy, w, 3, c); return; } // cap
+  if (hs === 7) { R(g, hx - 2, hy - 1, w + 4, 1, '#e8c97a'); R(g, hx, hy - 3, w, 2, '#e8c97a'); R(g, hx, hy - 2, w, 1, '#b3121b'); if (back) R(g, hx, hy, w, 3, o.hair); else eyes(); return; } // straw hat
+  if (back) { R(g, hx, hy - 1, w, 4, c); if (hs === 1) R(g, hx, hy + 3, w, 2, c); if (hs === 2) R(g, hx + (w >> 1), hy + 3, 1, 3, c); return; }
+  R(g, hx, hy - 1, w, 2, c); R(g, side, hy + 1, 1, 2, c);
+  if (hs === 1) { R(g, hx - 1, hy, 1, 5, c); R(g, hx + w, hy, 1, 5, c); } // long
+  if (hs === 2) { R(g, o.flip ? hx + w : hx - 1, hy, 1, 2, c); R(g, o.flip ? hx + w + 1 : hx - 2, hy + 1, 1, 3, c); } // ponytail
+  eyes();
 }
 function drawPerson(g, p, now) {
   const q = iso(p.x, p.y), x = Math.round(q.x), y = Math.round(q.y), lk = p.look;
@@ -431,7 +479,7 @@ function drawPerson(g, p, now) {
   else if (e === 2 || e === 7) o.armUp2 = true;
   else if (e === 3) { o.armUp = o.armUp2 = Math.floor(t * 6) % 2 === 0; }
   else if (e === 5 || e === 6) { o.armUp = o.armUp2 = true; o.wob = o.wob2 = Math.floor(t * 4) % 2; }
-  if (p.b) { drawRider(g, x, y, lk, p.flip, p.moving ? p.step : 0, auraOf(p.c)); if (p.i) drawItem(g, x, y - 6, p.i, p.flip, t); if (e) { const hx = p.flip ? x + 2 : x - 2; R(g, hx, y - 23, 1, 5, lk.skin); } return; }
+  if (p.b) { drawRider(g, x, y, lk, p.flip, p.moving ? p.step : 0, lk.bk ? BIKE_COLS[lk.bk - 1] : auraOf(p.c)); if (p.i) drawItem(g, x, y - 6, p.i, p.flip, t); if (e) { const hx = p.flip ? x + 2 : x - 2; R(g, hx, y - 23, 1, 5, lk.skin); } return; }
   guy(g, x, y - bob, o);
   if (p.i) drawItem(g, x, y - bob, p.i, p.flip, t);
   if (e === 2 && !p.back) R(g, x + 3, y - 17, 3, 3, lk.skin); // the raised fist
@@ -507,8 +555,11 @@ function drawRider(g, x, y, lk, flip, step, col) {
   const sh = [X(0), y - 16]; // shoulders
   R(g, Math.min(seat[0], sh[0]) - 1, sh[1], 4, 6, lk.shirt); R(g, Math.min(seat[0], sh[0]) + (f > 0 ? 2 : 0), sh[1] + 1, 1, 5, shade(lk.shirt, .82));
   line(g, sh[0] + f, sh[1] + 1, bars[0], bars[1], lk.skin);
-  R(g, sh[0] - 1, sh[1] - 4, 4, 4, lk.skin); R(g, sh[0] - 1, sh[1] - 5, 4, 2, lk.hair); R(g, f > 0 ? sh[0] - 1 : sh[0] + 2, sh[1] - 3, 1, 2, lk.hair);
-  R(g, f > 0 ? sh[0] + 2 : sh[0] - 1, sh[1] - 3, 1, 1, '#1b1464');
+  const acc = lk.acc || [];
+  if (acc.includes(8)) { R(g, Math.min(seat[0], sh[0]) - 1, sh[1], 4, 6, '#c6ff4a'); R(g, Math.min(seat[0], sh[0]) - 1, sh[1] + 2, 4, 1, '#e8e8e8'); }
+  if (acc.includes(3)) R(g, sh[0] - 1, sh[1] - 1, 5, 2, '#f2efe6'); else if (acc.includes(4)) R(g, sh[0] - 1, sh[1] - 1, 4, 1, '#e2283b');
+  R(g, sh[0] - 1, sh[1] - 4, 4, 4, lk.skin);
+  hairOn(g, sh[0] - 1, sh[1] - 4, 4, { ...lk, flip: f < 0, back: false, hs: lk.hs, acc: [] });
   leg(p1, lk.pants);
 }
 // what people carry from the canteen
@@ -725,7 +776,7 @@ const NPC_NAME = { jornalista: ['Jornalista Laranja', 'Orange Journalist'], oper
 let ws = null, myId = 0, myMode = 'praca', me = null, clockOff = 0, closeAt = 0, live = [], wantOpen = false, retry = 0, closedByServer = false;
 const people = new Map();
 let mural = [], mine = new Set(), reported = new Set(), counts = { praca: {}, apoio: {} };
-let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'null'); } catch (e) { return null; } })() || { name: '', city: '', other: '', mode: 'praca', look: Math.floor(Math.random() * LOOKS) };
+let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'null'); } catch (e) { return null; } })() || { name: '', city: '', other: '', mode: 'praca', look: randomLook() };
 try { reported = new Set(JSON.parse(store.get('acampada-praca-rep') || '[]')); } catch (e) {}
 // a random name for this browser, so the organisers can ban someone until the square closes (it says nothing about who it is)
 const DEV = store.get('acampada-praca-dev') || (() => { const a = new Uint8Array(10); crypto.getRandomValues(a); const d = [...a].map(b => (b % 36).toString(36)).join(''); store.set('acampada-praca-dev', d); return d; })();
@@ -1421,18 +1472,61 @@ function entryScreen(st) {
       <button type="button" data-m="praca" class="${p.mode !== 'apoio' ? 'on' : ''}"><b>${L('Na manif ou na acampada', 'At the protest or a camp')}</b><span>${L('Entras na praça com o teu boneco, a brilhar na cor da tua cidade.', 'You walk into the square with your avatar, glowing in your city’s colour.')}</span></button>
       <button type="button" data-m="apoio" class="${p.mode === 'apoio' ? 'on' : ''}"><b>${L('Longe, a apoiar', 'Far away, supporting')}</b><span>${L('Contas como apoio, vês a praça e escreves no mural.', 'You count as support, watch the square and write on the wall.')}</span></button>
     </div></div>
-    <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="32" height="32"></canvas><button type="button" class="btnp sm" id="reroll">🎲 ${L('Outro visual', 'Another look')}</button></div>
+    <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="40" height="40"></canvas><div class="lookbtns"><button type="button" class="btnp sm" id="reroll">🎲 ${L('Sortear', 'Shuffle')}</button><button type="button" class="btnp sm" id="lookEdit">✏️ ${L('Personalizar', 'Customise')}</button></div></div>
+      <div id="lookEditor" hidden></div>
       <label style="margin-top:12px">${L('Como andas na praça?', 'How do you get around?')}</label><div class="choice" style="grid-template-columns:1fr 1fr">
       <button type="button" data-bk="0" class="${profile.bike ? '' : 'on'}"><b>🚶 ${L('A pé', 'On foot')}</b></button><button type="button" data-bk="1" class="${profile.bike ? 'on' : ''}"><b>🚲 ${L('De bicicleta', 'By bike')}</b><span>${L('25% mais rápido', '25% faster')}</span></button></div></div>
   </div>
   <button class="btnp red" id="enter">${L('Entrar na praça →', 'Enter the square →')}</button><p class="help" id="formErr" style="color:#ff9d8f"></p>
   ${FOOT()}`;
   wireLang();
-  const drawLook = () => { const c = $('lookCv'), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#d9d3c3'; g.fillRect(0, 0, 32, 32); const city = $('fCity').value, a = auraOf(city === '_' ? '' : city); ell(g, 16, 27, 9, rgba(a, .3)); ell(g, 16, 27, 6, rgba(a, .55)); guy(g, 16, 27, { ...lookOf(profile.look) }); };
+  profile.look = lookObj(profile.look);
+  const drawLook = () => {
+    const c = $('lookCv'), g = c.getContext('2d'), lk = lookOf(profile.look); g.imageSmoothingEnabled = false; g.fillStyle = '#d9d3c3'; g.fillRect(0, 0, 40, 40);
+    const city = $('fCity').value, a = auraOf(city === '_' ? '' : city); ell(g, 20, 34, 10, rgba(a, .3)); ell(g, 20, 34, 7, rgba(a, .55));
+    if (profile.bike) drawRider(g, 20, 34, lk, false, 0, lk.bk ? BIKE_COLS[lk.bk - 1] : a); else guy(g, 20, 34, { ...lk });
+  };
+  // the editor: one row per part; accessories are two at most (choosing a third drops the oldest)
+  const ROWS = [
+    ['s', L('Pele', 'Skin'), SKIN],
+    ['hs', L('Cabelo', 'Hair'), [L('Curto', 'Short'), L('Comprido', 'Long'), L('Rabo-de-cavalo', 'Ponytail'), 'Afro', L('Careca', 'Bald'), L('Gorro', 'Beanie'), L('Boné', 'Cap'), L('Chapéu de palha', 'Straw hat')]],
+    ['h', L('Cor do cabelo (ou do chapéu)', 'Hair (or hat) colour'), HAIR],
+    ['t', L('Parte de cima', 'Top'), SHIRTS],
+    ['tp', L('Padrão', 'Pattern'), [L('Lisa', 'Plain'), L('Riscas', 'Stripes'), L('Cravo ao peito', 'Carnation'), L('«Casa para viver»', '«Casa para viver» tee')]],
+    ['b', L('Parte de baixo', 'Bottom'), [L('Calças', 'Trousers'), L('Calções', 'Shorts'), L('Saia', 'Skirt')]],
+    ['bc', L('Cor da parte de baixo', 'Bottom colour'), PANTS],
+    ['acc', L('Acessórios (até 2)', 'Accessories (up to 2)'), [L('Óculos', 'Glasses'), L('Óculos de sol', 'Sunglasses'), 'Keffiyeh', L('Lenço', 'Scarf'), L('Mochila', 'Backpack'), L('Bandeira', 'Flag'), L('Cravo na mão', 'Carnation in hand'), L('Colete refletor', 'Hi-vis vest')]],
+    ['bk', L('Cor da bicicleta', 'Bike colour'), [null, ...BIKE_COLS]]
+  ];
+  const buildEditor = () => {
+    const ed = $('lookEditor'); ed.innerHTML = '';
+    for (const [k, label, opts] of ROWS) {
+      const lab = document.createElement('label'); lab.textContent = label; ed.append(lab);
+      const row = document.createElement('div'); row.className = 'lookopts';
+      opts.forEach((o, i) => {
+        const b = document.createElement('button'); b.type = 'button';
+        const val = k === 'acc' ? i + 1 : i;
+        const on = k === 'acc' ? (profile.look.a1 === val || profile.look.a2 === val) : profile.look[k] === val;
+        if (o === null) { b.textContent = L('Da cidade', 'City’s'); b.className = 'chip'; }
+        else if (typeof o === 'string' && o[0] === '#') { b.className = 'sw'; b.style.background = o; b.setAttribute('aria-label', label + ' ' + (i + 1)); }
+        else { b.className = 'chip'; b.textContent = o; }
+        b.classList.toggle('on', on);
+        b.addEventListener('click', () => {
+          const lk = profile.look;
+          if (k === 'acc') { if (lk.a1 === val) { lk.a1 = lk.a2; lk.a2 = 0; } else if (lk.a2 === val) lk.a2 = 0; else if (!lk.a1) lk.a1 = val; else if (!lk.a2) lk.a2 = val; else { lk.a1 = lk.a2; lk.a2 = val; } }
+          else lk[k] = val;
+          buildEditor(); drawLook();
+        });
+        row.append(b);
+      });
+      ed.append(row);
+    }
+  };
+  $('lookEdit').addEventListener('click', () => { const ed = $('lookEditor'); ed.hidden = !ed.hidden; if (!ed.hidden) buildEditor(); });
   const modeSync = () => { $('lookBox').hidden = profile.mode === 'apoio'; };
-  for (const b of box.querySelectorAll('[data-bk]')) b.addEventListener('click', () => { profile.bike = b.dataset.bk === '1'; for (const x of box.querySelectorAll('[data-bk]')) x.classList.toggle('on', x === b); });
+  for (const b of box.querySelectorAll('[data-bk]')) b.addEventListener('click', () => { profile.bike = b.dataset.bk === '1'; for (const x of box.querySelectorAll('[data-bk]')) x.classList.toggle('on', x === b); drawLook(); });
   $('fCity').addEventListener('change', () => { $('fOther').hidden = $('fCity').value !== '_'; drawLook(); });
-  $('reroll').addEventListener('click', () => { profile.look = Math.floor(Math.random() * LOOKS); drawLook(); });
+  $('reroll').addEventListener('click', () => { profile.look = randomLook(); if (!$('lookEditor').hidden) buildEditor(); drawLook(); });
   for (const b of box.querySelectorAll('[data-m]')) b.addEventListener('click', () => { profile.mode = b.dataset.m; for (const x of box.querySelectorAll('[data-m]')) x.classList.toggle('on', x === b); modeSync(); });
   drawLook(); modeSync();
   $('enter').addEventListener('click', () => {

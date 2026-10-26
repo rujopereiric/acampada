@@ -11,7 +11,15 @@ const OPEN_BEFORE = 60, DEFAULT_HOURS = 3, CLEANUP_AFTER = 24 * 3600e3;
 const MAX_AVATARS = 250, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MAX = 140, HIDE_REPORTS = 3, AVISO_MAX = 160;
 const W = 22, H = 22; // the square in tiles
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
-const LOOKS = 5 * 6 * 9; // skin x hair x shirt, the same colours as the game
+const LOOKS = 5 * 6 * 9; // the old looks: one number (skin x hair x shirt)
+// the avatar editor (multiplayer.html: LOOK_RANGES): how many choices each part has; anything else becomes 0
+const LOOK_RANGES = { s: 7, hs: 8, h: 9, t: 10, tp: 4, b: 3, bc: 4, a1: 9, a2: 9, bk: 11 };
+function cleanLook(l) {
+  if (typeof l === 'number') return Math.abs(l | 0) % LOOKS;
+  if (!l || typeof l !== 'object') return 0;
+  const o = {}; for (const [k, n] of Object.entries(LOOK_RANGES)) { const v = l[k] | 0; o[k] = v >= 0 && v < n ? v : 0; }
+  if (o.a2 === o.a1) o.a2 = 0; return o;
+}
 const PHRASES = 15, GESTURES = 8; // as many as in multiplayer.html (PHRASES, GESTURES): anything else is ignored
 // one address can be many people: phone networks put hundreds of phones behind one address (CGNAT), so the limits per
 // address are generous; they only stop one script from filling the square or the wall
@@ -220,7 +228,7 @@ export class Praca {
       const c = String(m.city || '').trim().slice(0, 24); const cc = clean(c, 24); p.city = CITIES.includes(c) ? c : cc.ok ? cc.text : 'Outra';
       const avatars = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length;
       p.mode = m.mode === 'praca' && avatars < MAX_AVATARS ? 'praca' : 'apoio';
-      p.look = Math.abs(m.look | 0) % LOOKS; p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
+      p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.mode === 'praca').map(q => this.pub(q));
       this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), cartazes: this.cartazes(), clima: this.climaNow() });
       if (p.mode === 'praca') this.broadcast({ t: 'join', p: this.pub(p) }, p);
