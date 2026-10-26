@@ -99,6 +99,23 @@ button{ cursor:pointer; touch-action:manipulation; }
 #aviso[hidden]{ display:none; } #aviso span{ flex:1; } #aviso span::before{ content:'📣 '; }
 #aviso button{ background:none; border:none; font:800 16px/1 Jost, sans-serif; color:var(--ink); padding:2px 4px; }
 .write.ro textarea{ background:#d9d3c3; } .write.ro button{ opacity:.5; }
+.ctx{ position:absolute; left:50%; bottom:62px; transform:translateX(-50%); z-index:2; background:var(--redbox); color:#fff; border:2px solid #fff; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; white-space:nowrap; box-shadow:0 3px 0 rgba(11,10,10,.5); }
+.zoom.on{ background:var(--lime); }
+.ctx:disabled{ background:#5b554f; } .ctx[hidden]{ display:none; }
+#direto{ position:absolute; left:0; right:58px; bottom:0; z-index:2; background:#d8261c; color:#fff; padding:6px 10px 6px; font:700 14px/1.25 Jost, sans-serif; border-top:2px solid #0b0a0a; }
+#direto[hidden]{ display:none; } #direto b{ display:inline-block; background:#fff; color:#d8261c; font:800 11px/1 Jost, sans-serif; letter-spacing:1px; text-transform:uppercase; padding:3px 6px 2px; margin-right:8px; vertical-align:1px; animation:liveb 1s steps(2) infinite; } @keyframes liveb{ 50%{ opacity:.55; } }
+#direto small{ display:block; font:600 11px/1.2 Jost, sans-serif; opacity:.85; margin:3px 0 2px; }
+.npcline{ margin:0 0 10px; font:600 17px/1.3 Jost, sans-serif; background:#fff; color:var(--ink); padding:9px 11px 8px; position:relative; }
+.npcline::after{ content:''; position:absolute; left:18px; bottom:-8px; border:8px solid transparent; border-top-color:#fff; border-bottom:0; }
+.opts{ grid-template-columns:1fr; } .opts button{ font-size:15px; }
+.npclab{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; margin:12px 0 0; }
+#npcBody{ overflow:auto; } #npcBody > button.ghost, .row2 .ghost{ margin-top:10px; background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:8px 10px 7px; }
+.redbtn{ margin-top:10px; background:var(--redbox); color:#fff; border:none; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; }
+.cartazIn{ width:100%; resize:none; border:2px solid var(--paper); background:#fff; color:var(--ink); padding:8px; font:700 18px/1.2 Jost, sans-serif; }
+.cartaz{ background:#f2efe6; color:var(--ink); border:3px solid var(--ink); font:800 22px/1.15 Jost, sans-serif; text-transform:uppercase; padding:14px 12px; text-align:center; transform:rotate(-1.5deg); margin:4px 4px 10px; }
+.dot{ display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid var(--ink); vertical-align:0; }
+#fotoImg{ display:block; max-width:100%; max-height:52vh; margin:0 auto; border:2px solid var(--paper); }
+.row2{ display:flex; gap:8px; justify-content:center; } .row2 button{ flex:1; max-width:220px; }
 .zoom{ position:absolute; right:8px; bottom:8px; z-index:2; width:44px; height:44px; background:var(--paper); color:var(--ink); border:2px solid var(--ink); font:800 22px/1 Jost, sans-serif; padding:0; }
 @media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } }
 
@@ -156,6 +173,11 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div id="djTag" hidden></div>
     <div id="aviso" hidden><span id="avisoTxt"></span><button id="avisoX" aria-label="Fechar">✕</button></div>
     <button id="bZoom" class="zoom" aria-label="Zoom">＋</button>
+    <button id="bBike" class="zoom" style="bottom:58px" aria-label="Bicicleta" hidden>🚲</button>
+    <button id="ctxBtn" class="ctx" hidden></button>
+    <div id="direto" hidden><b>● <span data-t="live"></span></b><small id="diretoQ"></small><span id="diretoTxt"></span></div>
+    <div class="sheet" id="npcSheet" hidden><h3><span id="npcTitle"></span><button class="x" data-close>✕</button></h3><div id="npcBody"></div></div>
+    <div class="sheet" id="fotoSheet" hidden><h3><span data-t="photo"></span><button class="x" data-close>✕</button></h3><img id="fotoImg" alt=""><div class="row2"><button class="redbtn" id="fotoShare" data-t="share"></button><button class="ghost" id="fotoSave" data-t="save"></button></div></div>
     <div class="sheet" id="phraseSheet" hidden><h3><span data-t="phrases"></span><button class="x" data-close>✕</button></h3><div class="grid" id="phraseGrid"></div></div>
     <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
   </div>
@@ -232,7 +254,7 @@ const GESTURES = [null,
 const TXT = {
   phrases: ['Gritar uma palavra de ordem', 'Shout a slogan'], gestures: ['Fazer um gesto', 'Make a gesture'],
   say: ['Gritar', 'Shout'], sayS: ['Palavras de ordem', 'Slogans'], gest: ['Gestos', 'Gestures'], gestS: ['Acenar, palmas…', 'Wave, clap…'],
-  mural: ['Mural', 'Wall'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
+  mural: ['Mural', 'Wall'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
 };
 function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
@@ -320,24 +342,29 @@ let DECOR = [];
 function makeDecor() {
   DECOR = [];
   for (const [x, y] of [[1, 1], [W - 1, 1], [1, H - 1], [W - 1, H - 1], [CXg, .8], [.8, CYg], [W - .8, CYg], [CXg, H - .8]]) DECOR.push({ gx: x, gy: y, k: 'lamp' });
-  for (const [x, y, r] of [[4, 2, 0], [W - 5, 2, 0], [2, 5, 1], [2, H - 6, 1], [W - 2, 5, 1], [W - 2, H - 6, 1]]) DECOR.push({ gx: x, gy: y, k: 'bench', r });
+  for (const [x, y, r] of [[4, 2, 0], [2, 5, 1], [2, H - 6, 1], [W - 2, 5, 1], [W - 2, H - 6, 1]]) DECOR.push({ gx: x, gy: y, k: 'bench', r });
   for (const [x, y] of [[W - 3, 3], [3, H - 3]]) DECOR.push({ gx: x, gy: y, k: 'tree' });
   DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' }); // the giant carnation of the 25th of April, in the middle
+  DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' }); // the fountain (the characters walk round it: personagens.js OBST)
+  DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' }); // the canteen's table
 }
 function drawDecor(g, d) {
   const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
   if (d.k === 'cravo') return drawCravo(g, d);
+  if (d.k === 'fonte') return drawFonte(g, d);
+  if (d.k === 'cantina') return drawCantina(g, d);
   if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
   else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
   else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
 }
-const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75 }[d.k]));
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1 }[d.k]));
 // the statue: a granite plinth, a bronze-green stem with two leaves and a huge red carnation on top
 function drawCravo(g, d) {
   const c = d.gx, r = d.gy;
   box(g, c - 1.5, r - 1.5, c + 1.5, r + 1.5, 0, 4, '#d9d3c3', '#c9c2b0', '#b4ac99');
   box(g, c - 1.1, r - 1.1, c + 1.1, r + 1.1, 4, 12, '#e6e0d1', '#cfc8b6', '#b9b19e');
-  const pl = iso(c - .2, r + 1.1, 6); R(g, pl.x - 9, pl.y - 6, 14, 5, '#3a3160'); R(g, pl.x - 8, pl.y - 5, 12, 1, '#c9b46a'); R(g, pl.x - 8, pl.y - 3, 9, 1, '#c9b46a'); // the plaque: 25 de Abril
+  const pl = iso(c - .3, r + 1.5, 1); R(g, pl.x - 8, pl.y - 3, 12, 3, '#3a3160'); R(g, pl.x - 7, pl.y - 2, 10, 1, '#c9b46a'); // the plaque: 25 de Abril
+  drawCartazes(g);
   const q = iso(c, r, 16), x = Math.round(q.x), y = Math.round(q.y);
   // stem, slightly bent, and the leaves
   for (let i = 0; i < 92; i++) { const sx = x + Math.round(Math.sin(i / 28) * 4); R(g, sx - 2, y - i, 4, 1, i % 9 < 2 ? '#2f7a45' : '#3e9a57'); R(g, sx + 1, y - i, 1, 1, '#25603a'); }
@@ -383,16 +410,18 @@ function drawPerson(g, p, now) {
   // the city aura: a glowing ring on the ground
   const a = auraOf(p.c);
   ell(g, x, y, 8, rgba(a, .22)); ell(g, x, y, 6, rgba(a, .38)); ell(g, x, y, 4, rgba(a, .5));
-  const t = now / 1000, ph = Math.floor(t * 4 + p.id) % 4;
+  const t = now / 1000, ph = Math.floor(t * 4 + Math.abs(p.id)) % 4;
   const o = { ...lk, moving: p.moving, step: p.step, flip: p.flip, back: p.back };
   let bob = 0;
-  if (p.dancing && !p.moving) { bob = ph % 2; o.moving = bob === 0; o.step = ph; o.flip = ph > 1; o.back = false; o.armUp = ph % 2 === 0; o.armUp2 = ph % 2 === 1; }
+  if (p.dancing && !p.moving && !p.b) { bob = ph % 2; o.moving = bob === 0; o.step = ph; o.flip = ph > 1; o.back = false; o.armUp = ph % 2 === 0; o.armUp2 = ph % 2 === 1; }
   const e = p.e && now - p.eAt < 4000 ? p.e : 0;
   if (e === 1) { o.armUp2 = true; o.wob2 = Math.floor(t * 6) % 2; }
   else if (e === 2 || e === 7) o.armUp2 = true;
   else if (e === 3) { o.armUp = o.armUp2 = Math.floor(t * 6) % 2 === 0; }
   else if (e === 5 || e === 6) { o.armUp = o.armUp2 = true; o.wob = o.wob2 = Math.floor(t * 4) % 2; }
+  if (p.b) { bike(g, x, y, p.flip, auraOf(p.c), 5); bob += 5; o.armUp = o.armUp2 = false; if (!p.moving) o.moving = false; }
   guy(g, x, y - bob, o);
+  if (p.i) drawItem(g, x, y - bob, p.i, p.flip, t);
   if (e === 2 && !p.back) R(g, x + 3, y - 17, 3, 3, lk.skin); // the raised fist
   if (e === 7) { R(g, x + 3, y - 17, 4, 3, '#e8e2d0'); R(g, x + 6, y - 18, 2, 5, '#e2283b'); } // a megaphone
 }
@@ -427,6 +456,148 @@ function drawDJ(g, d, now) {
 }
 const DANCE_R = 3.6;
 
+/* ================= the characters (the square moves them: see personagens.js on the server) ================= */
+function cyl(g, cx, cy, r, h, col, top) {
+  const n = Math.round(r);
+  for (let dx = -n; dx < n; dx++) { const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / r) ** 2)); const k = (dx + .5) / r; const f = k < -.35 ? 1.04 : k < .35 ? .92 : .76; vl(g, Math.round(cx) + dx, cy - h, cy + r / 2 * e, shade(col, f)); }
+  ell(g, cx, cy - h, r, top || shade(col, 1.1));
+}
+function bmp(g, rows, pal, x, y, flip = false, vflip = false) {
+  const w = rows[0].length, hgt = rows.length; x = Math.round(x); y = Math.round(y);
+  for (let r = 0; r < hgt; r++) { const row = rows[vflip ? hgt - 1 - r : r]; for (let c = 0; c < w; c++) { const col = pal[row[c]]; if (!col) continue; g.fillStyle = col; g.fillRect(x + (flip ? w - 1 - c : c), y + r, 1, 1); } }
+}
+const WHEEL = [[-1, -3], [0, -3], [1, -3], [2, -2], [3, -1], [3, 0], [3, 1], [2, 2], [1, 3], [0, 3], [-1, 3], [-2, 2], [-3, 1], [-3, 0], [-3, -1], [-2, -2]];
+function wheel(g, cx, cy) { for (const [a, b] of WHEEL) R(g, cx + a, cy + b, 1, 1, '#1b1464'); R(g, cx, cy, 1, 1, '#9aa0ad'); }
+function bike(g, x, y, fl, col, len) {
+  x = Math.round(x); y = Math.round(y);
+  R(g, x - len - 2, y, len * 2 + 5, 1, 'rgba(30,10,70,.25)');
+  wheel(g, x - len, y - 3); wheel(g, x + len, y - 3);
+  R(g, x - len, y - 4, len * 2, 1, col); R(g, x - len + 2, y - 6, len * 2 - 4, 1, col);
+  const front = fl ? x - len : x + len - 1; R(g, front, y - 9, 1, 6, col); R(g, front - 1, y - 9, 3, 1, '#1b1464');
+}
+// what people carry from the canteen
+function drawItem(g, x, y, i, flip, t) {
+  const hx = flip ? x - 6 : x + 3;
+  if (i === 1) { R(g, hx, y - 8, 4, 2, '#f2efe6'); R(g, hx, y - 9, 4, 1, '#ff8a2a'); if (Math.floor(t * 2) % 2) R(g, hx + 1, y - 12, 1, 2, 'rgba(255,255,255,.7)'); }
+  else if (i === 2) { R(g, hx, y - 9, 2, 3, '#f2efe6'); R(g, hx, y - 10, 2, 1, '#6b3a1e'); if (Math.floor(t * 2) % 2) R(g, hx, y - 13, 1, 2, 'rgba(255,255,255,.7)'); }
+  else if (i === 3) { R(g, hx - 1, y - 9, 6, 2, '#d9a35a'); R(g, hx, y - 10, 4, 1, '#e8bd78'); }
+}
+// the fountain, in the near corner
+function drawFonte(g, d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), t = performance.now() / 1000;
+  ell(g, x + 2, y + 3, 27, 'rgba(30,10,70,.2)');
+  cyl(g, x, y, 22, 5, '#cfc8b6', '#dad3c2'); ell(g, x, y - 5, 19, '#4fb6e8'); ell(g, x, y - 5, 15, '#6fc9ec');
+  for (let i = 0; i < 6; i++) { const a = i + t * .7; R(g, x + Math.cos(a) * 12, y - 5 + Math.sin(a) * 4, 2, 1, '#d8f3ff'); }
+  cyl(g, x, y - 5, 3, 13, '#e2dccb'); cyl(g, x, y - 18, 8, 3, '#d9d3c3'); ell(g, x, y - 21, 6, '#6fc9ec');
+  for (let i = 0; i < 8; i++) { const k = (t * 1.3 + i / 8) % 1, a = i / 8 * Math.PI * 2; R(g, x + Math.cos(a) * (4 + k * 11), y - 22 - Math.sin(k * Math.PI) * 7 + k * 17 + Math.sin(a) * k * 4, 1, 2, '#bfe9ff'); }
+}
+// the canteen: a table, a big pot, the banner behind
+function drawCantina(g, d) {
+  const c = d.gx, r = d.gy, t = performance.now() / 1000;
+  const b0 = iso(c - .9, r - .9, 0), b1 = iso(c + .6, r - 1.2, 0);
+  vl(g, Math.round(b0.x), b0.y - 30, b0.y, '#6b4a2b'); vl(g, Math.round(b1.x), b1.y - 30, b1.y, '#6b4a2b');
+  for (let x = Math.round(b0.x); x <= Math.round(b1.x); x++) { const yy = b0.y + (b1.y - b0.y) * (x - b0.x) / (b1.x - b0.x || 1) - 30; vl(g, x, yy, yy + 7, '#b3121b'); if ((x - Math.round(b0.x)) % 3 === 1) R(g, x, yy + 3, 1, 1, '#f2efe6'); }
+  box(g, c - .75, r - .35, c + .75, r + .35, 0, 7, '#f2efe6', '#d8d1bf', '#c3bba7');
+  const p = iso(c - .2, r, 7); cyl(g, p.x, p.y, 5, 6, '#9aa0ad', '#c9a46a');
+  for (let i = 0; i < 3; i++) { const k = (t * .8 + i / 3) % 1; R(g, p.x - 2 + i * 2 + Math.sin(k * 6) , p.y - 8 - k * 12, 1, 2, `rgba(255,255,255,${.7 * (1 - k)})`); }
+  const cup = iso(c + .45, r + .1, 7); R(g, cup.x - 1, cup.y - 3, 2, 3, '#f2efe6'); R(g, cup.x + 2, cup.y - 3, 2, 3, '#f2efe6'); R(g, cup.x - 4, cup.y - 2, 4, 2, '#d9a35a');
+}
+
+/* ---------- posters on the carnation ---------- */
+let cartazes = [], CARTAZ_SLOTS = 8, myCartaz = null;
+const CARTAZ_SPOTS = []; // 4 on each face of the plinth that looks at the square
+for (let i = 0; i < 4; i++) CARTAZ_SPOTS.push({ gx: 11 - .82 + i * .55, gy: 11 + 1.1 });
+for (let j = 0; j < 4; j++) CARTAZ_SPOTS.push({ gx: 11 + 1.1, gy: 11 + .82 - j * .55 });
+const CARTAZ_COL = ['#f2efe6', '#ffe36a', '#ffb3c7', '#bfe7ff', '#d6f5b0'];
+function drawCartazes(g) {
+  for (const c of cartazes) {
+    const s = CARTAZ_SPOTS[c.slot]; if (!s) continue;
+    const p = iso(s.gx, s.gy, 14), x = Math.round(p.x) - 3, y = Math.round(p.y), h = (c.id * 7) % 5;
+    R(g, x, y, 7, 8, '#0b0a0a'); R(g, x, y, 6, 7, CARTAZ_COL[c.id % CARTAZ_COL.length]);
+    R(g, x + 1, y + 2, 4, 1, h % 2 ? '#b3121b' : '#1b1464'); R(g, x + 1, y + 4, 3 + (h % 2), 1, '#1b1464'); R(g, x + 2, y, 2, 1, '#9aa0ad');
+  }
+}
+const nearCravo = () => me && Math.hypot(me.x - 11, me.y - 11) < 3.4;
+
+/* ---------- the characters ---------- */
+const npcs = new Map(); let ball = null;
+const npcSay = new Map(); // id -> { text, at }: what a character just said
+function addNpc(o) {
+  const n = npcs.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false };
+  n.k = o.k; n.s = o.s; n.g = o.g; n.vr = o.vr || 0; if (n.x === undefined) { n.x = o.x; n.y = o.y; } n.tx = o.x; n.ty = o.y;
+  npcs.set(o.id, n);
+}
+const LOOK_OPERADOR = { skin: '#d9a37a', hair: '#1a1a24', shirt: '#2a2a33', pants: '#3a3a44' };
+const LOOK_FOTO = { skin: '#a8714a', hair: '#b03a5a', shirt: '#9a6bff', pants: '#2b2d55' };
+const LOOK_SOPA = { skin: '#d9a37a', hair: '#6b3a1e', shirt: '#e2283b', pants: '#3a3a44' };
+const DOG = ['........K..K', '........KK.KK', '........KTTTK', 'K.......TTTTTN', '.K.....KTTT..', '.KKKKKKKKT...', '.KKKKKKKKT...', '..TTTTTTT....', '..T.T...T.T..', '..T.T...T.T..'].map(r => r.padEnd(14, '.'));
+const DOG2 = DOG.slice(0, 8).concat(['...T.T.T.T...', '...T.T.T.T...']).map(r => r.padEnd(14, '.'));
+const DOG_SIT = ['', '', '.......K..K', '.......KK.KK', '.......KTTTK', 'K......TTTTTN', '.K....KTTT..', '..KKKKKKT...', '..KKKKKKT...', '..TTTTTT....'].map(r => r.padEnd(14, '.'));
+const DOG_PAL = { K: '#c99a52', T: '#e8c27a', N: '#2a1a10' };
+function drawNpc(g, n, now) {
+  const q = iso(n.x, n.y), x = Math.round(q.x), y = Math.round(q.y), t = now / 1000;
+  if (n.k === 'jornalista') {
+    const flee = n.s === 5;
+    guy(g, x, y, { skin: '#f08a24', hair: '#f08a24', shirt: '#cfc6b4', pants: '#3a3f55', moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp: flee, armUp2: flee, wob: flee ? Math.floor(t * 8) % 2 : 0 });
+    R(g, x - 3, y - 14, 7, 4, '#f08a24'); R(g, x - 2, y - 16, 5, 2, '#f39a3a'); R(g, x, y - 18, 1, 2, '#5a3a1a'); R(g, x + 1, y - 18, 2, 1, '#3f9a4a');
+    if (!n.back) { R(g, x - 1, y - 13, 1, 1, '#1b1464'); R(g, x + 1, y - 13, 1, 1, '#1b1464'); }
+    if (!flee) { const mx = n.flip ? x - 5 : x + 4; R(g, mx, y - 10, 1, 4, '#16121a'); R(g, mx - 1, y - 12, 3, 2, '#3a3a44'); }
+    return;
+  }
+  if (n.k === 'operador') {
+    guy(g, x, y, { ...LOOK_OPERADOR, moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    const cx = n.flip ? x - 6 : x + 1; R(g, cx, y - 15, 6, 4, '#16121a'); R(g, n.flip ? cx - 2 : cx + 6, y - 14, 2, 2, '#5a6a8a');
+    if (n.s === 1 && Math.floor(t * 2) % 2) R(g, cx + 1, y - 16, 1, 1, '#ff3b3b');
+    return;
+  }
+  if (n.k === 'fotografa') {
+    guy(g, x, y, { ...LOOK_FOTO, moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    R(g, x - 3, y - 16, 7, 2, '#e2283b'); R(g, x + 1, y - 17, 2, 1, '#e2283b');
+    const cx = n.flip ? x - 4 : x + 1; R(g, cx, y - 13, 4, 3, '#16121a'); R(g, cx + 1, y - 12, 2, 1, '#5a6a8a');
+    if (n.s === 6 && !inPhoto && Math.floor(t * 10) % 3 === 0) { circ(g, cx + 2, y - 12, 6, 'rgba(255,255,255,.85)'); }
+    return;
+  }
+  if (n.k === 'cantina') {
+    guy(g, x, y, { ...LOOK_SOPA, moving: false, flip: false, back: false, armUp2: n.s === 1, wob2: Math.floor(t * 6) % 2 });
+    R(g, x - 2, y - 10, 5, 6, '#f2efe6'); R(g, x - 2, y - 16, 5, 2, '#ffd23a');
+    return;
+  }
+  if (n.k === 'curioso') {
+    const lk = lookOf(Math.floor(n.vr / 4)), v = n.vr % 4, old = v === 1 || v === 3;
+    const o = { ...lk, hair: old ? '#c9c4c4' : lk.hair, moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp2: n.s === 7 };
+    if (v === 2 && !n.back) R(g, n.flip ? x + 3 : x - 5, y - 11, 3, 6, '#2f8fff');
+    guy(g, x, y, o);
+    if (v === 0) { const sx = n.flip ? x - 8 : x + 4; R(g, sx, y - 6, 4, 6, '#c0503a'); R(g, sx + 1, y - 8, 2, 2, '#3a3a44'); R(g, x - 4, y - 16, 9, 1, '#f2d7a0'); R(g, x - 2, y - 17, 5, 1, '#f2d7a0'); }
+    else if (v === 1 && n.s !== 7) { R(g, n.flip ? x - 7 : x + 2, y - 11, 5, 4, '#f2efe6'); R(g, n.flip ? x - 6 : x + 3, y - 10, 3, 1, '#9aa0ad'); }
+    else if (v === 2 && n.back) R(g, x - 3, y - 11, 7, 6, '#2f8fff');
+    else if (v === 3) vl(g, n.flip ? x - 4 : x + 4, y - 8, y, '#6b4a2b');
+    if (n.g) { const px = x + 4; vl(g, px, y - 26, y - 9, '#6b4a2b'); R(g, px - 6, y - 32, 13, 8, '#0b0a0a'); R(g, px - 6, y - 32, 12, 7, '#f2efe6'); R(g, px - 4, y - 30, 8, 1, '#b3121b'); R(g, px - 4, y - 28, 6, 1, '#1b1464'); }
+    return;
+  }
+  if (n.k === 'cao') {
+    R(g, x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)');
+    if (n.s === 2) { bmp(g, DOG_SIT, DOG_PAL, x - 7, y - 10, n.flip); for (let i = 0; i < 2; i++) { const k = (t * .9 + i / 2) % 1; heart(g, x - 2 + i * 5, y - 14 - k * 10, k); } }
+    else if (n.s === 3) { bmp(g, DOG, DOG_PAL, x - 7, y - 9 + (Math.floor(t * 6) % 2), Math.floor(t * 3) % 2 === 0, true); }
+    else { bmp(g, n.moving && Math.floor(n.step) % 2 ? DOG2 : DOG, DOG_PAL, x - 7, y - 10, n.flip);
+      if (n.s === 4) { const mx = n.flip ? x - 9 : x + 6; R(g, mx, y - 8, 3, 1, '#16121a'); R(g, n.flip ? mx - 2 : mx + 3, y - 9, 2, 2, '#3a3a44'); } }
+  }
+}
+function heart(g, x, y, k) { const c = `rgba(255,79,139,${1 - k})`; R(g, x, y, 1, 1, c); R(g, x + 2, y, 1, 1, c); R(g, x, y + 1, 3, 1, c); R(g, x + 1, y + 2, 1, 1, c); }
+function drawBall(g, b, now) {
+  const q = iso(b.x, b.y), x = Math.round(q.x), y = Math.round(q.y);
+  const hop = b.moving ? Math.abs(Math.sin(now / 90)) * 5 : 0;
+  ell(g, x, y + 1, 3, 'rgba(30,10,70,.3)'); circ(g, x, y - 2 - hop, 2.5, '#e2283b'); R(g, x - 1, y - 4 - hop, 1, 1, '#ffb3b3');
+}
+// talking to them: ready answers (the journalist also takes your own words)
+const INTERVIEW = [
+  { q: ['Porque é que está aqui hoje?', 'Why are you here today?'], a: [['Porque a casa é um direito, não é um luxo.', 'Because a home is a right, not a luxury.'], ['Porque metade do meu salário vai para a renda.', 'Because half my wage goes on rent.'], ['Porque ninguém devia viver numa tenda.', 'Because nobody should have to live in a tent.']] },
+  { q: ['O que pede ao governo?', 'What are you asking the government for?'], a: [['Tetos às rendas, já!', 'Rent caps, now!'], ['Casas vazias para quem precisa.', 'Empty homes for those who need them.'], ['Habitação pública a sério.', 'Real public housing.']] },
+  { q: ['Vão ficar até quando?', 'How long will you stay?'], a: [['Até haver casa para todos.', 'Until there are homes for everyone.'], ['O tempo que for preciso.', 'As long as it takes.'], ['Hoje, amanhã e depois.', 'Today, tomorrow and the day after.']] }
+];
+const CURIOUS_Q = [['O que se passa aqui? É algum festival?', 'What’s going on here? Is it a festival?'], ['Isto é por causa das rendas?', 'Is this about the rents?'], ['Posso perguntar o que estão a fazer?', 'May I ask what you’re doing?'], ['No meu tempo também se acampava... porquê?', 'We camped too in my day... why now?']];
+const EXPLAIN = [['As rendas estão impossíveis e estamos a lutar por casa.', 'Rents are impossible and we’re fighting for homes.'], ['É uma acampada pela habitação. Junta-te a nós!', 'It’s a camp for housing. Join us!'], ['Ninguém devia ter de escolher entre comer e pagar a renda.', 'Nobody should have to choose between eating and paying rent.']];
+const NPC_NAME = { jornalista: ['Jornalista Laranja', 'Orange Journalist'], operador: ['Jornalista Laranja', 'Orange Journalist'], fotografa: ['Fotógrafa', 'Photographer'], cantina: ['Cantina', 'Canteen'], curioso: ['Curioso', 'Passer-by'], cao: ['Labrador', 'Labrador'] };
+
 /* ================= the connection ================= */
 let ws = null, myId = 0, myMode = 'praca', me = null, clockOff = 0, closeAt = 0, live = [], wantOpen = false, retry = 0, closedByServer = false;
 const people = new Map();
@@ -435,7 +606,7 @@ let profile = (() => { try { return JSON.parse(store.get('acampada-praca') || 'n
 try { reported = new Set(JSON.parse(store.get('acampada-praca-rep') || '[]')); } catch (e) {}
 // a random name for this browser, so the organisers can ban someone until the square closes (it says nothing about who it is)
 const DEV = store.get('acampada-praca-dev') || (() => { const a = new Uint8Array(10); crypto.getRandomValues(a); const d = [...a].map(b => (b % 36).toString(36)).join(''); store.set('acampada-praca-dev', d); return d; })();
-let djState = { mode: 'auto', ok: true }, cfg = { muralRO: false, policia: false, ciclistas: false }, aviso = '', closedBy = null;
+let convencidos = 0, djState = { mode: 'auto', ok: true }, cfg = { muralRO: false, policia: false, ciclistas: false }, aviso = '', closedBy = null;
 
 let inside = false; // got into the square at least once this time (then drops reconnect on their own)
 function connect() {
@@ -443,7 +614,7 @@ function connect() {
   wantOpen = true; closedByServer = false;
   try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
-  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV })); };
+  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
@@ -463,7 +634,7 @@ function addPerson(o) {
   const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
   p.n = o.n; p.c = o.c; p.look = lookOf(o.l);
   if (p.x === undefined) { p.x = o.x; p.y = o.y; }
-  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); }
+  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); } p.i = o.i || 0; p.b = !!o.b;
   people.set(o.id, p); return p;
 }
 function onMsg(m) {
@@ -474,6 +645,9 @@ function onMsg(m) {
     me = null; if (myMode === 'praca') { me = addPerson(m.me); me.mine = true; camX = null; }
     mural = m.mural || []; counts = m.counts || counts; closedBy = m.by || null;
     if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
+    npcs.clear(); for (const o of m.npcs || []) addNpc(o);
+    ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
+    cartazes = m.cartazes || []; CARTAZ_SLOTS = m.slots || CARTAZ_SLOTS; convencidos = m.convencidos || 0;
     hideToast();
     if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
@@ -482,13 +656,30 @@ function onMsg(m) {
   if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
   if (m.t === 'leave') { people.delete(m.id); return; }
   if (m.t === 'tick') {
-    for (const [id, x, y, e] of m.p) { if (id === myId) continue; const p = people.get(id); if (!p || !isFinite(x) || !isFinite(y)) continue; p.tx = x; p.ty = y; const g = GESTURES[e] ? e : 0; if (g !== p.e) { p.e = g; p.eAt = performance.now(); } }
+    for (const [id, x, y, e, i, b] of m.p || []) { const p = people.get(id); if (!p) continue; p.i = i || 0; p.b = !!b; if (id === myId || !isFinite(x) || !isFinite(y)) continue; p.tx = x; p.ty = y; const g = GESTURES[e] ? e : 0; if (g !== p.e) { p.e = g; p.eAt = performance.now(); } }
+    for (const [id, x, y, s, g] of m.n || []) { const n = npcs.get(id); if (!n || !isFinite(x) || !isFinite(y)) continue; n.tx = x; n.ty = y; n.s = s; n.g = g; }
+    if (m.b) { if (!ball) ball = { x: m.b[0], y: m.b[1] }; ball.tx = m.b[0]; ball.ty = m.b[1]; ball.held = !!m.b[2]; }
     return;
   }
   if (m.t === 'say') { const p = people.get(m.id); if (p && PHRASES[m.k]) { p.say = m.k; p.sayAt = performance.now(); if (p !== me) blip(p); } return; }
   if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
   if (m.t === 'dj') { djState = m.dj; return; }
-  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); return; }
+  if (m.t === 'npc+') { addNpc(m.n); return; }
+  if (m.t === 'npc-') { npcs.delete(m.id); return; }
+  if (m.t === 'ball') { ball = m.b ? { x: m.b[0], y: m.b[1], tx: m.b[0], ty: m.b[1], held: !!m.b[2] } : null; return; }
+  if (m.t === 'pergunta') { journalistDialog(m.q); return; }
+  if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
+  if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && m.d.n === (me && me.n)) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
+  if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
+  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
+  if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
+  if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
+  if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
+  if (m.t === 'foto') { flashAt = performance.now(); flashPos = { x: m.x, y: m.y }; shutter(); if (m.ids.includes(myId)) setTimeout(() => makePhoto(m.ids, m.x, m.y, m.ev), 350); return; }
+  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { myCartaz = m.c.id; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
+  if (m.t === 'cartaz-') { cartazes = cartazes.filter(c => c.id !== m.id); return; }
+  if (m.t === 'cartazno') { const w = NPC_NO[m.why] || (m.why === 'ja' ? ['Já tens um cartaz no cravo.', 'You already have a poster on the carnation.'] : null); const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e) e.textContent = t; else if (t) toast(t, 3000); return; }
+  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); return; }
   if (m.t === 'aviso') { setAviso(m.text || ''); return; }
   if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
   if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
@@ -541,7 +732,7 @@ function update(dt, now) {
     if (keys.up) { dx -= 1; dy -= 1; } if (keys.down) { dx += 1; dy += 1; } if (keys.left) { dx -= 1; dy += 1; } if (keys.right) { dx += 1; dy -= 1; }
     if (dx || dy) { const n = Math.hypot(dx, dy); dx /= n; dy /= n; me.goal = null; camFree = 0; }
     else if (me.goal) { const ex = me.goal.gx - me.x, ey = me.goal.gy - me.y, d = Math.hypot(ex, ey); if (d < .08) me.goal = null; else { dx = ex / d; dy = ey / d; } }
-    const sp = 3;
+    const sp = me.b ? 3.75 : 3; // a bicycle is 25% faster
     if (dx || dy) {
       const nx = clamp(me.x + dx * sp * dt, .3, W - .3), ny = clamp(me.y + dy * sp * dt, .3, H - .3);
       if (!blocked(nx, ny)) { me.x = nx; me.y = ny; } else if (!blocked(nx, me.y)) me.x = nx; else if (!blocked(me.x, ny)) me.y = ny; else me.goal = null;
@@ -554,8 +745,16 @@ function update(dt, now) {
     if (p === me) continue;
     const ex = p.tx - p.x, ey = p.ty - p.y, d = Math.hypot(ex, ey);
     if (d > 8) { p.x = p.tx; p.y = p.ty; p.moving = false; continue; }
-    if (d > .05) { const s = Math.min(d, 3.4 * dt); p.x += ex / d * s; p.y += ey / d * s; face(p, ex, ey); p.moving = true; p.step += dt * 8; } else p.moving = false;
+    if (d > .05) { const s = Math.min(d, (p.b ? 4.3 : 3.4) * dt); p.x += ex / d * s; p.y += ey / d * s; face(p, ex, ey); p.moving = true; p.step += dt * 8; } else p.moving = false;
   }
+  // the characters: towards where the square says they are (4 times a second)
+  for (const n of npcs.values()) {
+    const ex = n.tx - n.x, ey = n.ty - n.y, d = Math.hypot(ex, ey);
+    if (d > 6) { n.x = n.tx; n.y = n.ty; continue; }
+    if (d > .03) { const s = Math.min(d, Math.max(1.2, d * 5) * dt); n.x += ex / d * s; n.y += ey / d * s; face(n, ex, ey); n.moving = true; n.step += dt * 8; } else n.moving = false;
+  }
+  if (ball) { const ex = ball.tx - ball.x, ey = ball.ty - ball.y, d = Math.hypot(ex, ey); if (d > .03) { const s = Math.min(d, Math.max(3, d * 6) * dt); ball.x += ex / d * s; ball.y += ey / d * s; ball.moving = !ball.held; } else ball.moving = false; }
+  checkPending(); ctxSync(); diretoSync(now);
   // dancing: anyone near the DJ
   const dj = djPos();
   for (const p of people.values()) p.dancing = !!dj && !dj.leaving && Math.hypot(p.x - dj.gx, p.y - dj.gy) < DANCE_R;
@@ -572,16 +771,7 @@ function sendPos(now, stop) {
 function draw(now) {
   if (!bg) return;
   const { ox, oy } = viewOrigin(); lastView = { ox, oy };
-  vg.imageSmoothingEnabled = false; vg.setTransform(1, 0, 0, 1, 0, 0);
-  vg.fillStyle = '#2a2440'; vg.fillRect(0, 0, vc.width, vc.height);
-  vg.drawImage(bg, -ox, -oy);
-  vg.translate(-ox, -oy);
-  const list = [];
-  for (const d of DECOR) list.push([d.gx + d.gy, () => drawDecor(vg, d)]);
-  for (const p of people.values()) list.push([p.x + p.y, () => drawPerson(vg, p, now)]);
-  const dj = djPos(); if (dj) list.push([dj.gx + dj.gy, () => drawDJ(vg, dj, now)]);
-  list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
-  vg.setTransform(1, 0, 0, 1, 0, 0);
+  renderScene(vg, ox, oy, vc.width, vc.height, now);
   if (dusk) { vg.fillStyle = `rgba(18,8,64,${.18 * dusk})`; vg.fillRect(0, 0, vc.width, vc.height); }
   // up to the screen, pixel by pixel; then the words, sharp
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
@@ -604,6 +794,15 @@ function draw(now) {
     if (e) { ctx.font = '20px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; ctx.fillText(e.i, q.x + 14, headY + 4); }
     if (talking && PHRASES[p.say]) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt);
   }
+  // the characters: who they are, a speech mark when you can talk to them, what they just said
+  for (const n of npcs.values()) {
+    const q = S(n.x, n.y, 0); if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
+    const head = q.y - (n.k === 'cao' ? 12 : 21) * scale, lab = { jornalista: L('Imprensa', 'Press'), fotografa: L('Fotógrafa', 'Photographer'), cantina: L('Cantina', 'Canteen') }[n.k];
+    if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
+    if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
+    const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
+  }
+  if (now - flashAt < 260 && flashPos) { ctx.fillStyle = `rgba(255,255,255,${.75 * (1 - (now - flashAt) / 260)})`; ctx.fillRect(0, 0, cssW, cssH); }
   const d = djPos();
   if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
   djTag(d);
@@ -639,6 +838,10 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
   const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
   if (e.key === 'Escape') closeSheets();
+  if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden) { // talk to whoever is closest, or make a poster by the carnation
+    const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
+    if (t) { e.preventDefault(); interact(t[0]); } else if (nearCravo() && !$('ctxBtn').hidden && !$('ctxBtn').disabled) { e.preventDefault(); makeCartazDialog(); }
+  }
 });
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = 0; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
@@ -653,14 +856,199 @@ cv.addEventListener('pointermove', e => {
 cv.addEventListener('pointerup', e => {
   if (!drag || drag.id !== e.pointerId) return;
   const moved = drag.moved; drag = null; if (moved) return;
-  closeSheets();
-  if (!me) return;
   const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
+  const hit = hitTest(e.clientX - r.left, e.clientY - r.top); if (hit) { approach(hit); return; }
+  closeSheets(); pending = null;
+  if (!me) return;
   const w = toWorld((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy + 3);
   me.goal = { gx: clamp(w.gx, .3, W - .3), gy: clamp(w.gy, .3, H - .3) }; camFree = 0;
   sendPos(performance.now());
 });
 cv.addEventListener('pointercancel', () => { drag = null; });
+
+/* ================= talking to the characters, posters, the live interview, the group photo ================= */
+let pending = null; // a character we're walking to, to talk to when we get there
+const REACH = 2.4;
+function targets() {
+  const out = [];
+  for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
+  if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
+  for (const c of cartazes) { const s = CARTAZ_SPOTS[c.slot]; if (s) out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 10, c }); }
+  return out;
+}
+function hitTest(sx, sy) {
+  const { ox, oy } = lastView; let best = null, bd = 1e9;
+  for (const t of targets()) {
+    const q = iso(t.x, t.y, t.z), px = (q.x - ox) * scale, py = (q.y - oy) * scale, d = Math.hypot(px - sx, py - sy);
+    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : 11) * scale + 6;
+    if (d < r && d < bd) { bd = d; best = t; }
+  }
+  return best;
+}
+const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
+function approach(t) {
+  if (t.kind === 'cartaz') return showCartaz(t.c);
+  if (!me) return toast(L('Só quem está na praça com um boneco pode falar com as personagens.', 'Only people in the square with an avatar can talk to the characters.'), 3000);
+  if (distTo(t) <= REACH) return interact(t);
+  const a = Math.atan2(me.y - t.y, me.x - t.x);
+  me.goal = { gx: clamp(t.x + Math.cos(a) * 1.2, .3, W - .3), gy: clamp(t.y + Math.sin(a) * 1.2, .3, H - .3) }; camFree = 0;
+  pending = { kind: t.kind, id: t.id }; sendPos(performance.now());
+}
+function checkPending() {
+  if (!pending || !me) return;
+  const t = targets().find(x => x.kind === pending.kind && (pending.kind === 'bola' || x.id === pending.id));
+  if (!t) { pending = null; return; }
+  if (distTo(t) <= REACH - .2) { pending = null; me.goal = null; interact(t); }
+  else if (!me.goal) pending = null;
+}
+function interact(t) {
+  audioInit();
+  if (t.kind === 'jornalista') { send({ t: 'entrevista' }); return; }
+  if (t.kind === 'curioso') { const n = npcs.get(t.id); if (n && n.g) return say(t.id, L('Já estou convosco! ✊', 'I’m with you already! ✊')); return curiousDialog(t.id); }
+  if (t.kind === 'fotografa') return photoDialog();
+  if (t.kind === 'cantina') return canteenDialog();
+  if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
+  if (t.kind === 'bola') { send({ t: 'bola' }); return; }
+}
+function say(id, text) { npcSay.set(id, { text, at: performance.now() }); }
+function dialog(title, line, build) {
+  closeSheets();
+  $('npcTitle').textContent = title; const b = $('npcBody'); b.innerHTML = '';
+  if (line) { const p = document.createElement('p'); p.className = 'npcline'; p.textContent = line; b.append(p); }
+  build(b); $('npcSheet').hidden = false;
+}
+function optBtn(text, fn) { const x = document.createElement('button'); x.textContent = text; x.addEventListener('click', fn); return x; }
+function optGrid(parent) { const g = document.createElement('div'); g.className = 'grid opts'; parent.append(g); return g; }
+function journalistDialog(q) {
+  const Q = INTERVIEW[q]; if (!Q) return;
+  dialog(L('Jornalista Laranja · em direto', 'Orange Journalist · live'), L(Q.q[0], Q.q[1]), b => {
+    const g = optGrid(b);
+    Q.a.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'resposta', a: i }); interviewOpen = false; closeSheets(); })));
+    const lab = document.createElement('label'); lab.className = 'npclab'; lab.textContent = L('Ou responde por palavras tuas:', 'Or answer in your own words:'); b.append(lab);
+    const row = document.createElement('div'); row.className = 'write';
+    const ta = document.createElement('textarea'); ta.maxLength = 100; ta.rows = 2; ta.placeholder = L('Até 100 letras, passa em direto para toda a praça', 'Up to 100 letters, goes live to the whole square');
+    const go = optBtn(L('Responder', 'Answer'), () => { const v = ta.value.trim(); if (!v) return; npcErr.textContent = ''; send({ t: 'resposta', text: v }); pendingFree = true; });
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
+    row.append(ta, go); b.append(row);
+    const npcErr = document.createElement('div'); npcErr.className = 'note err'; npcErr.id = 'npcErr'; b.append(npcErr);
+    const no = optBtn(L('Agora não, obrigado/a', 'Not now, thanks'), () => closeSheets()); no.className = 'ghost'; b.append(no);
+  });
+  interviewOpen = true;
+}
+let interviewOpen = false, pendingFree = false;
+function curiousDialog(id) {
+  const n = npcs.get(id); if (!n) return;
+  const Q = CURIOUS_Q[n.vr % 4];
+  dialog(L('Curioso', 'Passer-by'), L(Q[0], Q[1]), b => { const g = optGrid(b); EXPLAIN.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'explicar', id, a: i }); closeSheets(); }))); });
+}
+function photoDialog() {
+  dialog(L('Fotógrafa', 'Photographer'), L('Querem uma foto de grupo? Juntem-se perto de mim e sorriam!', 'Want a group photo? Gather round me and smile!'), b => {
+    const g = optGrid(b); g.append(optBtn(L('📸 Tira-nos uma foto!', '📸 Take our photo!'), () => { send({ t: 'foto' }); $('npcSheet').hidden = true; })); // (a photo that arrives meanwhile stays open)
+  });
+}
+function canteenDialog() {
+  dialog(L('Cantina', 'Canteen'), L('Sopa quente, café ou pão? É tudo de graça, camarada.', 'Hot soup, coffee or bread? It’s all free, comrade.'), b => {
+    const g = optGrid(b); g.classList.add('gest');
+    [['🍲', 'Sopa', 'Soup'], ['☕', 'Café', 'Coffee'], ['🥖', 'Pão', 'Bread']].forEach(([i, pt, en], k) => { const x = optBtn('', () => { send({ t: 'cantina', k: k + 1 }); closeSheets(); }); x.innerHTML = `<b>${i}</b>`; x.append(L(pt, en)); g.append(x); });
+  });
+}
+function showCartaz(c) {
+  dialog(L('Cartaz no cravo', 'Poster on the carnation'), '', b => {
+    const p = document.createElement('div'); p.className = 'cartaz'; p.textContent = c.text; b.append(p);
+    const who = document.createElement('div'); who.className = 'note'; const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(c.city);
+    who.append(dot, ` ${c.name} · ${c.city}`); b.append(who);
+    if (c.id !== myCartaz && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
+  });
+}
+function makeCartazDialog() {
+  dialog(L('Fazer um cartaz', 'Make a poster'), L('Escreve uma frase curta. O cartaz fica pendurado no cravo enquanto a praça estiver aberta.', 'Write a short line. The poster hangs on the carnation while the square is open.'), b => {
+    const ta = document.createElement('textarea'); ta.maxLength = 60; ta.rows = 2; ta.className = 'cartazIn'; ta.placeholder = L('Ex.: Casa para viver!', 'E.g. Homes to live in!');
+    const cnt = document.createElement('div'); cnt.className = 'note'; const err = document.createElement('span'); err.className = 'err'; err.id = 'cartazErr'; const n = document.createElement('span'); n.textContent = '0/60'; cnt.append(err, n);
+    ta.addEventListener('input', () => { n.textContent = `${ta.value.length}/60`; err.textContent = ''; });
+    const go = optBtn(L('Pendurar no cravo', 'Hang it on the carnation'), () => { const v = ta.value.trim(); if (v) send({ t: 'cartaz', text: v }); });
+    go.className = 'redbtn';
+    ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
+    b.append(ta, cnt, go); setTimeout(() => ta.focus(), 50);
+  });
+}
+// the button that shows up next to the carnation
+let ctxWas = '';
+function ctxSync() {
+  const el = $('ctxBtn'); let t = '', dis = false;
+  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet'].every(id => $(id).hidden)) {
+    if (myCartaz && cartazes.some(c => c.id === myCartaz)) t = '';
+    else if (cartazes.length >= CARTAZ_SLOTS) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
+    else t = L('🪧 Fazer um cartaz', '🪧 Make a poster');
+  }
+  const k = t + dis; if (k === ctxWas) return; ctxWas = k;
+  el.hidden = !t; el.textContent = t; el.disabled = dis;
+}
+// the live interview ticker: one answer at a time
+const diretos = []; let diretoNow = null, diretoUntil = 0;
+function diretoText(d) {
+  const Q = INTERVIEW[d.q], ans = d.text != null ? d.text : Q && Q.a[d.a] ? L(Q.a[d.a][0], Q.a[d.a][1]) : '';
+  return `${d.n} (${d.c}): «${ans}»`;
+}
+function diretoSync(now) {
+  if (diretoNow && now > diretoUntil) { diretoNow = null; $('direto').hidden = true; }
+  if (!diretoNow && diretos.length) { diretoNow = diretos.shift(); diretoUntil = now + 9000; const Q = INTERVIEW[diretoNow.q]; $('diretoQ').textContent = Q ? L(Q.q[0], Q.q[1]) : ''; $('diretoTxt').textContent = diretoText(diretoNow); $('direto').hidden = false; }
+}
+// the group photo: a picture of the moment, to share
+let flashAt = 0, flashPos = null, lastPhoto = null, inPhoto = false;
+function renderScene(g, ox, oy, vw, vh, now) {
+  g.imageSmoothingEnabled = false; g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#2a2440'; g.fillRect(0, 0, vw, vh);
+  g.drawImage(bg, -ox, -oy);
+  g.translate(-ox, -oy);
+  const list = [];
+  for (const d of DECOR) list.push([d.gx + d.gy, () => drawDecor(g, d)]);
+  for (const p of people.values()) list.push([p.x + p.y, () => drawPerson(g, p, now)]);
+  for (const n of npcs.values()) list.push([n.x + n.y, () => drawNpc(g, n, now)]);
+  if (ball) list.push([ball.x + ball.y + .01, () => drawBall(g, ball, now)]);
+  const dj = djPos(); if (dj) list.push([dj.gx + dj.gy, () => drawDJ(g, dj, now)]);
+  list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
+  g.setTransform(1, 0, 0, 1, 0, 0);
+}
+async function makePhoto(ids, fx, fy, ev) {
+  const inShot = ids.map(id => people.get(id)).filter(Boolean); if (!inShot.length) return;
+  const cx = inShot.reduce((a, p) => a + p.x, 0) / inShot.length, cy = inShot.reduce((a, p) => a + p.y, 0) / inShot.length;
+  const sw = 176, sh = 120, sc = document.createElement('canvas'); sc.width = sw; sc.height = sh;
+  const q = iso(cx, cy); inPhoto = true; try { renderScene(sc.getContext('2d'), Math.round(q.x - sw / 2), Math.round(q.y - sh * .64), sw, sh, performance.now()); } finally { inPhoto = false; }
+  try { await document.fonts.load('800 60px Jost'); } catch (e) {}
+  const C = document.createElement('canvas'); C.width = 1080; C.height = 1350; const g = C.getContext('2d');
+  g.fillStyle = '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
+  g.textAlign = 'center'; g.fillStyle = '#f4f1ea'; g.font = '800 62px Jost, sans-serif'; g.fillText(L('EU ESTIVE NA', 'I WAS IN THE'), 540, 120);
+  g.fillStyle = '#d0302a'; g.font = '800 150px Jost, sans-serif'; g.fillText(L('PRAÇA', 'SQUARE'), 540, 262);
+  g.save(); g.translate(540, 680); g.rotate(-.025);
+  g.fillStyle = '#f4f1ea'; g.fillRect(-470, -350, 940, 770);
+  g.imageSmoothingEnabled = false; g.drawImage(sc, -440, -320, 880, 600);
+  const d = new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+  g.fillStyle = '#0b0a0a'; g.font = '800 40px Jost, sans-serif'; g.fillText(((ev || L('A Praça', 'The Square')) + ' · ' + d).slice(0, 48), 0, 345);
+  g.restore();
+  const names = inShot.map(p => p.n).slice(0, 6).join(' · ') + (inShot.length > 6 ? ' …' : '');
+  g.fillStyle = '#f4f1ea'; g.font = '700 38px Jost, sans-serif'; g.fillText(names, 540, 1160);
+  g.strokeStyle = '#f4f1ea'; g.lineWidth = 5; g.strokeRect(300, 1205, 480, 84); g.font = '800 46px Jost, sans-serif'; g.fillText('ACAMPADAPIXEL.PT', 540, 1263);
+  const blob = await new Promise(ok => C.toBlob(ok, 'image/png'));
+  if (!blob) return;
+  if (lastPhoto) URL.revokeObjectURL(lastPhoto.url);
+  lastPhoto = { blob, url: URL.createObjectURL(blob) };
+  closeSheets(); $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false;
+}
+async function sharePhoto() {
+  if (!lastPhoto) return;
+  const file = new File([lastPhoto.blob], 'praca-acampada.png', { type: 'image/png' });
+  const text = L('Eu estive na praça da Acampada! Junta-te: https://acampadapixel.pt/multiplayer.html #acampadapelahabitação', 'I was in the Acampada square! Join in: https://acampadapixel.pt/multiplayer.html #acampadapelahabitação');
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], text }); } catch (e) {} return; }
+  savePhoto();
+}
+function savePhoto() { if (!lastPhoto) return; const a = document.createElement('a'); a.href = lastPhoto.url; a.download = 'praca-acampada.png'; document.body.append(a); a.click(); a.remove(); }
+const NPC_NO = {
+  longe: ['Chega-te mais perto.', 'Get a bit closer.'], ocupada: ['Está ocupada agora. Tenta daqui a pouco.', 'Busy right now. Try again in a moment.'],
+  ausente: ['Não está na praça agora.', 'Not in the square right now.'], ja: ['Já está convencido!', 'Already convinced!'],
+  pensar: ['Ainda está a pensar no que lhe disseste.', 'Still thinking about what you said.'], palavras: ['Essa resposta não passa no filtro da praça.', 'That answer doesn’t pass the square’s filter.'],
+  links: ['Sem links nem endereços, por favor.', 'No links or addresses, please.'], vazio: ['Escreve alguma coisa.', 'Write something.'],
+  off: ['As bicicletas estão desligadas pela organização.', 'Bicycles are switched off by the organisers.'], cheio: ['O cravo está cheio de cartazes.', 'The carnation is full of posters.']
+};
 
 /* ================= sound: the DJ's ska loop, louder the closer you are ================= */
 let actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
@@ -707,6 +1095,7 @@ function renderMuralLock() {
   const ro = !!cfg.muralRO; $('muralIn').disabled = ro; $('muralSend').disabled = ro; $('muralIn').closest('.write').classList.toggle('ro', ro);
   $('muralIn').placeholder = ro ? L('O mural está só para leitura.', 'The wall is read-only for now.') : L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
 }
+function shutter() { if (!actx || muted || !me) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(1800, t); o.frequency.setValueAtTime(900, t + .03); g.gain.setValueAtTime(.03, t); g.gain.exponentialRampToValueAtTime(.0001, t + .09); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .1); }
 function muralPing() { if ($('muralSheet').hidden) $('tMural').classList.add('new'); }
 $('bZoom').addEventListener('click', () => { zoom = !zoom; store.set('acampada-praca-zoom', zoom ? '1' : '0'); $('bZoom').textContent = zoom ? '－' : '＋'; camX = null; resize(); });
 $('bSound').addEventListener('click', () => { audioInit(); muted = !muted; store.set('acampada-praca-mute', muted ? '1' : '0'); $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; });
@@ -731,7 +1120,7 @@ function gesture(k) {
   clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
 }
 function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
-function closeSheets() { for (const id of ['phraseSheet', 'gestSheet', 'muralSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open'); }
+function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open'); }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
 $('tGest').addEventListener('click', () => openSheet('gestSheet'));
 $('tMural').addEventListener('click', () => openSheet('muralSheet'));
@@ -785,7 +1174,11 @@ function renderWhere() {
   const meLine = myMode === 'praca' ? L('estás na praça', 'you’re in the square') : L('estás como apoio de longe', 'you’re supporting from afar');
   $('where').innerHTML = ''; $('where').append(title); const s = document.createElement('small'); s.textContent = [meLine, close].filter(Boolean).join(' · '); $('where').append(s);
 }
-function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = myMode !== 'praca'; }
+function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = myMode !== 'praca'; bikeSync(); }
+function bikeSync() { const b = $('bBike'); b.hidden = myMode !== 'praca' || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
+$('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
+$('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
+$('fotoShare').addEventListener('click', sharePhoto); $('fotoSave').addEventListener('click', savePhoto);
 let toastT = 0;
 function toast(t, ms) { const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); if (ms) toastT = setTimeout(hideToast, ms); }
 function hideToast() { $('toast').hidden = true; }
@@ -861,13 +1254,16 @@ function entryScreen(st) {
       <button type="button" data-m="praca" class="${p.mode !== 'apoio' ? 'on' : ''}"><b>${L('Na manif ou na acampada', 'At the protest or a camp')}</b><span>${L('Entras na praça com o teu boneco, a brilhar na cor da tua cidade.', 'You walk into the square with your avatar, glowing in your city’s colour.')}</span></button>
       <button type="button" data-m="apoio" class="${p.mode === 'apoio' ? 'on' : ''}"><b>${L('Longe, a apoiar', 'Far away, supporting')}</b><span>${L('Contas como apoio, vês a praça e escreves no mural.', 'You count as support, watch the square and write on the wall.')}</span></button>
     </div></div>
-    <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="32" height="32"></canvas><button type="button" class="btnp sm" id="reroll">🎲 ${L('Outro visual', 'Another look')}</button></div></div>
+    <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="32" height="32"></canvas><button type="button" class="btnp sm" id="reroll">🎲 ${L('Outro visual', 'Another look')}</button></div>
+      <label style="margin-top:12px">${L('Como andas na praça?', 'How do you get around?')}</label><div class="choice" style="grid-template-columns:1fr 1fr">
+      <button type="button" data-bk="0" class="${profile.bike ? '' : 'on'}"><b>🚶 ${L('A pé', 'On foot')}</b></button><button type="button" data-bk="1" class="${profile.bike ? 'on' : ''}"><b>🚲 ${L('De bicicleta', 'By bike')}</b><span>${L('25% mais rápido', '25% faster')}</span></button></div></div>
   </div>
   <button class="btnp red" id="enter">${L('Entrar na praça →', 'Enter the square →')}</button><p class="help" id="formErr" style="color:#ff9d8f"></p>
   ${FOOT()}`;
   wireLang();
   const drawLook = () => { const c = $('lookCv'), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.fillStyle = '#d9d3c3'; g.fillRect(0, 0, 32, 32); const city = $('fCity').value, a = auraOf(city === '_' ? '' : city); ell(g, 16, 27, 9, rgba(a, .3)); ell(g, 16, 27, 6, rgba(a, .55)); guy(g, 16, 27, { ...lookOf(profile.look) }); };
   const modeSync = () => { $('lookBox').hidden = profile.mode === 'apoio'; };
+  for (const b of box.querySelectorAll('[data-bk]')) b.addEventListener('click', () => { profile.bike = b.dataset.bk === '1'; for (const x of box.querySelectorAll('[data-bk]')) x.classList.toggle('on', x === b); });
   $('fCity').addEventListener('change', () => { $('fOther').hidden = $('fCity').value !== '_'; drawLook(); });
   $('reroll').addEventListener('click', () => { profile.look = Math.floor(Math.random() * LOOKS); drawLook(); });
   for (const b of box.querySelectorAll('[data-m]')) b.addEventListener('click', () => { profile.mode = b.dataset.m; for (const x of box.querySelectorAll('[data-m]')) x.classList.toggle('on', x === b); modeSync(); });
@@ -891,7 +1287,7 @@ if (window.visualViewport) visualViewport.addEventListener('resize', () => { if 
 document.addEventListener('gesturestart', e => e.preventDefault());
 showStatus();
 requestAnimationFrame(frame);
-window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; } };
+window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; } };
 })();
 </script>
 </body>

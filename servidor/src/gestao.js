@@ -91,9 +91,26 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <p class="muted" style="margin:8px 0 0" id="djTxt"></p>
     </section>
 
-    <section><h2>Na praça (em breve)</h2>
-      <div class="sw"><span>Polícia<small>Ainda não existe na praça: o interruptor fica guardado para quando existir.</small></span><button id="policia" class="sm"></button></div>
-      <div class="sw"><span>Ciclistas<small>Idem.</small></span><button id="ciclistas" class="sm"></button></div>
+    <section><h2>Personagens</h2>
+      <div class="sw"><span>Jornalista Laranja<small>Entrevista quem lhe tocar; a resposta passa em direto para toda a praça.</small></span><button data-npc="jornalista" class="sm"></button></div>
+      <div class="sw"><span>Curiosos<small>Perguntam o que se passa; quem for convencido junta-se com um cartaz.</small></span><button data-npc="curiosos" class="sm"></button></div>
+      <div class="sw"><span>Fotógrafa<small>Tira fotos de grupo para partilhar.</small></span><button data-npc="fotografa" class="sm"></button></div>
+      <div class="sw"><span>Cantina<small>Sopa, café e pão.</small></span><button data-npc="cantina" class="sm"></button></div>
+      <div class="sw"><span>Labrador<small>Brinca com a bola, aceita festas e de vez em quando rouba o microfone à jornalista.</small></span><button data-npc="cao" class="sm"></button></div>
+      <p class="muted" style="margin:8px 0 0" id="convencidos"></p>
+    </section>
+
+    <section><h2>Em direto <span class="muted">últimas respostas</span></h2>
+      <div class="list" id="diretos"></div>
+    </section>
+
+    <section><h2>Cartazes no cravo <span class="muted" id="nCartazes"></span></h2>
+      <div class="list" id="cartazes"></div>
+    </section>
+
+    <section><h2>Na praça</h2>
+      <div class="sw"><span>Bicicletas<small>Quem entra pode andar de bicicleta (25% mais rápido). Desligar põe toda a gente a pé.</small></span><button id="ciclistas" class="sm"></button></div>
+      <div class="sw"><span>Polícia (em breve)<small>Ainda não existe na praça: o interruptor fica guardado para quando existir.</small></span><button id="policia" class="sm"></button></div>
     </section>
 
     <section><h2>Próximas aberturas</h2>
@@ -191,6 +208,15 @@ function render() {
   for (const b of $('djSeg').children) b.classList.toggle('on', b.dataset.dj === c.dj);
   $('djTxt').textContent = { auto: 'Aparece 3 minutos em cada 10, e pára quando começa a assembleia (19:00).', sempre: 'Está sempre na praça, mesmo durante a assembleia.', off: 'Não aparece.' }[c.dj] + (S.dj.on ? ' Agora: na praça.' : ' Agora: fora da praça.');
   sw('policia', c.policia); sw('ciclistas', c.ciclistas);
+  for (const b of document.querySelectorAll('[data-npc]')) { const on = S.npcs[b.dataset.npc] !== false; b.textContent = on ? 'Ligado' : 'Desligado'; b.className = 'sm ' + (on ? 'green' : 'ghost'); }
+  $('convencidos').textContent = 'Curiosos convencidos hoje: ' + S.convencidos + '.';
+  const dl = $('diretos'); dl.innerHTML = '';
+  if (!S.diretos.length) dl.append(el('div', 'muted', 'Ainda ninguém foi entrevistado.'));
+  for (const d of S.diretos) dl.append(item(d.n + ' · ' + d.c + ' · ' + hm(d.at), d.text != null ? '«' + d.text + '» (escrita pela pessoa)' : 'Resposta pronta n.º ' + (d.a + 1) + ' à pergunta ' + (d.q + 1), d.text != null ? [btn('Apagar', 'red', () => api('apagar-direto', { id: d.id }), 'Confirmar')] : []));
+  $('nCartazes').textContent = S.cartazes.length + ' de 8';
+  const cl = $('cartazes'); cl.innerHTML = '';
+  if (!S.cartazes.length) cl.append(el('div', 'muted', 'O cravo não tem cartazes.'));
+  for (const x of S.cartazes) cl.append(item('«' + x.text + '»', x.name + ' · ' + x.city, [btn('Tirar', 'red', () => api('tirar-cartaz', { id: x.id }), 'Confirmar')]));
 
   const al = $('agenda'); al.innerHTML = '';
   const all = [...S.horario.map(w => ({ ...w, fixo: true })), ...S.agenda.map(a => ({ ...a, fixo: false }))].sort((a, b) => a.open - b.open).slice(0, 12);
@@ -206,6 +232,7 @@ $('avisoTirar').addEventListener('click', () => api('aviso', { texto: '' }));
 $('muralRO').addEventListener('click', () => api('config', { muralRO: !S.cfg.muralRO }));
 $('policia').addEventListener('click', () => api('config', { policia: !S.cfg.policia }));
 $('ciclistas').addEventListener('click', () => api('config', { ciclistas: !S.cfg.ciclistas }));
+for (const b of document.querySelectorAll('[data-npc]')) b.addEventListener('click', () => api('config', { npcs: { [b.dataset.npc]: S.npcs[b.dataset.npc] === false } }));
 for (const b of $('djSeg').children) b.addEventListener('click', () => api('config', { dj: b.dataset.dj }));
 $('agData').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon' }).format(new Date());
 $('agendar').addEventListener('click', () => api('agendar', { titulo: $('agTitulo').value, data: $('agData').value, inicio: $('agIni').value, fim: $('agFim').value, onde: $('agOnde').value }).then(r => r && (toast('Abertura agendada'), $('agTitulo').value = '', $('agOnde').value = '')));

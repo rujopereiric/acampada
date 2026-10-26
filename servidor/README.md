@@ -6,6 +6,8 @@ O servidor da praça partilhada (`multiplayer.html`). Corre na Cloudflare, no pl
 - A organização gere a praça em https://praca.acampadapixel.pt/gestao (palavra-passe `GESTAO_FRASE`).
 - Não guarda nada que identifique as pessoas. O mural é apagado 24 horas depois de a praça fechar.
 - No máximo 250 bonecos na praça; quem chegar depois entra como apoio de longe.
+- As personagens (jornalista, curiosos, fotógrafa, cantina e a labrador) são movidas pelo servidor (`src/personagens.js`), por isso toda a gente as vê no mesmo sítio. Ligam-se e desligam-se na página de gestão.
+- Os cartazes do cravo (8 lugares, um por pessoa) duram até a praça fechar.
 
 ## Pôr no ar (uma vez)
 
