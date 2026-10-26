@@ -95,6 +95,9 @@ button{ cursor:pointer; touch-action:manipulation; }
 #toast[hidden]{ display:none; }
 #djTag{ position:absolute; left:8px; bottom:8px; background:rgba(11,10,10,.8); color:var(--lime); font:700 11px/1 Jost, sans-serif; text-transform:uppercase; padding:5px 7px 4px; letter-spacing:.4px; z-index:2; pointer-events:none; }
 #djTag[hidden]{ display:none; }
+#alerta{ position:absolute; left:0; right:0; top:0; z-index:4; background:#d8261c; color:#fff; font:800 16px/1.2 Jost, sans-serif; padding:9px 12px 8px; border-bottom:3px solid #0b0a0a; animation:alertin .35s ease-out both; }
+#alerta[hidden]{ display:none; } #alerta b{ display:inline-block; background:#fff; color:#d8261c; font:800 11px/1 Jost, sans-serif; letter-spacing:1px; text-transform:uppercase; padding:4px 6px 3px; margin-right:8px; vertical-align:2px; animation:liveb 1s steps(2) infinite; }
+@keyframes alertin{ from{ transform:translateY(-100%); } to{ transform:none; } }
 #aviso{ position:absolute; left:0; right:0; top:0; z-index:3; display:flex; align-items:center; gap:8px; background:var(--lime); color:var(--ink); font:800 15px/1.2 Jost, sans-serif; padding:8px 10px 7px; border-bottom:2px solid var(--ink); }
 #aviso[hidden]{ display:none; } #aviso span{ flex:1; } #aviso span::before{ content:'📣 '; }
 #aviso button{ background:none; border:none; font:800 16px/1 Jost, sans-serif; color:var(--ink); padding:2px 4px; }
@@ -113,6 +116,9 @@ button{ cursor:pointer; touch-action:manipulation; }
 .redbtn{ margin-top:10px; background:var(--redbox); color:#fff; border:none; font:800 15px/1 Jost, sans-serif; text-transform:uppercase; padding:11px 14px 9px; }
 .sheet.typing{ top:0; bottom:auto; border-top:0; border-bottom:2px solid var(--paper); }
 .cartazIn{ width:100%; resize:none; border:2px solid var(--paper); background:#fff; color:var(--ink); padding:8px; font:700 18px/1.2 Jost, sans-serif; }
+.seg{ display:flex; margin-top:6px; } .seg button{ flex:1; background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:8px 4px 7px; } .seg button + button{ border-left:0; } .seg button.on{ background:var(--paper); color:var(--ink); } .seg button:disabled{ opacity:.35; text-decoration:line-through; }
+.cols{ display:flex; gap:8px; margin-top:6px; } .cols button{ width:34px; height:34px; border:2px solid var(--paper); padding:0; } .cols button.on{ outline:3px solid var(--lime); outline-offset:2px; }
+.cartaz.fmt-p{ font-size:16px; max-width:160px; margin:10px auto 4px; } .cartaz.fmt-m{ max-width:230px; margin:10px auto 4px; } .cartaz.fmt-g{ font-size:28px; margin:10px auto 4px; } .cartaz.fmt-f{ font-size:18px; padding:7px 12px; transform:rotate(0); border-width:3px 2px; margin:10px 0 4px; letter-spacing:1px; }
 .cartaz{ background:#f2efe6; color:var(--ink); border:3px solid var(--ink); font:800 22px/1.15 Jost, sans-serif; text-transform:uppercase; padding:14px 12px; text-align:center; transform:rotate(-1.5deg); margin:4px 4px 10px; }
 .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; border:1px solid var(--ink); vertical-align:0; }
 #fotoSheet{ top:0; max-height:none; } #fotoSheet h3{ flex:none; }
@@ -174,6 +180,7 @@ button{ cursor:pointer; touch-action:manipulation; }
     <canvas id="cv" aria-label="A praça partilhada"></canvas>
     <div id="toast" hidden></div>
     <div id="djTag" hidden></div>
+    <div id="alerta" hidden><b data-t="breaking"></b><span id="alertaTxt"></span></div>
     <div id="aviso" hidden><span id="avisoTxt"></span><button id="avisoX" aria-label="Fechar">✕</button></div>
     <button id="bZoom" class="zoom" aria-label="Zoom">＋</button>
     <button id="bBike" class="zoom" style="bottom:58px" aria-label="Bicicleta" hidden>🚲</button>
@@ -242,8 +249,9 @@ const PHRASES = [
   ['Não temos casa, ficam as tendas!', 'No homes? Then the tents stay!'],
   ['Na rua nos querem, na rua nos verão!', 'They want us on the street? Then they’ll see us there!'],
   ['Ninguém fica sem casa!', 'Nobody left without a home!'],
+  ['A luta nunca me farta, mas vou comer um pastel de nata!', 'The fight never tires me, but I’m off for a pastel de nata!'],
+  ['Montenegro, presta atenção, a tua casa vai virar habitação!', 'Montenegro, pay attention, your house is going to become housing!'],
   ['Olá!', 'Hello!'],
-  ['De onde vens?', 'Where are you from?'],
   ['Força!', 'Stay strong!'],
   ['Obrigada!', 'Thank you!'],
   ['Vamos dançar com o DJ?', 'Shall we dance with the DJ?'],
@@ -257,7 +265,7 @@ const GESTURES = [null,
 const TXT = {
   phrases: ['Gritar uma palavra de ordem', 'Shout a slogan'], gestures: ['Fazer um gesto', 'Make a gesture'],
   say: ['Gritar', 'Shout'], sayS: ['Palavras de ordem', 'Slogans'], gest: ['Gestos', 'Gestures'], gestS: ['Acenar, palmas…', 'Wave, clap…'],
-  mural: ['Mural', 'Wall'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
+  mural: ['Mural', 'Wall'], breaking: ['Última hora', 'Breaking'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
 };
 function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
@@ -531,20 +539,104 @@ function drawCantina(g, d) {
 }
 
 /* ---------- posters on the carnation ---------- */
-let cartazes = [], CARTAZ_SLOTS = 8, myCartaz = null;
-const CARTAZ_SPOTS = []; // 4 on each face of the plinth that looks at the square
-for (let i = 0; i < 4; i++) CARTAZ_SPOTS.push({ gx: 11 - .82 + i * .55, gy: 11 + 1.1 });
-for (let j = 0; j < 4; j++) CARTAZ_SPOTS.push({ gx: 11 + 1.1, gy: 11 + .82 - j * .55 });
-const CARTAZ_COL = ['#f2efe6', '#ffe36a', '#ffb3c7', '#bfe7ff', '#d6f5b0'];
+let cartazes = [], myCartazes = new Set(), mineCount = 0;
+// the two faces of the plinth that look at the square, 8 spaces wide each; a poster takes as many as its size
+// (the server places them with the same numbers: index.js CARTAZ_FMT)
+const FACE_UNITS = 8, CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_H = { p: 6, m: 8, g: 11, f: 5 }, CARTAZ_POR_PESSOA = 3;
+const CARTAZ_COL = ['#f2efe6', '#ffe36a', '#ffb3c7', '#bfe7ff', '#d6f5b0'], CARTAZ_INK = ['#1b1464', '#b3121b', '#1b1464', '#b3121b', '#1b1464'];
+function cartazSpot(list, u) {
+  for (let f = 0; f < 2; f++) {
+    const used = new Array(FACE_UNITS).fill(false);
+    for (const c of list) { if (Math.floor(c.slot / FACE_UNITS) !== f) continue; const o = c.slot % FACE_UNITS, w = CARTAZ_FMT[c.fmt] || 3; for (let i = o; i < o + w && i < FACE_UNITS; i++) used[i] = true; }
+    for (let o = 0; o + u <= FACE_UNITS; o++) { let ok = true; for (let i = o; i < o + u; i++) if (used[i]) { ok = false; break; } if (ok) return f * FACE_UNITS + o; }
+  }
+  return -1;
+}
+// the poster's ends on the face, in tiles (face 0 runs along gx, face 1 along gy)
+function cartazEnds(c) {
+  const f = Math.floor(c.slot / FACE_UNITS), o = c.slot % FACE_UNITS, u = CARTAZ_FMT[c.fmt] || 3, k = 2.2 / FACE_UNITS;
+  const a = o * k + .04, b = (o + u) * k - .04;
+  return f === 0 ? [{ gx: 11 - 1.1 + a, gy: 12.1 }, { gx: 11 - 1.1 + b, gy: 12.1 }] : [{ gx: 12.1, gy: 12.1 - a }, { gx: 12.1, gy: 12.1 - b }];
+}
+const cartazCentre = c => { const [a, b] = cartazEnds(c); return { gx: (a.gx + b.gx) / 2, gy: (a.gy + b.gy) / 2 }; };
 function drawCartazes(g) {
   for (const c of cartazes) {
-    const s = CARTAZ_SPOTS[c.slot]; if (!s) continue;
-    const p = iso(s.gx, s.gy, 14), x = Math.round(p.x) - 3, y = Math.round(p.y), h = (c.id * 7) % 5;
-    R(g, x, y, 7, 8, '#0b0a0a'); R(g, x, y, 6, 7, CARTAZ_COL[c.id % CARTAZ_COL.length]);
-    R(g, x + 1, y + 2, 4, 1, h % 2 ? '#b3121b' : '#1b1464'); R(g, x + 1, y + 4, 3 + (h % 2), 1, '#1b1464'); R(g, x + 2, y, 2, 1, '#9aa0ad');
+    const [a, b] = cartazEnds(c), p0 = iso(a.gx, a.gy, 15), p1 = iso(b.gx, b.gy, 15), h = CARTAZ_H[c.fmt] || 8;
+    const x0 = Math.round(p0.x), x1 = Math.round(p1.x), col = CARTAZ_COL[c.cor] || CARTAZ_COL[0], ink = CARTAZ_INK[c.cor] || '#1b1464';
+    for (let x = x0; x <= x1; x++) { // column by column, following the slope of the stone
+      const y = Math.round(p0.y + (p1.y - p0.y) * (x - x0) / ((x1 - x0) || 1)), edge = x === x0 || x === x1;
+      R(g, x, y, 1, h, edge ? '#0b0a0a' : col); if (!edge) { R(g, x, y, 1, 1, '#0b0a0a'); R(g, x, y + h - 1, 1, 1, '#0b0a0a'); }
+      const i = x - x0; if (!edge && i > 1 && x < x1 - 1) for (let r = 2; r < h - 2; r += 2) if (hash(c.id * 31 + i, r) < .75) R(g, x, y + r, 1, 1, r === 2 ? ink : '#3a3a44');
+    }
   }
 }
 const nearCravo = () => me && Math.hypot(me.x - 11, me.y - 11) < 3.4;
+
+/* ---------- passing in the street: the car with a tent on the roof and the bike ride (the same for everyone, from the clock) ---------- */
+const STREETS = [{ axis: 'x', c: 24.6, dir: 1 }, { axis: 'x', c: 23.4, dir: -1 }, { axis: 'y', c: 24.6, dir: 1 }, { axis: 'y', c: 23.4, dir: -1 }];
+const BICI_SHOUTS = [['Bicicletada pela habitação!', 'Bike ride for housing!'], ['Casa para viver!', 'Homes to live in!'], ['Pedala, pedala, a renda não se cala!', 'Pedal on, the rent won’t stop!'], ['Junta-te à bicicletada!', 'Join the bike ride!']];
+function passing(kind, now = serverNow()) {
+  if (cfg.npcs && cfg.npcs[kind] === false) return null;
+  const car = kind === 'carro', P = car ? 170e3 : 260e3, off = car ? 0 : 97e3, slot = Math.floor((now + off) / P);
+  if (hash(slot, car ? 11 : 23) > .75) return null; // not every time
+  const dur = car ? 11e3 : 24e3, start = slot * P - off + 15e3 + hash(slot, car ? 5 : 6) * (P - dur - 30e3), k = (now - start) / dur;
+  if (k < 0 || k > 1) return null;
+  const st = STREETS[Math.floor(hash(slot, car ? 7 : 8) * 4)], a = -7, b = 29, pos = st.dir > 0 ? a + (b - a) * k : b - (b - a) * k;
+  const at = d => st.axis === 'x' ? { gx: pos - d * st.dir, gy: st.c } : { gx: st.c, gy: pos - d * st.dir };
+  const flip = st.axis === 'x' ? st.dir < 0 : st.dir > 0; // which way they face on the screen
+  return { k, st, slot, at, flip, ...at(0) };
+}
+function drawTentCar(g, c, now) {
+  const { gx, gy } = c, alongX = c.st.axis === 'x', L = alongX ? .95 : .42, Wd = alongX ? .42 : .95;
+  const q0 = iso(gx, gy); ell(g, q0.x, q0.y + 2, 16, 'rgba(30,10,70,.25)');
+  for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const w = iso(gx + dx * (L - .15), gy + dy * (Wd - .05)); circ(g, w.x, w.y - 1, 2, '#16121a'); }
+  box(g, gx - L, gy - Wd, gx + L, gy + Wd, 2, 6, '#e2283b', '#c51f30', '#a81a29');
+  const cl = alongX ? .55 : .35, cw = alongX ? .35 : .55;
+  box(g, gx - cl, gy - cw, gx + cl, gy + cw, 8, 5, '#d8d2c6', '#9ec9e8', '#7fb0d6');
+  // the tent strapped on the roof
+  const t = iso(gx, gy, 13), x = Math.round(t.x), y = Math.round(t.y);
+  for (let i = 0; i < 7; i++) { R(g, x - 8 + i, y - i, 16 - i * 2, 1, i % 3 === 0 ? '#e0701a' : '#ff8a2a'); }
+  R(g, x - 1, y - 5, 2, 5, '#7a3a10'); R(g, x - 9, y, 18, 1, '#3a3a44');
+  const bump = Math.floor(now / 120) % 2; if (c.k > .3 && c.k < .62 && bump) { R(g, x + 9, y - 10, 2, 1, '#ffd23a'); R(g, x + 11, y - 12, 2, 1, '#ffd23a'); }
+}
+function drawBicicletada(g, b, now) {
+  for (let i = 5; i >= 0; i--) {
+    const p = b.at(i * 1.15), q = iso(p.gx, p.gy), lk = i === 0 ? { skin: '#a8714a', hair: '#16121a', shirt: '#e2283b', pants: '#2b2d55' } : lookOf(Math.floor(hash(b.slot, i) * LOOKS));
+    drawRider(g, Math.round(q.x), Math.round(q.y), lk, b.flip, now / 140 + i, ['#ffd23a', '#3ec46d', '#2f8fff', '#ff7ad9', '#2ad1c9', '#ff8a2a'][i]);
+    if (i === 0) { const hx = b.flip ? Math.round(q.x) - 7 : Math.round(q.x) + 3; R(g, hx, Math.round(q.y) - 17, 4, 3, '#e8e2d0'); R(g, b.flip ? hx - 2 : hx + 4, Math.round(q.y) - 18, 2, 5, '#e2283b'); }
+  }
+}
+let honked = -1;
+function streetSound(c) {
+  if (!c || !actx || muted || c.k < .35 || honked === c.slot) return;
+  honked = c.slot;
+  const who = me || { x: CXg, y: CYg }, d = Math.hypot(who.x - c.gx, who.y - c.gy), v = clamp(1 - d / 26, .15, 1) * .05, t = actx.currentTime;
+  for (const [i, f] of [[0, 415], [.32, 415]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(v, t + i); g.gain.setValueAtTime(v, t + i + .2); g.gain.exponentialRampToValueAtTime(.0001, t + i + .26); o.connect(g).connect(actx.destination); o.start(t + i); o.stop(t + i + .28); }
+}
+
+/* ---------- the weather: a rain of bananas (the square starts it now and then, or the organisers do) ---------- */
+let clima = null, bananaAcc = 0; const bananas = [];
+const BANANA = ['....YK', 'YYYYY.', '.DDD..'], BANANA_PAL = { Y: '#ffd23a', D: '#d9a320', K: '#6b4a2b' };
+function setClima(c) {
+  clima = c && c.k === 'bananas' ? c : null; if (!clima) return;
+  $('alertaTxt').textContent = L('O Sr. Banana, Ministro da Administração Interna, ordenou uma chuva de bananas!', 'Mr Banana, Minister of Home Affairs, has ordered a rain of bananas!');
+  $('alerta').hidden = false; plop(true);
+}
+function updClima(dt, now) {
+  const on = clima && serverNow() < clima.until;
+  if (on) bananaAcc += 40 * dt; // bananas a second, over the square and round it
+  for (; bananaAcc >= 1 && bananas.length < 160; bananaAcc--) bananas.push({ gx: Math.random() * (W + 4) - 2, gy: Math.random() * (H + 4) - 2, z: 150 + Math.random() * 60, v: 70 + Math.random() * 60, f: Math.random() < .5, at: 0 });
+  for (const b of bananas) { if (b.z > 0) { b.z -= b.v * dt; if (b.z <= 0) { b.z = 0; b.at = now; } } }
+  for (let i = bananas.length - 1; i >= 0; i--) if (bananas[i].at && now - bananas[i].at > 5000) bananas.splice(i, 1);
+  if (clima && serverNow() > clima.until + 4000) { clima = null; $('alerta').hidden = true; }
+}
+function drawBanana(g, b, now) {
+  const q = iso(b.gx, b.gy, b.z), x = Math.round(q.x), y = Math.round(q.y);
+  if (b.z > 0) { const s = iso(b.gx, b.gy); ell(g, s.x, s.y, 2, 'rgba(30,10,70,.18)'); bmp(g, BANANA, BANANA_PAL, x - 3, y - 3, Math.floor(now / 150 + b.v) % 2 === 0, b.f); return; }
+  if (now - b.at > 4000) g.globalAlpha = Math.max(0, 1 - (now - b.at - 4000) / 1000);
+  bmp(g, BANANA, BANANA_PAL, x - 3, y - 2, b.f); g.globalAlpha = 1;
+}
+function plop(first) { if (!actx || muted) return; const t = actx.currentTime; for (let i = 0; i < (first ? 3 : 1); i++) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(520 - i * 90, t + i * .12); o.frequency.exponentialRampToValueAtTime(180, t + i * .12 + .1); g.gain.setValueAtTime(.05, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .14); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .16); } }
 
 /* ---------- the characters ---------- */
 const npcs = new Map(); let ball = null;
@@ -674,7 +766,7 @@ function onMsg(m) {
     if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
     npcs.clear(); for (const o of m.npcs || []) addNpc(o);
     ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
-    cartazes = m.cartazes || []; CARTAZ_SLOTS = m.slots || CARTAZ_SLOTS; convencidos = m.convencidos || 0;
+    cartazes = m.cartazes || []; convencidos = m.convencidos || 0; setClima(m.clima);
     hideToast();
     if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
@@ -692,20 +784,21 @@ function onMsg(m) {
   if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
   if (m.t === 'dj') { djState = m.dj; return; }
   if (m.t === 'npc+') { addNpc(m.n); return; }
+  if (m.t === 'clima') { setClima(m.c); return; }
   if (m.t === 'npc-') { npcs.delete(m.id); return; }
   if (m.t === 'ball') { ball = m.b ? { x: m.b[0], y: m.b[1], tx: m.b[0], ty: m.b[1], held: !!m.b[2] } : null; return; }
   if (m.t === 'pergunta') { journalistDialog(m.q); return; }
   if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
   if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && m.d.n === (me && me.n)) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
   if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
-  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
+  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
   if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
   if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
   if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
   if (m.t === 'foto') { flashAt = performance.now(); flashPos = { x: m.x, y: m.y }; shutter(); if (m.ids.includes(myId)) setTimeout(() => makePhoto(m.ids, m.x, m.y, m.ev), 350); return; }
-  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { clearTimeout(cartazWait); myCartaz = m.c.id; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
+  if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { clearTimeout(cartazWait); myCartazes.add(m.c.id); mineCount = m.mine || mineCount + 1; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
   if (m.t === 'cartaz-') { cartazes = cartazes.filter(c => c.id !== m.id); return; }
-  if (m.t === 'cartazno') { clearTimeout(cartazWait); const gb = $('cartazGo'); if (gb) { gb.disabled = false; gb.textContent = L('Pendurar', 'Hang it'); } const w = NPC_NO[m.why] || (m.why === 'ja' ? ['Já tens um cartaz no cravo.', 'You already have a poster on the carnation.'] : null); const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e) e.textContent = t; else if (t) toast(t, 3000); return; }
+  if (m.t === 'cartazno') { if (m.why === 'ja') mineCount = CARTAZ_POR_PESSOA; clearTimeout(cartazWait); const gb = $('cartazGo'); if (gb) { gb.disabled = false; gb.textContent = L('Pendurar', 'Hang it'); } const w = { ja: ['Já tens 3 cartazes no cravo: é o máximo.', 'You already have 3 posters on the carnation: that’s the most.'], longe: ['Chega-te mais perto do cravo.', 'Get closer to the carnation.'] }[m.why] || NPC_NO[m.why]; const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e && !$('npcSheet').hidden) e.textContent = t; else if (t) toast(t, 3000); return; }
   if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); return; }
   if (m.t === 'aviso') { setAviso(m.text || ''); return; }
   if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
@@ -781,7 +874,7 @@ function update(dt, now) {
     if (d > .03) { const s = Math.min(d, Math.max(1.2, d * 5) * dt); n.x += ex / d * s; n.y += ey / d * s; face(n, ex, ey); n.moving = true; n.step += dt * 8; } else n.moving = false;
   }
   if (ball) { const ex = ball.tx - ball.x, ey = ball.ty - ball.y, d = Math.hypot(ex, ey); if (d > .03) { const s = Math.min(d, Math.max(3, d * 6) * dt); ball.x += ex / d * s; ball.y += ey / d * s; ball.moving = !ball.held; } else ball.moving = false; }
-  checkPending(); ctxSync(); diretoSync(now);
+  checkPending(); ctxSync(); diretoSync(now); updClima(dt, now);
   // dancing: anyone near the DJ
   const dj = djPos();
   for (const p of people.values()) p.dancing = !!dj && !dj.leaving && Math.hypot(p.x - dj.gx, p.y - dj.gy) < DANCE_R;
@@ -809,7 +902,7 @@ function draw(now) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.lineJoin = 'round';
   for (const p of people.values()) {
     const near = me && Math.hypot(p.x - me.x, p.y - me.y) < 4;
-    const talking = p.say !== undefined && now - p.sayAt < 4200;
+    const talking = p.say !== undefined && now - p.sayAt < SAY_LIFE;
     const q = S(p.x, p.y, 0), headY = q.y - 19 * scale;
     if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
     if (p === me) { ctx.fillStyle = '#b6ff3b'; ctx.beginPath(); ctx.moveTo(q.x - 5, headY - 18); ctx.lineTo(q.x + 5, headY - 18); ctx.lineTo(q.x, headY - 11); ctx.fill(); }
@@ -819,7 +912,7 @@ function draw(now) {
     }
     const e = p.e && now - p.eAt < 4000 ? GESTURES[p.e] : null;
     if (e) { ctx.font = '20px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; ctx.fillText(e.i, q.x + 14, headY + 4); }
-    if (talking && PHRASES[p.say]) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt);
+    if (talking && PHRASES[p.say]) bubble(L(PHRASES[p.say][0], PHRASES[p.say][1]), q.x, headY - (p === me ? 34 : 17), now - p.sayAt, SAY_LIFE);
   }
   // the characters: who they are, a speech mark when you can talk to them, what they just said
   for (const n of npcs.values()) {
@@ -829,17 +922,22 @@ function draw(now) {
     if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
     const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
   }
+  const car = passing('carro'); streetSound(car);
+  const onScreen = q => q.x > -20 && q.x < cssW + 20 && q.y > 0 && q.y < cssH + 40;
+  if (car && car.k > .3 && car.k < .62) { const q = S(car.gx, car.gy, 0); if (onScreen(q)) bubble(L('Piii! Piii! 🏕️', 'Beep! Beep! 🏕️'), q.x, q.y - 26 * scale, 0); }
+  const bici = passing('bicicletada'); if (bici) { const q = S(bici.gx, bici.gy, 0), sh = BICI_SHOUTS[Math.floor(bici.k * 8) % BICI_SHOUTS.length]; if (onScreen(q)) bubble('📣 ' + L(sh[0], sh[1]), q.x, q.y - 28 * scale, 0); }
   if (now - flashAt < 260 && flashPos) { ctx.fillStyle = `rgba(255,255,255,${.75 * (1 - (now - flashAt) / 260)})`; ctx.fillRect(0, 0, cssW, cssH); }
   const d = djPos();
   if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
   djTag(d);
 }
-function bubble(text, x, y, age) {
+const SAY_LIFE = 12600; // a shout stays up three times as long as it used to
+function bubble(text, x, y, age, life = 4200) {
   ctx.font = '700 13px Jost, sans-serif';
   const words = text.split(' '), lines = []; let cur = '';
   for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 150 && cur) { lines.push(cur); cur = w; } else cur = t; }
   lines.push(cur);
-  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 15 + 8, a = age > 3600 ? Math.max(0, 1 - (age - 3600) / 600) : 1;
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 15 + 8, a = age > life - 600 ? Math.max(0, 1 - (age - life + 600) / 600) : 1;
   const bx = clamp(x - w / 2, 4, cssW - w - 4), by = Math.max(4, y - h);
   ctx.globalAlpha = a;
   ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0a0a'; ctx.lineWidth = 2;
@@ -900,7 +998,7 @@ function targets() {
   const out = [];
   for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
   if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
-  for (const c of cartazes) { const s = CARTAZ_SPOTS[c.slot]; if (s) out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 10, c }); }
+  for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 11, c }); }
   return out;
 }
 function hitTest(sx, sy) {
@@ -981,10 +1079,10 @@ function canteenDialog() {
 }
 function showCartaz(c) {
   dialog(L('Cartaz no cravo', 'Poster on the carnation'), '', b => {
-    const p = document.createElement('div'); p.className = 'cartaz'; p.textContent = c.text; b.append(p);
+    const p = document.createElement('div'); p.className = 'cartaz fmt-' + (c.fmt || 'm'); p.style.background = CARTAZ_COL[c.cor] || CARTAZ_COL[0]; p.textContent = c.text; b.append(p);
     const who = document.createElement('div'); who.className = 'note'; const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(c.city);
     who.append(dot, ` ${c.name} · ${c.city}`); b.append(who);
-    if (c.id !== myCartaz && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
+    if (!myCartazes.has(c.id) && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
   });
 }
 function makeCartazDialog() {
@@ -992,15 +1090,31 @@ function makeCartazDialog() {
     const ta = document.createElement('textarea'); ta.maxLength = 60; ta.rows = 2; ta.className = 'cartazIn'; ta.placeholder = L('Ex.: Casa para viver!', 'E.g. Homes to live in!');
     const cnt = document.createElement('div'); cnt.className = 'note'; const err = document.createElement('span'); err.className = 'err'; err.id = 'cartazErr'; const n = document.createElement('span'); n.textContent = '0/60'; cnt.append(err, n);
     ta.addEventListener('input', () => { n.textContent = `${ta.value.length}/60`; err.textContent = ''; });
+    let fmt = 'm', cor = 0;
+    const prev = document.createElement('div'); prev.className = 'cartaz fmt-m'; prev.textContent = L('Casa para viver!', 'Homes to live in!');
+    const fits = k => cartazSpot(cartazes, CARTAZ_FMT[k]) >= 0;
+    if (!fits('m')) fmt = ['p', 'g', 'f'].find(fits) || 'p';
+    const sizes = document.createElement('div'); sizes.className = 'seg';
+    const sync = () => { prev.className = 'cartaz fmt-' + fmt; prev.style.background = CARTAZ_COL[cor]; prev.style.color = CARTAZ_INK[cor]; prev.textContent = ta.value.trim() || L('Casa para viver!', 'Homes to live in!'); for (const x of sizes.children) x.classList.toggle('on', x.dataset.f === fmt); for (const x of cols.children) x.classList.toggle('on', +x.dataset.c === cor); };
+    for (const [k, pt, en] of [['p', 'Pequeno', 'Small'], ['m', 'Médio', 'Medium'], ['g', 'Grande', 'Large'], ['f', 'Faixa', 'Banner']]) {
+      const x = document.createElement('button'); x.type = 'button'; x.dataset.f = k; x.textContent = L(pt, en); x.disabled = !fits(k); x.title = x.disabled ? L('Já não há espaço para este tamanho', 'No room left for this size') : '';
+      x.addEventListener('click', () => { fmt = k; sync(); }); sizes.append(x);
+    }
+    const cols = document.createElement('div'); cols.className = 'cols';
+    CARTAZ_COL.forEach((c, i) => { const x = document.createElement('button'); x.type = 'button'; x.dataset.c = i; x.style.background = c; x.setAttribute('aria-label', L('Cor ', 'Colour ') + (i + 1)); x.addEventListener('click', () => { cor = i; sync(); }); cols.append(x); });
+    ta.addEventListener('input', sync);
     const go = optBtn(L('Pendurar', 'Hang it'), () => {
       const v = ta.value.trim(); if (!v) { err.textContent = L('Escreve alguma coisa.', 'Write something.'); return; }
+      if (!fits(fmt)) { err.textContent = L('Já não há espaço para esse tamanho. Escolhe outro.', 'No room for that size any more. Pick another.'); return; }
       if (!ws || ws.readyState !== 1) { err.textContent = L('Sem ligação à praça. Tenta outra vez daqui a pouco.', 'Not connected to the square. Try again in a moment.'); return; }
-      send({ t: 'cartaz', text: v }); go.disabled = true; go.textContent = '…';
+      send({ t: 'cartaz', text: v, fmt, cor }); go.disabled = true; go.textContent = '…';
       clearTimeout(cartazWait); cartazWait = setTimeout(() => { if (!go.isConnected) return; go.disabled = false; go.textContent = L('Pendurar', 'Hang it'); err.textContent = L('A praça não respondeu. Tenta outra vez.', 'The square didn’t answer. Try again.'); }, 5000);
     });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
     const row = document.createElement('div'); row.className = 'write'; row.append(ta, go); go.id = 'cartazGo';
-    b.append(row, cnt); setTimeout(() => ta.focus(), 50);
+    const lab1 = document.createElement('label'); lab1.className = 'npclab'; lab1.textContent = L('Tamanho', 'Size');
+    const lab2 = document.createElement('label'); lab2.className = 'npclab'; lab2.textContent = L('Cor', 'Colour');
+    b.append(row, cnt, lab1, sizes, lab2, cols, prev); sync(); setTimeout(() => ta.focus(), 50);
   });
 }
 // the button that shows up next to the carnation
@@ -1008,8 +1122,9 @@ let ctxWas = '', cartazWait = 0;
 function ctxSync() {
   const el = $('ctxBtn'); let t = '', dis = false;
   if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet'].every(id => $(id).hidden)) {
-    if (myCartaz && cartazes.some(c => c.id === myCartaz)) t = '';
-    else if (cartazes.length >= CARTAZ_SLOTS) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
+    const mineNow = cartazes.filter(c => myCartazes.has(c.id)).length;
+    if (mineNow >= CARTAZ_POR_PESSOA) t = '';
+    else if (cartazSpot(cartazes, CARTAZ_FMT.p) < 0) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
     else t = L('🪧 Fazer um cartaz', '🪧 Make a poster');
   }
   const k = t + dis; if (k === ctxWas) return; ctxWas = k;
@@ -1038,6 +1153,9 @@ function renderScene(g, ox, oy, vw, vh, now) {
   for (const n of npcs.values()) list.push([n.x + n.y, () => drawNpc(g, n, now)]);
   if (ball) list.push([ball.x + ball.y + .01, () => drawBall(g, ball, now)]);
   const dj = djPos(); if (dj) list.push([dj.gx + dj.gy, () => drawDJ(g, dj, now)]);
+  for (const b of bananas) list.push([b.gx + b.gy + (b.z > 0 ? 50 : 0), () => drawBanana(g, b, now)]); // falling ones in front of everything
+  const car = passing('carro'); if (car) list.push([car.gx + car.gy, () => drawTentCar(g, car, now)]);
+  const bici = passing('bicicletada'); if (bici) list.push([bici.gx + bici.gy, () => drawBicicletada(g, bici, now)]);
   list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
   g.setTransform(1, 0, 0, 1, 0, 0);
 }
@@ -1133,7 +1251,7 @@ $('bZoom').addEventListener('click', () => { zoom = !zoom; store.set('acampada-p
 $('bSound').addEventListener('click', () => { audioInit(); muted = !muted; store.set('acampada-praca-mute', muted ? '1' : '0'); $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; });
 
 /* ================= the panels ================= */
-let lastSay = 0;
+let lastSay = -1e9; // (performance.now() starts at 0: a shout right after the page opened was being ignored)
 function buildSheets() {
   const pg = $('phraseGrid'); pg.innerHTML = '';
   PHRASES.forEach((p, k) => { const b = document.createElement('button'); b.textContent = L(p[0], p[1]); b.addEventListener('click', () => sayIt(k)); pg.appendChild(b); });
@@ -1320,7 +1438,7 @@ if (window.visualViewport) visualViewport.addEventListener('resize', () => { if 
 document.addEventListener('gesturestart', e => e.preventDefault());
 showStatus();
 requestAnimationFrame(frame);
-window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; } };
+window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing };
 })();
 </script>
 </body>

@@ -96,8 +96,15 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <div class="sw"><span>Curiosos<small>Perguntam o que se passa; quem for convencido junta-se com um cartaz.</small></span><button data-npc="curiosos" class="sm"></button></div>
       <div class="sw"><span>Fotógrafa<small>Tira fotos de grupo para partilhar.</small></span><button data-npc="fotografa" class="sm"></button></div>
       <div class="sw"><span>Cantina<small>Sopa, café e pão.</small></span><button data-npc="cantina" class="sm"></button></div>
+      <div class="sw"><span>Carro da tenda<small>Passa de vez em quando na rua, a buzinar, com uma tenda no tejadilho.</small></span><button data-npc="carro" class="sm"></button></div>
+      <div class="sw"><span>Bicicletada<small>Um grupo de ciclistas passa na rua com o megafone.</small></span><button data-npc="bicicletada" class="sm"></button></div>
       <div class="sw"><span>Labrador<small>Brinca com a bola, aceita festas e de vez em quando rouba o microfone à jornalista.</small></span><button data-npc="cao" class="sm"></button></div>
       <p class="muted" style="margin:8px 0 0" id="convencidos"></p>
+    </section>
+
+    <section><h2>Clima</h2>
+      <div class="sw"><span>Chuva de bananas automática<small>De vez em quando (25 a 50 minutos) chovem bananas na praça, com o alerta «O Sr. Banana, Ministro da Administração Interna, ordenou uma chuva de bananas!».</small></span><button id="climaAuto" class="sm"></button></div>
+      <div class="row" style="margin-top:8px"><button class="red" id="bananas">🍌 Chuva de bananas agora</button><span class="muted" id="climaTxt"></span></div>
     </section>
 
     <section><h2>Em direto <span class="muted">últimas respostas</span></h2>
@@ -207,13 +214,14 @@ function render() {
 
   for (const b of $('djSeg').children) b.classList.toggle('on', b.dataset.dj === c.dj);
   $('djTxt').textContent = { auto: 'Aparece 3 minutos em cada 10, e pára quando começa a assembleia (19:00).', sempre: 'Está sempre na praça, mesmo durante a assembleia.', off: 'Não aparece.' }[c.dj] + (S.dj.on ? ' Agora: na praça.' : ' Agora: fora da praça.');
-  sw('policia', c.policia); sw('ciclistas', c.ciclistas);
+  sw('policia', c.policia); sw('ciclistas', c.ciclistas); sw('climaAuto', c.climaAuto);
+  $('climaTxt').textContent = S.clima ? 'A chover agora!' : c.climaAuto ? 'Próxima por volta das ' + hm(S.nextClima) + ' (se houver gente na praça).' : 'Só quando carregares no botão.';
   for (const b of document.querySelectorAll('[data-npc]')) { const on = S.npcs[b.dataset.npc] !== false; b.textContent = on ? 'Ligado' : 'Desligado'; b.className = 'sm ' + (on ? 'green' : 'ghost'); }
   $('convencidos').textContent = 'Curiosos convencidos hoje: ' + S.convencidos + '.';
   const dl = $('diretos'); dl.innerHTML = '';
   if (!S.diretos.length) dl.append(el('div', 'muted', 'Ainda ninguém foi entrevistado.'));
   for (const d of S.diretos) dl.append(item(d.n + ' · ' + d.c + ' · ' + hm(d.at), d.text != null ? '«' + d.text + '» (escrita pela pessoa)' : 'Resposta pronta n.º ' + (d.a + 1) + ' à pergunta ' + (d.q + 1), d.text != null ? [btn('Apagar', 'red', () => api('apagar-direto', { id: d.id }), 'Confirmar')] : []));
-  $('nCartazes').textContent = S.cartazes.length + ' de 8';
+  $('nCartazes').textContent = S.cartazes.length + (S.cartazes.length === 1 ? ' cartaz' : ' cartazes');
   const cl = $('cartazes'); cl.innerHTML = '';
   if (!S.cartazes.length) cl.append(el('div', 'muted', 'O cravo não tem cartazes.'));
   for (const x of S.cartazes) cl.append(item('«' + x.text + '»', x.name + ' · ' + x.city, [btn('Tirar', 'red', () => api('tirar-cartaz', { id: x.id }), 'Confirmar')]));
@@ -232,6 +240,8 @@ $('avisoTirar').addEventListener('click', () => api('aviso', { texto: '' }));
 $('muralRO').addEventListener('click', () => api('config', { muralRO: !S.cfg.muralRO }));
 $('policia').addEventListener('click', () => api('config', { policia: !S.cfg.policia }));
 $('ciclistas').addEventListener('click', () => api('config', { ciclistas: !S.cfg.ciclistas }));
+$('climaAuto').addEventListener('click', () => api('config', { climaAuto: !S.cfg.climaAuto }));
+$('bananas').addEventListener('click', () => api('clima').then(r => r && toast('Bananas a cair na praça!')));
 for (const b of document.querySelectorAll('[data-npc]')) b.addEventListener('click', () => api('config', { npcs: { [b.dataset.npc]: S.npcs[b.dataset.npc] === false } }));
 for (const b of $('djSeg').children) b.addEventListener('click', () => api('config', { dj: b.dataset.dj }));
 $('agData').value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon' }).format(new Date());

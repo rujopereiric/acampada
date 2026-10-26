@@ -6,7 +6,7 @@
 // the square's furniture that the characters walk around (multiplayer.html draws it in the same places)
 export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5]]; // the carnation, the fountain, the canteen
 const SOPA = { x: 15.9, y: 1.85 }; // the canteen lady, behind her table
-export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao'];
+export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'carro', 'bicicletada']; // the last two pass in the street: multiplayer.html times them from the clock
 const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready answers (multiplayer.html: INTERVIEW)
 const CONVINCE = [.7, .6, .85]; // how often each explanation (multiplayer.html: EXPLAIN) wins a passer-by over
 
