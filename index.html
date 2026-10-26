@@ -2251,8 +2251,8 @@ function saxHalt() {
   if (saxEl && !saxEl.paused) saxEl.pause();
 }
 function saxTick(dt) {
-  const k = S && S.sax, on = !!(k && k.music) && mode === 'play' && !muted;
-  const rate = on ? 1 : (k && k.music) ? 10 : .5; // in over 1 s; a pause or the mute button cut it at once; the end fades over 2 s
+  const k = S && S.sax, kettleOn = !!(S && S.kettle && S.kettle.phase !== 'leave'), on = (!!(k && k.music) || kettleOn) && mode === 'play' && !muted; // the whole kettle has the saxophone as its music
+  const rate = on ? 1 : (k && k.music) || kettleOn ? 10 : .5; // in over 1 s; a pause or the mute button cut it at once; the end fades over 2 s
   saxVol = on ? Math.min(1, saxVol + dt * rate) : Math.max(0, saxVol - dt * rate);
   duck = 1 - .55 * saxVol;
   const playing = !!saxOut || (saxEl && !saxEl.paused);
@@ -2423,24 +2423,26 @@ function endParty() {
   const q = iso((FLOOR.x0 + FLOOR.x1) / 2, (FLOOR.y0 + FLOOR.y1) / 2, 34); floatXY(q.x - 24, q.y, fmt(all.length * crowdMult()) + ' juntaram-se à acampada', '#b6ff3b');
   d.followers = []; d.recruits = []; d.state = 'leave'; d.tx = NX + 3; d.ty = 1.5;
 }
-// the kettle stops the party: the dance floor empties, the bands, the stage and the choir go quiet, so the only music
-// is the saxophone outside the ring
+// police in the square stop the dance floor; a kettle also silences the bands, the stage and the choir, so the only
+// music is the saxophone
+const policeHere = () => !!(S.kettle || S.raid || S.van || S.police.length);
 function kettleHush() {
-  if (!S.kettle) return;
+  if (!policeHere()) return;
   const d = S.dj;
   if (d && d.state !== 'leave') { d.followers = []; d.recruits = []; d.state = 'leave'; d.tx = NX + 3; d.ty = 1.5; const q = iso((FLOOR.x0 + FLOOR.x1) / 2, (FLOOR.y0 + FLOOR.y1) / 2, 34); floatXY(q.x - 24, q.y, 'A pista de dança parou', '#ff8aa8'); }
+  if (!S.kettle) return;
   if (S.drums && S.drums.state !== 'out') S.drums.state = 'out';
   if (S.concert) S.concert = null;
   if (S.choir && (S.choir.state === 'gather' || S.choir.state === 'sing')) { S.choir.state = 'go'; S.choir.grandola = false; }
 }
 function updDJ(dt) {
   if (!S.city.dj) return;
-  if (!S.dj) { if (S.djT > 0 && !S.kettle) { S.djT -= dt; if (S.djT <= 0) { if (S.choir || S.tandem || choirSoon()) S.djT = 4; else spawnDJ(); } } return; }
+  if (!S.dj) { if (S.djT > 0 && !policeHere()) { S.djT -= dt; if (S.djT <= 0) { if (S.choir || S.tandem || choirSoon()) S.djT = 4; else spawnDJ(); } } return; }
   const d = S.dj; d.t += dt; d.beat -= dt;
   const busy = d.state === 'conga' || d.state === 'party';
   if (d.beat <= 0) {
     d.beat = busy ? .5 : 1;
-    if (!S.kettle && (busy || gd(d, S.player) < 4)) skank(busy);
+    if (!policeHere() && (busy || gd(d, S.player) < 4)) skank(busy);
     if (d.state !== 'leave') { const q = iso(d.gx, d.gy, 16); S.parts.push({ x: q.x + (d.flip ? 4 : -4), y: q.y, vx: rnd(-5, 5), vy: -14, life: 1, type: 'note', col: pick(['#ff3b4e', '#ffd23a', '#3ec46d']) }); }
   }
   if (d.state === 'wander') {
@@ -2472,7 +2474,7 @@ function updDJ(dt) {
     if (Math.random() < dt * 3) sparkle(rnd(FLOOR.x0, FLOOR.x1), rnd(FLOOR.y0, FLOOR.y1), 2, 4);
     if (d.pt <= 0) endParty();
   } else if (d.state === 'leave') {
-    if (moveEnt(d, d.tx, d.ty, S.choir || S.kettle ? 3 : 1.2, dt, true)) { S.dj = null; S.djT = rnd(110, 150); } // hurries off when the choir arrives
+    if (moveEnt(d, d.tx, d.ty, S.choir || policeHere() ? 3 : 1.2, dt, true)) { S.dj = null; S.djT = rnd(110, 150); } // hurries off when the choir arrives
   }
 }
 function drawDJ(d) {
