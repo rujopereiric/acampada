@@ -174,7 +174,7 @@ export class Personagens {
       let said;
       if (Number.isInteger(m.a) && m.a >= 0 && m.a < ANSWERS) said = { a: m.a };
       else { const c = this.sq.clean(m.text, 100); if (!c.ok) return no('jornalista', c.why); said = { text: c.text }; }
-      const d = { id: ++this.sq.dirId, n: p.name, c: p.city, q: J.q, ...said, at: now };
+      const d = { id: ++this.sq.dirId, by: p.id, n: p.name, c: p.city, q: J.q, ...said, at: now };
       this.sq.diretos.push(d); if (this.sq.diretos.length > 30) this.sq.diretos.shift();
       this.sq.broadcast({ t: 'direto', d });
       J.mode = 'after'; J.until = now + 4e3; return true;

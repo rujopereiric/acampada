@@ -160,7 +160,9 @@ export class Praca {
 
   /* when the square is open: the schedule, the organisers' openings, and their open/close switch */
   async status(fresh = false) {
-    if (!fresh && this.state && Date.now() - this.stateAt < 60e3) return this.state;
+    // the cache is good for a minute, but never past the moment the square should open or close
+    const st0 = this.state, n0 = Date.now();
+    if (!fresh && st0 && n0 - this.stateAt < 60e3 && !(st0.next && n0 >= st0.next.open) && !(st0.open && st0.close && n0 >= st0.close)) return st0;
     const now = Date.now(), ws = windows(await schedule(this.env), now);
     for (const a of this.cfg.agenda) ws.push({ city: null, title: a.title, where: a.where || '', date: lisbonDate(a.open), at: '', start: a.open, open: a.open, close: a.close, dj: true, id: a.id });
     const f = this.cfg.force;
@@ -230,7 +232,7 @@ export class Praca {
       p.mode = m.mode === 'praca' && avatars < MAX_AVATARS ? 'praca' : 'apoio';
       p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.mode === 'praca').map(q => this.pub(q));
-      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), cartazes: this.cartazes(), clima: this.climaNow() });
+      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
       if (p.mode === 'praca') this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
       return;

@@ -821,7 +821,7 @@ function onMsg(m) {
     if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
     npcs.clear(); for (const o of m.npcs || []) addNpc(o);
     ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
-    cartazes = m.cartazes || []; convencidos = m.convencidos || 0; setClima(m.clima);
+    cartazes = m.cartazes || []; if (Array.isArray(m.meus)) { myCartazes = new Set(m.meus); mineCount = m.meus.length; } convencidos = m.convencidos || 0; setClima(m.clima);
     hideToast();
     if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
@@ -844,7 +844,7 @@ function onMsg(m) {
   if (m.t === 'ball') { ball = m.b ? { x: m.b[0], y: m.b[1], tx: m.b[0], ty: m.b[1], held: !!m.b[2] } : null; return; }
   if (m.t === 'pergunta') { journalistDialog(m.q); return; }
   if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
-  if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && m.d.n === (me && me.n)) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
+  if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && (m.d.by != null ? m.d.by === myId : m.d.n === (me && me.n))) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
   if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
   if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
   if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
@@ -1018,7 +1018,8 @@ addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
   const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
   if (e.key === 'Escape') closeSheets();
-  if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden) { // talk to whoever is closest, or make a poster by the carnation
+  const sheetOpen = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet'].some(id => !$(id).hidden);
+  if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden && !sheetOpen && !(e.target.closest && e.target.closest('button, a'))) { // (Space on a button presses the button) // talk to whoever is closest, or make a poster by the carnation
     const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
     if (t) { e.preventDefault(); interact(t[0]); } else if (nearCravo() && !$('ctxBtn').hidden && !$('ctxBtn').disabled) { e.preventDefault(); makeCartazDialog(); }
   }
@@ -1249,8 +1250,10 @@ async function makePhoto(ids, fx, fy, ev) {
   if (!blob) return;
   if (lastPhoto) URL.revokeObjectURL(lastPhoto.url);
   lastPhoto = { blob, url: URL.createObjectURL(blob) };
+  if (interviewOpen && !$('npcSheet').hidden) { photoLater = true; toast(L('📸 A foto de grupo aparece quando acabares a entrevista.', '📸 The group photo shows up when you finish the interview.'), 3500); return; } // never cut a live interview short
   closeSheets(); $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false;
 }
+let photoLater = false;
 async function sharePhoto() {
   if (!lastPhoto) return;
   const file = new File([lastPhoto.blob], 'praca-acampada.png', { type: 'image/png' });
@@ -1268,7 +1271,7 @@ const NPC_NO = {
 };
 
 /* ================= sound: the DJ's ska loop, louder the closer you are ================= */
-let actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
+let musicVol = 0, actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
 function audioInit() {
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
@@ -1286,6 +1289,7 @@ const PROG = [[98, [392, 494, 587]], [82.4, [330, 392, 494]], [65.4, [262, 330, 
 const STEP = 60 / 150 / 2;
 function schedule() {
   if (!actx || !master) return;
+  if (!musicVol) { nextT = 0; return; } // nobody hears it: no notes (phones' batteries)
   if (nextT < actx.currentTime) nextT = actx.currentTime + .05;
   while (nextT < actx.currentTime + .2) {
     const bar = Math.floor(step / 8) % 4, s = step % 8, [root, ch] = PROG[bar], t = nextT;
@@ -1296,7 +1300,6 @@ function schedule() {
     nextT += STEP; step++;
   }
 }
-let musicVol = 0;
 function music(dj) {
   if (!actx || !master) return;
   let v = 0;
@@ -1337,7 +1340,8 @@ function gesture(k) {
   clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
 }
 function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
-function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open'); }
+function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
+  if (photoLater && lastPhoto) { photoLater = false; setTimeout(() => { if (lastPhoto) { $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false; } }, 300); } }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
 $('tGest').addEventListener('click', () => openSheet('gestSheet'));
 $('tMural').addEventListener('click', () => openSheet('muralSheet'));
