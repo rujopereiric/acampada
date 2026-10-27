@@ -87,7 +87,7 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .cam .wrap{ position:fixed; inset:0; bottom:auto; height:var(--vvh, 100dvh); width:auto; margin:0; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); display:flex; flex-direction:column; gap:6px; }
 .cam .stage{ flex:1; min-height:0; margin:0; overflow:hidden; }
 .cam canvas{ position:absolute; left:0; top:0; transform-origin:0 0; aspect-ratio:auto; }
-.cam .actions{ margin-top:0; } .cam #ctxBtn{ margin-top:6px; } .cam #ctxBtn[hidden]{ display:block; visibility:hidden; } .cam .help{ display:none; }
+.cam .actions{ margin-top:0; } .cam #ctxBtn{ margin-top:6px; } .cam #ctxBtn[hidden]{ display:block; visibility:hidden; } .cam #help{ display:none; }
 #rotHint{ position:absolute; left:8px; right:62px; bottom:8px; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 6px 6px 10px; background:rgba(11,10,10,.86); color:#f4f1ea; font:600 13px/1.25 Jost, Futura, sans-serif; }
 #rotHint[hidden]{ display:none; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
@@ -99,6 +99,31 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .cam #tut{ bottom:auto; top:52px; font-size:13px; max-width:calc(100% - 20px); }
 .tutpulse{ animation:tutp 1s ease-in-out infinite; position:relative; z-index:2; } @keyframes tutp{ 0%,100%{ box-shadow:0 0 0 0 #ffd23a; } 50%{ box-shadow:0 0 0 6px #ffd23a; } }
 /* the ALERTA window during a kettle: a live TV news report (computers: picture and captions, bottom left; phones: captions only) */
+/* the TV set (see tellySync) */
+#telly{ position:fixed; z-index:15; pointer-events:none; border:6px solid #1c1a1e; border-radius:6px; background:#000; box-shadow:0 0 0 2px #3a3640, 0 4px 0 rgba(0,0,0,.45); overflow:hidden; color:#fff; font-family:Jost, Futura, "Trebuchet MS", sans-serif; }
+#telly[hidden]{ display:none; }
+#telly .pw{ position:absolute; right:3px; top:3px; pointer-events:auto; display:grid; place-items:center; width:2em; height:2em; padding:0; border:0; border-radius:50%; background:rgba(11,10,10,.6); color:#fff; font-size:.9em; cursor:pointer; }
+#tvOn{ position:fixed; z-index:15; display:flex; align-items:center; gap:5px; padding:5px 9px 4px; border:2px solid #3a3640; border-radius:6px; background:#1c1a1e; color:#fff; font:700 12px/1 Jost, sans-serif; letter-spacing:.5px; cursor:pointer; }
+#tvOn[hidden]{ display:none; }
+#telly canvas{ display:block; position:static; transform:none; width:100%; height:auto; aspect-ratio:16/9; image-rendering:pixelated; }
+#telly .rec{ position:absolute; left:4px; top:4px; background:#d8261c; font-weight:700; font-size:.8em; line-height:1; padding:3px 5px 2px; text-transform:uppercase; animation:tvlive 1s steps(2) infinite; }
+#telly .rec[hidden]{ display:none; }
+#telly .l3{ position:absolute; left:0; right:0; bottom:0; }
+#telly .tag{ display:inline-block; max-width:100%; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:800; font-size:.78em; line-height:1; letter-spacing:.3px; text-transform:uppercase; padding:3px 6px 2px; background:#d8261c; }
+#telly .txt{ display:block; background:rgba(11,10,10,.86); font-family:"Helvetica Neue", Arial, sans-serif; font-weight:700; font-size:1em; line-height:1.18; padding:3px 6px 4px; }
+#telly .txt:empty{ display:none; }
+#telly .chip{ position:absolute; right:4px; top:-1.3em; font-weight:800; font-size:.78em; line-height:1; padding:3px 5px 2px; background:#3ec46d; color:#0b0a0a; text-transform:uppercase; }
+#telly .chip.bad{ background:#ff8aa8; } #telly .chip[hidden]{ display:none; }
+#telly[data-p="novela"] .tag{ background:#a3415a; font-family:Georgia, serif; font-style:italic; text-transform:none; font-size:.85em; }
+#telly[data-p="horoscopo"] .tag{ background:#7a3aa8; }
+#telly[data-p="ossitrim"] .tag{ background:#ffd23a; color:#16121a; } #telly[data-p="ossitrim"] .txt{ background:#2f6bff; }
+#telly[data-p="televendas"] .tag{ background:#2ad1c9; color:#0b0a0a; } #telly[data-p="televendas"] .txt{ background:#0a3a30; }
+#telly[data-p="jornal"] .tag{ background:#2f6bff; } #telly[data-p="jornal"] .txt{ background:#0b1a3a; }
+#telly[data-p="debate"] .tag{ background:#6a6d75; }
+#telly[data-p="rep"] .tag{ background:#2f6bff; } #telly[data-p="direto"] .tag{ background:#2f6bff; }
+#telly[data-p="laranja"] .tag{ background:#f08a24; color:#16121a; }
+#telly[data-p="vitoria"] .tag{ background:#3ec46d; color:#0b0a0a; }
+#telly[data-p="cut"] .tag{ background:#16121a; }
 #tv{ position:absolute; inset:0; z-index:1; pointer-events:none; color:#fff; text-transform:uppercase; }
 #tv[hidden]{ display:none; }
 #tv .cap{ position:absolute; left:8px; right:8px; bottom:8px; background:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 rgba(11,10,10,.35); }
@@ -214,6 +239,10 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 #ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px calc(env(safe-area-inset-bottom,0px) + 16px); overflow:auto; text-align:center; color:#fff; background:#0b0a0a; font-family:Jost, Futura, "Trebuchet MS", sans-serif; }
 #ov[hidden]{ display:none; }
 #ov .wrapc{ position:relative; z-index:1; margin:auto; width:100%; max-width:460px; }
+#ov .wrapc.ovland{ max-width:820px; } #ov .wrapc.ovland .cj{ max-width:none; } #ov .wrapc.ovland .cj-card{ display:grid; grid-template-columns:52px 1fr; grid-template-rows:auto 1fr; gap:0 7px; } #ov .wrapc.ovland .cj-card .cj-img{ grid-row:1 / 3; height:38px; } #ov .wrapc.ovland .cj-card b{ align-self:end; }
+#ov .ovsplit{ display:grid; grid-template-columns:1fr 1fr; gap:0 28px; align-items:center; text-align:inherit; }
+#ov .ovcol{ min-width:0; }
+#ov .ovcol > :first-child{ margin-top:0 !important; }
 .rough{ filter:url(#rough); }
 #ov h2,#ov p{ margin:0; }
 .p-red{ color:#b02a22; font-weight:800; font-size:clamp(30px, 9.5vw, 42px); line-height:1; letter-spacing:.5px; }
@@ -473,6 +502,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
   <p class="help" id="help">Toca na praça para andar.</p>
   </div>
 </main>
+<div id="telly" hidden><canvas id="tlc" width="96" height="54" aria-hidden="true"></canvas><button type="button" class="pw" id="tvOff" aria-label="Desligar a televisão"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg></button><span class="rec">● Em direto</span><div class="l3"><span class="tag"></span><span class="txt"></span><span class="chip" hidden></span></div></div>
+<button type="button" id="tvOn" hidden aria-label="Ligar a televisão"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg><span>TV</span></button>
 <div id="ov"></div>
 <script>
 (() => {
@@ -1695,7 +1726,7 @@ function nightEvents(dt) {
     else if (j.state === 'leave') { if (moveEnt(j, j.tx, j.ty, 1.6, dt, true)) S.journo = null; }
     if (S.journo && j.state !== 'leave' && j.state !== 'shout' && gd(p, j) < .55) {
       j.state = 'shout'; j.shoutT = 2.2; S.support = Math.max(0, S.support - 8);
-      float(j.gx, j.gy, 'Jovens delinquentes!', '#ff9a2e', 32); sfx('leave');
+      float(j.gx, j.gy, 'Jovens delinquentes!', '#ff9a2e', 32); sfx('leave'); tvEvent('laranja', j);
     }
     if (j.state === 'shout') { j.moving = false; j.shoutT -= dt; if (j.shoutT <= 0) { j.state = 'leave'; j.tx = NX + 3; j.ty = j.gy; } }
   }
@@ -1720,7 +1751,7 @@ function updReporter(dt) {
     r.state = 'talk'; r.talkT = 2.2; r.flip = p.gx < r.gx; p.talk = 2; p.flip = !r.flip; p.back = false; r.camSide = iso(p.gx, p.gy).x < iso(r.gx, r.gy).x ? 1 : -1;
     const good = Math.random() < .5;
     S.support = clamp(S.support + (good ? 8 : -8), 0, 100);
-    float(r.gx, r.gy, 'Entrevista', '#7fd0ff', 34);
+    float(r.gx, r.gy, 'Entrevista', '#7fd0ff', 34); tvEvent('rep', r, good);
     float(r.gx, r.gy, good ? 'Correu bem: +apoio' : 'Cortaram o que disseste: -apoio', good ? '#b6ff3b' : '#ff8aa8', 22);
     sfx(good ? 'join' : 'leave');
   }
@@ -2119,7 +2150,7 @@ function newsSync() {
 const TV_PLACE = { Porto: 'na Praça D. João I', Lisboa: 'no Rossio' };
 function tvSync() {
   const el = $('tv'), K = S && S.kettle, on = !!(K && K.tvOn && (!K.tvOff || S.t < K.tvOff) && (mode === 'play' || mode === 'paused'));
-  if (!on) { if (!el.hidden) el.hidden = true; return; }
+  if (!on || TELLY.on) { if (!el.hidden) el.hidden = true; if (on && K.nc) tvShot(K); return; } // the TV set beside the square shows it instead
   const lis = S.city.name === 'Lisboa';
   if (el.hidden) {
     el.hidden = false;
@@ -2131,6 +2162,9 @@ function tvSync() {
   const h = K.phase === 'charge' ? T('Polícia avança sobre a acampada') : heads[Math.floor((S.t - (K.tvAt || 0)) / 4) % heads.length], hd = el.querySelector('.hd');
   if (hd.textContent !== h) hd.textContent = h;
   if (CAM.on || !K.nc) return; // phones: captions only
+  tvShot(K);
+}
+function tvShot(K) {
   const ng = (K.neg || []).find(m => m.kind === 'neg') || { gx: K.nc[0], gy: K.nc[1] }; // the close-up: the negotiator, being interviewed
   // the TV camera: the square's background (no night, no darkening) and only the people in the shot, lit
   const w = 72, hh = 40, tc = $('tvc'); if (tc.width !== w) { tc.width = w; tc.height = hh; }
@@ -2142,6 +2176,163 @@ function tvSync() {
   const main = ctx; ctx = g; ctx.save(); ctx.translate(-sx, -sy);
   try { for (const [o, f] of shot) { const p = iso(o.gx, o.gy); small(p.x, p.y, f); } } finally { ctx.restore(); ctx = main; }
 }
+/* ================= the TV set: in the free space beside the square (phones on their side, computers) =================
+   by the hour: horoscope 7–10, soap opera 10–19 (Ossitrim ads in between), news 19–21, debate 21–3, teleshopping 3–7;
+   the police, the interviews and the live broadcasts interrupt it */
+let tvOff = false; try { tvOff = localStorage.getItem('acampada-tv') === 'off'; } catch (e) {}
+const TELLY = { on: false, ev: null, prog: '', cut: 0, acc: 1, lay: 0, n: 0, key: '' };
+const pickOne = a => a[Math.floor(Math.random() * a.length)];
+// the reporter and the Orange Journalist put their interview on air for a few seconds
+function tvEvent(kind, who, good) {
+  const line = kind === 'rep' ? (good ? pickOne([L('«A renda não cabe no salário»', '“The rent doesn’t fit in the wage”'), L('«Temos o direito à manifestação, não estamos a fazer nada de ilegal»', '“We have the right to protest, we’re doing nothing illegal”')]) : L('Declarações cortadas na edição', 'Statements cut in the edit'))
+    : pickOne([L('Jovens delinquentes?', 'Young delinquents?'), L('Desacatos na praça?', 'Trouble in the square?'), L('Fontes não identificadas falam em caos', 'Unnamed sources speak of chaos'), L('Tendas: protesto ou moda?', 'Tents: protest or fashion?'), L('Quem paga isto?', 'Who pays for this?'), L('Vizinha queixa-se do barulho dos tachos', 'Neighbour complains about the pots and pans')]);
+  TELLY.ev = { kind, good, who, gx: who.gx, gy: who.gy, until: S.t + 6.5, line };
+}
+const TV_NOVELA = () => [L('«Não me digas que o senhorio é o teu pai!»', '“Don’t tell me the landlord is your father!”'), L('«Casei-me contigo para dividir a renda, Rodrigo!»', '“I married you to split the rent, Rodrigo!”'), L('«Ela trocou-me por um alojamento local.»', '“She left me for a holiday let.”'), L('«Esta casa guarda um segredo… a renda subiu 40%.»', '“This house hides a secret… the rent went up 40%.”'), L('«Herdaste o T0 da avó? Então és rica!»', '“You inherited granny’s studio? So you’re rich!”'), L('«Sai desta casa! — Mas para onde, mãe? Para onde?»', '“Get out of this house! — But where to, mum? Where?”')];
+const TV_HORO = () => [L('Acordámos todos em Mercúrio retrógrado.', 'We all woke up in Mercury retrograde.'), L('Carneiro: hoje não é dia de assinar contratos de arrendamento.', 'Aries: not a day for signing a lease.'), L('Touro: Vénus entra na casa 4… mas tu não tens casa.', 'Taurus: Venus enters the 4th house… but you have no house.'), L('Gémeos: um senhorio vai entrar na tua vida.', 'Gemini: a landlord is about to enter your life.'), L('Caranguejo: levas a casa às costas, como sempre.', 'Cancer: you carry your home on your back, as always.'), L('Leão: dia propício para montar tendas.', 'Leo: a good day for pitching tents.'), L('Virgem: arruma a tenda, que a polícia vem às 6h.', 'Virgo: tidy the tent, the police come at 6.'), L('Balança: renda ou comida? Os astros não ajudam.', 'Libra: rent or food? The stars won’t help.'), L('Escorpião: alguém te vai pedir fiador.', 'Scorpio: someone will ask you for a guarantor.'), L('Capricórnio: aumento? De salário não. De renda sim.', 'Capricorn: a rise? Not in wages. In rent, yes.'), L('Peixes: vais nadar na piscina do empreiteiro.', 'Pisces: you’ll swim in the builder’s pool.')];
+const TV_OSSI = () => [L('Ossos resistentes a bastonadas! Ligue já: 161 BORA', 'Bones that resist batons! Call now: 161 BORA'), L('Para subir ao 4.º andar sem elevador.', 'To climb to the 4th floor with no lift.'), L('Oferta: a 2.ª embalagem é grátis. Pague só os portes.', 'Offer: the 2nd pack is free. Just pay postage.'), L('Recomendado por avós de toda a Europa*', 'Recommended by grannies all over Europe*'), L('*Não substitui uma reforma digna.', '*Does not replace a decent pension.')];
+const TV_SHOP = () => [['pool', L('Empreiteiro de piscinas, recomendado pelo MAI!', 'Pool builder, recommended by the Interior Ministry!')], ['perfume', L('Perfume caro: para ficar cheiroso nas acampadas!', 'Pricey perfume: to smell nice at the camps!')], ['tent', L('Tenda insuflável de luxo: monta-se em 2 segundos!', 'Luxury inflatable tent: up in 2 seconds!')], ['bed', L('Colchão 3 em 1: é cama, é sofá, é a tua casa!', '3-in-1 mattress: it’s a bed, a sofa, your home!')], ['house', L('Mini-T0 portátil: cabe na mala do carro.', 'Portable mini studio: fits in the car boot.')], ['knife', L('Faca que corta tudo! Menos a renda.', 'A knife that cuts everything! Except the rent.')]];
+const TV_DEBATE = () => [[1, L('Criança Liberal', 'Liberal Kid'), L('«A acampada não respeita o direito à manifestação.»', '“The camp doesn’t respect the right to protest.”')], [0, L('Comentador de sempre', 'The usual pundit'), L('«No meu tempo comprava-se casa aos 25.»', '“In my day you bought a house at 25.”')], [2, L('Economista', 'Economist'), L('«O mercado vai-se ajustar. Um dia.»', '“The market will adjust. Some day.”')], [1, L('Criança Liberal', 'Liberal Kid'), L('«Se não tens casa, compra uma.»', '“If you have no house, buy one.”')], [3, L('Especialista em tudo', 'Expert on everything'), L('«Eu não sou contra, mas…»', '“I’m not against it, but…”')], [4, L('Deputado', 'MP'), L('«Não é o momento de falar em habitação.»', '“This is not the time to talk about housing.”')]];
+function tvNews() {
+  const day = 1 + Math.floor((S.clock - 6) / 24), a = [];
+  a.push(L(`Acampada de ${S.city.name} já tem ${S.tents.length} ${S.tents.length === 1 ? 'tenda' : 'tendas'} e ${fmt(crowd())} pessoas.`, `The camp in ${S.city.name} now has ${S.tents.length} ${S.tents.length === 1 ? 'tent' : 'tents'} and ${fmt(crowd())} people.`));
+  a.push(L('Governo diz estar a «acompanhar a situação».', 'The government says it is “following the situation”.'));
+  if (S.raidDetained > 0 && day > 1) a.push(L(`${S.raidDetained} ${S.raidDetained === 1 ? 'detido' : 'detidos'} na rusga desta madrugada.`, `${S.raidDetained} detained in this morning’s raid.`));
+  a.push(L('Ministro garante que há casas: «basta procurar».', 'Minister insists there are homes: “you just have to look”.'));
+  if (day > 1) a.push(L(`Acampada entra no ${day}.º dia.`, `The camp enters day ${day}.`));
+  a.push(L('Preço das casas volta a subir.', 'House prices rise again.'));
+  if (crowd() >= 1000) a.push(L('Milhares juntam-se à praça.', 'Thousands join the square.'));
+  return a;
+}
+const placeAt = () => { const pl = S.city.place || S.city.name; return /^(Praça|Alameda)/.test(pl) ? 'à ' + pl : 'ao ' + pl; };
+// what is on now
+function tvNow() {
+  const K = S.kettle, ev = TELLY.ev && S.t < TELLY.ev.until ? TELLY.ev : null, h = ((S.clock % 24) + 24) % 24;
+  if (S.winning) return 'vitoria';
+  // the police only make the news once they are in the square, not while the van is still on its way
+  const cops = S.police.some(o => o.gx > -.5 && o.gx < NX + .5 && o.gy > -.5 && o.gy < NY + .5);
+  if (K && K.phase !== 'leave' && (cops || K.tvOn)) return 'alerta';
+  if (S.raid && cops) return 'rusga';
+  if (ev) return ev.kind;
+  if (S.live > 0) return 'direto';
+  if (h >= 7 && h < 19) return Math.floor(S.t / 4.5) % 4 === 3 ? 'ossitrim' : h < 10 ? 'horoscopo' : 'novela';
+  if (h >= 19 && h < 21) return 'jornal';
+  if (h >= 21 || h < 3) return 'debate';
+  return 'televendas';
+}
+const TV_CUTS = ['alerta', 'rusga', 'rep', 'laranja', 'direto', 'vitoria'];
+// the words for the lower third: [label, text, extra]
+function tvWords(p) {
+  const k = Math.floor(S.t / 4.5), lis = S.city.name === 'Lisboa', day = 1 + Math.floor((S.clock - 6) / 24), ev = TELLY.ev, nth = a => a[(k + TELLY.n) % a.length];
+  switch (p) {
+    case 'vitoria': return [L('Última hora', 'Breaking news'), L('Governo cede: medidas imediatas para a habitação', 'Government gives in: immediate housing measures'), ''];
+    case 'alerta': { const K = S.kettle; return [L('Última hora', 'Breaking news'), K.phase === 'charge' ? T('Polícia avança sobre a acampada') : nth([L(`Polícia cerca a acampada ${TV_PLACE[S.city.name] || ''}`, `Police kettle the camp ${lis ? 'at Rossio' : 'at Praça D. João I'}`), L(`Polícia cerca também ${lis ? 'no Porto' : 'em Lisboa'}`, `Police kettle ${lis ? 'Porto' : 'Lisbon'} too`), T('Negociações em curso'), T('Manifestantes desafiam a polícia')]), '']; }
+    case 'rusga': return [L('Última hora', 'Breaking news'), S.patrolRaid ? L(`Patrulha da polícia ${placeAt().replace(/^à /, 'na ').replace(/^ao /, 'no ')}`, `Police patrol at ${S.city.place || S.city.name}`) : nth([L(`Polícia chega ${placeAt()}`, `Police arrive at ${S.city.place || S.city.name}`), L('Rusga em curso na acampada', 'Raid under way at the camp')]), ''];
+    case 'rep': return [L(`Entrevista · Acampada ${S.city.name}`, `Interview · ${S.city.name} camp`), ev.line, ev.good ? L('Apoio sobe', 'Support up') : L('Apoio desce', 'Support down')];
+    case 'laranja': return [L('Exclusivo', 'Exclusive'), ev.line, L('Apoio desce', 'Support down')];
+    case 'direto': return [L('Em direto da praça', 'Live from the square'), L(`A acampada ${S.city.name} transmite em direto`, `The ${S.city.name} camp is broadcasting live`), ''];
+    case 'novela': return [L(`«Amor em Renda Livre» · Ep. ${213 + day}`, `“Love at Market Rent” · Ep. ${213 + day}`), nth(TV_NOVELA()), ''];
+    case 'horoscopo': return [L('Bom dia · Horóscopo', 'Good morning · Horoscope'), nth(TV_HORO()), ''];
+    case 'ossitrim': return [L('Publicidade · Ossitrim', 'Advert · Ossitrim'), TV_OSSI()[Math.floor(S.t / 18) % 5], ''];
+    case 'televendas': { const left = 599 - Math.floor(S.t) % 600; return [L(`Televendas · só nos próximos ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}!`, `Teleshopping · next ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} only!`), nth(TV_SHOP())[1], '']; }
+    case 'jornal': return [L(`Telejornal · ${S.city.name}`, `The News · ${S.city.name}`), nth(tvNews()), ''];
+    case 'debate': { const d = nth(TV_DEBATE()); return [L('Debate · Acampar resolve?', 'Debate · Does camping help?'), `${d[1]}: ${d[2]}`, '']; }
+  }
+  return ['', '', ''];
+}
+// where the set goes: phones on their side, between the panel and the buttons; wide windows, the square's top right corner; other computers, beside the column
+function tellyPlace() {
+  const el = $('telly'), de = document.documentElement; let x, y, w, room = 1e9, colW = 0;
+  if (CAM.on && CAM.land) { const a = document.querySelector('.hud').getBoundingClientRect(), b = document.querySelector('.bottom').getBoundingClientRect(); x = a.left; colW = w = a.width; y = a.bottom + 8; room = b.top - 8 - y; }
+  else if (CAM.on) return false;
+  else if (de.classList.contains('wide')) { const r = cv.getBoundingClientRect(); w = clamp(r.width * .24, 180, 340); x = r.right - w - 10; y = r.top + 10; }
+  else { const r = wrap.getBoundingClientRect(), side = innerWidth - r.right - 36; if (side < 180) return false; w = Math.min(340, side); x = r.right + 18; y = cv.getBoundingClientRect().top; }
+  const bz = Math.round(clamp(w * .035, 5, 10)), hOf = ww => (ww - 2 * bz) * 9 / 16 + 2 * bz;
+  if (hOf(w) > room) { w = (room - 2 * bz) * 16 / 9 + 2 * bz; if (colW) x += (colW - w) / 2; }
+  if (w < 150) return false;
+  TELLY.box = { x, y, w };
+  Object.assign(el.style, { left: Math.round(x) + 'px', top: Math.round(y) + 'px', width: Math.round(w) + 'px', borderWidth: bz + 'px', fontSize: clamp(w / 21, 8.5, 15).toFixed(1) + 'px' });
+  return true;
+}
+// the picture: a camera on the square, or a little studio
+function tvCrop(g, gx, gy) { const p = iso(gx, gy), w = 96, h = 54; g.drawImage(cv, clamp(Math.round(p.x - w / 2), 0, cv.width - w), clamp(Math.round(p.y - 30), 0, cv.height - h), w, h, 0, 0, w, h); }
+function tvStudio(g, p) {
+  const main = ctx; ctx = g; g.save(); g.translate(0, -15); // everything up, clear of the captions
+  try {
+    const k = Math.floor(S.t / 4.5) + TELLY.n, blink = Math.floor(S.t * 2) % 2;
+    if (p === 'novela') {
+      R(0, -15, 96, 55, '#6a2f55'); for (let x = 3; x < 96; x += 8) R(x, 0, 1, 40, '#7a3a63'); R(0, 40, 96, 29, '#3a1a2c');
+      R(10, 18, 20, 15, '#f2c27a'); R(19, 18, 2, 15, '#6a2f55'); R(10, 25, 20, 1, '#6a2f55'); R(70, 26, 18, 14, '#a3415a'); R(70, 24, 18, 3, '#c2546f');
+      const c = [['#f0d0b0', '#3a2a1a', '#ffffff', '#2a2a36'], ['#c98e62', '#121212', '#c2342c', '#2a2a36'], ['#e7c3a3', '#d8b04a', '#2f6bff', '#3a3f55']], a = c[k % 3], b = c[(k + 1) % 3];
+      guy(42, 49, { skin: a[0], hair: a[1], shirt: a[2], pants: a[3], flip: false }); guy(55, 49, { skin: b[0], hair: b[1], shirt: b[2], pants: b[3], flip: true });
+      if (k % 2) { R(48, 30, 1, 1, '#ff8aa8'); R(50, 29, 1, 1, '#ff8aa8'); R(49, 30, 1, 2, '#ff8aa8'); }
+    } else if (p === 'horoscopo') {
+      R(0, -15, 96, 84, '#1b0f3a'); for (let i = 0; i < 26; i++) R((i * 37) % 96, (i * 23) % 50 - 10, 1, 1, i % 3 ? '#9a8cff' : '#ffe27a');
+      R(0, 44, 96, 25, '#2a1458'); guy(48, 46, { skin: '#e7c3a3', hair: '#7a3aa8', shirt: '#7a3aa8', pants: '#2a1458' }); R(45, 30, 7, 2, '#ffd23a');
+      R(43, 38, 11, 9, '#9fd0ff'); R(42, 40, 13, 5, '#9fd0ff'); R(45, 39, 3, 2, '#e8f6ff'); R(42, 47, 13, 2, '#ffd23a');
+    } else if (p === 'ossitrim') {
+      R(0, -15, 96, 84, '#ffd23a'); for (let i = 0; i < 6; i++) R(i * 18 - 4, -15, 8, 84, '#ffe27a');
+      R(58, 14, 16, 32, '#f4f1ea'); R(61, 10, 10, 5, '#c2342c'); R(58, 24, 16, 10, '#2f6bff'); R(61, 27, 10, 4, '#f4f1ea'); R(58, 46, 16, 2, '#c9c4b8');
+      guy(34, 48, { skin: '#e7c3a3', hair: '#e8e8e8', shirt: '#8a5a9a', pants: '#3a3f55' });
+      R(38, blink ? 31 : 33, 4, 2, '#8a5a9a'); R(41, blink ? 28 : 30, 2, 3, '#e7c3a3'); // the arm, flexing
+      if (blink) { R(20, 20, 2, 2, '#fff'); R(86, 16, 2, 2, '#fff'); }
+    } else if (p === 'televendas') {
+      R(0, -15, 96, 57, '#0f5a4a'); R(0, 42, 96, 27, '#0a3a30'); R(0, 18, 96, 2, '#2ad1c9');
+      guy(24, 48, { skin: '#c98e62', hair: '#121212', shirt: '#ff4f8b', pants: '#2a2a36', flip: false });
+      const it = TV_SHOP()[k % 6][0];
+      if (it === 'pool') { R(46, 34, 34, 10, '#2f8fff'); R(46, 34, 34, 2, '#9fd0ff'); R(76, 26, 1, 10, '#d9d9d9'); R(79, 26, 1, 10, '#d9d9d9'); for (let y = 28; y < 36; y += 3) R(76, y, 4, 1, '#d9d9d9'); }
+      else if (it === 'perfume') { R(58, 26, 10, 14, '#ff8ad0'); R(61, 22, 4, 4, '#ffd23a'); R(59, 28, 3, 6, '#ffd0ee'); }
+      else if (it === 'tent') { for (let i = 0; i < 12; i++) R(50 + i, 40 - i, 26 - 2 * i, 1, '#ff8a2a'); R(61, 34, 4, 6, '#7a3a10'); }
+      else if (it === 'bed') { R(46, 32, 34, 9, '#f4f1ea'); for (let x = 48; x < 80; x += 5) R(x, 32, 2, 9, '#9fd0ff'); }
+      else if (it === 'house') { R(56, 30, 16, 11, '#f4f1ea'); for (let i = 0; i < 9; i++) R(55 + i, 30 - i, 18 - 2 * i, 1, '#c2342c'); R(62, 34, 4, 7, '#7a4a2a'); }
+      else { R(50, 33, 22, 4, '#d9d9d9'); R(50, 33, 22, 1, '#ffffff'); R(72, 32, 8, 6, '#2a2a36'); }
+      R(80, 22, 14, 9, '#ffd23a'); R(80, 26, 14, 1, '#c2342c');
+    } else if (p === 'jornal') {
+      R(0, -15, 96, 84, '#14306a'); for (let x = 0; x < 96; x += 12) R(x, -15, 1, 55, '#1b3c80');
+      R(52, 19, 38, 22, '#0b1a3a'); { const q = iso(CX, CY); g.drawImage(cv, clamp(Math.round(q.x - 48), 0, cv.width - 96), clamp(Math.round(q.y - 30), 0, cv.height - 54), 96, 54, 53, 20, 36, 20); }
+      guy(26, 45, { skin: '#e7c3a3', hair: '#4a3426', shirt: '#2a2a36', pants: '#2a2a36' }); R(24, 33, 5, 2, '#f4f1ea'); R(26, 33, 1, 5, '#c2342c');
+      R(4, 40, 52, 29, '#0b1a3a'); R(4, 40, 52, 2, '#2f6bff');
+    } else if (p === 'debate') {
+      R(0, -15, 96, 84, '#3a3d44'); for (let x = 0; x < 96; x += 16) R(x, -15, 8, 84, '#40434b');
+      const who = TV_DEBATE()[k % 6][0], seats = [[10, '#e7c3a3', '#cfcfcf', '#4a4a52'], [29, '#f0d0b0', '#d8b04a', '#2fa0ff'], [48, '#c98e62', '#121212', '#2a2a36'], [67, '#e7c3a3', '#7a4a2a', '#6a8a3a'], [86, '#d9a37a', '#2a2a2a', '#3a3f55']];
+      R(seats[who][0] - 7, -15, 14, 55, 'rgba(255,240,200,.18)');
+      seats.forEach(([x, sk, hr, sh], i) => guy(x, i === 1 ? 46 : 43, { skin: sk, hair: hr, shirt: sh, pants: '#2a2a36', flip: x > 48 }));
+      R(0, 38, 96, 31, '#22242a'); R(0, 38, 96, 2, '#d8261c');
+    }
+  } finally { g.restore(); ctx = main; }
+}
+function tellySync(dt) {
+  const el = $('telly'), play = mode === 'play' || mode === 'paused' || mode === 'menu';
+  TELLY.lay -= dt; if (TELLY.lay <= 0 || !play) { TELLY.lay = .5; TELLY.fits = play && S && tellyPlace(); }
+  const p = play && TELLY.fits ? tvNow() : '';
+  // switched off: it only comes on for what matters (the police in the square, the interviews, a live broadcast)
+  TELLY.on = !!(play && TELLY.fits && (!tvOff || TV_CUTS.includes(p)));
+  const ob = $('tvOn'), showOn = !!(play && TELLY.fits && tvOff && !TELLY.on);
+  if (ob.hidden !== !showOn) ob.hidden = !showOn;
+  if (showOn && TELLY.box) { const B = TELLY.box; ob.style.top = Math.round(B.y) + 'px'; ob.style.right = Math.round(innerWidth - B.x - B.w) + 'px'; }
+  if (!TELLY.on) { if (!el.hidden) el.hidden = true; if (tvOff) TELLY.prog = ''; return; }
+  if (el.hidden) { el.hidden = false; TELLY.acc = 1; }
+  $('tvOff').setAttribute('aria-label', tvOff ? L('Ligar a televisão', 'Turn the TV on') : L('Desligar a televisão', 'Turn the TV off'));
+  if (p !== TELLY.prog) { if (TV_CUTS.includes(p) && TELLY.prog && !TV_CUTS.includes(TELLY.prog)) TELLY.cut = S.t + 1.3; if (!TV_CUTS.includes(p)) TELLY.n = Math.floor(Math.random() * 6); TELLY.prog = p; }
+  TELLY.acc += dt; if (TELLY.acc < 1 / 12) return; TELLY.acc = 0;
+  const cut = S.t < TELLY.cut, w = cut ? [L('Interrompemos a emissão', 'We interrupt this programme'), '', ''] : tvWords(p), live = TV_CUTS.includes(p);
+  const key = (cut ? 'cut' : p) + '|' + w.join('|');
+  if (key !== TELLY.key) {
+    TELLY.key = key; el.dataset.p = cut ? 'cut' : p;
+    el.querySelector('.tag').textContent = w[0]; el.querySelector('.txt').textContent = w[1];
+    const ch = el.querySelector('.chip'); ch.textContent = w[2]; ch.hidden = !w[2]; ch.className = 'chip' + (w[2] && (p === 'laranja' || (p === 'rep' && !TELLY.ev.good)) ? ' bad' : '');
+    el.querySelector('.rec').hidden = !live || cut; el.querySelector('.rec').textContent = L('● Em direto', '● Live');
+  }
+  const c = $('tlc'), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
+  if (cut) { for (let i = 0; i < 160; i++) { const v = Math.floor(Math.random() * 200 + 40); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(Math.floor(Math.random() * 16) * 6, Math.floor(Math.random() * 9) * 6, 6, 6); } return; }
+  if (p === 'alerta') { const K = S.kettle; if (K.nc && K.tvOn) g.drawImage($('tvc'), 0, 0, 72, 40, 0, 0, 96, 54); else tvCrop(g, S.player.gx, S.player.gy); }
+  else if (p === 'rusga' || p === 'direto' || p === 'vitoria') { const cop = p === 'rusga' && S.police.find(o => o.state !== 'walk') || S.police[0]; tvCrop(g, p === 'vitoria' ? CX : p === 'rusga' && cop ? (cop.gx + S.player.gx) / 2 : S.player.gx, p === 'vitoria' ? CY : p === 'rusga' && cop ? (cop.gy + S.player.gy) / 2 : S.player.gy); }
+  else if (p === 'rep' || p === 'laranja') { const e = TELLY.ev, o = e.who && (e.who === S.rep || e.who === S.journo) ? e.who : e; tvCrop(g, (o.gx + S.player.gx) / 2, (o.gy + S.player.gy) / 2); }
+  else tvStudio(g, p);
+}
+function tvSwitch(off) { tvOff = off; try { localStorage.setItem('acampada-tv', off ? 'off' : 'on'); } catch (e) {} TELLY.key = ''; TELLY.lay = 0; }
+$('tvOff').addEventListener('click', () => tvSwitch(!tvOff));
+$('tvOn').addEventListener('click', () => tvSwitch(false));
 // after everyone has moved: nobody crosses the ring, either way; the ring pushes the people inside together
 function kettleHold() {
   const K = S.kettle; if (!K || !K.R || (K.phase !== 'wait' && K.phase !== 'charge')) return;
@@ -4215,9 +4406,60 @@ function fit() {
   fitOv();
 }
 // overlay screens grow by the same amount, but never past the window height
+// phones on their side: a screen too tall for the window goes into two columns, and shrinks a little if it still doesn't fit
+const isLand = () => !isPC() && innerWidth > innerHeight && innerHeight < 620;
+// every node moved is logged, so turning the phone upright puts the screen back exactly as it was built
+function unsplitOv(c) {
+  const log = c._moves; if (!log) return;
+  for (let i = log.length - 1; i >= 0; i--) { const [el, parent, next] = log[i]; parent.insertBefore(el, next && next.parentNode === parent ? next : null); }
+  for (const x of c.querySelectorAll('.ovsplit, [data-tail]')) x.remove();
+  c._moves = null; c.classList.remove("ovland");
+}
+function splitOv(c) {
+  const log = c._moves = [], move = (el, to, before = null) => { log.push([el, el.parentNode, el.nextSibling]); to.insertBefore(el, before); };
+  const h = el => el.getBoundingClientRect().height;
+  // go down to the part of the screen that holds most of it (the poster, the rules page), bringing its buttons along
+  let root = c;
+  for (;;) {
+    const big = [...root.children].find(k => k.children.length > 1 && h(k) > h(root) * .7 && !k.matches('.chaps, .agenda, .cj-tl, .cj-cols'));
+    if (!big) break;
+    for (const k of [...root.children]) { if (k === big) continue; if (k.compareDocumentPosition(big) & Node.DOCUMENT_POSITION_FOLLOWING) move(k, big, big.firstChild); else move(k, big); }
+    root = big;
+  }
+  // long lists may continue in the second column
+  for (const l of root.querySelectorAll(':scope > .chaps, :scope > .agenda, :scope > .cj-tl')) {
+    const items = [...l.children]; if (items.length < 4) continue;
+    const t = l.cloneNode(false); t.removeAttribute('id'); t.dataset.tail = '1'; l.after(t);
+    for (const it of items.slice(Math.ceil(items.length / 2))) move(it, t);
+  }
+  const kids = [...root.children]; if (kids.length < 2) return;
+  c.classList.add("ovland");
+  const sp = document.createElement('div'), a = document.createElement('div'), b = document.createElement('div');
+  sp.className = 'ovsplit'; a.className = 'ovcol'; b.className = 'ovcol'; sp.append(a, b); root.insertBefore(sp, kids[0]);
+  for (const k of kids) move(k, a);
+  // where to break: the heights are measured at the column's width; a title is never left at the bottom of the first column
+  const tops = kids.map(el => el.offsetTop), end = a.scrollHeight, head = /^(H2|H3)$|cj-top|cj-sub|adtag|langsw|topbar|rule|p-red|p-big|p-mid|\bk\b|cj-ok|cj-bad/;
+  let best = -1, bestH = 1e9;
+  for (let k = 1; k < kids.length; k++) {
+    const prev = kids[k - 1]; if (head.test(prev.tagName) || head.test(prev.className)) continue;
+    const hh = Math.max(tops[k] - tops[0], end - tops[k]); if (hh < bestH) { bestH = hh; best = k; }
+  }
+  if (best < 0) best = Math.ceil(kids.length / 2);
+  for (const k of kids.slice(best)) move(k, b);
+}
 function fitOv() {
   const c = ov.querySelector('.wrapc'); if (!c) return;
-  c.style.transform = '';
+  c.style.transform = ''; c.style.zoom = '';
+  if (!ov.hidden) {
+    const land = isLand(), room = () => ov.clientHeight - parseFloat(getComputedStyle(ov).paddingTop) - parseFloat(getComputedStyle(ov).paddingBottom);
+    if (!land) unsplitOv(c);
+    else {
+      if (!c.querySelector('.ovsplit') && c.offsetHeight > room()) splitOv(c);
+      const z = room() / Math.max(1, c.offsetHeight);
+      if (z < 1) c.style.zoom = Math.max(.6, z - .005).toFixed(3);
+      return;
+    }
+  }
   if (zoom <= 1 || ov.hidden) return;
   const z = Math.min(zoom, (innerHeight - 40) / Math.max(1, c.offsetHeight));
   if (z > 1.02) c.style.transform = `scale(${z.toFixed(3)})`;
@@ -4253,7 +4495,7 @@ function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (mode === 'play') update(aimOpen() ? dt * .4 : dt); else S.t += dt; // the aim slows the game down
   songTick(); choirTick(); saxTick(dt);
-  updCam(dt); draw(); tvSync(); newsSync();
+  updCam(dt); draw(); tellySync(dt); tvSync(); newsSync();
   hudT -= dt; if (hudT <= 0) { hud(); hudT = .1; }
   requestAnimationFrame(frame);
 }
