@@ -100,8 +100,10 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .tutpulse{ animation:tutp 1s ease-in-out infinite; position:relative; z-index:2; } @keyframes tutp{ 0%,100%{ box-shadow:0 0 0 0 #ffd23a; } 50%{ box-shadow:0 0 0 6px #ffd23a; } }
 /* the ALERTA window during a kettle: a live TV news report (computers: picture and captions, bottom left; phones: captions only) */
 /* the TV set (see tellySync) */
-#telly{ position:fixed; z-index:15; pointer-events:none; border:6px solid #1c1a1e; border-radius:6px; background:#000; box-shadow:0 0 0 2px #3a3640, 0 4px 0 rgba(0,0,0,.45); overflow:hidden; color:#fff; font-family:Jost, Futura, "Trebuchet MS", sans-serif; }
+#telly{ box-sizing:border-box; position:fixed; z-index:15; pointer-events:none; border:6px solid #1c1a1e; border-radius:6px; background:#000; box-shadow:0 0 0 2px #3a3640, 0 4px 0 rgba(0,0,0,.45); overflow:hidden; color:#fff; font-family:Jost, Futura, "Trebuchet MS", sans-serif; }
 #telly[hidden]{ display:none; }
+#telly.fill canvas{ height:100%; aspect-ratio:auto; object-fit:cover; }
+#telly .txt{ -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
 #telly .pw{ position:absolute; right:3px; top:3px; pointer-events:auto; display:grid; place-items:center; width:2em; height:2em; padding:0; border:0; border-radius:50%; background:rgba(11,10,10,.6); color:#fff; font-size:.9em; cursor:pointer; }
 #tvOn{ position:fixed; z-index:15; display:flex; align-items:center; gap:5px; padding:5px 9px 4px; border:2px solid #3a3640; border-radius:6px; background:#1c1a1e; color:#fff; font:700 12px/1 Jost, sans-serif; letter-spacing:.5px; cursor:pointer; }
 #tvOn[hidden]{ display:none; }
@@ -110,7 +112,7 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 #telly .rec[hidden]{ display:none; }
 #telly .l3{ position:absolute; left:0; right:0; bottom:0; }
 #telly .tag{ display:inline-block; max-width:100%; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:800; font-size:.78em; line-height:1; letter-spacing:.3px; text-transform:uppercase; padding:3px 6px 2px; background:#d8261c; }
-#telly .txt{ display:block; background:rgba(11,10,10,.86); font-family:"Helvetica Neue", Arial, sans-serif; font-weight:700; font-size:1em; line-height:1.18; padding:3px 6px 4px; }
+#telly .txt{ display:-webkit-box; background:rgba(11,10,10,.86); font-family:"Helvetica Neue", Arial, sans-serif; font-weight:700; font-size:1em; line-height:1.18; padding:3px 6px 4px; }
 #telly .txt:empty{ display:none; }
 #telly .chip{ position:absolute; right:4px; top:-1.3em; font-weight:800; font-size:.78em; line-height:1; padding:3px 5px 2px; background:#3ec46d; color:#0b0a0a; text-transform:uppercase; }
 #telly .chip.bad{ background:#ff8aa8; } #telly .chip[hidden]{ display:none; }
@@ -2180,6 +2182,7 @@ function tvShot(K) {
    by the hour: horoscope 7–10, soap opera 10–19 (Ossitrim ads in between), news 19–21, debate 21–3, teleshopping 3–7;
    the police, the interviews and the live broadcasts interrupt it */
 let tvOff = false; try { tvOff = localStorage.getItem('acampada-tv') === 'off'; } catch (e) {}
+const TV_LINE = 5.5; // seconds each line stays on screen
 const TELLY = { on: false, ev: null, prog: '', cut: 0, acc: 1, lay: 0, n: 0, key: '' };
 const pickOne = a => a[Math.floor(Math.random() * a.length)];
 // the reporter and the Orange Journalist put their interview on air for a few seconds
@@ -2215,7 +2218,7 @@ function tvNow() {
   if (S.raid && cops) return 'rusga';
   if (ev) return ev.kind;
   if (S.live > 0) return 'direto';
-  if (h >= 7 && h < 19) return Math.floor(S.t / 4.5) % 4 === 3 ? 'ossitrim' : h < 10 ? 'horoscopo' : 'novela';
+  if (h >= 7 && h < 19) return Math.floor(S.t / TV_LINE) % 4 === 3 ? 'ossitrim' : h < 10 ? 'horoscopo' : 'novela';
   if (h >= 19 && h < 21) return 'jornal';
   if (h >= 21 || h < 3) return 'debate';
   return 'televendas';
@@ -2223,7 +2226,7 @@ function tvNow() {
 const TV_CUTS = ['alerta', 'rusga', 'rep', 'laranja', 'direto', 'vitoria'];
 // the words for the lower third: [label, text, extra]
 function tvWords(p) {
-  const k = Math.floor(S.t / 4.5), lis = S.city.name === 'Lisboa', day = 1 + Math.floor((S.clock - 6) / 24), ev = TELLY.ev, nth = a => a[(k + TELLY.n) % a.length];
+  const k = Math.floor(S.t / TV_LINE), lis = S.city.name === 'Lisboa', day = 1 + Math.floor((S.clock - 6) / 24), ev = TELLY.ev, nth = a => a[(k + TELLY.n) % a.length];
   switch (p) {
     case 'vitoria': return [L('Última hora', 'Breaking news'), L('Governo cede: medidas imediatas para a habitação', 'Government gives in: immediate housing measures'), ''];
     case 'alerta': { const K = S.kettle; return [L('Última hora', 'Breaking news'), K.phase === 'charge' ? T('Polícia avança sobre a acampada') : nth([L(`Polícia cerca a acampada ${TV_PLACE[S.city.name] || ''}`, `Police kettle the camp ${lis ? 'at Rossio' : 'at Praça D. João I'}`), L(`Polícia cerca também ${lis ? 'no Porto' : 'em Lisboa'}`, `Police kettle ${lis ? 'Porto' : 'Lisbon'} too`), T('Negociações em curso'), T('Manifestantes desafiam a polícia')]), '']; }
@@ -2233,7 +2236,7 @@ function tvWords(p) {
     case 'direto': return [L('Em direto da praça', 'Live from the square'), L(`A acampada ${S.city.name} transmite em direto`, `The ${S.city.name} camp is broadcasting live`), ''];
     case 'novela': return [L(`«Amor em Renda Livre» · Ep. ${213 + day}`, `“Love at Market Rent” · Ep. ${213 + day}`), nth(TV_NOVELA()), ''];
     case 'horoscopo': return [L('Bom dia · Horóscopo', 'Good morning · Horoscope'), nth(TV_HORO()), ''];
-    case 'ossitrim': return [L('Publicidade · Ossitrim', 'Advert · Ossitrim'), TV_OSSI()[Math.floor(S.t / 18) % 5], ''];
+    case 'ossitrim': return [L('Publicidade · Ossitrim', 'Advert · Ossitrim'), TV_OSSI()[Math.floor(S.t / (TV_LINE * 4)) % 5], ''];
     case 'televendas': { const left = 599 - Math.floor(S.t) % 600; return [L(`Televendas · só nos próximos ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}!`, `Teleshopping · next ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} only!`), nth(TV_SHOP())[1], '']; }
     case 'jornal': return [L(`Telejornal · ${S.city.name}`, `The News · ${S.city.name}`), nth(tvNews()), ''];
     case 'debate': { const d = nth(TV_DEBATE()); return [L('Debate · Acampar resolve?', 'Debate · Does camping help?'), `${d[1]}: ${d[2]}`, '']; }
@@ -2242,24 +2245,32 @@ function tvWords(p) {
 }
 // where the set goes: phones on their side, between the panel and the buttons; wide windows, the square's top right corner; other computers, beside the column
 function tellyPlace() {
-  const el = $('telly'), de = document.documentElement; let x, y, w, room = 1e9, colW = 0;
-  if (CAM.on && CAM.land) { const a = document.querySelector('.hud').getBoundingClientRect(), b = document.querySelector('.bottom').getBoundingClientRect(); x = a.left; colW = w = a.width; y = a.bottom + 8; room = b.top - 8 - y; }
-  else if (CAM.on) return false;
+  const el = $('telly'), de = document.documentElement; let x, y, w, h = 0;
+  if (CAM.on && CAM.land) { // phone on its side: the whole free space between the panel and the buttons
+    const a = document.querySelector('.hud').getBoundingClientRect(), b = document.querySelector('.bottom').getBoundingClientRect();
+    x = a.left; w = a.width; y = a.bottom + 8; h = Math.min(b.top - 8 - y, w * .75); if (h < 70) return false; y += (b.top - 8 - a.bottom - 8 - h) / 2;
+  } else if (CAM.on) { const r = cv.parentElement.getBoundingClientRect(); w = clamp(r.width * .42, 136, 200); x = r.right - w - 6; y = r.top + 6; } // upright: small, top right corner of the square
   else if (de.classList.contains('wide')) { const r = cv.getBoundingClientRect(); w = clamp(r.width * .24, 180, 340); x = r.right - w - 10; y = r.top + 10; }
   else { const r = wrap.getBoundingClientRect(), side = innerWidth - r.right - 36; if (side < 180) return false; w = Math.min(340, side); x = r.right + 18; y = cv.getBoundingClientRect().top; }
-  const bz = Math.round(clamp(w * .035, 5, 10)), hOf = ww => (ww - 2 * bz) * 9 / 16 + 2 * bz;
-  if (hOf(w) > room) { w = (room - 2 * bz) * 16 / 9 + 2 * bz; if (colW) x += (colW - w) / 2; }
-  if (w < 150) return false;
+  const bz = Math.round(clamp(w * .03, 4, 10));
   TELLY.box = { x, y, w };
-  Object.assign(el.style, { left: Math.round(x) + 'px', top: Math.round(y) + 'px', width: Math.round(w) + 'px', borderWidth: bz + 'px', fontSize: clamp(w / 21, 8.5, 15).toFixed(1) + 'px' });
+  el.classList.toggle('fill', !!h);
+  Object.assign(el.style, { left: Math.round(x) + 'px', top: Math.round(y) + 'px', width: Math.round(w) + 'px', height: h ? Math.round(h) + 'px' : '', borderWidth: bz + 'px', fontSize: clamp(w / 21, CAM.on && !CAM.land ? 7.5 : 8.5, 15).toFixed(1) + 'px' });
   return true;
 }
 // the picture: a camera on the square, or a little studio
-function tvCrop(g, gx, gy) { const p = iso(gx, gy), w = 96, h = 54; g.drawImage(cv, clamp(Math.round(p.x - w / 2), 0, cv.width - w), clamp(Math.round(p.y - 30), 0, cv.height - h), w, h, 0, 0, w, h); }
+function tvCrop(g, gx, gy, z = 1) { const p = iso(gx, gy), w = 96 / z, h = 54 / z; g.fillStyle = '#000'; g.fillRect(0, 0, 96, 54); g.drawImage(cv, clamp(Math.round(p.x - w / 2), 0, cv.width - w), clamp(Math.round(p.y - (z > 1 ? 23 : 30)), 0, cv.height - h), w, h, 0, 0, 96, 54); }
+// the police doing something: taking a tent down first, then whoever is closest to the camp
+function tvCop() {
+  const busy = S.police.find(o => o.state === 'dismantle' || (o.target && o.state !== 'back'));
+  if (busy) return busy;
+  let best = null, bd = 1e9; for (const o of S.police) { const d = Math.abs(o.gx - S.player.gx) + Math.abs(o.gy - S.player.gy); if (d < bd) { bd = d; best = o; } }
+  return best;
+}
 function tvStudio(g, p) {
   const main = ctx; ctx = g; g.save(); g.translate(0, -15); // everything up, clear of the captions
   try {
-    const k = Math.floor(S.t / 4.5) + TELLY.n, blink = Math.floor(S.t * 2) % 2;
+    const k = Math.floor(S.t / TV_LINE) + TELLY.n, blink = Math.floor(S.t * 2) % 2;
     if (p === 'novela') {
       R(0, -15, 96, 55, '#6a2f55'); for (let x = 3; x < 96; x += 8) R(x, 0, 1, 40, '#7a3a63'); R(0, 40, 96, 29, '#3a1a2c');
       R(10, 18, 20, 15, '#f2c27a'); R(19, 18, 2, 15, '#6a2f55'); R(10, 25, 20, 1, '#6a2f55'); R(70, 26, 18, 14, '#a3415a'); R(70, 24, 18, 3, '#c2546f');
@@ -2306,8 +2317,11 @@ function tellySync(dt) {
   TELLY.lay -= dt; if (TELLY.lay <= 0 || !play) { TELLY.lay = .5; TELLY.fits = play && S && tellyPlace(); }
   const p = play && TELLY.fits ? tvNow() : '';
   // switched off: it only comes on for what matters (the police in the square, the interviews, a live broadcast)
-  TELLY.on = !!(play && TELLY.fits && (!tvOff || TV_CUTS.includes(p)));
-  const ob = $('tvOn'), showOn = !!(play && TELLY.fits && tvOff && !TELLY.on);
+  // phones upright: out of the way while a message is showing at the top of the square
+  const msgUp = CAM.on && !CAM.land && (!$('ban').hidden || !$('tut').hidden);
+  if (p !== 'rusga') TELLY.cx = TELLY.cy = null;
+  TELLY.on = !!(play && TELLY.fits && !msgUp && (!tvOff || TV_CUTS.includes(p)));
+  const ob = $('tvOn'), showOn = !!(play && TELLY.fits && tvOff && !TELLY.on && !msgUp);
   if (ob.hidden !== !showOn) ob.hidden = !showOn;
   if (showOn && TELLY.box) { const B = TELLY.box; ob.style.top = Math.round(B.y) + 'px'; ob.style.right = Math.round(innerWidth - B.x - B.w) + 'px'; }
   if (!TELLY.on) { if (!el.hidden) el.hidden = true; if (tvOff) TELLY.prog = ''; return; }
@@ -2326,8 +2340,9 @@ function tellySync(dt) {
   const c = $('tlc'), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   if (cut) { for (let i = 0; i < 160; i++) { const v = Math.floor(Math.random() * 200 + 40); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(Math.floor(Math.random() * 16) * 6, Math.floor(Math.random() * 9) * 6, 6, 6); } return; }
   if (p === 'alerta') { const K = S.kettle; if (K.nc && K.tvOn) g.drawImage($('tvc'), 0, 0, 72, 40, 0, 0, 96, 54); else tvCrop(g, S.player.gx, S.player.gy); }
-  else if (p === 'rusga' || p === 'direto' || p === 'vitoria') { const cop = p === 'rusga' && S.police.find(o => o.state !== 'walk') || S.police[0]; tvCrop(g, p === 'vitoria' ? CX : p === 'rusga' && cop ? (cop.gx + S.player.gx) / 2 : S.player.gx, p === 'vitoria' ? CY : p === 'rusga' && cop ? (cop.gy + S.player.gy) / 2 : S.player.gy); }
-  else if (p === 'rep' || p === 'laranja') { const e = TELLY.ev, o = e.who && (e.who === S.rep || e.who === S.journo) ? e.who : e; tvCrop(g, (o.gx + S.player.gx) / 2, (o.gy + S.player.gy) / 2); }
+  else if (p === 'rusga') { const cop = tvCop(); if (cop) { TELLY.cx = TELLY.cx == null ? cop.gx : TELLY.cx + (cop.gx - TELLY.cx) * .25; TELLY.cy = TELLY.cy == null ? cop.gy : TELLY.cy + (cop.gy - TELLY.cy) * .25; tvCrop(g, TELLY.cx, TELLY.cy, 1.5); } else tvCrop(g, S.player.gx, S.player.gy, 1.5); } // zoomed in on the police, the camera follows smoothly
+  else if (p === 'vitoria') tvCrop(g, CX, CY);
+  else if (p === 'direto' || p === 'rep' || p === 'laranja') tvCrop(g, S.player.gx, S.player.gy, 1.5); // close-up on the one being interviewed
   else tvStudio(g, p);
 }
 function tvSwitch(off) { tvOff = off; try { localStorage.setItem('acampada-tv', off ? 'off' : 'on'); } catch (e) {} TELLY.key = ''; TELLY.lay = 0; }
