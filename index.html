@@ -2315,6 +2315,7 @@ function tvStudio(g, p) {
 function tellySync(dt) {
   const el = $('telly'), play = mode === 'play' || mode === 'paused' || mode === 'menu';
   TELLY.lay -= dt; if (TELLY.lay <= 0 || !play) { TELLY.lay = .5; TELLY.fits = play && S && tellyPlace(); }
+  if (TELLY.S !== S) { TELLY.S = S; TELLY.ev = null; TELLY.cut = 0; TELLY.prog = ''; TELLY.key = ''; TELLY.cx = TELLY.cy = null; } // a new square: nothing carries over (its clock starts again at 0)
   const p = play && TELLY.fits ? tvNow() : '';
   // switched off: it only comes on for what matters (the police in the square, the interviews, a live broadcast)
   // phones upright: out of the way while a message is showing at the top of the square
@@ -2346,8 +2347,8 @@ function tellySync(dt) {
   else tvStudio(g, p);
 }
 function tvSwitch(off) { tvOff = off; try { localStorage.setItem('acampada-tv', off ? 'off' : 'on'); } catch (e) {} TELLY.key = ''; TELLY.lay = 0; }
-$('tvOff').addEventListener('click', () => tvSwitch(!tvOff));
-$('tvOn').addEventListener('click', () => tvSwitch(false));
+$('tvOff').addEventListener('click', e => { tvSwitch(!tvOff); e.currentTarget.blur(); }); // no focus left behind: Space and Enter belong to the game
+$('tvOn').addEventListener('click', e => { tvSwitch(false); e.currentTarget.blur(); });
 // after everyone has moved: nobody crosses the ring, either way; the ring pushes the people inside together
 function kettleHold() {
   const K = S.kettle; if (!K || !K.R || (K.phase !== 'wait' && K.phase !== 'charge')) return;
