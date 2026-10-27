@@ -25,11 +25,46 @@
  },
  {
   "date": "2026-10-27",
+  "at": "16:00",
+  "city": "Porto",
+  "title": "Programação da acampada",
+  "where": "Praça D. João I · 17h30 concerto Tigre · 19h30 assembleia popular",
+  "horas": 5
+ },
+ {
+  "date": "2026-10-27",
+  "at": "18:30",
+  "city": "Guimarães",
+  "near": "Braga",
+  "title": "Assembleia popular pela habitação",
+  "where": "Coreto da Alameda de São Dâmaso",
+  "horas": 2
+ },
+ {
+  "date": "2026-10-27",
   "at": "18:30",
   "city": "Lisboa",
-  "title": "Todos ao Parlamento!",
-  "where": "Assembleia da República · Casa para Viver",
+  "title": "Tudo a S. Bento!",
+  "where": "Assembleia da República · 20h: assembleia popular",
+  "note": "A acampada de Lisboa une forças à Casa para Viver. Traz a tua tenda como símbolo da nossa luta!",
+  "horas": 3.5
+ },
+ {
+  "date": "2026-10-28",
+  "at": "17:00",
+  "city": "Faro",
+  "title": "Programação da acampada",
+  "where": "Praça da Liberdade · 17h assembleia popular · 18h grupos de trabalho",
   "horas": 3
+ },
+ {
+  "date": "2026-10-28",
+  "at": "13:00",
+  "city": "Évora",
+  "title": "Protesto na Universidade de Évora",
+  "where": "Entrada do CES",
+  "note": "Contra o aumento da propina, por mais residências públicas e melhores condições na UÉ.",
+  "horas": 2
  },
  {
   "date": "2026-11-14",
