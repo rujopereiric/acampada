@@ -428,6 +428,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .calmast{ font:700 18px Georgia, serif; border-bottom:3px double #0b0a0a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline; } .calmast span{ font-size:11px; }
 .calnp p{ font:15px/1.35 Georgia, serif; margin:8px 0 0; } .calstars{ font-size:34px; color:#ffd23a; margin:0; letter-spacing:6px; } .calnote{ font-size:12px; opacity:.8; max-width:440px; margin:0; }
 .calbtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #cal{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 8px)); padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 8px)); } } /* clear of the iPhone's camera */
 .land #calC{ width:min(calc(100% - 150px), calc((100dvh - 100px) * 4 / 3)); }
 #calLyric{ width:min(100%, calc((100dvh - 170px) * 4 / 3)); min-height:28px; text-align:center; font:800 22px/1.2 Jost, "Helvetica Neue", Arial, sans-serif; letter-spacing:.3px; color:#8f8aa8; } #calLyric b{ color:#ffd23a; } #calLyric i{ font-style:normal; color:#f4f1ea; } .land #calLyric{ font-size:18px; min-height:22px; }
 .calbar .who{ font-weight:700; color:#ffd23a; }
@@ -603,7 +604,7 @@ const EN_RX = [
   [/^Somos poucos: vieram (\d+) de (\d+)$/, 'Too few of us: $1 of $2 came'], [/^(\d+) de (\d+)( · Enter)?$/, '$1 of $2$3'],
   [/^(\d+)€ quarto$/, '€$1 room'], [/^Curar feridos \((\d+)\)$/, 'Treat the wounded ($1)'],
   [/^Levaram tudo: ([\d\s.,  ]+) detidas\. O país inteiro viu: reconstruir até (\d+) tendas$/, 'They took everything: $1 arrested. The whole country saw it: rebuild to $2 tents'],
-  [/^Levaram tudo: ([\d\s.,  ]+) detidas\. Quem ficou de fora volta a montar$/, 'They took everything: $1 arrested. Those left outside are setting up again'],
+  [/^Levaram tudo: ([\d\s.,  ]+) detidas\. A praça ficou vazia$/, 'They took everything: $1 arrested. The square is empty'],
   [/^Reconstruir: (\d+) de (\d+) tendas · moral acima de (\d+)$/, 'Rebuild: $1 of $2 tents · morale above $3'],
   [/^Pressão no máximo: sobe a moral acima de (\d+) para ganhar$/, 'Pressure at the top: get morale above $1 to win'],
   [/^Concerto a decorrer$/, 'Concert on'], [/^(.+) a tocar$/, '$1 playing'], [/^Concerto (.+)$/, 'Concert: $1']
@@ -1647,6 +1648,7 @@ function floatXY(x, y, text, color, target) {
 function sparkle(gx, gy, n = 6, z = 10) { const p = iso(gx, gy, z); for (let i = 0; i < n; i++) S.parts.push({ x: p.x, y: p.y, vx: rnd(-18, 18), vy: rnd(-26, -6), life: rnd(.5, .9), type: 'spark', col: pick(['#ffffff', '#39e1ff', '#ff5fc8', '#b6ff3b']) }); }
 
 function joinOne(gx, gy, quiet) {
+  if (S.emptyK || S.clock < (S.emptyUntil || 0)) return; // the empty square after a kettle: nobody moves in yet
   let t = S.tents.find(t => t.occ < 2);
   if (S.stat) S.stat.welcomed++;
   if (t) t.occ++;
@@ -2206,12 +2208,13 @@ function kettleLeave(wipe) {
   // ...but the country saw it: morale to the top, support +20, the pressure stays; the people left outside start again
   S.morale = 100; S.support = Math.min(100, S.support + 20);
   // after the final kettle the square is left empty: the rebuild starts from nothing
-  const fresh = []; if (!K.final) for (let i = 0; i < 3; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = .4; fresh.push(t); } }
-  for (const m of K.crowd || []) { const t = fresh.length ? pick(fresh) : null; m.go = t ? [t.gx + rnd(-.3, .3), t.gy + .4] : [m.gx + m.n[0] * 3, m.gy + m.n[1] * 3]; }
+  // the square is left empty, only the wounded on the ground; the people outside come back once the police have gone
+  S.emptyK = true; S.freshK = !K.final; S.residents = []; S.arrivals = [];
+  for (const m of K.crowd || []) m.go = [m.gx + m.n[0] * 3, m.gy + m.n[1] * 3];
   det += K.det || 0;
   if (K.final) S.rebuildFrom = S.clock;
   if (K.final) floatXY(0, 0, `Levaram tudo: ${det} detidas. O país inteiro viu: reconstruir até ${S.rebuild} tendas`, '#b6ff3b');
-  else { floatXY(0, 0, `Levaram tudo: ${det} detidas. Quem ficou de fora volta a montar`, '#b6ff3b'); S.returnAt = (Math.floor(S.clock / 24) + 1) * 24 + 10; S.returnN = Math.min(10, Math.max(3, Math.ceil(det / 3))); }
+  else { floatXY(0, 0, `Levaram tudo: ${det} detidas. A praça ficou vazia`, '#b6ff3b'); S.returnAt = (Math.floor(S.clock / 24) + 1) * 24 + 10; S.returnN = Math.min(10, Math.max(3, Math.ceil(det / 3))); }
   sfx('chain');
 }
 function stunBang(b) { // a stun grenade: a white flash, a bang, and everyone close by on the ground for a moment
@@ -3079,7 +3082,9 @@ function update(dt) {
   const hr = S.clock % 24; S.dark = darkness(hr); if (S.stat && S.tents.length > S.stat.maxTents) S.stat.maxTents = S.tents.length;
   const p = S.player;
   const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0), jm = Math.hypot(JOY.x, JOY.y);
+  if (p.toPaper && (jm > .2 || kx || ky)) p.toPaper = false; // walking off somewhere else
   if (p.down > 0 || p.talk > 0) { if (p.down > 0) p.down -= dt; else p.talk -= dt; p.moving = false; p.path = null; p.tx = p.gx; p.ty = p.gy; }
+  else if (prWalk(p, dt)) {}
   else if (jm > .2) { // the walking ball: the screen direction turned into the square's (tiles are twice as wide as tall)
     let wx = JOY.x * .5 + JOY.y, wy = JOY.y - JOY.x * .5; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3 * Math.min(1, jm), dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
@@ -3087,7 +3092,7 @@ function update(dt) {
     let wx = (kx + ky) / 2, wy = (ky - kx) / 2; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3, dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
   } else if (!moveEnt(p, p.tx, p.ty, 3, dt)) {} else p.moving = false;
-  p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15);
+  if (!p.toPaper) { p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); }
 
   S.chainCd = Math.max(0, S.chainCd - dt); S.liveCd = Math.max(0, S.liveCd - dt); S.live = Math.max(0, S.live - dt); S.asmCd = Math.max(0, S.asmCd - dt);
   if (S.chain) { S.chain.t -= dt; if (S.chain.t <= 0) S.chain = null; }
@@ -3105,7 +3110,10 @@ function update(dt) {
   // arrivals
   const night = S.dark > .8 ? .45 : 1, evening = (hr >= 17 && hr < 22) ? 1.3 : 1;
   const slow = S.city.slowStart ? clamp(.5 + people() / 28, .85, 1.6) : 1;
-  if (!S.kettle) S.arrivalT -= dt * night * evening * slow; // a kettle: nobody gets in
+  if (S.emptyK && !S.kettle) { S.emptyK = false; S.emptyUntil = S.clock + 4; } // once the riot police have gone: 4 more hours of an empty square
+  const emptyNow = S.emptyK || S.clock < (S.emptyUntil || 0);
+  if (S.freshK && !emptyNow) { S.freshK = false; for (let i = 0; i < 3; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = .4; } } const c = iso(CX, NY); floatXY(c.x, 70, L('Quem ficou de fora volta a montar as primeiras tendas', 'Those left outside pitch the first tents again'), '#b6ff3b'); }
+  if (!S.kettle && !emptyNow) S.arrivalT -= dt * night * evening * slow; // a kettle, and the empty square after it: nobody gets in
   if (S.arrivalT <= 0) { spawnArrival(); S.arrivalT = Math.max(1.1, 5.5 - S.support * .045) * rnd(.7, 1.3); }
   const joinR = S.perks.has('megafone') ? 1.3 : .9, info = stationOf('info');
   for (const a of S.arrivals) {
@@ -3169,9 +3177,9 @@ function update(dt) {
   }
 
   // after an early kettle: the ones who went home come back the next morning
-  if (S.returnAt && S.clock >= S.returnAt && !S.kettle) { for (let i = 0; i < S.returnN; i++) spawnArrival({ auto: true }); S.returnAt = 0; const c = iso(CX, NY); floatXY(c.x, 70, 'Voltaram os que foram para casa', '#b6ff3b'); }
+  if (S.returnAt && S.clock >= S.returnAt && !S.kettle && !emptyNow) { for (let i = 0; i < S.returnN; i++) spawnArrival({ auto: true }); S.returnAt = 0; const c = iso(CX, NY); floatXY(c.x, 70, 'Voltaram os que foram para casa', '#b6ff3b'); }
   // legal team
-  if (S.releaseT > 0 && !S.kettle) { S.releaseT -= dt; if (S.releaseT <= 0) { for (let i = 0; i < S.releaseN; i++) spawnArrival({ auto: true }); S.detained = Math.max(0, S.detained - S.releaseN); const c = iso(CX, NY); floatXY(c.x, 70, S.releaseN + ' libertadas', '#b6ff3b'); } }
+  if (S.releaseT > 0 && !S.kettle && !emptyNow) { S.releaseT -= dt; if (S.releaseT <= 0) { for (let i = 0; i < S.releaseN; i++) spawnArrival({ auto: true }); S.detained = Math.max(0, S.detained - S.releaseN); const c = iso(CX, NY); floatXY(c.x, 70, S.releaseN + ' libertadas', '#b6ff3b'); } }
 
   // raid
   const v = S.van;
@@ -3242,7 +3250,7 @@ function update(dt) {
   // the square is full: people also walk on the raised levels (Porto's road, Coimbra's esplanade, steps and pavement)
   const TR = S.city.terrace, UA = S.city.upArea, full = (TR || UA) && freeTiles().length < 14;
   // the demo also brings people who don't camp: more of them with more support
-  const want = Math.min(full ? 40 : 18, S.dark > .8 ? Math.ceil(people() / 3) : people() + Math.floor(S.support / 8));
+  const want = emptyNow || !S.tents.length ? 0 : Math.min(full ? 40 : 18, S.dark > .8 ? Math.ceil(people() / 3) : people() + Math.floor(S.support / 8));
   const upSpot = UA ? () => { const a = pick(UA); return [rnd(a[0], a[2]), rnd(a[1], a[3])]; } : () => [Math.random() < .8 ? rnd(2.25, 2.5) : rnd(.15, .5), rnd(1.5, NY - 1.5)];
   while (S.residents.length < want && S.tents.length) { const t = pick(S.tents), up = full && S.residents.length >= 14 && Math.random() < .6; const r = { gx: t.gx + rnd(-.3, .3), gy: t.gy + .4, tx: t.gx, ty: t.gy, wait: rnd(0, 3), look: look(S.city.students), step: 0, up };
     if (up) [r.tx, r.ty] = upSpot(); S.residents.push(r); }
@@ -3286,7 +3294,7 @@ function update(dt) {
   for (const q of S.parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.type === 'spark') q.vy += 40 * dt; }
   S.parts = S.parts.filter(q => q.life > 0);
 
-  if (people() === 0 && S.riot && !S.riotAct && !S.wiped && !S.kettle) { S.wiped = true; for (const st of [...S.stations]) removeStation(st); S.perks.delete('cartazes'); for (const o of S.police) o.state = 'back'; for (let i = 0; i < 2; i++) { const t = addTent(); if (t) { t.occ = 1; t.pop = 0; } } S.pressure = 0; S.morale = Math.max(20, Math.min(S.morale, 25)); S.supplies = 0; floatXY(0, 0, 'A polícia de choque levou tudo. Recomeçamos quase do zero', '#ff8aa8'); }
+  if (people() === 0 && S.riot && !S.riotAct && !S.wiped && !S.kettle && !emptyNow) { S.wiped = true; for (const st of [...S.stations]) removeStation(st); S.perks.delete('cartazes'); for (const o of S.police) o.state = 'back'; for (let i = 0; i < 2; i++) { const t = addTent(); if (t) { t.occ = 1; t.pop = 0; } } S.pressure = 0; S.morale = Math.max(20, Math.min(S.morale, 25)); S.supplies = 0; floatXY(0, 0, 'A polícia de choque levou tudo. Recomeçamos quase do zero', '#ff8aa8'); }
   // the square is won with the Pressão bar full AND morale above 80 (the camp still standing, not just the government
   // pushed). Porto and Lisboa: at 100 the government's last answer is a kettle; then the camp has to rebuild to a
   // third of the tents it had, and the win needs morale above 80 as well
@@ -3312,7 +3320,7 @@ function update(dt) {
   const busy = S.raid || S.van || S.police.length || S.fasc;
   S.calmT = busy ? 6 : Math.max(0, (S.calmT || 0) - dt);
   if (busy || S.calmT > 0) return;
-  if (people() === 0 && !(S.finalK === 'done' && S.clock < (S.rebuildFrom || 0) + 24)) return gameOver(); // after the final kettle the square is empty: a day to start rebuilding
+  if (people() === 0 && !(S.finalK === 'done' && S.clock < (S.rebuildFrom || 0) + 24) && !S.emptyK && !S.freshK && !(S.clock < (S.emptyUntil || 0))) return gameOver(); // after the final kettle the square is empty: a day to start rebuilding
   // (the win itself is above: pressure 100 and morale above 80)
 }
 
@@ -4609,7 +4617,7 @@ function tapRecruit(e) {
   return false;
 }
 function setTarget(e) {
-  const r = cv.getBoundingClientRect();
+  S.player.toPaper = false; const r = cv.getBoundingClientRect();
   const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H + 3;
   let w = toWorld(sx, sy); const T = S.city.terrace;
   if (T) { const u = toWorld(sx, sy + T.h); if (u.gx >= 0 && u.gx < T.w + .2 && u.gy >= 0 && u.gy <= NY) w = u; }
@@ -5123,22 +5131,38 @@ function calDrive(g, P, t) { // 20 s up the A8 at dusk: toll, signs, wind turbin
 }
 // the sheet of paper in Lisboa: after the giant donkey, on one of the streets round the square; only seen (and only
 // tapped) while there is no raid
-const prPaperOn = () => !!(S.prPaper && !S.prDone && !S.raid && !S.van && !S.kettle && !S.winning);
+const prPaperOn = () => !!(S.prPaper && !S.prDone && !S.raid && !S.van && !S.kettle && !S.winning && S.t >= S.prAt);
+// Lisboa: after the giant donkey head goes up; Porto: after the first raid. On a street the player can walk to.
+const prReady = () => S.city.donkey ? S.donkey === 'giant' : S.city.violent ? (S.raidsOver || 0) >= 1 : false;
 function prPaperTick() {
-  if (!S.city.donkey || S.donkey !== 'giant' || S.prDone) return;
-  if (!S.prPaper) { S.prPaper = Math.random() < .5 ? { gx: rnd(1.5, NX - 1.5), gy: -1 + rnd(-.25, .25) } : { gx: -1 + rnd(-.25, .25), gy: rnd(2, NY - 2) }; S.prAt = S.t + 15; } // the far streets: nothing stands in front of them
-  if (!S.prHint && S.t > S.prAt && prPaperOn()) { S.prHint = true; const q = iso(S.prPaper.gx, S.prPaper.gy, 10); floatXY(q.x, q.y, L('Um papel na estrada…', 'A sheet of paper on the road…'), '#ffffff'); }
+  if (S.prDone || !prReady()) return;
+  if (!S.prPaper) { // the far streets, where nothing stands in front (Porto: the raised road)
+    S.prPaper = S.city.violent ? { gx: 1.4 + rnd(-.2, .2), gy: rnd(2.5, NY - 2.5) } : Math.random() < .5 ? { gx: rnd(1.5, NX - 1.5), gy: -1 + rnd(-.25, .25) } : { gx: -1 + rnd(-.25, .25), gy: rnd(2, NY - 2) };
+    S.prAt = S.t + 15; }
+  if (!S.prHint && prPaperOn()) { S.prHint = true; const q = iso(S.prPaper.gx, S.prPaper.gy, elevAt(S.prPaper.gx, S.prPaper.gy) + 10); floatXY(q.x, q.y, L('Um papel na estrada…', 'A sheet of paper on the road…'), '#ffffff'); }
 }
-function tapPaper(e) {
-  if (!prPaperOn() || S.t < S.prAt) return false;
-  const p = S.prPaper, r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H, q = iso(p.gx, p.gy);
-  if (Math.abs(sx - q.x) > 9 || sy < q.y - 14 || sy > q.y + 6) return false;
-  S.prPaper = null; S.prDone = true; mode = 'prask';
+function prOpen() {
+  const p = S.player; S.prPaper = null; S.prDone = true; p.toPaper = false;
+  p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); p.tx = p.gx; p.ty = p.gy; p.path = null; // back on the square, behind the screen
+  mode = 'prask';
   show(`<h2 class="p-red rough">${L('Onde está o PR?', 'Where is the President?')}</h2><p class="help">${L('No papel, à mão: «Hoje à noite, o Coro Social do Bairro vai cantar à porta do Presidente, nas Caldas da Rainha. Vens?»', 'Handwritten on the sheet: “Tonight the Coro Social do Bairro will sing at the President’s door, in Caldas da Rainha. Coming?”')}</p>
     <button class="btnp red" data-a="calgo">${L('Ir às Caldas →', 'Go to Caldas →')}</button><button class="btnp" data-a="calno">${L('Agora não', 'Not now')}</button>`);
+}
+// tapping the paper: walk to it (off the square, onto the road) and pick it up there
+function tapPaper(e) {
+  if (!prPaperOn()) return false;
+  const p = S.prPaper, r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H, q = iso(p.gx, p.gy, elevAt(p.gx, p.gy));
+  if (Math.abs(sx - q.x) > 10 || sy < q.y - 16 || sy > q.y + 7) return false;
+  if (Math.hypot(S.player.gx - p.gx, S.player.gy - p.gy) < .7) prOpen(); else S.player.toPaper = true;
   return true;
 }
-function drawPaper(p) { if (!prPaperOn() || S.t < S.prAt) return; const q = iso(p.gx, p.gy), x = Math.round(q.x), y = Math.round(q.y), f = Math.floor(S.t * 2) % 2; R(x - 4, y - 2, 8, 5, '#f4f1ea'); R(x - 3, y - 1, 6, 1, '#9aa0ad'); R(x - 3, y + 1, 4, 1, '#9aa0ad'); if (f) { R(x - 1, y - 11, 3, 5, '#ffd23a'); R(x - 1, y - 5, 3, 2, '#ffd23a'); } }
+function prWalk(p, dt) { // the walk to the paper; true while it is going on
+  if (!p.toPaper) return false;
+  if (!prPaperOn()) { p.toPaper = false; return false; }
+  if (moveEnt(p, S.prPaper.gx, S.prPaper.gy, 3, dt, true)) prOpen();
+  return true;
+}
+function drawPaper(p) { if (!prPaperOn()) return; const q = iso(p.gx, p.gy, elevAt(p.gx, p.gy)), x = Math.round(q.x), y = Math.round(q.y), f = Math.floor(S.t * 2) % 2; R(x - 4, y - 2, 8, 5, '#f4f1ea'); R(x - 3, y - 1, 6, 1, '#9aa0ad'); R(x - 3, y + 1, 4, 1, '#9aa0ad'); if (f) { R(x - 1, y - 11, 3, 5, '#ffd23a'); R(x - 1, y - 5, 3, 2, '#ffd23a'); } }
 $('calTapB').addEventListener('click', e => { calTap(); e.currentTarget.blur(); });
 $('calSoft').addEventListener('click', e => { calSoft(); e.currentTarget.blur(); });
 $('calC').addEventListener('pointerdown', e => { calTap(); e.preventDefault(); });
@@ -5201,7 +5225,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     const d = document.createElement('div'); d.id = 'upd'; d.innerHTML = `${L('Há uma versão nova', 'There’s a new version')} <button type="button">${L('Atualizar', 'Update')}</button>`;
     d.querySelector('button').addEventListener('click', () => location.reload()); document.body.appendChild(d); });
 }
-window.__acampada = { paperAt: () => { const p = S.prPaper; if (!p) return null; const q = iso(p.gx, p.gy), r = cv.getBoundingClientRect(); return { x: r.left + q.x / W * r.width, y: r.top + (q.y - 3) / H * r.height, on: prPaperOn() && S.t >= S.prAt }; }, cal: { get c() { return CAL; }, tap: () => calTap(), soft: () => calSoft() }, get mode() { return mode; }, story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
+window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
 </script>
 </body>

@@ -118,6 +118,7 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
 
     <section><h2>Parede do prédio abandonado <span class="muted" id="nParede"></span></h2>
       <p class="muted" style="margin:0 0 8px">Toda a gente pinta ao mesmo tempo. A parede fica de uma abertura para a seguinte; quando a praça fecha, guarda-se uma cópia na galeria. Toca num quadrado da imagem para apagar esse bloco (8 x 8).</p>
+ <div class="sw" style="margin-bottom:8px"><span>Parede só de leitura<small>Ninguém pinta; a parede continua à vista.</small></span><button id="paredeRO" class="sm"></button></div>
       <canvas id="paredeCv" width="384" height="256" style="width:100%;max-width:480px;image-rendering:pixelated;border:2px solid #5a5650;cursor:pointer;display:block"></canvas>
       <div class="row" style="margin-top:8px" id="paredeBtns"></div>
       <h3 style="margin:14px 0 6px;font-size:14px">Zonas denunciadas</h3><div class="list" id="paredeRep"></div>
@@ -218,7 +219,7 @@ function render() {
   $('bansBox').hidden = !S.bans.length; const bl = $('bans'); bl.innerHTML = '';
   for (const b of S.bans) bl.append(item(b.name || '—', 'até às ' + hm(b.until), [btn('Levantar', 'ghost', () => api('desbanir', { dev: b.dev }))]));
 
-  sw('muralRO', c.muralRO);
+  sw('muralRO', c.muralRO); sw('paredeRO', c.paredeRO);
   const ml = $('mural'); ml.innerHTML = '';
   if (!S.mural.length) ml.append(el('div', 'muted', 'O mural está vazio.'));
   const ma = $('muralAll'); ma.innerHTML = ''; // everything at once: asks twice
@@ -274,6 +275,7 @@ $('horario').addEventListener('click', () => api('horario').then(r => r && toast
 $('avisoEnviar').addEventListener('click', () => { const t = $('aviso').value.trim(); if (!t) return; api('aviso', { texto: t }).then(r => r && (toast('Aviso na praça'), $('aviso').value = '')); });
 $('avisoTirar').addEventListener('click', () => api('aviso', { texto: '' }));
 $('muralRO').addEventListener('click', () => api('config', { muralRO: !S.cfg.muralRO }));
+$('paredeRO').addEventListener('click', () => api('config', { paredeRO: !S.cfg.paredeRO }));
 $('policia').addEventListener('click', () => api('config', { policia: !S.cfg.policia }));
 $('ciclistas').addEventListener('click', () => api('config', { ciclistas: !S.cfg.ciclistas }));
 $('climaAuto').addEventListener('click', () => api('config', { climaAuto: !S.cfg.climaAuto }));

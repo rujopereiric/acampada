@@ -22,7 +22,7 @@ export class Personagens {
   }
   free(x, y, pad = 0) { return x > .8 && y > .8 && x < this.W - .8 && y < this.H - .8 && OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad); }
   spot(pad = .4) { for (let i = 0; i < 40; i++) { const x = rnd(1, this.W - 1), y = rnd(1, this.H - 1); if (this.free(x, y, pad)) return [x, y]; } return [this.W / 2, this.H - 2]; }
-  players() { return [...this.sq.people.values()].filter(p => p.name && p.mode === 'praca'); }
+  players() { return [...this.sq.people.values()].filter(p => p.name && p.av); } // everyone with an avatar: at the protest or a ghost
   on(k) { return this.sq.cfg.npcs[k] !== false; }
 
   /* who is in the square: the organisers switch each one on and off */

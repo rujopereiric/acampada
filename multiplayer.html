@@ -181,6 +181,11 @@ button{ cursor:pointer; touch-action:manipulation; }
 
 /* phones on their side: room for the camera even if the browser reports no safe area */
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #ov{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)) !important; padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)) !important; } }
+#muralSheet{ left:calc(env(safe-area-inset-left,0px) + 6px); right:calc(env(safe-area-inset-right,0px) + 6px); } /* the sheet hangs from #app: keep it off the camera */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #muralSheet{ left:max(40px, calc(env(safe-area-inset-left,0px) + 6px)); right:max(40px, calc(env(safe-area-inset-right,0px) + 6px)); } #wallSheet{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)); padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)); } }
+#joy{ position:absolute; z-index:3; width:112px; height:112px; margin:-56px 0 0 -56px; border-radius:50%; background:rgba(244,241,234,.18); border:2px solid rgba(244,241,234,.7); box-shadow:0 0 0 2px rgba(11,10,10,.35); pointer-events:none; }
+#joy[hidden]{ display:none; } #joy i{ position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px; border-radius:50%; background:rgba(244,241,234,.9); border:2px solid #0b0a0a; }
+#bPad[aria-pressed="true"]{ background:var(--lime); }
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #app{ padding-left:max(40px, calc(env(safe-area-inset-left,0px) + 6px)) !important; padding-right:max(40px, calc(env(safe-area-inset-right,0px) + 6px)) !important; } }
 /* the wall across the road and the poster drawing */
 #wallSheet{ position:fixed; inset:0; z-index:40; background:#0b0a12; display:flex; flex-direction:column; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-right,0px) + 10px) calc(env(safe-area-inset-bottom,0px) + 8px) calc(env(safe-area-inset-left,0px) + 10px); color:var(--paper); }
@@ -193,7 +198,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 #wallMold{ display:flex; gap:0; } #wallMold button{ border-right-width:0; } #wallMold button:last-child{ border-right-width:2px; }
 #wallGal{ position:absolute; inset:0; background:rgba(11,10,18,.97); display:flex; flex-direction:column; gap:8px; padding:16px; overflow:auto; z-index:2; } #wallGal[hidden]{ display:none; }
 #wallGalList{ display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; } #wallGalList .galimg{ width:100%; image-rendering:pixelated; border:3px solid #5a5650; }
-.pxed{ display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:8px; } .pxcv{ width:min(100%, 320px); image-rendering:pixelated; touch-action:none; border:3px solid var(--ink); cursor:crosshair; }
+.pxed{ display:flex; flex-direction:column; gap:8px; align-items:center; margin:8px 0; } .pxed[hidden]{ display:none; } .pxcv{ width:min(100%, 320px, 46vh); image-rendering:pixelated; touch-action:none; border:3px solid var(--ink); cursor:crosshair; }
 .cartaz canvas{ display:block; width:100%; image-rendering:pixelated; margin:0 auto; } .cartaz.drawn{ padding:6px; }
 .tb.purple{ background:#9a6bff; color:#fff; } .tb.purple small{ color:#efe6ff; }
 </style>
@@ -218,6 +223,8 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div id="aviso" hidden><span id="avisoTxt"></span><button id="avisoX" aria-label="Fechar">✕</button></div>
     <button id="bZoom" class="zoom" aria-label="Zoom">＋</button>
     <button id="bBike" class="zoom" style="bottom:58px" aria-label="Bicicleta" hidden>🚲</button>
+    <button id="bPad" class="zoom" style="bottom:108px" type="button" aria-label="Bola para andar" aria-pressed="false" hidden><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0b0a0a" stroke-width="2.4" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="#0b0a0a"/></svg></button>
+    <div id="joy" hidden><i></i></div>
     <button id="ctxBtn" class="ctx" hidden></button>
     <div id="direto" hidden><b>● <span data-t="live"></span></b><small id="diretoQ"></small><span id="diretoTxt"></span></div>
     <div class="sheet" id="npcSheet" hidden><h3><span id="npcTitle"></span><button class="x" data-close>✕</button></h3><div id="npcBody"></div></div>
@@ -971,7 +978,7 @@ function onMsg(m) {
   if (m.t === 'cartaz+') { cartazes = cartazes.filter(c => c.slot !== m.c.slot).concat([m.c]); if (m.by === myId) { clearTimeout(cartazWait); myCartazes.add(m.c.id); mineCount = m.mine || mineCount + 1; closeSheets(); toast(L('O teu cartaz está pendurado no cravo!', 'Your poster is hanging on the carnation!'), 3000); } return; }
   if (m.t === 'cartaz-') { cartazes = cartazes.filter(c => c.id !== m.id); return; }
   if (m.t === 'cartazno') { if (m.why === 'ja') mineCount = CARTAZ_POR_PESSOA; clearTimeout(cartazWait); const gb = $('cartazGo'); if (gb) { gb.disabled = false; gb.textContent = L('Pendurar', 'Hang it'); } const w = { ja: ['Já tens 3 cartazes no cravo: é o máximo.', 'You already have 3 posters on the carnation: that’s the most.'], longe: ['Chega-te mais perto do cravo.', 'Get closer to the carnation.'] }[m.why] || NPC_NO[m.why]; const t = w ? L(w[0], w[1]) : ''; const e = $('cartazErr'); if (e && !$('npcSheet').hidden) e.textContent = t; else if (t) toast(t, 3000); return; }
-  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); return; }
+  if (m.t === 'cfg') { cfg = m.cfg; renderMuralLock(); bikeSync(); if (wallEd && !$('wallSheet').hidden) wallTools(); return; }
   if (m.t === 'aviso') { setAviso(m.text || ''); return; }
   if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
   if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
@@ -1023,9 +1030,11 @@ function update(dt, now) {
   if (me) {
     let dx = 0, dy = 0;
     if (keys.up) { dx -= 1; dy -= 1; } if (keys.down) { dx += 1; dy += 1; } if (keys.left) { dx -= 1; dy += 1; } if (keys.right) { dx += 1; dy -= 1; }
-    if (dx || dy) { const n = Math.hypot(dx, dy); dx /= n; dy /= n; me.goal = null; camFree = 0; }
+    const jm = Math.hypot(JOY.x, JOY.y); let jk = 1;
+    if (jm > .2) { dx = JOY.x * .5 + JOY.y; dy = JOY.y - JOY.x * .5; jk = Math.min(1, jm); } // the walking ball: the screen direction turned into the square's
+    if (dx || dy) { const n = Math.hypot(dx, dy); dx /= n; dy /= n; me.goal = null; camFree = 0; me.dir = { gx: dx, gy: dy }; }
     else if (me.goal) { const ex = me.goal.gx - me.x, ey = me.goal.gy - me.y, d = Math.hypot(ex, ey); if (d < .08) me.goal = null; else { dx = ex / d; dy = ey / d; } }
-    const sp = me.b ? 3.75 : 3; // a bicycle is 25% faster
+    const sp = (me.b ? 3.75 : 3) * jk; // a bicycle is 25% faster
     if (dx || dy) {
       const nx = clamp(me.x + dx * sp * dt, .3, W - .3), ny = clamp(me.y + dy * sp * dt, .3, H - .3);
       if (!blocked(nx, ny)) { me.x = nx; me.y = ny; } else if (!blocked(nx, me.y)) me.x = nx; else if (!blocked(me.x, ny)) me.y = ny; else me.goal = null;
@@ -1059,7 +1068,7 @@ function face(p, dx, dy) { const sx = dx - dy, sy = dx + dy; if (Math.abs(sx) > 
 function sendPos(now, stop) {
   if (!me) return; me.sentAt = now;
   // while walking, say where we'll be in a moment, so the others walk along smoothly; when stopping, where we are
-  const ahead = stop ? 0 : .9, dir = me.goal ? { gx: me.goal.gx - me.x, gy: me.goal.gy - me.y } : { gx: (keys.right - keys.left + keys.down - keys.up), gy: (keys.down - keys.up + keys.left - keys.right) };
+  const ahead = stop ? 0 : .9, dir = me.goal ? { gx: me.goal.gx - me.x, gy: me.goal.gy - me.y } : (me.dir || { gx: 0, gy: 0 });
   const n = Math.hypot(dir.gx, dir.gy) || 1, fx = me.goal && Math.hypot(me.goal.gx - me.x, me.goal.gy - me.y) < ahead ? me.goal.gx : me.x + dir.gx / n * ahead, fy = me.goal && Math.hypot(me.goal.gx - me.x, me.goal.gy - me.y) < ahead ? me.goal.gy : me.y + dir.gy / n * ahead;
   send({ t: 'pos', x: +clamp(fx, .3, W - .3).toFixed(2), y: +clamp(fy, .3, H - .3).toFixed(2) });
 }
@@ -1147,7 +1156,7 @@ const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Arr
 addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
   const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
-  if (e.key === 'Escape') { const open = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet'].some(id => !$(id).hidden); if (open) closeSheets(); else if (!$('app').hidden) quitDialog(); }
+  if (e.key === 'Escape') { const open = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet', 'wallSheet'].some(id => !$(id).hidden); if (open) closeSheets(); else if (!$('app').hidden) quitDialog(); }
   const sheetOpen = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet'].some(id => !$(id).hidden);
   if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden && !sheetOpen && !(e.target.closest && e.target.closest('button, a'))) { // (Space on a button presses the button) // talk to whoever is closest, or make a poster by the carnation
     const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
@@ -1157,14 +1166,37 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = 0; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
 let drag = null;
-cv.addEventListener('pointerdown', e => { if (camX === null) return; drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
+const JOY = { id: null, x0: 0, y0: 0, x: 0, y: 0 }, JOY_R = 48, coarse = matchMedia('(pointer: coarse)');
+let joyPref = null; try { const v = localStorage.getItem('acampada-joy'); joyPref = v === null ? null : v === '1'; } catch (e) {}
+const joyOn = () => !!me && coarse.matches && (joyPref ?? innerWidth > innerHeight);
+function padShow() { const b = $('bPad'); b.hidden = !me || !coarse.matches; b.setAttribute('aria-pressed', String(joyOn())); b.setAttribute('aria-label', L('Bola para andar', 'Walking ball')); if (!joyOn()) joyEnd(); }
+$('bPad').addEventListener('click', () => { joyPref = !joyOn(); try { localStorage.setItem('acampada-joy', joyPref ? '1' : '0'); } catch (e) {} padShow(); toast(joyPref ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : L('Toca no chão para andar', 'Tap the ground to walk'), 2500); });
+addEventListener('resize', () => padShow());
+function joyStart(e) {
+  const r = $('stage').getBoundingClientRect();
+  if (!joyOn() || JOY.id !== null || e.clientX - r.left > r.width * .5) return false;
+  JOY.id = e.pointerId; JOY.x0 = e.clientX - r.left; JOY.y0 = e.clientY - r.top; JOY.x = JOY.y = 0;
+  const el = $('joy'); el.style.left = JOY.x0 + 'px'; el.style.top = JOY.y0 + 'px'; el.hidden = false; el.firstChild.style.transform = '';
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {} if (me) { me.goal = null; camFree = 0; } return true;
+}
+function joyMove(e) {
+  if (e.pointerId !== JOY.id) return false;
+  const r = $('stage').getBoundingClientRect(); let dx = e.clientX - r.left - JOY.x0, dy = e.clientY - r.top - JOY.y0; const d = Math.hypot(dx, dy);
+  if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
+  JOY.x = dx / JOY_R; JOY.y = dy / JOY_R; $('joy').firstChild.style.transform = `translate(${dx}px, ${dy}px)`; return true;
+}
+function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; JOY.id = null; JOY.x = JOY.y = 0; $('joy').hidden = true; return true; }
+function keysOff() { for (const k in keys) keys[k] = 0; joyEnd(); }
+cv.addEventListener('pointerdown', e => { if (joyStart(e)) { audioInit(); return; } if (camX === null) return; drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
 cv.addEventListener('pointermove', e => {
+  if (joyMove(e)) return;
   if (!drag || drag.id !== e.pointerId) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (!drag.moved && Math.hypot(dx, dy) > 10) drag.moved = true;
   if (drag.moved) { camFree = 1; camX = drag.cx - dx / scale; camY = drag.cy - dy / scale; }
 });
 cv.addEventListener('pointerup', e => {
+  if (joyEnd(e)) return;
   if (!drag || drag.id !== e.pointerId) return;
   const moved = drag.moved; drag = null; if (moved) return;
   const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
@@ -1176,7 +1208,7 @@ cv.addEventListener('pointerup', e => {
   me.goal = { gx: clamp(w.gx, .3, W - .3), gy: clamp(w.gy, .3, H - .3) }; camFree = 0;
   sendPos(performance.now());
 });
-cv.addEventListener('pointercancel', () => { drag = null; });
+cv.addEventListener('pointercancel', e => { joyEnd(e); drag = null; });
 
 /* ================= talking to the characters, posters, the live interview, the group photo ================= */
 let pending = null; // a character we're walking to, to talk to when we get there
@@ -1340,8 +1372,8 @@ function makeCartazDialog() {
     const lab2 = document.createElement('label'); lab2.className = 'npclab'; lab2.textContent = L('Cor', 'Colour');
     const ped = posterEditor(fmt, cor, '', () => { err.textContent = ''; }); ped.el.hidden = true;
     const kind = document.createElement('div'); kind.className = 'seg';
-    for (const [k, pt, en] of [[0, '✍️ Escrever', '✍️ Write'], [1, '🎨 Desenhar', '🎨 Draw']]) { const x = document.createElement('button'); x.type = 'button'; x.textContent = L(pt, en); x.classList.toggle('on', !k); x.addEventListener('click', () => { drawMode = !!k; for (const y of kind.children) y.classList.toggle('on', y === x); ped.el.hidden = !drawMode; ta.placeholder = drawMode ? L('Uma legenda (opcional)', 'A caption (optional)') : L('Ex.: Casa para viver!', 'E.g. Homes to live in!'); sync(); }); kind.append(x); }
-    b.append(kind, row, cnt, lab1, sizes, lab2, cols, ped.el, prev); sync(); setTimeout(() => ta.focus(), 50);
+    for (const [k, pt, en] of [[0, '✍️ Escrever', '✍️ Write'], [1, '🎨 Desenhar', '🎨 Draw']]) { const x = document.createElement('button'); x.type = 'button'; x.textContent = L(pt, en); x.classList.toggle('on', !k); x.addEventListener('click', () => { drawMode = !!k; for (const y of kind.children) y.classList.toggle('on', y === x); ped.el.hidden = !drawMode; if (drawMode) requestAnimationFrame(() => ped.el.scrollIntoView({ block: 'nearest' })); ta.placeholder = drawMode ? L('Uma legenda (opcional)', 'A caption (optional)') : L('Ex.: Casa para viver!', 'E.g. Homes to live in!'); sync(); }); kind.append(x); }
+    b.append(kind, ped.el, row, cnt, lab1, sizes, lab2, cols, prev); sync(); if (!coarse.matches) setTimeout(() => ta.focus(), 50); // phones: no keyboard over the drawing
   });
 }
 // the button that shows up next to the carnation
@@ -1527,7 +1559,7 @@ function gesture(k) {
   clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
 }
 function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural', agendaSheet: 'tAgenda' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
-function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
+function closeSheets() { if (!$('wallSheet').hidden) closeWall(); if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
   if (photoLater && lastPhoto) { photoLater = false; setTimeout(() => { if (lastPhoto) { $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false; } }, 300); } }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
 $('tWall').addEventListener('click', () => openWall());
@@ -1611,7 +1643,7 @@ function renderWhere() {
   const meLine = myMode === 'praca' ? L('estás na praça', 'you’re in the square') : L('estás como apoio de longe', 'you’re supporting from afar');
   $('where').innerHTML = ''; $('where').append(title); const s = document.createElement('small'); s.textContent = [meLine, close].filter(Boolean).join(' · '); $('where').append(s);
 }
-function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = !me; bikeSync(); }
+function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = !me; bikeSync(); padShow(); }
 function bikeSync() { const b = $('bBike'); b.hidden = !me || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
 $('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
 $('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
@@ -1823,7 +1855,7 @@ function wallEdRedraw(i) {
 }
 function wallSize() { const E = wallEd; if (!E) return; const box = $('wallBox').getBoundingClientRect(); const s = Math.max(4, Math.floor(Math.min(box.width / PW, box.height / PH) * (devicePixelRatio || 1))); E.cell = s; E.cv.width = PW * s; E.cv.height = PH * s; E.cv.style.width = (PW * s / (devicePixelRatio || 1)) + 'px'; wallEdRedraw(); }
 function openWall() {
-  closeSheets(); $('wallSheet').hidden = false;
+  closeSheets(); $('wallSheet').hidden = false; keysOff();
   wallEd = wallEd || { tool: 'pintar', col: 2, mold: null, pend: [], cv: $('wallCv') };
   wallTools(); requestAnimationFrame(wallSize);
 }
@@ -1834,13 +1866,16 @@ function wallTools() {
   const er = document.createElement('button'); er.type = 'button'; er.className = 'erase' + (E.tool === 'pintar' && E.col === -1 ? ' on' : ''); er.textContent = '⌫'; er.title = L('Limpar (volta à parede)', 'Clean (back to the wall)'); er.addEventListener('click', () => { E.col = -1; E.tool = 'pintar'; wallTools(); }); pal.append(er);
   $('wallQuem').classList.toggle('on', E.tool === 'quem');
   for (const b of $('wallMold').children) b.classList.toggle('on', (b.dataset.m || null) === E.mold);
-  $('wallInfo').textContent = E.tool === 'quem' ? L('Toca num quadrado para ver quem o pintou.', 'Tap a square to see who painted it.') : L('Pinta com o dedo ou o rato. Toda a gente vê ao vivo.', 'Paint with your finger or the mouse. Everyone sees it live.');
+  $('wallPal').style.opacity = cfg.paredeRO ? .35 : '';
+  $('wallInfo').textContent = cfg.paredeRO ? L('A organização fechou a parede: agora só se pode ver.', 'The organisers closed the wall: look only for now.') : E.tool === 'quem' ? L('Toca num quadrado para ver quem o pintou.', 'Tap a square to see who painted it.') : L('Pinta com o dedo ou o rato. Toda a gente vê ao vivo.', 'Paint with your finger or the mouse. Everyone sees it live.');
 }
 let wallTimer = 0;
-function wallFlush() { const E = wallEd; if (!E || !E.pend.length) return; send({ t: 'px', a: E.pend.splice(0, 80) }); if (E.pend.length) wallTimer = setTimeout(wallFlush, 120); }
+const wallFly = new Map(); // my strokes sent and not yet back from the square: pixel -> how many
+function wallFlush() { const E = wallEd; if (!E || !E.pend.length) return; if (!ws || ws.readyState !== 1) { E.pend.length = 0; return; } const a = E.pend.splice(0, 80); for (const [i] of a) wallFly.set(i, (wallFly.get(i) || 0) + 1); send({ t: 'px', a }); if (E.pend.length) wallTimer = setTimeout(wallFlush, 120); }
 function wallAt(e) { const E = wallEd, r = E.cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * PW), y = Math.floor((e.clientY - r.top) / r.height * PH); return x >= 0 && x < PW && y >= 0 && y < PH ? y * PW + x : -1; }
 function wallDot(i) {
   const E = wallEd; if (i < 0) return;
+  if (cfg.paredeRO && E.tool === 'pintar') { $('wallInfo').textContent = L('A organização fechou a parede: agora só se pode ver.', 'The organisers closed the wall: look only for now.'); return; }
   if (E.tool === 'rep') return;
   if (E.tool === 'quem') { send({ t: 'quem', i }); return; }
   const ch = E.col < 0 ? '-' : E.col.toString(16); if (wall[i] === ch) return;
@@ -1865,7 +1900,13 @@ function pngOf(d, scale = 12) { const c = document.createElement('canvas'); c.wi
 function savePng(d, name) { pngOf(d).toBlob(b => { if (!b) return; const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }); }
 const fmtDay = t => new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
 function wallMsg(m) {
-  if (m.t === 'px') { for (const [i, c] of m.a || []) { if (i < 0 || i >= PW * PH) continue; wall[i] = c < 0 ? '-' : c.toString(16); wallPaint(i); wallEdRedraw(i); } return true; }
+  if (m.t === 'px') { // everyone's strokes in the square's order; mine only once the last one I sent for that pixel is back (no flicker)
+    for (const [i, c] of m.a || []) { if (i < 0 || i >= PW * PH) continue;
+      if (m.by === myId) { const n = (wallFly.get(i) || 1) - 1; if (n > 0) { wallFly.set(i, n); continue; } wallFly.delete(i); if (wallEd && wallEd.pend.some(q => q[0] === i)) continue; }
+      else if (wallEd && wallEd.pend.some(q => q[0] === i)) continue; // I painted it after: mine goes next and wins
+      wall[i] = c < 0 ? '-' : c.toString(16); wallPaint(i); wallEdRedraw(i); }
+    return true; }
+  if (m.t === 'pxno') { wallFly.clear(); if (wallEd) wallEd.pend.length = 0; wallAll(m.d); $('wallInfo').textContent = L('A organização fechou a parede: agora só se pode ver.', 'The organisers closed the wall: look only for now.'); return true; }
   if (m.t === 'parede') { wallAll(m.d); return true; }
   if (m.t === 'quem') { $('wallInfo').textContent = m.n ? L(`Pintado por ${m.n} · ${m.c}`, `Painted by ${m.n} · ${m.c}`) : L('Ninguém pintou este quadrado.', 'Nobody has painted this square.'); return true; }
   if (m.t === 'parede-rep') { $('wallInfo').textContent = L('Obrigado: a organização vai ver essa zona.', 'Thanks: the organisers will look at that area.'); return true; }
@@ -1905,7 +1946,7 @@ function posterEditor(fmt, cor, data, onChange) { // returns { el, get(), setFmt
   cv2.addEventListener('pointermove', e => { if (!down) return; const i = at(e); if (i !== last) { last = i; dot(i); } });
   for (const ev of ['pointerup', 'pointercancel']) cv2.addEventListener(ev, () => { down = false; });
   el.append(cv2, pal); draw(); palSync();
-  return { el, get: () => d.join(''), empty: () => !d.some(c => c !== '-'), setFmt(f) { [gw, gh] = CARTAZ_GRID[f]; d = new Array(gw * gh).fill('-'); el.style.setProperty('--ar', gw / gh); draw(); }, setCor(c) { cor = c; draw(); } };
+  return { el, get: () => d.join(''), empty: () => !d.some(c => c !== '-'), setFmt(f) { const [ow, oh] = [gw, gh], od = d; [gw, gh] = CARTAZ_GRID[f]; d = new Array(gw * gh); for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) d[y * gw + x] = od[Math.floor(y * oh / gh) * ow + Math.floor(x * ow / gw)]; draw(); }, setCor(c) { cor = c; draw(); } };
 }
 
 window.__praca = { people, get wall() { return wall.join(''); }, openWall, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing, approach };
