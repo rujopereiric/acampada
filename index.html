@@ -262,6 +262,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .chap .pl{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:12px; font-weight:400; color:#c9c4c4; margin-top:2px; }
 .chap .real{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:12px; font-weight:700; color:#ff8aa8; margin-top:3px; }
 .chap .ok.sv{ background:#ffd23a; }
+#ov p.help.irl{ font-size:11px; opacity:.75; margin-top:14px !important; }
 #ov p.help.real{ color:#ff8aa8; font-weight:700; }
 .btnp.cont{ display:block; width:min(100%, 340px); margin:14px auto 0; }
 .opts{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:16px auto 0; }
@@ -1514,7 +1515,8 @@ function realToday(city) { // something on today (or still going) in this city, 
   const t = lisbonNow(), mins = r => +r.at.slice(0, 2) * 60 + +r.at.slice(3);
   return RALLIES.find(r => r.date === t.date && (r.city === city || r.near === city) && t.min < mins(r) + (+r.horas || 3) * 60) || null;
 }
-const realLine = city => { const r = realToday(city); return r ? `🔴 ${L('Hoje, a sério', 'Today, for real')}: ${r.title} · ${r.at.replace(':00', 'h').replace(':', 'h')}${r.where ? ' · ' + r.where.split(' · ')[0] : ''}${r.city !== city ? ' (' + r.city + ')' : ''}` : ''; };
+const IRL_NOTE = () => `<p class="help irl">IRL · <i>In Real Life</i>${L(' (na vida real)', '')}</p>`;
+const realLine = city => { const r = realToday(city); return r ? `🔴 ${L('Hoje, IRL', 'Today, IRL')}: ${r.title} · ${r.at.replace(':00', 'h').replace(':', 'h')}${r.where ? ' · ' + r.where.split(' · ')[0] : ''}${r.city !== city ? ' (' + r.city + ')' : ''}` : ''; };
 function newLevel() {
   CAM.look = null; // a tapped event from the last level must not hold the camera
   stopSong(); winSongStop();
@@ -3902,12 +3904,12 @@ function chapterScreen() {
   mode = 'chapters';
   const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
-  ${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}`);
+  ${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
 }
 function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
   show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
-  <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p>${realLine(c.name) ? `<p class="help real">${esc(realLine(c.name))}</p>` : ''}${savedOf(cityIdx) ? `<button class="btnp red" data-a="load">${L('Continuar · dia', 'Carry on · day')} ${savedOf(cityIdx).day} →</button>` : ''}<button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button>${FOOT}`);
+  <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p>${realLine(c.name) ? `<p class="help real">${esc(realLine(c.name))}</p>` : ''}${savedOf(cityIdx) ? `<button class="btnp red" data-a="load">${L('Continuar · dia', 'Carry on · day')} ${savedOf(cityIdx).day} →</button>` : ''}<button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button>${realLine(c.name) ? IRL_NOTE() : ''}${FOOT}`);
 }
 function buildMenu() {
   if (mode !== 'play') return; mode = 'menu';
