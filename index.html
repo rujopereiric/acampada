@@ -3861,14 +3861,12 @@ let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
-  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Acampada de Lisboa + Casa para Viver', 'Lisboa camp + Casa para Viver')}</p><div class="rule"></div>
-    <p class="t">${L('Tudo a S. Bento!', 'Everyone to São Bento!')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Terça<br><b>27 out. 2026</b>', 'Tuesday<br><b>27 Oct 2026</b>')}<br><b>18:30</b></div><div><b>Assembleia<br>da República</b><br>Lisboa</div></div>
-    <p class="src">${L('Manifestação e, às 20h, assembleia popular em frente à Assembleia da República. Traz a tua tenda como símbolo da nossa luta: é acampada no Parlamento!', 'A protest and, at 8 pm, a people’s assembly in front of the Assembleia da República. Bring your tent as a symbol of our struggle: the camp goes to Parliament!')}</p>${CHECK()}</div>`],
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Acampada de Lisboa', 'Lisboa camp')}</p><div class="rule"></div>
+    <p class="t">${L('Assembleia popular no Rossio', 'People’s assembly at Rossio')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Quarta<br><b>28 out. 2026</b>', 'Wednesday<br><b>28 Oct 2026</b>')}<br><b>19:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <p class="src">${L('A acampada volta ao Rossio com ações regulares e assembleia popular às 19h. Aparece e traz quem puderes!', 'The camp is back at Rossio with regular actions and a people’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
-    <div><span class="when">${L('Ter 27', 'Tue 27')} · 16:00</span><span class="what">Porto<small>${L('Programação da acampada, Praça D. João I: concerto Tigre às 17h30, assembleia popular às 19h30', 'Camp programme, Praça D. João I: Tigre in concert at 5:30 pm, people’s assembly at 7:30 pm')}</small></span></div>
-    <div><span class="when">${L('Ter 27', 'Tue 27')} · 18:30</span><span class="what">Guimarães<small>${L('Assembleia popular pela habitação, Coreto da Alameda de São Dâmaso', 'People’s assembly for housing, Coreto da Alameda de São Dâmaso')}</small></span></div>
-    <div><span class="when">${L('Ter 27', 'Tue 27')} · 18:30</span><span class="what">Lisboa<small>${L('Tudo a S. Bento! Assembleia da República, assembleia popular às 20h. Traz a tua tenda', 'Everyone to São Bento! Assembleia da República, people’s assembly at 8 pm. Bring your tent')}</small></span></div>
+    <div><span class="when">${L('Qua 28', 'Wed 28')} · 19:00</span><span class="what">Lisboa<small>${L('Rossio: assembleia popular às 19h', 'Rossio: people’s assembly at 7 pm')}</small></span></div>
     <div><span class="when">${L('Qua 28', 'Wed 28')} · 13:00</span><span class="what">Évora<small>${L('Protesto na Universidade, entrada do CES: contra o aumento da propina, por mais residências públicas', 'Protest at the University, CES entrance: against higher tuition fees, for more public student housing')}</small></span></div>
     <div><span class="when">${L('Qua 28', 'Wed 28')} · 17:00</span><span class="what">Faro<small>${L('Praça da Liberdade: assembleia popular, grupos de trabalho às 18h, novas propostas às 19h', 'Praça da Liberdade: people’s assembly, working groups at 6 pm, new proposals at 7 pm')}</small></span></div>
     <div><span class="when">${L('Sáb 31 e dom 1', 'Sat 31 & Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
@@ -3933,6 +3931,7 @@ const RALLIES = [
   { date: '2026-10-27', at: '18:30', city: 'Guimarães', near: 'Braga', title: 'Assembleia popular pela habitação', where: 'Coreto da Alameda de São Dâmaso' },
   { date: '2026-10-27', at: '18:30', city: 'Lisboa', title: 'Tudo a S. Bento!', note: 'A acampada de Lisboa une forças à Casa para Viver. Traz a tua tenda como símbolo da nossa luta!', where: 'Assembleia da República · 20h: assembleia popular' },
   { date: '2026-10-28', at: '17:00', city: 'Faro', title: 'Programação da acampada', where: 'Praça da Liberdade · 17h assembleia popular · 18h grupos de trabalho' },
+  { date: '2026-10-28', at: '19:00', city: 'Lisboa', title: 'Assembleia popular', where: 'Rossio' },
   { date: '2026-10-28', at: '13:00', city: 'Évora', title: 'Protesto na Universidade de Évora', note: 'Contra o aumento da propina, por mais residências públicas e melhores condições na UÉ.', where: 'Entrada do CES' },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Porto', title: 'Casa para viver', where: 'Praça do Marquês' },
