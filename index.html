@@ -303,7 +303,9 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .btnp.praca .pn{ display:block; font-size:17px; } .btnp.praca .pw{ display:block; margin-top:4px; font:700 13px/1.2 Jost, sans-serif; text-transform:none; letter-spacing:.2px; color:#c9c4c4; }
 .btnp.praca.on{ background:#b6ff3b; color:#0b0a0a; box-shadow:none; } .btnp.praca.on .pw{ color:#0b0a0a; }
 /* short phones (iPhone SE…): a more compact title so Joga, A Praça and the three icons all fit on the first screen */
-@media (max-height:700px){ #ov .tent{ max-height:110px; width:auto; } #ov .topbar{ margin-bottom:4px; } #ov .foot{ margin-top:6px !important; } #ov .p-big{ font-size:clamp(28px, 8.6vw, 38px); } #ov .p-mid{ font-size:18px; } #ov .p-info{ font-size:17px; } #ov .btnp.play{ margin-top:10px; padding:8px 22px 6px; font-size:24px; } #ov .btnp.praca{ padding:8px 12px 7px; } #ov .btnp.praca .pn{ font-size:14.5px; } #ov .icons{ margin-top:12px; } }
+@media (max-height:700px){#ov .tent{ max-height:86px; width:auto; } #ov .topbar{ margin-bottom:4px; } #ov .foot{ margin-top:6px !important; } #ov .p-big{ font-size:clamp(28px, 8.6vw, 38px); } #ov .p-mid{ font-size:18px; } #ov .p-info{ font-size:17px; } #ov .btnp.play{ margin-top:10px; padding:8px 22px 6px; font-size:24px; } #ov .btnp.praca{ padding:8px 12px 7px; } #ov .btnp.praca .pn{ font-size:14.5px; } #ov .icons{ margin-top:12px; } }
+/* very short phones: thinner buttons, so the description still fits */
+@media (max-height:600px){ #ov .tent{ max-height:78px; } #ov .btnp.play{ margin-top:8px; padding:4px 22px 2px; font-size:22px; } #ov .btnp.praca{ margin-top:6px; padding:4px 12px 4px; } #ov .btnp.praca .pw{ margin-top:1px; font-size:12px; } #ov .minis.two{ margin-top:6px; } #ov .minis.two .btnp.mini{ padding:7px 6px 5px; } #ov .tdesc{ margin-top:6px; line-height:1.3; } }
 .minis{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:14px auto 0; max-width:420px; }
 /* the title's small buttons: information, share, how to play, as icons */
 .icons{ display:flex; justify-content:center; gap:14px; margin:16px auto 0; }
@@ -3724,6 +3726,12 @@ function pracaButton() {
 }
 function titleRally() {
   const r = nextRally(null); if (!r) return '';
+  const t = lisbonNow(), mins = x => +x.at.slice(0, 2) * 60 + +x.at.slice(3);
+  const all = RALLIES.filter(x => x.date === r.date && (x.date > t.date || t.min < mins(x) + 120)).sort((a, b) => mins(a) - mins(b));
+  if (all.length > 1) { // several on the same day: list them all, in order
+    const head = r.when === 'HOJE' ? L('Hoje', 'Today') : r.when === 'AMANHÃ' ? L('Amanhã', 'Tomorrow') : LANG === 'en' ? `${DAYS_EN[r.d.getUTCDay()]} ${r.d.getUTCDate()} ${MONTHS_EN[r.d.getUTCMonth()]}` : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
+    return `<p class="help"><b>${head}:</b> ${all.slice(0, 4).map(x => `<span style="white-space:nowrap">${x.at} <b>${x.city || L('Todo o país', 'Nationwide')}</b></span>`).join(' | ')}${all.length > 4 ? ' …' : ''}</p>`; // short: time and city only
+  }
   const day = r.when === 'HOJE' ? L('Hoje', 'Today') : r.when === 'AMANHÃ' ? L('Amanhã', 'Tomorrow') : LANG === 'en' ? `${DAYS_EN[r.d.getUTCDay()]} ${r.d.getUTCDate()} ${MONTHS_EN[r.d.getUTCMonth()]}` : `${DIAS_LONG[r.d.getUTCDay()]}, ${r.d.getUTCDate()} ${MESES[r.d.getUTCMonth()].toLowerCase()}.`;
   return `<p class="help"><b>${r.city ? r.city + ': ' : ''}${T(r.title)}</b><br>${r.note ? T(r.note) + '<br>' : ''}${day}, ${r.at} · ${T(r.where)}</p>`;
 }
@@ -3822,7 +3830,7 @@ function titleScreen() {
   show(`<div class="topbar"><div class="langsw" role="group" aria-label="Idioma / Language"><button data-a="lang" data-l="pt" class="${LANG === 'pt' ? 'on' : ''}">PT</button><button data-a="lang" data-l="en" class="${LANG === 'en' ? 'on' : ''}">EN</button></div><div class="tcorner"><button class="ibtn sm" data-a="sharegame" aria-label="${L('Partilhar o jogo', 'Share the game')}" title="${L('Partilhar o jogo', 'Share the game')}"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/><path d="M5 12v8h14v-8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><a class="ibtn sm" href="https://www.instagram.com/acampadapixel/" target="_blank" rel="noopener" aria-label="Instagram @acampadapixel" title="Instagram @acampadapixel"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="5" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="16.2" y="6.2" width="2.2" height="2.2" fill="currentColor"/></svg></a></div></div>
   <h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('A acampada resiste', 'The camp resists')}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
   <p class="p-info rough">Faro · Coimbra · Braga<br>Lisboa · Porto</p>
-  <p class="help">${L('Monta tendas, junta gente e segura a praça até o governo ceder.', 'Pitch tents, grow the crowd and hold the square until the government gives in.')}</p>
+  <p class="help tdesc">${L('Monta tendas, junta apoio e segura a praça.<br><b>Até o Governo cair!</b>', 'Pitch tents, gather support and hold the square.<br><b>Until the Government falls!</b>')}</p>
   <div id="rallyBox">${titleRally()}</div>
   <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>
   <div id="pracaSlot">${pracaButton()}</div>
@@ -3948,7 +3956,7 @@ function nextRally(city, now) {
   const up = RALLIES.filter(r => r.date > t.date || (r.date === t.date && t.min < mins(r) + 120));
   if (!up.length) return null;
   const day = up.map(r => r.date).sort()[0], same = up.filter(r => r.date === day);
-  const r = same.find(r => r.city === city) || same.find(r => r.near === city) || same.find(r => !r.city) || same.find(r => r.city === 'Lisboa') || same[0];
+  const r = same.find(r => r.city === city) || same.find(r => r.near === city) || same.find(r => !r.city) || same.slice().sort((a, b) => (!PLACE_ART[a.city] - !PLACE_ART[b.city]) || mins(a) - mins(b))[0]; // else the day's first one in a game city
   const d = new Date(r.date + 'T12:00:00Z'), tm = new Date(t.date + 'T12:00:00Z'); tm.setUTCDate(tm.getUTCDate() + 1);
   const when = r.date === t.date ? 'HOJE' : r.date === tm.toISOString().slice(0, 10) ? 'AMANHÃ' : `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
   return { ...r, when, d, time: r.at.slice(0, 2).replace(/^0/, '') + 'H' + (r.at.slice(3) === '00' ? '' : r.at.slice(3)), elsewhere: !!r.city && r.city !== city && new Set(same.map(x => x.city)).size > 1 };
