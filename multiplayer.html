@@ -27,7 +27,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .rough{ filter:url(#rough); }
 
 /* the square: a bar on top, the square, the tools at the bottom (on wide screens the mural sits on the right) */
-#app{ position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); gap:6px; }
+#app{ position:fixed; inset:0; display:grid; grid-template-rows:auto 1fr auto; padding:calc(env(safe-area-inset-top,0px) + 6px) calc(env(safe-area-inset-right,0px) + 6px) calc(env(safe-area-inset-bottom,0px) + 6px) calc(env(safe-area-inset-left,0px) + 6px); /* phones on their side: clear of the camera */ gap:6px; }
 #app[hidden]{ display:none; }
 #bar{ display:flex; align-items:center; gap:10px; background:var(--paper); color:var(--ink); border:2px solid var(--paper); padding:6px 8px; min-width:0; }
 .logo{ font-weight:800; font-size:20px; line-height:1; color:var(--red); letter-spacing:.3px; white-space:nowrap; }
@@ -130,7 +130,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 @media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } }
 
 /* the entry and closed screens (the same poster style as the game's title screen) */
-#ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) 18px calc(env(safe-area-inset-bottom,0px) + 16px); overflow:auto; text-align:center; background:var(--ink); }
+#ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) max(18px, calc(env(safe-area-inset-right,0px) + 10px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(18px, calc(env(safe-area-inset-left,0px) + 10px)); overflow:auto; text-align:center; background:var(--ink); }
 #ov[hidden]{ display:none; }
 #ov .wrapc{ margin:auto; width:100%; max-width:440px; }
 #ov h1,#ov h2,#ov p{ margin:0; }
@@ -1562,6 +1562,9 @@ makeDecor(); makeBG(); applyTexts();
 $('bSound').classList.toggle('on', !muted); $('bSound').textContent = muted ? '♪̸' : '♪'; $('bZoom').textContent = zoom ? '－' : '＋';
 addEventListener('resize', () => { if (!$('app').hidden) resize(); });
 if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (!$('app').hidden) resize(); });
+// iPhones report the new size a moment after turning: follow the stage's real size, and check again after the turn
+if (window.ResizeObserver) new ResizeObserver(() => { if (!$('app').hidden) resize(); }).observe($('stage'));
+addEventListener('orientationchange', () => { for (const t of [100, 400, 900]) setTimeout(() => { if (!$('app').hidden) resize(); }, t); });
 document.addEventListener('gesturestart', e => e.preventDefault());
 showStatus();
 requestAnimationFrame(frame);
