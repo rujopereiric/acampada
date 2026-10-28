@@ -53,8 +53,8 @@
   "date": "2026-10-28",
   "at": "19:00",
   "city": "Lisboa",
-  "title": "Assembleia popular",
-  "where": "Rossio",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
   "horas": 3
  },
  {
@@ -75,6 +75,86 @@
   "horas": 2
  },
  {
+  "date": "2026-10-28",
+  "at": "19:00",
+  "city": "Porto",
+  "title": "Acampada Resiste",
+  "where": "Praça D. João I",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-29",
+  "at": "18:30",
+  "city": "Castelo Branco",
+  "title": "Assembleia popular pela habitação",
+  "where": "Praça 25 de Abril",
+  "horas": 2
+ },
+ {
+  "date": "2026-10-30",
+  "at": "18:00",
+  "city": "Évora",
+  "title": "Por mais habitação",
+  "where": "Praça do Giraldo",
+  "horas": 2
+ },
+ {
+  "date": "2026-10-29",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-30",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-31",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-01",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-02",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-03",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-04",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "A Acampada Resiste",
+  "where": "Rossio · protesto todos os dias às 19h",
+  "horas": 3
+ },
+ {
   "date": "2026-11-14",
   "at": "15:00",
   "city": "Lisboa",
@@ -89,6 +169,22 @@
   "title": "Casa para viver",
   "where": "Praça do Marquês",
   "horas": 4
+ },
+ {
+  "date": "2026-11-14",
+  "at": "15:00",
+  "city": "Coimbra",
+  "title": "Casa para viver",
+  "where": "Ponte de Santa Clara",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-14",
+  "at": "15:00",
+  "city": "Braga",
+  "title": "Casa para viver",
+  "where": "Arco da Porta Nova",
+  "horas": 3
  },
  {
   "date": "2026-11-14",
