@@ -1113,7 +1113,8 @@ function draw(now) {
   for (const n of npcs.values()) {
     const q = S(n.x, n.y, 0); if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
     const head = q.y - (n.k === 'cao' ? 12 : 21) * scale, lab = { jornalista: L('Imprensa', 'Press'), fotografa: L('Fotógrafa', 'Photographer'), cantina: L('Cantina', 'Canteen') }[n.k];
-    if (n.k === 'zezinho') { ctx.font = '700 9px Jost, sans-serif'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(11,10,10,.8)'; ctx.strokeText('Zezinho Bailarino', q.x, head + 2); ctx.fillStyle = '#ffd23a'; ctx.fillText('Zezinho Bailarino', q.x, head + 2); continue; } // small: a protester like any other, nothing to talk about
+    if (n.k === 'zezinho') { ctx.font = '700 9px Jost, sans-serif'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(11,10,10,.8)'; ctx.strokeText('Zezinho Bailarino', q.x, head + 2); ctx.fillStyle = '#ffd23a'; ctx.fillText('Zezinho Bailarino', q.x, head + 2);
+      if (me && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '16px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText('🤳', q.x + 46, head + 2); } continue; } // small name: a protester like any other
     if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
     if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
     const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
@@ -1223,7 +1224,7 @@ let pending = null; // a character we're walking to, to talk to when we get ther
 const REACH = 2.4;
 function targets() {
   const out = [];
-  for (const n of npcs.values()) if (n.k !== 'zezinho') out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
+  for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
   if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
   const bici = passing('bicicletada'); if (bici) for (let i = 0; i < BICI_N; i++) { const p = bici.at(i * 1.15); out.push({ kind: 'bicicletada', id: 0, x: p.gx, y: p.gy, z: 12 }); }
   const J = jogos;
@@ -1268,6 +1269,7 @@ function interact(t) {
   if (t.kind === 'curioso') { const n = npcs.get(t.id); if (n && n.g) return say(t.id, L('Já estou convosco! ✊', 'I’m with you already! ✊')); return curiousDialog(t.id); }
   if (t.kind === 'fotografa') return photoDialog();
   if (t.kind === 'cantina') return canteenDialog();
+  if (t.kind === 'zezinho') return dialog('Zezinho Bailarino', L('Uma selfie? Bora! 📱', 'A selfie? Let’s go! 📱'), b => { const g = optGrid(b); g.append(optBtn(L('🤳 Tirar uma selfie', '🤳 Take a selfie'), () => { const z = npcs.get(t.id); if (!z || !me) return; closeSheets(); flashAt = performance.now(); flashPos = { x: (me.x + z.x) / 2, y: (me.y + z.y) / 2 }; shutter(); say(t.id, '✌️'); setTimeout(() => makePhoto([myId], 0, 0, L('Selfie na praça', 'Selfie in the square'), { x: z.x, y: z.y, who: 'Zezinho Bailarino', t1: L('SELFIE COM O', 'SELFIE WITH'), t2: 'ZEZINHO BAILARINO' }), 350); })); });
   if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
   if (t.kind === 'bola') { send({ t: 'bola' }); return; }
   if (t.kind === 'estaca') { const T = jogos.tent; if (!T) return; send({ t: 'estaca', id: t.gid, k: t.k }); if (!(T.p && T.p[1 - t.k])) toast(L('Estaca na mão! Falta alguém na outra ponta (6 s).', 'Peg in hand! Someone needs to take the other end (6 s).'), 3500); return; }
@@ -1430,23 +1432,24 @@ function renderScene(g, ox, oy, vw, vh, now) {
   list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
   g.setTransform(1, 0, 0, 1, 0, 0);
 }
-async function makePhoto(ids, fx, fy, ev) {
+async function makePhoto(ids, fx, fy, ev, opt) { // opt: a selfie with someone (who, where, the two lines on top)
   const inShot = ids.map(id => people.get(id)).filter(Boolean); if (!inShot.length) return;
-  const cx = inShot.reduce((a, p) => a + p.x, 0) / inShot.length, cy = inShot.reduce((a, p) => a + p.y, 0) / inShot.length;
+  let cx = inShot.reduce((a, p) => a + p.x, 0) / inShot.length, cy = inShot.reduce((a, p) => a + p.y, 0) / inShot.length;
+  if (opt) { cx = (cx + opt.x) / 2; cy = (cy + opt.y) / 2; }
   const sw = 176, sh = 120, sc = document.createElement('canvas'); sc.width = sw; sc.height = sh;
   const q = iso(cx, cy); inPhoto = true; try { renderScene(sc.getContext('2d'), Math.round(q.x - sw / 2), Math.round(q.y - sh * .64), sw, sh, performance.now()); } finally { inPhoto = false; }
   try { await document.fonts.load('800 60px Jost'); } catch (e) {}
   const C = document.createElement('canvas'); C.width = 1080; C.height = 1350; const g = C.getContext('2d');
   g.fillStyle = '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
-  g.textAlign = 'center'; g.fillStyle = '#f4f1ea'; g.font = '800 62px Jost, sans-serif'; g.fillText(L('EU ESTIVE NA', 'I WAS IN THE'), 540, 120);
-  g.fillStyle = '#d0302a'; g.font = '800 150px Jost, sans-serif'; g.fillText(L('PRAÇA', 'SQUARE'), 540, 262);
+  g.textAlign = 'center'; g.fillStyle = '#f4f1ea'; g.font = '800 62px Jost, sans-serif'; g.fillText(opt ? opt.t1 : L('EU ESTIVE NA', 'I WAS IN THE'), 540, 120);
+  g.fillStyle = '#d0302a'; g.font = opt ? '800 90px Jost, sans-serif' : '800 150px Jost, sans-serif'; g.fillText(opt ? opt.t2 : L('PRAÇA', 'SQUARE'), 540, opt ? 240 : 262);
   g.save(); g.translate(540, 680); g.rotate(-.025);
   g.fillStyle = '#f4f1ea'; g.fillRect(-470, -350, 940, 770);
   g.imageSmoothingEnabled = false; g.drawImage(sc, -440, -320, 880, 600);
   const d = new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
   g.fillStyle = '#0b0a0a'; g.font = '800 40px Jost, sans-serif'; g.fillText(((ev || L('A Praça', 'The Square')) + ' · ' + d).slice(0, 48), 0, 345);
   g.restore();
-  const names = inShot.map(p => p.n).slice(0, 6).join(' · ') + (inShot.length > 6 ? ' …' : '');
+  const names = opt ? inShot.map(p => p.n).concat(opt.who).join(' & ') : inShot.map(p => p.n).slice(0, 6).join(' · ') + (inShot.length > 6 ? ' …' : '');
   g.fillStyle = '#f4f1ea'; g.font = '700 38px Jost, sans-serif'; g.fillText(names, 540, 1160);
   g.strokeStyle = '#f4f1ea'; g.lineWidth = 5; g.strokeRect(300, 1205, 480, 84); g.font = '800 46px Jost, sans-serif'; g.fillText('ACAMPADAPIXEL.PT', 540, 1263);
   const blob = await new Promise(ok => C.toBlob(ok, 'image/png'));

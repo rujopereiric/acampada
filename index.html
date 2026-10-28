@@ -1816,6 +1816,9 @@ function contextAction() {
   if (S.winning && S.winT > 3) return { label: 'Continuar →', ok: true, fn: () => { S.winGo = true; } }; // after the win: you choose when to move on
   if (S.graf && S.graf.state === 'spray' && gd(p, S.graf) < 2.4) return { label: 'Travar o grafíti', ok: true, fn: () => { const g = S.graf; g.hits++; sparkle(g.gx, g.gy, 3, g.z + 10); tone(520 + g.hits * 40, .06, 'square', .03); } }; // Space, again and again (or tap the climber)
   if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 2) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
+  if (S.zez && gd(p, S.zez) < 1.6) { const z = S.zez, cd = S.zezCd > 0; // Porto: Zezinho goes live on TikTok, +5 support (once a minute)
+    return { label: z.live > 0 ? L('Zezinho em direto no TikTok', 'Zezinho live on TikTok') : cd ? L(`Live no TikTok · ${Math.ceil(S.zezCd)}s`, `TikTok live · ${Math.ceil(S.zezCd)}s`) : L('Pedir ao Zezinho um live no TikTok', 'Ask Zezinho to go live on TikTok'), ok: !cd && !(z.live > 0),
+      fn: () => { S.zezCd = 60; z.live = 7; z.wait = 7; z.moving = false; z.flip = p.gx - z.gx - (p.gy - z.gy) < 0; S.support = Math.min(100, S.support + 5); float(z.gx, z.gy, L('Live no TikTok! +5 de apoio', 'TikTok live! +5 support'), '#ff3b8b', 30); sfx('join'); } }; }
   if (Math.hypot(p.gx - (S.city.singAt || [CX, CY])[0], p.gy - (S.city.singAt || [CX, CY])[1]) < 2.2) { const n = people(); return { label: n < 12 ? 'Cantar Grândola · falta gente' : S.singCd > 0 ? 'Cantar Grândola ' + Math.ceil(S.singCd) + 's' : 'Cantar Grândola', ok: n >= 12 && S.singCd <= 0, fn: sing }; }
   for (const st of S.stations) {
     if (gd(p, st) > 1.25) continue;
@@ -1965,7 +1968,7 @@ function updZez(dt) {
   if (S.kettle || S.emptyK || S.clock < (S.emptyUntil || 0) || !S.tents.length) { S.zez = null; return; }
   const spot = () => { const f = freeTiles(); if (!f.length) return null; const [x, y] = pick(f); return [x + .5, y + .5]; };
   if (!S.zez) { const sp = spot(); if (!sp) return; S.zez = { gx: sp[0], gy: sp[1], tx: sp[0], ty: sp[1], wait: rnd(1, 3), step: 0, flip: false, back: false }; }
-  const z = S.zez;
+  const z = S.zez; if (S.zezCd > 0) S.zezCd -= dt; if (z.live > 0) z.live -= dt;
   if (z.wait > 0) { z.wait -= dt; z.moving = false; return; }
   if (moveEnt(z, z.tx, z.ty, 1.1, dt)) { z.wait = rnd(3, 7); const sp = spot(); if (sp) [z.tx, z.ty] = sp; }
 }
@@ -1974,6 +1977,10 @@ function drawZez(z) {
   guy(x, y, { skin: '#d9a37a', hair: '#e6d48a', shirt: '#1b2033', pants: '#1b2033', moving: z.moving, step: z.step, flip: z.flip, back: z.back });
   if (!z.back) { R(x - 2, y - 12, 5, 1, '#3a3a40'); R(x - 1, y - 10, 3, 1, '#f4f1ea'); } // glasses, a white collar
   R(x + s * 4 - 1, y - 15, 3, 4, '#16121a'); R(x + s * 4, y - 14, 1, 2, '#6fb7ff'); if (Math.floor(S.t * 2) % 2) R(x + s * 4 - 1, y - 16, 1, 1, '#ff3b4e'); // the phone up, recording
+  if (z.live > 0) { // live on TikTok: the little red LIVE tag and hearts floating up
+    { const lx = s > 0 ? x + 7 : x - 21, ly = y - 15; R(lx, ly, 14, 5, '#ff2d55'); R(lx + 1, ly + 1, 1, 3, '#fff'); R(lx + 1, ly + 3, 2, 1, '#fff'); R(lx + 4, ly + 1, 1, 3, '#fff'); R(lx + 6, ly + 1, 1, 2, '#fff'); R(lx + 7, ly + 3, 1, 1, '#fff'); R(lx + 8, ly + 1, 1, 2, '#fff'); R(lx + 10, ly + 1, 2, 3, '#fff'); R(lx + 11, ly + 2, 1, 1, '#ff2d55'); } // LIVE, beside the phone
+    for (let k = 0; k < 3; k++) { const ph = (S.t * .9 + k / 3) % 1, hx = x + s * 6 + Math.round(Math.sin((S.t + k) * 3) * 2), hy = y - 18 - Math.round(ph * 16); R(hx, hy, 1, 1, k % 2 ? '#ff3b8b' : '#25f4ee'); R(hx + 2, hy, 1, 1, k % 2 ? '#ff3b8b' : '#25f4ee'); R(hx, hy + 1, 3, 1, k % 2 ? '#ff3b8b' : '#25f4ee'); R(hx + 1, hy + 2, 1, 1, k % 2 ? '#ff3b8b' : '#25f4ee'); }
+  }
   drawFloat({ x: q.x, y: q.y - 19, text: 'Zezinho Bailarino', color: '#ffd23a', t: 1, cls: 'tiny' });
 }
 function drawReporter(r) {
