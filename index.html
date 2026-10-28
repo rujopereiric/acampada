@@ -90,6 +90,8 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .cam .actions{ margin-top:0; } .cam #ctxBtn{ margin-top:6px; } .cam #ctxBtn[hidden]{ display:block; visibility:hidden; } .cam #help{ display:none; }
 #rotHint{ position:absolute; left:8px; right:62px; bottom:8px; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 6px 6px 10px; background:rgba(11,10,10,.86); color:#f4f1ea; font:600 13px/1.25 Jost, Futura, sans-serif; }
 #rotHint[hidden]{ display:none; }
+#goal{ position:absolute; left:8px; top:8px; z-index:3; max-width:min(70%, 420px); background:rgba(11,10,10,.86); color:#ffd23a; border-left:4px solid #ffd23a; font:700 12px/1.3 "Helvetica Neue", Arial, sans-serif; padding:6px 9px 5px; pointer-events:none; }
+#goal[hidden]{ display:none; } #goal.ok{ color:#b6ff3b; border-left-color:#b6ff3b; } .cam:not(.land) #goal{ top:auto; bottom:70px; max-width:calc(100% - 80px); } .wide #goal{ font-size:14px; } .bigtext #goal{ font-size:15px; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
 #tut[hidden]{ display:none; }
 #upd{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); transform:translateX(-50%); z-index:50; background:#0b0a0a; color:#f4f1ea; border:2px solid #f4f1ea; padding:8px 8px 8px 14px; font:700 13px/1 Jost, sans-serif; display:flex; align-items:center; gap:10px; white-space:nowrap; box-shadow:0 4px 0 rgba(11,10,10,.4); } #upd button{ background:#b6ff3b; color:#0b0a0a; border:0; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 10px 6px; cursor:pointer; }
@@ -400,6 +402,9 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .actions .jelly{ padding:9px 2px; font-size:12.5px; line-height:1.15; }
 .help{ font-size:12px; color:var(--muted); margin:9px 4px 0; line-height:1.4; }
 @media (prefers-reduced-motion: reduce){ #bP{ animation:none; } .bar b{ transition:none; } }
+
+/* phones on their side: room for the camera even if the browser reports no safe area */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #ov{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)) !important; padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)) !important; } }
 </style>
 </head>
 <body>
@@ -502,6 +507,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
   </header>
   <div class="stage">
     <canvas id="c" width="256" height="240" aria-label="A acampada vista de cima, em perspetiva"></canvas>
+    <div id="goal" hidden aria-live="polite"></div>
     <div id="tut" hidden><span class="tx"></span><button type="button" id="tutSkip">Saltar</button></div>
     <div id="news" hidden aria-hidden="true"><div class="npw"><div class="np"><div class="top"><span class="ed"></span><span class="pr"></span></div><div class="nm"></div><div class="tag"><span class="sl"></span><span class="dt"></span></div><div class="kick"></div><div class="hl"></div><div class="dk"></div><canvas id="npc" width="160" height="90"></canvas><div class="cap"></div><div class="cols"><p class="lead"></p><div class="box"><b></b><ul></ul></div></div><div class="more"></div></div></div></div>
     <div id="tv" hidden aria-hidden="true"><span class="live">● Em direto</span><div class="pic"><canvas id="tvc" width="160" height="90"></canvas></div><div class="cap"><div class="tk"><span></span></div><div class="lt"><span class="al">Alerta</span><span class="sub"></span></div><div class="hd"></div></div></div>
@@ -560,7 +566,7 @@ const EN_RX = [
   [/^Pressão no máximo: sobe a moral acima de (\d+) para ganhar$/, 'Pressure at the top: get morale above $1 to win'],
   [/^Concerto a decorrer$/, 'Concert on'], [/^(.+) a tocar$/, '$1 playing'], [/^Concerto (.+)$/, 'Concert: $1']
 ];
-const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and a crew sweeps the square so the police have no excuse.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia. No Porto, a acampada monta-se entre o Rivoli e o Palácio Atlântico.": "Rossio became a small village. In Porto, the camp goes up between the Rivoli and the Palácio Atlântico.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.": "Coimbra held out. Students from the University of Minho pack their bags for Braga.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda. No sábado, às 17:00, começam a chegar tendas ao Rossio.": "Braga held out without a single tent. On Saturday at 17:00, tents start arriving at Rossio.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir. Em Coimbra, os estudantes descem da universidade com as tendas.": "Long live the Algarve resisting. In Coimbra, students come down from the university with their tents."};
+const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and a crew sweeps the square so the police have no excuse.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia, com cozinha, assembleia e música.": "Rossio became a small village, with a kitchen, an assembly and music.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. A Praça 8 de Maio encheu-se de estudantes e de vizinhos.": "Coimbra held out. Praça 8 de Maio filled with students and neighbours.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda: a assembleia no chafariz nunca parou.": "Braga held out without a single tent: the assembly at the fountain never stopped.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir! A Praça da Liberdade fez jus ao nome.": "Long live the Algarve resisting! Praça da Liberdade lived up to its name."};
 function T(s) { // English for a message, when the game is in English
   if (LANG !== 'en' || typeof s !== 'string') return s;
   if (EN[s] != null) return EN[s];
@@ -736,7 +742,7 @@ const CITIES = [
     // artists who played, or were announced, at the Rossio acampada (October 2026)
     artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro', tagEn: 'DJ p.45 and the donkey head',
     intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.',
-    clear: 'O Rossio tornou-se uma pequena aldeia. No Porto, a acampada monta-se entre o Rivoli e o Palácio Atlântico.',
+    clear: 'O Rossio tornou-se uma pequena aldeia, com cozinha, assembleia e música.',
     // the Rossio as it is: a long square (8 x 16 tiles) with rounded ends and wave pavement, streets all round,
     // Pombaline blocks behind the street on the west side and the Teatro D. Maria II closing the north end
     floor: [-1.75, -.25, 4.4, 11.6], size: [8, 16], viewW: 320, fullW: 392, viewShift: 36, viewY: 88, setback: 2.4, layout: 'rossio', tentOk: (gx, gy) => rossioD(gx, gy) < -.05,
@@ -753,7 +759,7 @@ const CITIES = [
     C: { h: 36, style: 'pombal', col: '#d97a4a' } },
   { name: 'Coimbra', place: 'Praça 8 de Maio', ground: 'coimbra', police: 1.0, patrols: true, students: true, drums: 'bombos', rents: true, tag: 'Os bombos e as rendas dos estudantes', tagEn: 'The drums and the students’ rents',
     intro: 'Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.',
-    clear: 'Coimbra aguentou. Estudantes da Universidade do Minho fazem as malas para Braga.',
+    clear: 'Coimbra aguentou. A Praça 8 de Maio encheu-se de estudantes e de vizinhos.',
     // from the photos: the Igreja de Santa Cruz on the west side (Manueline front between two pinnacled turrets, low
     // steps), the Café Santa Cruz next to it with its raised esplanade and white umbrellas in the north-west corner
     // (people walk up there), the street going up north beside it, the blue, cream and orange buildings on the north
@@ -780,7 +786,7 @@ const CITIES = [
     C: { h: 46, style: 'pombal', col: '#e9e2d0' } },
   { name: 'Braga', bikeK: .6, place: 'Praça da República', ground: 'braga', police: 1.0, patrols: true, students: true, noTents: true, drums: 'tuna', tag: 'Sem tendas: assembleia no chafariz', tagEn: 'No tents: an assembly at the fountain',
     intro: 'Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.',
-    clear: 'Braga aguentou sem uma única tenda. No sábado, às 17:00, começam a chegar tendas ao Rossio.',
+    clear: 'Braga aguentou sem uma única tenda: a assembleia no chafariz nunca parou.',
     // from the photos: the Arcada with the Igreja da Lapa at the back (north), café umbrellas in front of it, the round
     // fountain, light granite paving, a row of trees along the east side, flower beds and lawns towards the Avenida
     // Central (south-west). The player is a bald man with glasses; with some people, the banners go down on the ground
@@ -797,7 +803,7 @@ const CITIES = [
     C: { h: 52, style: 'pombal', col: '#e3e5e8' } },
   { name: 'Faro', bikeK: .6, place: 'Praça da Liberdade', ground: 'faro', police: 1.0, patrols: true, slowStart: true, drums: 'marcha', tag: 'Um arranque lento, depois o Algarve resiste', tagEn: 'A slow start, then the Algarve resists',
     intro: 'Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.',
-    clear: 'Viva o Algarve a resistir. Em Coimbra, os estudantes descem da universidade com as tendas.',
+    clear: 'Viva o Algarve a resistir! A Praça da Liberdade fez jus ao nome.',
     // from the photos: light calçada with dark bands in big squares; to the south-west a panel framed in dark red with
     // rows of small dark grates; rings and half rings of dark stone to the east, a slanted skylight in one of them, a
     // kiosk with white umbrellas, granite benches, a tree in the north-west corner. West: the pink marble Polícia
@@ -1445,7 +1451,7 @@ function saveGame() {
     t: S.t, clock: S.clock, supplies: S.supplies, morale: S.morale, support: S.support, pressure: S.pressure, detained: S.detained, asmCd: S.asmCd, perks: [...S.perks],
     // a raid or a kettle in progress starts again when the square is loaded: no escaping the police by leaving
     nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0,
-    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
+    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: null } : null, cordDone: !!S.cordDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
     tents: S.tents.map(t => [t.tx, t.ty, t.color, t.occ]), stations: S.stations.map(st => [st.k, st.tx, st.ty]) } };
   try { localStorage.setItem(saveKey(cityIdx), JSON.stringify(d)); } catch (e) {}
 }
@@ -1453,7 +1459,7 @@ function loadGame(i) {
   const d = savedOf(i); if (!d) return false;
   cityIdx = i; newLevel(); const g = d.s;
   for (const t of S.tents) S.occ[t.ty * NX + t.tx] = null; S.tents = [];
-  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey']) if (g[k] !== undefined) S[k] = g[k];
+  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone']) if (g[k] !== undefined) S[k] = g[k];
   S.perks = new Set(g.perks || []); if (g.stat) S.stat = g.stat;
   for (const [tx, ty, color, occ] of g.tents || []) { if (S.occ[ty * NX + tx]) continue; const t = { kind: 'tent', tx, ty, gx: tx + .5 + rnd(-.08, .08), gy: ty + .5 + rnd(-.08, .08), color, occ, pop: 0, hit: false, l1: look(S.city.students), l2: look(S.city.students) }; S.occ[ty * NX + tx] = t; S.tents.push(t); }
   for (const [k, tx, ty] of g.stations || []) { if (S.occ[ty * NX + tx] || !STATIONS[k]) continue; const st = { kind: 'station', type: k, k, tx, ty, gx: tx + .5, gy: ty + .5, cd: 0 }; S.occ[ty * NX + tx] = st; S.stations.push(st); }
@@ -1464,14 +1470,43 @@ function lastSave() { let b = null; for (let i = 0; i < CITIES.length; i++) { co
 
 /* ================= the summary at the end of a square, with this browser's best ================= */
 function summary(won) {
-  const st = S.stat || {}, days = 1 + Math.floor((S.clock - 6) / 24), key = 'acampada-best';
-  let best = {}; try { best = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
-  const b = best[cityIdx] || {}, prev = { ...b }, rec = [];
-  const cmp = (k, v, more = true) => { if (b[k] == null || (more ? v > b[k] : v < b[k])) { if (b[k] != null) rec.push(k); b[k] = v; } };
-  cmp('tents', st.maxTents || 0); cmp('welcomed', st.welcomed || 0); if (won) cmp('days', days, false);
-  best[cityIdx] = b; try { localStorage.setItem(key, JSON.stringify(best)); } catch (e) {}
-  const row = (k, label, v, bv) => `<div><span>${label}</span><b>${v}</b><small>${rec.includes(k) ? L('Novo recorde!', 'New record!') : bv != null ? L('Recorde: ', 'Best: ') + bv : ''}</small></div>`;
-  return `<div class="summ">${row('tents', L('Tendas (máx.)', 'Tents (most)'), st.maxTents || 0, prev.tents)}${row('welcomed', L('Pessoas acolhidas', 'People welcomed'), st.welcomed || 0, prev.welcomed)}${row('raids', L('Rusgas aguentadas', 'Raids held'), st.raids || 0, null)}${row('days', L('Dias', 'Days'), days, won ? prev.days : null)}</div>`;
+  const st = S.stat || {}, days = 1 + Math.floor((S.clock - 6) / 24), v = { tents: st.maxTents || 0, welcomed: st.welcomed || 0, raids: st.raids || 0, days };
+  const row = (k, label) => `<div><span>${label}</span><b>${v[k]}</b><small id="rec-${k}"></small></div>`;
+  // the records are everyone's: the square's server keeps the best of all players (servidor: /recordes)
+  if (location.protocol !== 'file:') fetch(PRACA_SRV + '/recordes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ city: S.city.name, tents: v.tents, welcomed: v.welcomed, days, won }) })
+    .then(r => r.ok ? r.json() : null).then(j => { if (!j || !j.before) return;
+      for (const k of ['tents', 'welcomed', 'days']) { const el = document.getElementById('rec-' + k); if (!el || (k === 'days' && !won)) continue;
+        el.textContent = (j.novo || []).includes(k) ? L('Recorde de sempre!', 'All-time record!') : j.before[k] != null ? L('Recorde de sempre: ', 'All-time best: ') + j.before[k] : ''; } }).catch(() => {});
+  return `<div class="summ">${row('tents', L('Tendas (máx.)', 'Tents (most)'))}${row('welcomed', L('Pessoas acolhidas', 'People welcomed'))}${row('raids', L('Rusgas aguentadas', 'Raids held'))}${row('days', L('Dias', 'Days'))}</div>`;
+}
+
+/* ================= short goals for the first minutes; and the cordão, when the first raid begins ================= */
+const GOALS = [
+  { text: () => L('Acolhe 3 pessoas que estão à espera (!)', 'Welcome 3 people who are waiting (!)'), n: 3, val: () => S.stat.welcomed, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
+  { text: () => L('Apanha 2 caixas de donativos', 'Pick up 2 donation boxes'), n: 2, val: () => S.stat.crates || 0, reward() { S.supplies = Math.min(20, S.supplies + 2); return L('+2 materiais', '+2 supplies'); } },
+  { text: () => L('Monta a cozinha ou o ponto de informação (botão Montar)', 'Build the kitchen or the info point (Build button)'), n: 1, val: () => stationOf('kitchen') || stationOf('info') ? 1 : 0, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
+  { text: () => L('Convoca a assembleia popular quando tiveres 8 pessoas', 'Call the people’s assembly once you have 8 people'), n: 1, val: () => S.perks.size ? 1 : 0, start() { S.asmCd = 0; }, reward() { return L('A acampada decidiu', 'The camp has decided'); } }
+];
+const CORD_GOAL = { text: () => L('Rusga! Faz um cordão à volta de uma tenda (botão Cordão)', 'Raid! Make a cordão round a tent (Cordão button)'), reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } };
+let goalWas = '';
+function goalTick() {
+  const el = $('goal'), show = (mode === 'play' || mode === 'paused') && S && !S.tut && !S.winning;
+  if (!show) { if (!el.hidden) el.hidden = true; goalWas = ''; return; }
+  S.goal ||= { i: 0, base: null }; const g = S.goal;
+  let txt = '', done = false;
+  if (g.flash && S.t < g.flash.until) { txt = '✓ ' + g.flash.text; done = true; }
+  else if (S.raid && !S.patrolRaid && !S.cordDone && S.tents.length) { // the first raid: the cordão
+    if (S.chain && S.tents.some(t => Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r)) { S.cordDone = true; g.flash = { text: `${CORD_GOAL.text().split('! ')[1] || ''} · ${CORD_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
+    else txt = '🎯 ' + CORD_GOAL.text();
+  } else if (g.i < GOALS.length) {
+    const G = GOALS[g.i]; if (g.base == null) { g.base = G.val(); if (G.start) G.start(); }
+    const have = Math.min(G.n, G.val() - g.base);
+    if (have >= G.n) { g.flash = { text: `${G.text().split(' (')[0]} · ${G.reward()}`, until: S.t + 3 }; g.i++; g.base = null; sfx('join'); }
+    else txt = `🎯 ${g.i + 1}/${GOALS.length} · ${G.text()}${G.n > 1 ? ` · ${have}/${G.n}` : ''}`;
+  }
+  if (!txt) { if (!el.hidden) el.hidden = true; return; }
+  if (el.hidden) el.hidden = false;
+  if (txt !== goalWas) { goalWas = txt; el.textContent = txt; el.classList.toggle('ok', done); }
 }
 
 /* ================= the real protests, square by square ================= */
@@ -2982,7 +3017,7 @@ function update(dt) {
   if (S.crateT <= 0) { spawnCrate(); S.crateT = (S.perks.has('caixa') ? rnd(6, 9) : rnd(9, 14)); }
   for (const c of S.crates) {
     c.life -= dt;
-    if (gd(c, p) < .85) { S.supplies = Math.min(20, S.supplies + 2); if (!stationOf('kitchen')) S.morale = Math.min(100, S.morale + 5); float(c.gx, c.gy, c.label + ' +2', '#ffd36b'); sparkle(c.gx, c.gy, 6, 4); sfx('crate'); c.life = 0; }
+    if (gd(c, p) < .85) { if (S.stat) S.stat.crates = (S.stat.crates || 0) + 1; S.supplies = Math.min(20, S.supplies + 2); if (!stationOf('kitchen')) S.morale = Math.min(100, S.morale + 5); float(c.gx, c.gy, c.label + ' +2', '#ffd36b'); sparkle(c.gx, c.gy, 6, 4); sfx('crate'); c.life = 0; }
   }
   S.crates = S.crates.filter(c => c.life > 0);
 
@@ -4624,7 +4659,7 @@ function frame(now) {
   if (mode === 'play') update(aimOpen() ? dt * .4 : dt); else S.t += dt; // the aim slows the game down
   songTick(); choirTick(); saxTick(dt);
   updCam(dt); draw(); tellySync(dt); tvSync(); newsSync();
-  hudT -= dt; if (hudT <= 0) { hud(); hudT = .1; }
+  hudT -= dt; if (hudT <= 0) { hud(); goalTick(); hudT = .1; }
   requestAnimationFrame(frame);
 }
 cityIdx = 1; newLevel(); S.clock = 21.5; S.dark = 1;

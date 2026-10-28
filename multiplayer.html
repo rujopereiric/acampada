@@ -178,6 +178,10 @@ button{ cursor:pointer; touch-action:manipulation; }
 .foot a{ color:var(--paper); }
 #ovMural{ text-align:left; margin-top:14px; display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow:auto; }
 :focus-visible{ outline:3px solid var(--lime); outline-offset:2px; }
+
+/* phones on their side: room for the camera even if the browser reports no safe area */
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #ov{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)) !important; padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)) !important; } }
+@media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #app{ padding-left:max(40px, calc(env(safe-area-inset-left,0px) + 6px)) !important; padding-right:max(40px, calc(env(safe-area-inset-right,0px) + 6px)) !important; } }
 </style>
 </head>
 <body>

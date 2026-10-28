@@ -92,12 +92,17 @@ function cors(req, env) {
 export default {
   async fetch(req, env) {
     const url = new URL(req.url), h = cors(req, env);
-    if (req.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '86400' } });
+    if (req.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '86400' } });
     const stub = env.PRACA.get(env.PRACA.idFromName('praca'));
     if (url.pathname === '/ws') {
       if (req.headers.get('Upgrade') !== 'websocket') return new Response('websocket', { status: 426 });
       if (!cors(req, env)['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 }); // only the game's pages
       return stub.fetch(req);
+    }
+    if (url.pathname === '/recordes') { // the game's records, for everyone (index.html: summary)
+      if (req.method === 'POST' && !h['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 });
+      const r = await stub.fetch(req);
+      return new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
     if (url.pathname === '/estado' || url.pathname === '/mural') {
       const r = await stub.fetch(new Request(new URL(url.pathname, req.url), { method: 'GET' }));
@@ -147,6 +152,8 @@ export class Praca {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS mural (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, city TEXT, text TEXT, at INTEGER, expires INTEGER, reports INTEGER DEFAULT 0, hidden INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS reports (msg INTEGER, who TEXT, PRIMARY KEY (msg, who))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS cartazes (id INTEGER PRIMARY KEY AUTOINCREMENT, slot INTEGER, name TEXT, city TEXT, text TEXT, dev TEXT, at INTEGER, expires INTEGER, hidden INTEGER DEFAULT 0)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS recordes (city TEXT, k TEXT, v INTEGER, PRIMARY KEY (city, k))`);
+    this.recBy = new Map(); // address key -> records sent in the last hour
     for (const col of ["fmt TEXT DEFAULT 'm'", 'cor INTEGER DEFAULT 0']) { try { this.sql.exec(`ALTER TABLE cartazes ADD COLUMN ${col}`); } catch (e) {} } // posters from before sizes and colours
     this.clima = null; this.nextClima = Date.now() + (20 + Math.random() * 30) * 60e3; // the weather: a rain of bananas now and then
     this.pers = new Personagens(this, W, H); this.jogos = new Jogos(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
@@ -204,6 +211,7 @@ export class Praca {
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname === '/gestao/api') return this.admin(req);
+    if (url.pathname === '/recordes') return this.recordes(req);
     const st = await this.status();
     if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.djInfo(), aviso: this.cfg.aviso });
     if (url.pathname === '/mural') return Response.json({ mural: this.mural(true) });
@@ -296,6 +304,21 @@ export class Praca {
       const n = this.sql.exec('SELECT COUNT(*) AS n FROM reports WHERE msg = ?', id).one().n;
       if (n >= HIDE_REPORTS) { this.sql.exec('UPDATE mural SET hidden = 1 WHERE id = ?', id); this.broadcast({ t: 'mural-', id }); }
     }
+  }
+  // the best of everyone who played the game, square by square: most tents, most people welcomed, fewest days to win
+  recDump() { const o = {}; for (const r of this.sql.exec('SELECT city, k, v FROM recordes').toArray()) (o[r.city] ||= {})[r.k] = r.v; return o; }
+  async recordes(req) {
+    if (req.method !== 'POST') return Response.json(this.recDump());
+    let m; try { m = await req.json(); } catch (e) { return Response.json({ erro: 'pedido' }, { status: 400 }); }
+    const city = CITIES.includes(m.city) ? m.city : null; if (!city) return Response.json({ erro: 'cidade' }, { status: 400 });
+    const key = await addrKey(req), now = Date.now(), sent = (this.recBy.get(key) || []).filter(t => now - t < 3600e3);
+    const before = this.recDump()[city] || {};
+    if (sent.length >= 30) return Response.json({ before, novo: [] }); // one address sending too many: answered, not counted
+    sent.push(now); this.recBy.set(key, sent); if (this.recBy.size > 5000) this.recBy.clear();
+    const int = (v, a, b) => Number.isInteger(v) && v >= a && v <= b ? v : null, novo = [];
+    const put = (k, v, more) => { if (v == null) return; const old = before[k]; if (old == null || (more ? v > old : v < old)) { this.sql.exec('INSERT OR REPLACE INTO recordes (city, k, v) VALUES (?, ?, ?)', city, k, v); novo.push(k); } };
+    put('tents', int(m.tents, 0, 150), true); put('welcomed', int(m.welcomed, 0, 5000), true); if (m.won === true) put('days', int(m.days, 1, 60), false);
+    return Response.json({ before, novo });
   }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0 }; }
