@@ -845,6 +845,13 @@ function drawNpc(g, n, now) {
     if (n.s === 6 && !inPhoto && Math.floor(t * 10) % 3 === 0) { circ(g, cx + 2, y - 12, 6, 'rgba(255,255,255,.85)'); }
     return;
   }
+  if (n.k === 'zezinho') { // Zezinho Bailarino: light hair, glasses, a dark coat, the phone up, filming
+    const s = n.flip ? -1 : 1;
+    guy(g, x, y, { skin: '#d9a37a', hair: '#e6d48a', shirt: '#1b2033', pants: '#1b2033', moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    if (!n.back) { R(g, x - 2, y - 12, 5, 1, '#3a3a40'); R(g, x - 1, y - 10, 3, 1, '#f4f1ea'); }
+    R(g, x + s * 4 - 1, y - 15, 3, 4, '#16121a'); R(g, x + s * 4, y - 14, 1, 2, '#6fb7ff'); if (Math.floor(t * 2) % 2) R(g, x + s * 4 - 1, y - 16, 1, 1, '#ff3b4e');
+    return;
+  }
   if (n.k === 'cantina') {
     guy(g, x, y, { ...LOOK_SOPA, moving: false, flip: false, back: false, armUp2: n.s === 1, wob2: Math.floor(t * 6) % 2 });
     R(g, x - 2, y - 10, 5, 6, '#f2efe6'); R(g, x - 2, y - 16, 5, 2, '#ffd23a');
@@ -1106,6 +1113,7 @@ function draw(now) {
   for (const n of npcs.values()) {
     const q = S(n.x, n.y, 0); if (q.x < -60 || q.x > cssW + 60 || q.y < -40 || q.y > cssH + 60) continue;
     const head = q.y - (n.k === 'cao' ? 12 : 21) * scale, lab = { jornalista: L('Imprensa', 'Press'), fotografa: L('Fotógrafa', 'Photographer'), cantina: L('Cantina', 'Canteen') }[n.k];
+    if (n.k === 'zezinho') { ctx.font = '700 9px Jost, sans-serif'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(11,10,10,.8)'; ctx.strokeText('Zezinho Bailarino', q.x, head + 2); ctx.fillStyle = '#ffd23a'; ctx.fillText('Zezinho Bailarino', q.x, head + 2); continue; } // small: a protester like any other, nothing to talk about
     if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
     if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
     const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
@@ -1215,7 +1223,7 @@ let pending = null; // a character we're walking to, to talk to when we get ther
 const REACH = 2.4;
 function targets() {
   const out = [];
-  for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
+  for (const n of npcs.values()) if (n.k !== 'zezinho') out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
   if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
   const bici = passing('bicicletada'); if (bici) for (let i = 0; i < BICI_N; i++) { const p = bici.at(i * 1.15); out.push({ kind: 'bicicletada', id: 0, x: p.gx, y: p.gy, z: 12 }); }
   const J = jogos;

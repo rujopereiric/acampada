@@ -6,7 +6,7 @@
 // the square's furniture that the characters walk around (multiplayer.html draws it in the same places)
 export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5]]; // the carnation, the fountain, the canteen
 const SOPA = { x: 15.9, y: 1.85 }; // the canteen lady, behind her table
-export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'carro', 'bicicletada']; // the last two pass in the street: multiplayer.html times them from the clock
+export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada']; // the last two pass in the street: multiplayer.html times them from the clock
 const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready answers (multiplayer.html: INTERVIEW)
 const CONVINCE = [.7, .6, .85]; // how often each explanation (multiplayer.html: EXPLAIN) wins a passer-by over
 
@@ -33,6 +33,7 @@ export class Personagens {
     want(-3, 'fotografa', () => { const [x, y] = this.spot(); return { id: -3, k: 'fotografa', x, y, v: 1.4, mode: 'walk' }; });
     want(-4, 'cantina', () => ({ id: -4, k: 'cantina', x: SOPA.x, y: SOPA.y, v: 0, mode: 'still' }));
     want(-5, 'cao', () => { const [x, y] = this.spot(); return { id: -5, k: 'cao', x, y, v: 1.9, mode: 'walk' }; });
+    want(-6, 'zezinho', () => { const [x, y] = this.spot(); return { id: -6, k: 'zezinho', x, y, v: 1.1, mode: 'walk' }; }); // Zezinho Bailarino: walks about filming on his phone, nothing else
     if (this.on('cao') && !this.ball) { const [x, y] = this.spot(); this.ball = { x, y, tx: x, ty: y, held: false, flying: false, dirty: true }; this.sq.broadcast({ t: 'ball', b: this.pubBall() }); }
     if (!this.on('cao') && this.ball) { this.ball = null; this.sq.broadcast({ t: 'ball', b: null }); }
     if (!this.on('curiosos')) for (const n of [...this.npcs.values()]) if (n.k === 'curioso') this.remove(n.id);
@@ -94,6 +95,7 @@ export class Personagens {
     // the labrador and her ball
     if (B && B.flying) { const d = Math.hypot(B.tx - B.x, B.ty - B.y), s = Math.min(d, 7 * dt); if (d < .05) B.flying = false; else { B.x += (B.tx - B.x) / d * s; B.y += (B.ty - B.y) / d * s; } B.dirty = true; }
     if (D) this.dog(D, J, B, now, dt, byId);
+    const Z = this.npcs.get(-6); if (Z) { this.wander(Z, now, [3, 7]); this.setS(Z, Z.waiting ? 1 : 0); } // 1: stopped, the phone up
     // passers-by: up to three at a time, from the street in front
     if (this.on('curiosos')) this.curiosos(now, dt, byId);
     // the moves, in one message
