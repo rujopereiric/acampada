@@ -176,6 +176,7 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .cam #ban{ font-size:15px; top:8px; }
 .flt{ position:absolute; transform:translate(-50%, -100%); background:#0b0a0a; border-bottom:1px solid currentColor; padding:2px 4px 1px; font:400 9px/1.1 Silkscreen, monospace; text-transform:uppercase; white-space:nowrap; }
 .cam .flt{ font-size:10px; }
+.flt.tiny, .cam .flt.tiny, .wide .flt.tiny, .bigtext .flt.tiny{ font-size:6px; padding:1px 2px 0; border-bottom-width:0; background:rgba(11,10,10,.72); letter-spacing:0; } .wide .flt.tiny{ font-size:8px; } /* a name over someone: small, so it hides nothing */
 .bub{ position:absolute; transform:translate(-50%, -100%); background:#fff; color:#8b2320; border:1px solid #0b0a0a; padding:3px 6px 2px; font:400 9px/1.2 Silkscreen, monospace; text-transform:uppercase; text-align:center; white-space:nowrap; }
 .bub.aim{ background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; font:800 13px/1.1 Jost, sans-serif; letter-spacing:.6px; padding:4px 8px 3px; } .bub.aim::after{ border-top-color:#0b0a0a; bottom:-6px; } /* the aim: sharp and easy to read */
 .bub::after{ content:''; position:absolute; left:50%; bottom:-5px; margin-left:-4px; border:4px solid transparent; border-top-color:#fff; border-bottom:0; }
@@ -774,6 +775,7 @@ const CITIES = [
     terrace: { w: 2.6, y0: -2.4, n: 1.2, sl: 1.4, ramp: 2.2, h: 12, road: [.6, 2.2] },
     tentOk: (gx, gy) => gx > 2.6 && !(gx < 4 && (gy < 1.2 || gy > 8.8)) && !(gy < 1 && gx > 4), fascSides: ['S', 'E'],
     bikePath: () => [[1, -.6], [1, NY + 2.4], [6.8, NY + 2.4], [6.8, NY + 22]], // along the raised road, down the ramp, away between the blocks in front
+    zez: true, // Zezinho Bailarino: a protester like any other, always filming on his phone
     kring: () => ({ x0: 1.4, x1: NX + 1.6, y0: -.3, y1: NY + .5 }), // the kettle: on the raised road, the streets in front and the pavement under the trees
     streets: () => [{ axis: 'y', c: 1.4, from: -.4, to: NY + 12 }, { axis: 'x', c: NY + 2, from: -12, to: NX + 12, park: 1.05 }, { axis: 'y', c: NX + 2, from: -12, to: NY + 12, park: 1.05 }],
     blocks: [[3, 1], [3, 8]],
@@ -1955,6 +1957,24 @@ function updReporter(dt) {
     float(r.gx, r.gy, good ? 'Correu bem: +apoio' : 'Cortaram o que disseste: -apoio', good ? '#b6ff3b' : '#ff8aa8', 22);
     sfx(good ? 'join' : 'leave');
   }
+}
+// Porto: Zezinho Bailarino walks round the square filming with his phone; he does nothing else. He goes home when the
+// riot police close the square, and comes back once it fills again.
+function updZez(dt) {
+  if (!S.city.zez) return;
+  if (S.kettle || S.emptyK || S.clock < (S.emptyUntil || 0) || !S.tents.length) { S.zez = null; return; }
+  const spot = () => { const f = freeTiles(); if (!f.length) return null; const [x, y] = pick(f); return [x + .5, y + .5]; };
+  if (!S.zez) { const sp = spot(); if (!sp) return; S.zez = { gx: sp[0], gy: sp[1], tx: sp[0], ty: sp[1], wait: rnd(1, 3), step: 0, flip: false, back: false }; }
+  const z = S.zez;
+  if (z.wait > 0) { z.wait -= dt; z.moving = false; return; }
+  if (moveEnt(z, z.tx, z.ty, 1.1, dt)) { z.wait = rnd(3, 7); const sp = spot(); if (sp) [z.tx, z.ty] = sp; }
+}
+function drawZez(z) {
+  const q = iso(z.gx, z.gy), x = Math.round(q.x), y = Math.round(q.y), s = z.flip ? -1 : 1;
+  guy(x, y, { skin: '#d9a37a', hair: '#e6d48a', shirt: '#1b2033', pants: '#1b2033', moving: z.moving, step: z.step, flip: z.flip, back: z.back });
+  if (!z.back) { R(x - 2, y - 12, 5, 1, '#3a3a40'); R(x - 1, y - 10, 3, 1, '#f4f1ea'); } // glasses, a white collar
+  R(x + s * 4 - 1, y - 15, 3, 4, '#16121a'); R(x + s * 4, y - 14, 1, 2, '#6fb7ff'); if (Math.floor(S.t * 2) % 2) R(x + s * 4 - 1, y - 16, 1, 1, '#ff3b4e'); // the phone up, recording
+  drawFloat({ x: q.x, y: q.y - 19, text: 'Zezinho Bailarino', color: '#ffd23a', t: 1, cls: 'tiny' });
 }
 function drawReporter(r) {
   const q = iso(r.gx, r.gy), x = Math.round(q.x), y = Math.round(q.y);
@@ -3165,7 +3185,7 @@ function update(dt) {
     if (S.eveDay !== day && hr >= 18) { S.eveDay = day; S.eveAt = rnd(18.5, 22.5); }
     if (S.eveAt && hr >= S.eveAt && hr < 24 && !S.bikes && !S.raid && !S.fasc && calm()) { S.eveAt = 0; startBikes(); } }
   nightEvents(dt);
-  prPaperTick(); updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
+  prPaperTick(); updZez(dt); updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
 
   // donkey tandem (Lisboa)
   if (S.tandemT > 0 && !S.kettle) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY - .6], [CX + .6, CY + 2.3]], state: 'in', cargo: true, step: 0, flip: false }; floatXY(0, 0, 'Vem aí um tandem com a cabeça de burro', '#ffd36b', { gx: CX + .6, gy: CY + 2.3 }); } } // it rides into the square and stops next to the column
@@ -3861,6 +3881,7 @@ function draw() {
   if (S.followers) S.followers.forEach(o => addP(o.gx, o.gy, () => { const q = iso(o.gx, o.gy); guy(q.x, q.y, { ...o.look, moving: o.moving, step: o.step, flip: o.flip, back: o.back }); if (S.fasc && S.fasc.state === 'beat') { const x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 20, 3, 1, '#b6ff3b'); R(x, y - 19, 1, 1, '#b6ff3b'); } }));
   if (S.journo) addP(S.journo.gx, S.journo.gy, () => drawJournalist(S.journo));
   if (S.rep) addP(S.rep.gx, S.rep.gy, () => drawReporter(S.rep));
+  if (S.zez) addP(S.zez.gx, S.zez.gy, () => drawZez(S.zez));
   S.cars.forEach(c => add(c.gx, c.gy, () => drawCar(c)));
   { const pq = iso(S.player.gx, S.player.gy); for (const f of FRONTS) { const hid = covers(f, pq.x, pq.y - 8) || covers(f, pq.x, pq.y - 2); f.ghost += ((hid ? 1 : 0) - f.ghost) * .25;
     add(f.gx, f.gy, () => { ctx.globalAlpha = 1 - f.ghost * .65; ctx.drawImage(f.img, f.bx, f.by); ctx.globalAlpha = 1; }); } }
