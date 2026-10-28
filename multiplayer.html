@@ -162,6 +162,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .btnp{ font-family:Jost, Futura, sans-serif; font-weight:800; font-size:17px; text-transform:uppercase; background:#fff; color:var(--ink); border:none; padding:11px 18px 9px; margin:16px 4px 0; text-decoration:none; display:inline-block; }
 .btnp.red{ background:var(--redbox); color:#fff; }
 .btnp.sm{ font-size:13px; padding:8px 12px 7px; margin:0; }
+.ovtop{ display:flex; justify-content:space-between; align-items:center; gap:10px; margin:0 0 12px; } .ovtop .langsw{ margin:0; } .btnp.back{ background:transparent; color:var(--paper); box-shadow:inset 0 0 0 2px var(--paper); }
 .btnp:active{ transform:translateY(2px); }
 .btnp:disabled{ opacity:.5; }
 .foot{ margin-top:18px !important; font-size:11px; color:var(--muted); font-family:"Helvetica Neue", Arial, sans-serif; }
@@ -180,6 +181,7 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div class="cnt" id="cnt"></div>
     <button class="ib" id="bSound" aria-label="Som">♪</button>
     <button class="ib" id="bLang">EN</button>
+    <button class="ib" id="bSair">Sair</button>
   </header>
   <div id="stage">
     <canvas id="cv" aria-label="A praça partilhada"></canvas>
@@ -287,7 +289,7 @@ const TXT = {
 function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
   for (const el of document.querySelectorAll('[data-t]')) { const t = TXT[el.dataset.t]; if (t) el.textContent = L(t[0], t[1]); }
-  $('bLang').textContent = LANG === 'en' ? 'PT' : 'EN'; $('bLang').setAttribute('aria-label', L('Mudar para inglês', 'Switch to Portuguese'));
+  $('bSair').textContent = L('Sair', 'Quit'); $('bLang').textContent = LANG === 'en' ? 'PT' : 'EN'; $('bLang').setAttribute('aria-label', L('Mudar para inglês', 'Switch to Portuguese'));
   $('muralIn').placeholder = L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
   buildSheets(); renderWhere(); renderCounts(); renderMural(); renderMuralLock();
 }
@@ -1017,7 +1019,7 @@ const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Arr
 addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
   const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
-  if (e.key === 'Escape') closeSheets();
+  if (e.key === 'Escape') { const open = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet'].some(id => !$(id).hidden); if (open) closeSheets(); else if (!$('app').hidden) quitDialog(); }
   const sheetOpen = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet'].some(id => !$(id).hidden);
   if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden && !sheetOpen && !(e.target.closest && e.target.closest('button, a'))) { // (Space on a button presses the button) // talk to whoever is closest, or make a poster by the carnation
     const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
@@ -1093,6 +1095,17 @@ function interact(t) {
   if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
   if (t.kind === 'bola') { send({ t: 'bola' }); return; }
 }
+// leaving the square: asked first
+function quitDialog() {
+  dialog(L('Queres mesmo sair?', 'Do you really want to leave?'), L('Sais da praça e voltas ao menu inicial. Podes voltar a entrar enquanto estiver aberta.', 'You leave the square and go back to the main menu. You can come back in while it’s open.'), b => {
+    const row = document.createElement('div'); row.className = 'row2';
+    const yes = optBtn(L('Sair', 'Leave'), () => { wantOpen = false; closedByServer = true; try { ws && ws.close(1000); } catch (e) {} location.href = './'; }); yes.className = 'redbtn';
+    const no = optBtn(L('Ficar', 'Stay'), () => closeSheets()); no.className = 'ghost';
+    row.append(yes, no); b.append(row); setTimeout(() => no.focus(), 30);
+  });
+}
+$('bSair').addEventListener('click', quitDialog);
+$('logo').addEventListener('click', e => { e.preventDefault(); quitDialog(); });
 function say(id, text) { npcSay.set(id, { text, at: performance.now() }); }
 function dialog(title, line, build) {
   closeSheets();
@@ -1418,10 +1431,10 @@ async function getStatus() {
   const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 6000);
   try { const r = await fetch(SRV + '/estado', { signal: ctl.signal, cache: 'no-store' }); if (!r.ok) throw 0; return await r.json(); } finally { clearTimeout(to); }
 }
-function langSw() { return `<div class="langsw" role="group" aria-label="Idioma / Language"><button data-l="pt" class="${LANG === 'pt' ? 'on' : ''}">PT</button><button data-l="en" class="${LANG === 'en' ? 'on' : ''}">EN</button></div>`; }
+function langSw() { return `<div class="ovtop"><a class="btnp sm back" href="./">${L('← Menu inicial', '← Main menu')}</a><div class="langsw" role="group" aria-label="Idioma / Language"><button data-l="pt" class="${LANG === 'pt' ? 'on' : ''}">PT</button><button data-l="en" class="${LANG === 'en' ? 'on' : ''}">EN</button></div></div>`; }
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function liveCard(w) { return `<div class="live"><b>${esc(w.city ? w.city + ': ' : '')}${esc(w.title)}</b><span>${esc(fmtWhen(w.start))}${w.where ? ' · ' + esc(w.where) : ''}</span></div>`; }
-const FOOT = () => `<p class="foot">${L('Não guardamos nada que te identifique. O mural é apagado 24 horas depois de a praça fechar.', 'Nothing that identifies you is kept. The wall is deleted 24 hours after the square closes.')}<br><a href="./">${L('← Voltar ao jogo', '← Back to the game')}</a></p>`;
+const FOOT = () => `<p class="foot">${L('Não guardamos nada que te identifique. O mural é apagado 24 horas depois de a praça fechar.', 'Nothing that identifies you is kept. The wall is deleted 24 hours after the square closes.')}</p>`;
 let statusTimer = 0;
 async function showStatus(st) {
   $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
