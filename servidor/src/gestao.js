@@ -116,6 +116,14 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <div class="list" id="cartazes"></div>
     </section>
 
+    <section><h2>Parede do prédio abandonado <span class="muted" id="nParede"></span></h2>
+      <p class="muted" style="margin:0 0 8px">Toda a gente pinta ao mesmo tempo. A parede fica de uma abertura para a seguinte; quando a praça fecha, guarda-se uma cópia na galeria. Toca num quadrado da imagem para apagar esse bloco (8 x 8).</p>
+      <canvas id="paredeCv" width="384" height="256" style="width:100%;max-width:480px;image-rendering:pixelated;border:2px solid #5a5650;cursor:pointer;display:block"></canvas>
+      <div class="row" style="margin-top:8px" id="paredeBtns"></div>
+      <h3 style="margin:14px 0 6px;font-size:14px">Zonas denunciadas</h3><div class="list" id="paredeRep"></div>
+      <h3 style="margin:14px 0 6px;font-size:14px">Galeria</h3><div class="list" id="paredeGal"></div>
+    </section>
+
     <section><h2>Na praça</h2>
       <div class="sw"><span>Bicicletas<small>Quem entra pode andar de bicicleta (25% mais rápido). Desligar põe toda a gente a pé.</small></span><button id="ciclistas" class="sm"></button></div>
       <div class="sw"><span>Polícia (em breve)<small>Ainda não existe na praça: o interruptor fica guardado para quando existir.</small></span><button id="policia" class="sm"></button></div>
@@ -176,6 +184,10 @@ function btn(txt, cls, fn, confirmTxt) {
 }
 function sw(id, on) { const b = $(id); b.textContent = on ? 'Ligado' : 'Desligado'; b.className = 'sm ' + (on ? 'green' : 'ghost'); }
 
+var PIX = ['#0b0a0a', '#f4f1ea', '#e2283b', '#ff7a80', '#ff8a2a', '#ffd23a', '#c6ff4a', '#3ec46d', '#1f7a45', '#2ad1c9', '#2f8fff', '#1b1464', '#9a6bff', '#ff7ad9', '#8a5a3a', '#9aa0ad'], PW = 48, PH = 32, PB = 8, selBloco = -1;
+var GRID = { p: [12, 12], m: [16, 12], g: [16, 14], f: [24, 8] };
+function paintPx(cv, d, w, h, bg) { var g = cv.getContext('2d'), s = cv.width / w; for (var i = 0; i < w * h; i++) { var x = i % w, y = Math.floor(i / w), ch = d[i]; g.fillStyle = ch && ch !== '-' ? PIX[parseInt(ch, 16)] : (bg || ((x + y) % 2 ? '#7f7a74' : '#89847d')); g.fillRect(x * s, y * s, s, s); } }
+function blocoTxt(b) { var bx = b % (PW / PB), by = Math.floor(b / (PW / PB)); return 'Bloco ' + (bx + 1) + ',' + (by + 1); }
 function render() {
   if (!S) return;
   const st = S.estado, c = S.cfg, f = c.force;
@@ -199,7 +211,9 @@ function render() {
   if (!S.people.length) pl.append(el('div', 'muted', 'Ninguém na praça.'));
   for (const p of S.people.slice().sort((a, b) => a.name.localeCompare(b.name))) {
     const t = el('span'); const d = el('i', 'dot'); d.style.background = AURA[p.city] || '#fff'; t.append(d, el('b', '', p.name));
-    pl.append(item(t, p.city + ' · ' + (p.mode === 'praca' ? 'boneco' : 'apoio de longe') + (p.dev ? '' : ' · (só sai, pode voltar)'), [btn('Banir', 'red', () => api('banir', { id: p.id }).then(r => r && toast(p.name + ' saiu da praça')), 'Confirmar')]));
+    const pb = [btn('Banir', 'red', () => api('banir', { id: p.id }).then(r => r && toast(p.name + ' saiu da praça')), 'Confirmar')];
+    if (p.px) pb.unshift(btn('Apagar o que pintou (' + p.px + ')', 'ghost', () => api('apagar-pintor', { id: p.id }).then(r => r && toast('Apagado da parede')), 'Confirmar'));
+    pl.append(item(t, p.city + ' · ' + (p.mode === 'praca' ? 'na praça' : 'fantasma, de longe') + (p.dev ? '' : ' · (só sai, pode voltar)'), pb));
   }
   $('bansBox').hidden = !S.bans.length; const bl = $('bans'); bl.innerHTML = '';
   for (const b of S.bans) bl.append(item(b.name || '—', 'até às ' + hm(b.until), [btn('Levantar', 'ghost', () => api('desbanir', { dev: b.dev }))]));
@@ -227,7 +241,25 @@ function render() {
   $('nCartazes').textContent = S.cartazes.length + (S.cartazes.length === 1 ? ' cartaz' : ' cartazes');
   const cl = $('cartazes'); cl.innerHTML = '';
   if (!S.cartazes.length) cl.append(el('div', 'muted', 'O cravo não tem cartazes.'));
-  for (const x of S.cartazes) cl.append(item('«' + x.text + '»', x.name + ' · ' + x.city, [btn('Tirar', 'red', () => api('tirar-cartaz', { id: x.id }), 'Confirmar')]));
+  for (const x of S.cartazes) {
+    let ttl = '«' + x.text + '»';
+    if (x.px) { const gr = GRID[x.fmt] || GRID.m, cv = document.createElement('canvas'); cv.width = gr[0] * 6; cv.height = gr[1] * 6; cv.style.cssText = 'width:' + gr[0] * 4 + 'px;image-rendering:pixelated;border:2px solid #0b0a0a;display:block'; paintPx(cv, x.px, gr[0], gr[1], '#f2efe6'); ttl = el('span'); ttl.append(cv); if (x.text) ttl.append(el('b', '', '«' + x.text + '»')); }
+    cl.append(item(ttl, x.name + ' · ' + x.city + (x.px ? ' · desenho' : ''), [btn('Tirar', 'red', () => api('tirar-cartaz', { id: x.id }), 'Confirmar')]));
+  }
+  // the wall
+  const pd = S.parede || '', painted = (pd.match(/[0-9a-f]/g) || []).length, pc = $('paredeCv');
+  $('nParede').textContent = painted + ' de ' + PW * PH + ' quadrados pintados';
+  paintPx(pc, pd, PW, PH); if (selBloco >= 0) { const g = pc.getContext('2d'), s = pc.width / PW, bx = selBloco % (PW / PB), by = Math.floor(selBloco / (PW / PB)); g.strokeStyle = '#c6ff4a'; g.lineWidth = 3; g.strokeRect(bx * PB * s + 1.5, by * PB * s + 1.5, PB * s - 3, PB * s - 3); }
+  for (const r of S.paredeRep || []) { const g = pc.getContext('2d'), s = pc.width / PW, bx = r.b % (PW / PB), by = Math.floor(r.b / (PW / PB)); g.strokeStyle = '#ff3b5c'; g.lineWidth = 2; g.setLineDash([4, 3]); g.strokeRect(bx * PB * s + 1, by * PB * s + 1, PB * s - 2, PB * s - 2); g.setLineDash([]); }
+  const pbx = $('paredeBtns'); pbx.innerHTML = '';
+  if (selBloco >= 0) pbx.append(btn('Apagar ' + blocoTxt(selBloco), 'red', () => { const b = selBloco; selBloco = -1; api('apagar-bloco', { b: b }); }, 'Confirmar'), btn('Cancelar', 'ghost', () => { selBloco = -1; render(); }));
+  if (painted) pbx.append(btn('Apagar a parede toda', 'red', () => api('apagar-parede'), 'Tens a certeza? Toca outra vez para apagar tudo'));
+  const rl = $('paredeRep'); rl.innerHTML = '';
+  if (!(S.paredeRep || []).length) rl.append(el('div', 'muted', 'Nenhuma zona denunciada.'));
+  for (const r of S.paredeRep || []) rl.append(item(blocoTxt(r.b), r.n + (r.n === 1 ? ' denúncia' : ' denúncias') + ' · ' + hm(r.at), [btn('Apagar', 'red', () => api('apagar-bloco', { b: r.b }), 'Confirmar'), btn('Ignorar', 'ghost', () => api('ignorar-bloco', { b: r.b }))]));
+  const gl = $('paredeGal'); gl.innerHTML = '';
+  if (!(S.galeria || []).length) gl.append(el('div', 'muted', 'Ainda nada: a primeira cópia fica guardada quando a praça fechar.'));
+  for (const r of S.galeria || []) gl.append(item(dia(r.at) + ', ' + hm(r.at), '', [btn('Repor esta parede', 'ghost', () => api('repor-parede', { id: r.id }), 'Confirmar: substitui a atual')]));
 
   const al = $('agenda'); al.innerHTML = '';
   const all = [...S.horario.map(w => ({ ...w, fixo: true })), ...S.agenda.map(a => ({ ...a, fixo: false }))].sort((a, b) => a.open - b.open).slice(0, 12);
@@ -237,6 +269,7 @@ function render() {
 
 for (const b of document.querySelectorAll('[data-abrir]')) b.addEventListener('click', () => api('abrir', { horas: +b.dataset.abrir, titulo: $('tituloAbrir').value }).then(r => r && toast('Praça aberta')));
 $('fechar').addEventListener('click', function () { if (!this.dataset.armed) { this.dataset.armed = '1'; this.textContent = 'Confirmar: fechar'; setTimeout(() => { this.dataset.armed = ''; this.textContent = 'Fechar agora'; }, 4000); return; } this.dataset.armed = ''; this.textContent = 'Fechar agora'; api('fechar').then(r => r && toast('Praça fechada')); });
+$('paredeCv').addEventListener('click', e => { const r = $('paredeCv').getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * PW), y = Math.floor((e.clientY - r.top) / r.height * PH); selBloco = Math.floor(x / PB) + Math.floor(y / PB) * (PW / PB); render(); });
 $('horario').addEventListener('click', () => api('horario').then(r => r && toast('A seguir o horário')));
 $('avisoEnviar').addEventListener('click', () => { const t = $('aviso').value.trim(); if (!t) return; api('aviso', { texto: t }).then(r => r && (toast('Aviso na praça'), $('aviso').value = '')); });
 $('avisoTirar').addEventListener('click', () => api('aviso', { texto: '' }));

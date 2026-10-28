@@ -413,6 +413,24 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 
 /* phones on their side: room for the camera even if the browser reports no safe area */
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #ov{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)) !important; padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)) !important; } }
+
+/* secret: the choir at the President's door (Caldas da Rainha) */
+#cal{ position:fixed; inset:0; z-index:60; background:#0b0a12; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:calc(env(safe-area-inset-top,0px) + 6px) calc(env(safe-area-inset-right,0px) + 8px) calc(env(safe-area-inset-bottom,0px) + 6px) calc(env(safe-area-inset-left,0px) + 8px); color:#f4f1ea; font-family:"Helvetica Neue", Arial, sans-serif; touch-action:manipulation; user-select:none; -webkit-user-select:none; }
+#cal[hidden]{ display:none; }
+#calC{ display:block; width:min(100%, calc((100dvh - 170px) * 4 / 3)); aspect-ratio:4 / 3; border:2px solid #f4f1ea; cursor:pointer; }
+.calbar{ display:flex; align-items:center; gap:8px; width:min(100%, calc((100dvh - 130px) * 4 / 3)); font-size:12px; }
+.calbar .tune{ flex:1; height:10px; border:2px solid #f4f1ea; } .calbar .tune b{ display:block; height:100%; width:60%; transition:width .2s; }
+.calbtn{ font:800 15px Jost, sans-serif; text-transform:uppercase; padding:9px 14px; border:2px solid #f4f1ea; background:transparent; color:#f4f1ea; cursor:pointer; }
+.calbtn.go{ background:#ffd23a; color:#0b0a0a; flex:1; } #calSoft.hot{ background:#ff3b8b; animation:calhot .5s steps(2) infinite; } @keyframes calhot{ 50%{ background:transparent; } }
+#calEnd{ position:absolute; inset:0; background:rgba(11,10,18,.94); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; text-align:center; overflow:auto; }
+#calEnd[hidden]{ display:none; } #calEnd h3{ font:800 20px/1.2 Jost, sans-serif; margin:0; max-width:520px; }
+.calnp{ background:#f4f1ea; color:#0b0a0a; padding:12px 16px; max-width:520px; text-align:left; } .calnp h3{ font-family:Georgia, serif !important; font-size:22px !important; }
+.calmast{ font:700 18px Georgia, serif; border-bottom:3px double #0b0a0a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:baseline; } .calmast span{ font-size:11px; }
+.calnp p{ font:15px/1.35 Georgia, serif; margin:8px 0 0; } .calstars{ font-size:34px; color:#ffd23a; margin:0; letter-spacing:6px; } .calnote{ font-size:12px; opacity:.8; max-width:440px; margin:0; }
+.calbtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+.land #calC{ width:min(calc(100% - 150px), calc((100dvh - 100px) * 4 / 3)); }
+#calLyric{ width:min(100%, calc((100dvh - 170px) * 4 / 3)); min-height:28px; text-align:center; font:800 22px/1.2 Jost, "Helvetica Neue", Arial, sans-serif; letter-spacing:.3px; color:#8f8aa8; } #calLyric b{ color:#ffd23a; } #calLyric i{ font-style:normal; color:#f4f1ea; } .land #calLyric{ font-size:18px; min-height:22px; }
+.calbar .who{ font-weight:700; color:#ffd23a; }
 </style>
 </head>
 <body>
@@ -549,6 +567,13 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 <div id="telly" hidden><canvas id="tlc" width="96" height="54" aria-hidden="true"></canvas><button type="button" class="pw" id="tvOff" aria-label="Desligar a televisão"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg></button><span class="rec">● Em direto</span><div class="l3"><span class="tag"></span><span class="txt"></span><span class="chip" hidden></span></div></div>
 <button type="button" id="tvOn" hidden aria-label="Ligar a televisão"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 3v8"/><path d="M6.3 7a8 8 0 1 0 11.4 0"/></svg><span>TV</span></button>
 <div id="ov"></div>
+<div id="cal" hidden aria-label="Caldas da Rainha">
+  <div class="calbar"><span id="calInfo"></span><span class="tune" title="Afinação"><b id="calTune"></b></span><button id="calQuit" class="calbtn" type="button">Sair</button></div>
+  <canvas id="calC" width="256" height="192"></canvas>
+  <div id="calLyric" aria-live="off"></div>
+  <div class="calbar"><button id="calSoft" class="calbtn" type="button">↓ Baixinho</button><button id="calTapB" class="calbtn go" type="button">♪ Agora!</button></div>
+  <div id="calEnd" hidden></div>
+</div>
 <script>
 (() => {
 'use strict';
@@ -1470,7 +1495,7 @@ function saveGame() {
   const d = { v: 1, city: cityIdx, at: Date.now(), day: 1 + Math.floor((S.clock - 6) / 24), s: {
     t: S.t, clock: S.clock, supplies: S.supplies, morale: S.morale, support: S.support, pressure: S.pressure, detained: S.detained, asmCd: S.asmCd, perks: [...S.perks],
     // a raid or a kettle in progress starts again when the square is loaded: no escaping the police by leaving
-    nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0, calm: !!S.calm,
+    nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0, calm: !!S.calm, prDone: !!S.prDone,
     finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: S.goal.base } : null, rebuildFrom: S.rebuildFrom || 0, cordDone: !!S.cordDone, liveDone: !!S.liveDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
     tents: S.tents.map(t => [t.tx, t.ty, t.color, t.occ]), stations: S.stations.map(st => [st.k, st.tx, st.ty]) } };
   try { localStorage.setItem(saveKey(cityIdx), JSON.stringify(d)); } catch (e) {}
@@ -1479,7 +1504,7 @@ function loadGame(i) {
   const d = savedOf(i); if (!d) return false;
   cityIdx = i; newLevel(); const g = d.s;
   for (const t of S.tents) S.occ[t.ty * NX + t.tx] = null; S.tents = [];
-  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'calm', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
+  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'calm', 'prDone', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
   S.perks = new Set(g.perks || []); if (g.stat) S.stat = g.stat;
   for (const [tx, ty, color, occ] of g.tents || []) { if (S.occ[ty * NX + tx]) continue; const t = { kind: 'tent', tx, ty, gx: tx + .5 + rnd(-.08, .08), gy: ty + .5 + rnd(-.08, .08), color, occ, pop: 0, hit: false, l1: look(S.city.students), l2: look(S.city.students) }; S.occ[ty * NX + tx] = t; S.tents.push(t); }
   for (const [k, tx, ty] of g.stations || []) { if (S.occ[ty * NX + tx] || !STATIONS[k]) continue; const st = { kind: 'station', type: k, k, tx, ty, gx: tx + .5, gy: ty + .5, cd: 0 }; S.occ[ty * NX + tx] = st; S.stations.push(st); }
@@ -2394,6 +2419,7 @@ function tvNews() {
   if (day > 1) a.push(L(`Acampada entra no ${day}.º dia.`, `The camp enters day ${day}.`));
   a.push(L('Preço das casas volta a subir.', 'House prices rise again.'));
   a.push(L('Onde está o Presidente?', 'Where is the President?'));
+  if (calSaved().open) a.push(L('Coro Social do Bairro canta à porta do Presidente, nas Caldas.', 'Coro Social do Bairro sings at the President’s door, in Caldas.'));
   if (crowd() >= 1000) a.push(L('Milhares juntam-se à praça.', 'Thousands join the square.'));
   return a;
 }
@@ -3131,7 +3157,7 @@ function update(dt) {
     if (S.eveDay !== day && hr >= 18) { S.eveDay = day; S.eveAt = rnd(18.5, 22.5); }
     if (S.eveAt && hr >= S.eveAt && hr < 24 && !S.bikes && !S.raid && !S.fasc && calm()) { S.eveAt = 0; startBikes(); } }
   nightEvents(dt);
-  updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
+  prPaperTick(); updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
 
   // donkey tandem (Lisboa)
   if (S.tandemT > 0 && !S.kettle) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY - .6], [CX + .6, CY + 2.3]], state: 'in', cargo: true, step: 0, flip: false }; floatXY(0, 0, 'Vem aí um tandem com a cabeça de burro', '#ffd36b', { gx: CX + .6, gy: CY + 2.3 }); } } // it rides into the square and stops next to the column
@@ -3809,6 +3835,7 @@ function draw() {
   S.tents.forEach(t => add(t.gx, t.gy, () => drawTent(t)));
   S.stations.forEach(s => add(s.gx, s.gy, () => drawStation(s)));
   S.crates.forEach(c => add(c.gx, c.gy, () => drawCrate(c)));
+  if (S.prPaper) add(S.prPaper.gx, S.prPaper.gy, () => drawPaper(S.prPaper));
   S.residents.forEach(r => addP(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); if (r.stun > 0) return drawLying(q.x, q.y, r.look); guy(q.x, q.y - (S.winning ? Math.round(Math.abs(Math.sin(S.t * 7 + (r.step || 0))) * 3) : 0), { ...r.look, moving: r.moving, step: r.step, flip: r.flip, back: r.back }); if (r.chainK != null && S.chain && S.chain.helmet) { R(q.x - 3, q.y - 17, 7, 3, '#2f6bff'); R(q.x - 2, q.y - 17, 2, 1, '#9fd0ff'); } }));
   S.arrivals.forEach(a => addP(a.gx, a.gy, () => drawArrival(a)));
   S.police.forEach(o => addP(o.gx, o.gy, () => drawCop(o)));
@@ -4056,7 +4083,7 @@ function chapterScreen() {
   mode = 'chapters';
   const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
-  ${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
 }
 function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
@@ -4508,6 +4535,9 @@ ov.addEventListener('click', e => {
   if (a === 'install') { const ev = installEvt; installEvt = null; if (ev) ev.prompt(); titleScreen(); }
   else if (a === 'chapters') chapterScreen();
   else if (a === 'title') titleScreen();
+  else if (a === 'calgo') calOpen('game');
+  else if (a === 'calno') { mode = 'play'; ov.hidden = true; }
+  else if (a === 'calmenu') calOpen('menu');
   else if (a === 'tasksreset') { TASKS.g = 0; TASKS.cord = TASKS.live = false; tasksSave(); chapterScreen(); }
   else if (a === 'reset') { cleared.clear(); saveCleared(); chapterScreen(); }
   else if (a === 'retry') { dropSave(); newLevel(); introScreen(); }
@@ -4587,7 +4617,7 @@ function setTarget(e) {
   if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < NY; yy++) for (let xx = 0; xx < NX; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
   S.player.tx = gx; S.player.ty = gy;
 }
-cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapGraf(e) || tapLook(e) || tapRecruit(e) || joyStart(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapPaper(e) || tapGraf(e) || tapLook(e) || tapRecruit(e) || joyStart(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
 cv.addEventListener('pointermove', e => { if (joyMove(e)) return; if (dragging && mode === 'play') setTarget(e); });
 for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(ev, e => { if (!joyEnd(e)) dragging = false; });
 // phones: a ball to walk with. Touch the left half of the square and drag: the ball appears under the thumb, the
@@ -4859,11 +4889,268 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (mode === 'play') { if (S.aimHold > 0) { S.aimHold -= dt; S.t += dt; } else update(aimOpen() ? dt * .4 : dt); } else S.t += dt; // the aim slows the game down (and stops it, the first time)
+  if (CAL) calTick(dt);
   songTick(); choirTick(); saxTick(dt);
   updCam(dt); draw(); tellySync(dt); tvSync(); newsSync();
   hudT -= dt; if (hudT <= 0) { hud(); goalTick(); hudT = .1; }
   requestAnimationFrame(frame);
 }
+/* ================= secret: the Coro Social do Bairro at the President's door, Caldas da Rainha =================
+   Found in Lisboa: once the giant donkey head is up, at night, a sheet of paper on the ground asks "Onde está o PR?".
+   A 20 s drive up the A8, then a rhythm game: you are the conductor, three times through the song made up on the day;
+   tap on the strong syllables to keep the choir together. Win: the President peeks out with his mouth covered and pulls
+   the shutter down again; the next morning's front page. Stars: won / in tune / no trouble with the neighbours and 3 joined. */
+const CAL_KEY = 'acampada-caldas';
+const calSaved = () => { try { return { open: false, best: 0, ...JSON.parse(localStorage.getItem(CAL_KEY) || '{}') }; } catch (e) { return { open: false, best: 0 }; } };
+function calStore(o) { try { localStorage.setItem(CAL_KEY, JSON.stringify({ ...calSaved(), ...o })); } catch (e) {} }
+// the song: [syllable, beats, note, strong]. Strong syllables are the ones to tap. The melody is the game's own.
+const CN = { D4: 293.66, E4: 329.63, F4: 349.23, G4: 392, A4: 440, Bb4: 466.16, C5: 523.25, D5: 587.33 };
+const CAL_SONG = [
+  [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'C5'], ['', .5]],
+  [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'C5', 1], ['sa', 1.5, 'Bb4'], ['', .5]],
+  [['A', .5, 'G4'], ['bra a', .5, 'G4'], ['bo', 1, 'Bb4', 1], ['ca', .5, 'A4'], ['Se', .5, 'G4'], ['nhor', .5, 'F4'], ['Pre', .5, 'G4', 1], ['si', .5, 'A4'], ['den', 1, 'A4', 1], ['te', 1.5, 'D4'], ['', .5]],
+  [['Que', .5, 'F4'], ['bra o', .5, 'F4'], ['si', .5, 'G4'], ['lên', 1, 'A4', 1], ['cio', .5, 'G4'], ['que', .5, 'F4'], ['nos', .5, 'E4'], ['mor', 1, 'F4', 1], ['re', 1, 'E4'], ['', .5]],
+  [['Que', .5, 'D4'], ['nos', .5, 'E4'], ['ma', 1, 'F4', 1], ['ta', 2, 'D4'], ['', 1]],
+  [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'C5'], ['', .5]],
+  [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'A4'], ['', .5]],
+  [['Sai', .5, 'A4'], ['de', .5, 'A4'], ['ca', 1, 'D5', 1], ['sa,', .5, 'C5'], ['vem', .5, 'Bb4'], ['’pras', .5, 'A4'], ['ru', 1, 'G4', 1], ['as', 1, 'A4'], ['', .5]],
+  [['Nos', .5, 'A4'], ['sas', .5, 'A4'], ['ru', 1, 'Bb4', 1], ['as,', .5, 'A4'], ['nos', .5, 'G4'], ['sas', .5, 'F4'], ['pra', 1, 'G4', 1], ['ças', 1, 'A4'], ['', .5]],
+  [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'A4', 1], ['das', 1.5, 'G4'], ['', .5]],
+  [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'E4', 1], ['das', 2, 'D4'], ['', 1.5]]
+];
+const CAL_BPM = [96, 104, 112], CAL_LEAD = 2.4; // the beats per minute of each time round; seconds of notes shown ahead
+let CAL = null;
+// the notes of the three times round, with their times in seconds
+function calNotes() {
+  const out = []; let t = 1.5;
+  CAL_BPM.forEach((bpm, v) => {
+    const b = 60 / bpm;
+    CAL_SONG.forEach((line, li) => { for (const [s, d, n, strong] of line) { if (s) out.push({ s, t, d: d * b, f: CN[n], strong: !!strong, v, li }); t += d * b; } });
+    t += 1.6; // a breath between the times round
+  });
+  return { notes: out, end: t };
+}
+function calOpen(from) { // from: 'game' (the paper in Lisboa) or 'menu' (the squares screen)
+  audioOn(); calStore({ open: true });
+  const { notes, end } = calNotes();
+  CAL = { from, phase: 'drive', t: 0, notes, end, song: 0, tune: 60, hits: 0, strong: notes.filter(n => n.strong).length, streak: 0, joined: 0, incident: false,
+    soft: 0, ask: null, asked: false, lights: 0, shutter: 0, peek: 0, joiners: [], flash: null, sung: 0, best: 0 };
+  CAL.prevMode = mode; mode = 'caldas';
+  ov.hidden = true; $('cal').hidden = false; $('calEnd').hidden = true; calHud();
+}
+function calClose() {
+  $('cal').hidden = true; const from = CAL && CAL.from; CAL = null;
+  if (from === 'game' && S) { mode = 'play'; ov.hidden = true; } else chapterScreen();
+}
+function calTap() {
+  const c = CAL; if (!c) return;
+  if (c.phase === 'drive') { c.t = 20; return; } // skip the drive
+  if (c.phase !== 'sing') return;
+  let best = null, bd = 9; for (const n of c.notes) { if (!n.strong || n.done) continue; const d = Math.abs(n.t - c.song); if (d < bd) { bd = d; best = n; } }
+  if (best && bd < .28) { best.done = true; best.ok = true; const perfect = bd < .11; c.hits++; c.streak++; c.tune = Math.min(100, c.tune + (perfect ? 5 : 3)); c.flash = { t: .35, ok: true, txt: perfect ? L('Perfeito!', 'Perfect!') : L('Boa!', 'Good!') };
+    if (c.streak % 6 === 0 && c.joined < 6) { c.joined++; c.joiners.push({ x: Math.random() < .5 ? -10 : 266, tx: 34 + c.joined * 30 + rnd(-6, 6), y: 158 + rnd(-3, 3), look: look(false) }); c.flash = { t: 1.4, ok: true, txt: L('Um vizinho junta-se ao coro', 'A neighbour joins the choir') }; } }
+  else { c.tune = Math.max(0, c.tune - 3); c.streak = 0; c.flash = { t: .35, ok: false, txt: L('Fora de tempo', 'Off the beat') }; }
+}
+function calSoft() { const c = CAL; if (c && c.ask && c.ask.t > 0) { c.ask = null; c.soft = 4.5; c.flash = { t: 1.4, ok: true, txt: L('Baixinho… o vizinho fecha a janela', 'Softly… the neighbour shuts the window') }; } }
+// the choir's sound: each part is a few detuned sawtooth voices with vibrato, through the formants of an open "ah",
+// into a hall reverb; the melody, a third below it and a bass on the chord's root, and a deep drum on the strong syllables
+const CAL_SCALE = [146.83, 164.81, 174.61, 196, 220, 233.08, 261.63, 293.66, 329.63, 349.23, 392, 440, 466.16, 523.25, 587.33]; // D minor, D3 to D5
+let calBusN = null;
+function calBus() {
+  if (calBusN && calBusN.ctx === actx) return calBusN;
+  const a = actx, master = a.createGain(), wet = a.createGain(), rev = a.createConvolver(), len = Math.floor(a.sampleRate * 3.2), ir = a.createBuffer(2, len, a.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+  rev.buffer = ir; master.gain.value = 1; wet.gain.value = .55; master.connect(a.destination); master.connect(rev).connect(wet).connect(a.destination);
+  return (calBusN = { ctx: a, in: master });
+}
+function calPart(f, d, vol, t0) {
+  const a = actx, out = calBus().in, g = a.createGain(), f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), lp = a.createBiquadFilter(), mix = a.createGain();
+  f1.type = 'bandpass'; f1.frequency.value = 760; f1.Q.value = 5; f2.type = 'bandpass'; f2.frequency.value = 1180; f2.Q.value = 6; lp.type = 'lowpass'; lp.frequency.value = 2400;
+  g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + .07); g.gain.setValueAtTime(vol, t0 + Math.max(.08, d - .05)); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + .35);
+  g.connect(f1).connect(mix); g.connect(f2).connect(mix); g.connect(lp).connect(mix); mix.gain.value = .9; mix.connect(out);
+  const lfo = a.createOscillator(), dep = a.createGain(); lfo.frequency.value = 5.2; dep.gain.value = f * .006; lfo.connect(dep); lfo.start(t0); lfo.stop(t0 + d + .4);
+  for (const det of [-11, -4, 3, 10]) { const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; dep.connect(o.frequency); o.connect(g); o.start(t0); o.stop(t0 + d + .4); }
+}
+function calDrum(t0, big) { const a = actx, o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(big ? 95 : 75, t0); o.frequency.exponentialRampToValueAtTime(42, t0 + .4); g.gain.setValueAtTime(big ? .5 : .32, t0); g.gain.exponentialRampToValueAtTime(.0001, t0 + .7); o.connect(g).connect(calBus().in); o.start(t0); o.stop(t0 + .75); }
+function calVoice(n, sour) { // a sour note when the beat was lost
+  if (muted || !actx) return;
+  const c = CAL, t0 = actx.currentTime + .01, v = (c.soft > 0 ? .02 : .05) * duck * (.85 + c.joined * .03), f = n.f * (sour ? 1.045 : 1);
+  const i = CAL_SCALE.reduce((b, x, k) => Math.abs(x - n.f) < Math.abs(CAL_SCALE[b] - n.f) ? k : b, 0), third = CAL_SCALE[Math.max(0, i - 2)] * (sour ? .97 : 1);
+  const deg = i % 7, root = [146.83, 110, 130.81, 98, 146.83, 98, 130.81][deg] / 2 * 1; // D, A, C, G, D, G, C (a step lower: the men's voices)
+  calPart(f, n.d, v, t0); calPart(third, n.d, v * .7, t0); calPart(root * 2, n.d, v * .6, t0);
+  if (n.strong && c.soft <= 0) calDrum(t0, n.li === 0 || n.li === 5);
+}
+function calTick(dt) {
+  const c = CAL; if (!c) return;
+  c.t += dt; if (c.flash) { c.flash.t -= dt; if (c.flash.t <= 0) c.flash = null; }
+  if (c.phase === 'drive') { if (c.t >= 20) { c.phase = 'sing'; c.song = 0; } calDraw(); return; }
+  if (c.phase === 'sing') {
+    c.song += dt; c.soft = Math.max(0, c.soft - dt);
+    for (const n of c.notes) {
+      if (!n.sung && c.song >= n.t) { n.sung = true; calVoice(n, n.strong ? false : c.tune < 25); }
+      if (n.strong && !n.done && c.song > n.t + .28) { n.done = true; c.streak = 0; c.tune = Math.max(0, c.tune - 7); calVoice(n, true); c.flash = { t: .5, ok: false, txt: L('Desafinou!', 'Out of tune!') }; }
+    }
+    c.lights = Math.min(9, Math.floor(c.hits / (c.strong / 10)));
+    // the second time round, a neighbour opens a window: sing softly (↓ or the button) within 3 s
+    const cur = c.notes.find(n => n.t >= c.song); if (!c.asked && cur && cur.v === 1 && cur.li === 3) { c.asked = true; c.ask = { t: 3 }; }
+    if (c.ask) { c.ask.t -= dt; if (c.ask.t <= 0) { c.ask = null; c.incident = true; c.tune = Math.max(0, c.tune - 12); c.flash = { t: 1.6, ok: false, txt: L('O vizinho ficou furioso', 'The neighbour is furious') }; } }
+    if (c.tune <= 0) { c.phase = 'lost'; c.t = 0; calEnd(false); }
+    else if (c.song >= c.end) { c.phase = 'peek'; c.t = 0; }
+    calHud();
+  } else if (c.phase === 'peek') { // the shutter goes up, he looks out with a hand over his mouth, and down it comes
+    c.shutter = c.t < 1.4 ? Math.min(.92, c.t / 1.2 * .92) : c.t < 3.4 ? .92 : Math.max(0, .92 - (c.t - 3.4) * 3);
+    if (c.t > 4.4) { c.phase = 'won'; calEnd(true); }
+  }
+  for (const j of c.joiners) j.x += Math.sign(j.tx - j.x) * Math.min(Math.abs(j.tx - j.x), dt * 40);
+  calDraw();
+}
+function calStars() { const c = CAL; return 1 + (c.hits / c.strong >= .75 ? 1 : 0) + (!c.incident && c.joined >= 3 ? 1 : 0); }
+function calEnd(won) {
+  const c = CAL, el = $('calEnd'), st = won ? calStars() : 0;
+  if (won) calStore({ best: Math.max(calSaved().best, st) });
+  const star = n => n < st ? '★' : '☆';
+  el.innerHTML = won ? `<div class="calnp"><div class="calmast">${L('Folha da Manhã', 'Morning Sheet')}<span>${L('Jornal diário · Caldas da Rainha', 'Daily paper · Caldas da Rainha')}</span></div>
+    <h3>${L('«Coro canta à porta do Presidente. Continua em silêncio.»', '“Choir sings at the President’s door. Still silent.”')}</h3>
+    <p>${L('O Coro Social do Bairro cantou à noite, à porta de casa do Presidente da República, a pedir que quebre o silêncio sobre a habitação e as acampadas. O estore abriu um palmo e voltou a fechar.', 'The Coro Social do Bairro sang at night outside the President’s home, asking him to break his silence on housing and the camps. The shutter opened a hand’s width and closed again.')}</p></div>
+    <p class="calstars">${star(0)} ${star(1)} ${star(2)}</p>
+    <p class="calnote">${L('★ Ganhar · ★ Afinado (3 em cada 4 no tempo) · ★ Sem zangas com os vizinhos e 3 vizinhos no coro', '★ Win · ★ In tune (3 in 4 on the beat) · ★ No trouble with the neighbours and 3 of them in the choir')}</p>`
+    : `<h3>${L('O coro desafinou e foi para casa.', 'The choir lost the tune and went home.')}</h3><p class="calnote">${L('Toca nas sílabas grandes quando chegam à batuta.', 'Tap the big syllables as they reach the baton.')}</p>`;
+  el.innerHTML += `<div class="calbtns"><button class="btnp" data-cal="again">${L('Cantar outra vez', 'Sing again')}</button><button class="btnp red" data-cal="back">${c.from === 'game' ? L('Voltar à acampada', 'Back to the camp') : L('Voltar', 'Back')}</button></div>`;
+  el.hidden = false;
+}
+function calHud() {
+  const c = CAL; if (!c) return;
+  $('calTune').style.width = c.tune + '%'; $('calTune').style.background = c.tune < 25 ? '#ff3b5c' : c.tune < 50 ? '#ffd23a' : '#b6ff3b';
+  const v = c.phase === 'sing' ? (c.notes.find(n => n.t >= c.song) || c.notes[c.notes.length - 1]).v + 1 : 1;
+  $('calInfo').textContent = c.phase === 'drive' ? 'A8 · Lisboa → Caldas da Rainha' : `Coro Social do Bairro · ${L('volta', 'round')} ${v}/3 · ${L('vizinhos', 'neighbours')}: ${c.joined}`;
+  const nx = c.phase === 'sing' ? c.notes.find(n => n.t + n.d > c.song) : null;
+  $('calLyric').innerHTML = nx ? c.notes.filter(n => n.v === nx.v && n.li === nx.li).map(n => n === nx ? `<b>${esc(n.s)}</b>` : n.sung ? `<i>${esc(n.s)}</i>` : esc(n.s)).join(' ') : c.phase === 'drive' ? '' : '&nbsp;';
+  $('calSoft').classList.toggle('hot', !!c.ask); $('calTapB').textContent = c.phase === 'drive' ? L('Saltar ▸', 'Skip ▸') : L('♪ Agora!', '♪ Now!');
+}
+/* drawing: a 256 x 192 pixel canvas */
+function calDraw() {
+  const cvs = $('calC'), g = cvs.getContext('2d'), c = CAL, P = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
+  const k = Math.max(2, Math.min(8, Math.ceil(cvs.getBoundingClientRect().width * (devicePixelRatio || 1) / 256)));
+  if (cvs.width !== 256 * k) { cvs.width = 256 * k; cvs.height = 192 * k; }
+  g.setTransform(k, 0, 0, k, 0, 0); g.imageSmoothingEnabled = false;
+  if (c.phase === 'drive') return calDrive(g, P, c.t);
+  // night sky and the street
+  const sky = g.createLinearGradient(0, 0, 0, 60); sky.addColorStop(0, '#0b0f2a'); sky.addColorStop(1, '#27245a'); g.fillStyle = sky; g.fillRect(0, 0, 256, 60);
+  // the building: cream stone, four floors of green iron balconies, shops below (made-up names)
+  P(8, 6, 240, 134, '#e9e0cc'); for (let y = 10; y < 140; y += 7) P(8, y, 240, 1, '#ddd2bb');
+  P(8, 4, 240, 3, '#d4c8ad');
+  const win = (x, y, lit, shut) => { P(x, y, 18, 16, lit ? '#ffd98a' : '#2b3550'); if (shut != null) { P(x, y, 18, Math.round(16 * (1 - shut)), '#cfc6b2'); for (let k = y + 2; k < y + 16 * (1 - shut); k += 2) P(x, k, 18, 1, '#bdb39d'); } P(x - 1, y - 1, 20, 1, '#cbbfa5'); };
+  const balcony = (x, y, w) => { P(x, y, w, 2, '#d9cfb8'); P(x, y - 8, w, 1, '#2f5d4a'); for (let k = x; k < x + w; k += 4) { P(k, y - 8, 1, 8, '#2f5d4a'); } for (let k = x + 2; k < x + w - 2; k += 8) { P(k, y - 6, 3, 1, '#2f5d4a'); P(k + 1, y - 5, 1, 2, '#2f5d4a'); } };
+  let li = 0;
+  for (let fl = 0; fl < 4; fl++) {
+    const y = 14 + fl * 26;
+    for (let i = 0; i < 6; i++) {
+      const x = 20 + i * 38, pr = fl === 1 && i === 3;
+      const lit = !pr && ((fl * 6 + i) * 7) % 11 < c.lights + 1 && li++ < c.lights + 2;
+      if (pr) { // the President's window: bigger, with the shutter down; at the end he looks out, a hand over his mouth (a generic figure, no face to recognise)
+        const wx = x - 4, wy = y - 4, ww = 26, wh = 22, open = c.shutter;
+        if (open > 0) { const gl = g.createRadialGradient(wx + 13, wy + 11, 2, wx + 13, wy + 11, 34); gl.addColorStop(0, 'rgba(255,220,140,.55)'); gl.addColorStop(1, 'rgba(255,220,140,0)'); g.fillStyle = gl; g.fillRect(wx - 30, wy - 30, 86, 82); }
+        P(wx - 1, wy - 1, ww + 2, wh + 2, '#b9ab8c'); P(wx, wy, ww, wh, open > 0 ? '#ffd98a' : '#2b3550');
+        if (open > .15) { const hx = wx + 13, hy = wy + 19; // shoulders, head, grey hair, eyes, the hand over the mouth
+          P(hx - 9, hy - 6, 18, 6, '#1e2840'); P(hx - 2, hy - 6, 4, 3, '#f2efe6'); P(hx - 5, hy - 17, 10, 11, '#e2b48f'); P(hx - 5, hy - 18, 10, 3, '#8a8890');
+          P(hx - 3, hy - 13, 2, 1, '#1b1464'); P(hx + 1, hy - 13, 2, 1, '#1b1464'); P(hx - 6, hy - 11, 12, 5, '#c98d63'); for (let f = 0; f < 4; f++) P(hx - 5 + f * 3, hy - 11, 1, 4, '#a9704b'); P(hx - 9, hy - 9, 4, 4, '#1e2840'); }
+        P(wx, wy, ww, Math.round(wh * (1 - open)), '#cfc6b2'); for (let k = wy + 2; k < wy + wh * (1 - open); k += 2) P(wx, k, ww, 1, '#bdb39d');
+      } else win(x, y, lit, lit ? null : .35);
+    }
+    balcony(14, y + 22, 112); balcony(132, y + 22, 112);
+  }
+  // the window that asks for quiet
+  if (c.ask || (c.incident && c.phase === 'sing')) { P(134, 66, 18, 16, '#ffe9a8'); P(139, 70, 6, 6, '#e2b48f'); P(138, 69, 8, 2, '#3a2a20'); }
+  // shops: hairdresser, stationery, a door
+  P(8, 112, 240, 28, '#d8ccb2'); P(14, 116, 66, 22, '#3b4a5c'); P(14, 116, 66, 5, '#c84a5a'); P(94, 116, 22, 24, '#4a3a2c'); P(130, 116, 50, 22, '#3b4a5c'); P(130, 116, 50, 5, '#3f7f5a'); P(192, 116, 50, 22, '#3b4a5c');
+  g.font = '700 6px "Helvetica Neue", Arial, sans-serif'; g.fillStyle = '#ffffff'; g.fillText(L('CABELEIREIRO', 'HAIRDRESSER'), 17, 121); g.fillText(L('PAPELARIA', 'STATIONER'), 133, 121);
+  // pavement (calçada), a street lamp
+  P(0, 140, 256, 52, '#8d8a86'); for (let y = 141; y < 192; y += 3) for (let x = (y % 6 ? 0 : 2); x < 256; x += 4) P(x, y, 3, 2, '#a3a09b');
+  P(236, 70, 2, 72, '#30343c'); P(230, 68, 12, 3, '#30343c'); const gl = g.createRadialGradient(236, 74, 2, 236, 74, 60); gl.addColorStop(0, 'rgba(255,190,110,.45)'); gl.addColorStop(1, 'rgba(255,190,110,0)'); g.fillStyle = gl; g.fillRect(170, 60, 132, 110);
+  // the choir (with their song sheets), the neighbours who joined, the conductor seen from behind
+  const beat = c.phase === 'sing' ? Math.floor(c.song * 3) % 2 : 0, mouth = c.phase === 'sing' && c.soft <= 0;
+  for (let i = 0; i < 9; i++) { const x = 36 + i * 22, y = 150 + (i % 2) * 4; calGuy(P, x, y, CAL_LOOKS[i % CAL_LOOKS.length], mouth && (i + beat) % 2 === 0, true); }
+  for (const j of c.joiners) calGuy(P, j.x, j.y + 4, j.look, mouth && beat, true);
+  { const x = 128, y = 186; P(x - 7, y - 26, 14, 18, '#1b2033'); P(x - 5, y - 34, 10, 9, '#3a3536'); P(x - 4, y - 8, 3, 8, '#22252f'); P(x + 1, y - 8, 3, 8, '#22252f'); // the conductor
+    const up = c.phase === 'sing' ? Math.sin(c.song * Math.PI * 2 * (CAL_BPM[0] / 60) / 2) : 0; P(x - 11, y - 24 - up * 5, 4, 4, '#1b2033'); P(x + 7, y - 24 + up * 5, 4, 4, '#1b2033'); P(x + 10, y - 29 + up * 5, 1, 6, '#ffffff'); }
+  // the lyric lane: the syllables slide to the baton; tap on the big ones
+  if (c.phase === 'sing') {
+    P(0, 0, 256, 28, 'rgba(10,8,20,.9)'); const mx = 40; P(mx - 1, 1, 3, 26, '#ffd23a'); P(mx - 4, 0, 9, 2, '#ffd23a');
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const n of c.notes) { const x = mx + (n.t - c.song) / CAL_LEAD * 216; if (x < -40 || x > 290) continue;
+      if (n.strong && !n.done) { g.fillStyle = 'rgba(255,210,58,.18)'; g.beginPath(); g.arc(x, 14, 11, 0, Math.PI * 2); g.fill(); g.strokeStyle = '#ffd23a'; g.lineWidth = 1.5; g.stroke(); }
+      g.font = n.strong ? '800 13px Jost, "Helvetica Neue", Arial, sans-serif' : '700 9px "Helvetica Neue", Arial, sans-serif';
+      g.fillStyle = n.strong ? (n.ok ? '#b6ff3b' : n.done ? '#ff6b7f' : '#ffffff') : n.sung ? '#8f8aa8' : '#d8d4e8';
+      g.fillText(n.s, x, n.strong ? 14.5 : 15); }
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  }
+  if (c.ask) { g.font = '800 9px Jost, Arial, sans-serif'; P(146, 48, 100, 15, '#0b0a0a'); g.fillStyle = '#ffd23a'; g.fillText(L('ISTO SÃO HORAS?!', 'DO YOU KNOW THE TIME?!'), 151, 59); }
+  if (c.phase === 'peek' && c.t > 1.2 && c.t < 3.6) { g.font = '800 9px Jost, Arial, sans-serif'; P(20, 28, 90, 14, '#0b0a0a'); g.fillStyle = '#ffffff'; g.fillText(L('MOSTRA A CARA!', 'SHOW YOUR FACE!'), 26, 37); }
+  if (c.flash) { g.font = '800 10px Jost, Arial, sans-serif'; const w = g.measureText(c.flash.txt).width + 10; P(128 - w / 2, 96, w, 16, '#0b0a0a'); g.fillStyle = c.flash.ok ? '#b6ff3b' : '#ff6b7f'; g.fillText(c.flash.txt, 128 - w / 2 + 5, 108); }
+}
+const CAL_LOOKS = [{ skin: '#e2b48f', hair: '#c9a24a', shirt: '#1c1c22' }, { skin: '#c68a62', hair: '#2b1a10', shirt: '#2d2d36' }, { skin: '#d9a37a', hair: '#4a3a30', shirt: '#eeeae2' }, { skin: '#8d5a3c', hair: '#141218', shirt: '#e95e9a' }, { skin: '#e9c3a2', hair: '#a8a29a', shirt: '#2a4a8a' }, { skin: '#d9a37a', hair: '#141218', shirt: '#c9c4b8' }];
+function calGuy(P, x, y, l, open, sheet) {
+  P(x - 4, y - 14, 9, 12, l.shirt); P(x - 3, y - 2, 3, 6, '#2b2d55'); P(x + 1, y - 2, 3, 6, '#2b2d55');
+  P(x - 3, y - 21, 7, 7, l.skin); P(x - 3, y - 22, 7, 3, l.hair); P(x - 2, y - 18, 1, 1, '#1b1464'); P(x + 2, y - 18, 1, 1, '#1b1464');
+  if (open) P(x, y - 16, 2, 2, '#5a1a2a'); else P(x, y - 16, 2, 1, '#8a4a3a');
+  if (sheet) P(x - 6, y - 12, 5, 6, '#f4f1ea');
+}
+function calDrive(g, P, t) { // 20 s up the A8 at dusk: toll, signs, wind turbines, the walls of Óbidos, Caldas
+  const k = Math.min(1, t / 20), sky = g.createLinearGradient(0, 0, 0, 120);
+  sky.addColorStop(0, `rgb(${Math.round(240 - 210 * k)},${Math.round(150 - 125 * k)},${Math.round(120 - 60 * k)})`); sky.addColorStop(1, `rgb(${Math.round(255 - 200 * k)},${Math.round(200 - 150 * k)},${Math.round(140 - 60 * k)})`);
+  g.fillStyle = sky; g.fillRect(0, 0, 256, 192);
+  const sx = t * 60; // how far we have driven, in pixels
+  // hills
+  g.fillStyle = k < .5 ? '#6f8a5a' : '#2f3f3a'; g.beginPath(); g.moveTo(0, 120); for (let x = 0; x <= 256; x += 8) g.lineTo(x, 104 + Math.sin((x + sx * .3) / 40) * 10 + Math.sin((x + sx * .3) / 17) * 4); g.lineTo(256, 192); g.lineTo(0, 192); g.fill();
+  // wind turbines on the hills (from 7 s)
+  for (let i = 0; i < 4; i++) { const x = 300 + i * 70 - (sx - 420) * .3; if (t < 6 || x < -20 || x > 280) continue; P(x, 70, 2, 36, '#e8e8ec'); const a = t * 3 + i; for (let b = 0; b < 3; b++) { const an = a + b * 2.094; for (let r = 2; r < 16; r++) P(x + 1 + Math.cos(an) * r, 70 + Math.sin(an) * r, 1, 1, '#f4f4f8'); } }
+  // the walls of Óbidos (13-17 s)
+  { const x = 260 - (sx - 780) * .5; if (x > -140 && x < 280) { P(x, 82, 130, 24, '#cdbf9e'); for (let i = 0; i < 130; i += 8) P(x + i, 78, 5, 4, '#cdbf9e'); P(x + 52, 66, 20, 40, '#c2b392'); for (let i = 0; i < 20; i += 6) P(x + 52 + i, 62, 4, 4, '#c2b392'); P(x + 30, 94, 60, 12, '#f2efe6'); } }
+  // the road
+  P(0, 136, 256, 40, '#3a3a44'); P(0, 136, 256, 2, '#e8e8ec'); P(0, 174, 256, 2, '#e8e8ec'); for (let x = -(sx % 40); x < 256; x += 40) P(x, 155, 20, 2, '#f4f4f4');
+  P(0, 176, 256, 16, k < .5 ? '#7c9a62' : '#2c3a30');
+  // signs and the toll, passing by
+  const sign = (at, w, lines, col) => { const x = 270 + (at * 60 - sx); if (x < -w - 10 || x > 270) return; P(x + w / 2 - 1, 118, 2, 18, '#9aa0ad'); P(x, 92, w, 26, col); P(x + 1, 93, w - 2, 1, '#ffffff'); g.font = '700 7px "Helvetica Neue", Arial, sans-serif'; g.fillStyle = '#ffffff'; lines.forEach((s, i) => g.fillText(s, x + 4, 102 + i * 8)); };
+  { const x = 270 + (2 * 60 - sx); if (x > -120 && x < 270) { P(x, 104, 110, 6, '#d8dce6'); for (let i = 0; i < 4; i++) { P(x + 6 + i * 28, 110, 4, 26, '#c4c8d2'); P(x + 12 + i * 28, 126, 4, 4, i % 2 ? '#3bd16f' : '#ffd23a'); } g.font = '700 6px "Helvetica Neue", Arial, sans-serif'; g.fillStyle = '#1b2656'; g.fillText(L('PORTAGEM', 'TOLL'), x + 34, 109); } }
+  sign(5, 92, ['A8', L('Torres Vedras', 'Torres Vedras'), 'Caldas da Rainha'], '#1f5fbf');
+  sign(11, 70, ['Óbidos', 'Caldas  ↑'], '#1f5fbf');
+  sign(17.4, 92, ['CALDAS DA', 'RAINHA'], '#1f5fbf');
+  // our car
+  const bob = Math.floor(t * 8) % 2; { const x = 70, y = 150 + bob * 0;
+    P(x, y - 12, 44, 10, '#d64545'); P(x + 8, y - 20, 24, 9, '#d64545'); P(x + 11, y - 18, 8, 6, '#9fd0ff'); P(x + 21, y - 18, 8, 6, '#9fd0ff'); P(x + 42, y - 9, 3, 3, '#ffe9a8');
+    for (const wx of [x + 9, x + 35]) { P(wx - 4, y - 4, 9, 7, '#16121a'); P(wx - 1, y - 1, 3, 2, '#9aa0ad'); } }
+  g.font = '800 10px Jost, Arial, sans-serif'; g.fillStyle = '#ffffff'; g.fillText(L('A caminho das Caldas da Rainha…', 'On the way to Caldas da Rainha…'), 10, 16);
+}
+// the sheet of paper in Lisboa: after the giant donkey, on one of the streets round the square; only seen (and only
+// tapped) while there is no raid
+const prPaperOn = () => !!(S.prPaper && !S.prDone && !S.raid && !S.van && !S.kettle && !S.winning);
+function prPaperTick() {
+  if (!S.city.donkey || S.donkey !== 'giant' || S.prDone) return;
+  if (!S.prPaper) { S.prPaper = Math.random() < .5 ? { gx: rnd(1.5, NX - 1.5), gy: -1 + rnd(-.25, .25) } : { gx: -1 + rnd(-.25, .25), gy: rnd(2, NY - 2) }; S.prAt = S.t + 15; } // the far streets: nothing stands in front of them
+  if (!S.prHint && S.t > S.prAt && prPaperOn()) { S.prHint = true; const q = iso(S.prPaper.gx, S.prPaper.gy, 10); floatXY(q.x, q.y, L('Um papel na estrada…', 'A sheet of paper on the road…'), '#ffffff'); }
+}
+function tapPaper(e) {
+  if (!prPaperOn() || S.t < S.prAt) return false;
+  const p = S.prPaper, r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H, q = iso(p.gx, p.gy);
+  if (Math.abs(sx - q.x) > 9 || sy < q.y - 14 || sy > q.y + 6) return false;
+  S.prPaper = null; S.prDone = true; mode = 'prask';
+  show(`<h2 class="p-red rough">${L('Onde está o PR?', 'Where is the President?')}</h2><p class="help">${L('No papel, à mão: «Hoje à noite, o Coro Social do Bairro vai cantar à porta do Presidente, nas Caldas da Rainha. Vens?»', 'Handwritten on the sheet: “Tonight the Coro Social do Bairro will sing at the President’s door, in Caldas da Rainha. Coming?”')}</p>
+    <button class="btnp red" data-a="calgo">${L('Ir às Caldas →', 'Go to Caldas →')}</button><button class="btnp" data-a="calno">${L('Agora não', 'Not now')}</button>`);
+  return true;
+}
+function drawPaper(p) { if (!prPaperOn() || S.t < S.prAt) return; const q = iso(p.gx, p.gy), x = Math.round(q.x), y = Math.round(q.y), f = Math.floor(S.t * 2) % 2; R(x - 4, y - 2, 8, 5, '#f4f1ea'); R(x - 3, y - 1, 6, 1, '#9aa0ad'); R(x - 3, y + 1, 4, 1, '#9aa0ad'); if (f) { R(x - 1, y - 11, 3, 5, '#ffd23a'); R(x - 1, y - 5, 3, 2, '#ffd23a'); } }
+$('calTapB').addEventListener('click', e => { calTap(); e.currentTarget.blur(); });
+$('calSoft').addEventListener('click', e => { calSoft(); e.currentTarget.blur(); });
+$('calC').addEventListener('pointerdown', e => { calTap(); e.preventDefault(); });
+$('calQuit').addEventListener('click', () => calClose());
+$('calEnd').addEventListener('click', e => { const b = e.target.closest('[data-cal]'); if (!b) return; if (b.dataset.cal === 'again') calOpen(CAL ? CAL.from : 'menu'); else calClose(); });
+addEventListener('keydown', e => {
+  if (!CAL) return;
+  if (e.key === ' ' || e.key === 'Enter') { if ($('calEnd').hidden) { calTap(); e.preventDefault(); e.stopImmediatePropagation(); } return; }
+  if (e.key === 'ArrowDown' || e.key.toLowerCase() === 'b') { calSoft(); e.preventDefault(); e.stopImmediatePropagation(); return; }
+  if (e.key === 'Escape') { calClose(); e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+
 cityIdx = 1; newLevel(); S.clock = 21.5; S.dark = 1;
 for (let i = 0; i < 9; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = 0; } }
 cityIdx = ORDER[0];
@@ -4914,7 +5201,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     const d = document.createElement('div'); d.id = 'upd'; d.innerHTML = `${L('Há uma versão nova', 'There’s a new version')} <button type="button">${L('Atualizar', 'Update')}</button>`;
     d.querySelector('button').addEventListener('click', () => location.reload()); document.body.appendChild(d); });
 }
-window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
+window.__acampada = { paperAt: () => { const p = S.prPaper; if (!p) return null; const q = iso(p.gx, p.gy), r = cv.getBoundingClientRect(); return { x: r.left + q.x / W * r.width, y: r.top + (q.y - 3) / H * r.height, on: prPaperOn() && S.t >= S.prAt }; }, cal: { get c() { return CAL; }, tap: () => calTap(), soft: () => calSoft() }, get mode() { return mode; }, story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
 </script>
 </body>

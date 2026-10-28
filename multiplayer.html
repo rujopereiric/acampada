@@ -182,6 +182,20 @@ button{ cursor:pointer; touch-action:manipulation; }
 /* phones on their side: room for the camera even if the browser reports no safe area */
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #ov{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 10px)) !important; padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 10px)) !important; } }
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #app{ padding-left:max(40px, calc(env(safe-area-inset-left,0px) + 6px)) !important; padding-right:max(40px, calc(env(safe-area-inset-right,0px) + 6px)) !important; } }
+/* the wall across the road and the poster drawing */
+#wallSheet{ position:fixed; inset:0; z-index:40; background:#0b0a12; display:flex; flex-direction:column; gap:8px; padding:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-right,0px) + 10px) calc(env(safe-area-inset-bottom,0px) + 8px) calc(env(safe-area-inset-left,0px) + 10px); color:var(--paper); }
+#wallSheet[hidden]{ display:none; } #wallSheet h3{ display:flex; justify-content:space-between; align-items:center; margin:0; font:800 18px Jost, sans-serif; text-transform:uppercase; }
+#wallBox{ flex:1; min-height:0; display:flex; align-items:center; justify-content:center; } #wallCv{ max-width:100%; max-height:100%; image-rendering:pixelated; touch-action:none; border:3px solid #5a5650; cursor:crosshair; }
+#wallInfo{ font-size:13px; min-height:18px; color:#d8d4cc; text-align:center; }
+.pxpal, #wallPal{ display:flex; flex-wrap:wrap; gap:5px; justify-content:center; } .pxpal button, #wallPal button{ width:30px; height:30px; border:2px solid var(--paper); padding:0; border-radius:0; } .pxpal button.on, #wallPal button.on{ outline:3px solid var(--lime); outline-offset:2px; }
+.pxpal button.erase, #wallPal button.erase{ background:#3a3644; color:var(--paper); font-size:16px; }
+.walltools{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; } .walltools button{ background:transparent; color:var(--paper); border:2px solid var(--paper); font:800 12px Jost, sans-serif; text-transform:uppercase; padding:7px 9px; } .walltools button.on{ background:var(--lime); color:var(--ink); }
+#wallMold{ display:flex; gap:0; } #wallMold button{ border-right-width:0; } #wallMold button:last-child{ border-right-width:2px; }
+#wallGal{ position:absolute; inset:0; background:rgba(11,10,18,.97); display:flex; flex-direction:column; gap:8px; padding:16px; overflow:auto; z-index:2; } #wallGal[hidden]{ display:none; }
+#wallGalList{ display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; } #wallGalList .galimg{ width:100%; image-rendering:pixelated; border:3px solid #5a5650; }
+.pxed{ display:flex; flex-direction:column; gap:8px; align-items:center; margin-top:8px; } .pxcv{ width:min(100%, 320px); image-rendering:pixelated; touch-action:none; border:3px solid var(--ink); cursor:crosshair; }
+.cartaz canvas{ display:block; width:100%; image-rendering:pixelated; margin:0 auto; } .cartaz.drawn{ padding:6px; }
+.tb.purple{ background:#9a6bff; color:#fff; } .tb.purple small{ color:#efe6ff; }
 </style>
 </head>
 <body>
@@ -218,6 +232,7 @@ button{ cursor:pointer; touch-action:manipulation; }
     <button class="tb green" id="tGest"><span data-t="gest"></span><small data-t="gestS"></small></button>
     <button class="tb red" id="tMural"><span data-t="mural"></span><small data-t="muralS"></small></button>
     <button class="tb ink" id="tAgenda"><span data-t="agenda"></span><small data-t="agendaS"></small></button>
+    <button class="tb purple" id="tWall"><span data-t="wall"></span><small data-t="wallS"></small></button>
   </nav>
   <aside id="side">
     <div class="sheet" id="muralSheet" hidden>
@@ -230,6 +245,14 @@ button{ cursor:pointer; touch-action:manipulation; }
   </aside>
 </div>
 
+<div id="wallSheet" hidden>
+  <h3><span data-t="wallT"></span><button class="x" id="wallX" aria-label="Fechar">✕</button></h3>
+  <div id="wallBox"><canvas id="wallCv"></canvas></div>
+  <div id="wallInfo"></div>
+  <div id="wallPal"></div>
+  <div class="walltools"><button type="button" id="wallQuem">👁 <span data-t="wallWho"></span></button><span id="wallMold"><button type="button" data-m="">—</button><button type="button" data-m="cravo">🌹</button><button type="button" data-m="casa">🏠</button><button type="button" data-m="tenda">⛺</button></span><button type="button" id="wallGalB">🖼 <span data-t="wallGal"></span></button><button type="button" id="wallSave">⬇ PNG</button><button type="button" id="wallRep">⚑ <span data-t="wallRep"></span></button></div>
+  <div id="wallGal" hidden><h3><span data-t="wallGal"></span><button class="x" id="wallGalX" aria-label="Fechar">✕</button></h3><div id="wallGalList"></div></div>
+</div>
 <div id="ov"><div class="wrapc" id="ovIn"></div></div>
 
 <script>
@@ -303,7 +326,7 @@ const GESTURES = [null,
 const TXT = {
   phrases: ['Gritar uma palavra de ordem', 'Shout a slogan'], gestures: ['Fazer um gesto', 'Make a gesture'],
   say: ['Gritar', 'Shout'], sayS: ['Palavras de ordem', 'Slogans'], gest: ['Gestos', 'Gestures'], gestS: ['Acenar, palmas…', 'Wave, clap…'],
-  mural: ['Mural', 'Wall'], breaking: ['Última hora', 'Breaking'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], agenda: ['Agenda', 'Agenda'], agendaS: ['Próximas manifs', 'Next protests'], agendaT: ['Próximas manifestações', 'Next protests'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
+  mural: ['Mural', 'Wall'], wall: ['Parede', 'Paint'], wallS: ['Pintar juntos', 'Paint together'], wallT: ['A parede do prédio abandonado', 'The abandoned building’s wall'], wallWho: ['Quem pintou', 'Who painted'], wallGal: ['Galeria', 'Gallery'], wallRep: ['Denunciar', 'Report'], breaking: ['Última hora', 'Breaking'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], agenda: ['Agenda', 'Agenda'], agendaS: ['Próximas manifs', 'Next protests'], agendaT: ['Próximas manifestações', 'Next protests'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
 };
 function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
@@ -317,6 +340,7 @@ function applyTexts() {
 const TW = 12, TH = 6;
 let W = 22, H = 22, CXg = 11, CYg = 11;
 const G0 = -8, G1 = 30; // the world around the square, in tiles
+const PW = 48, PH = 32, PB = 8, WALL_X0 = 6, WALL_Y = -2.6, WALL_Z = 82; // the wall's top left corner on the building's face, in tiles and pixels
 let OX = 0, OY = 0, WORLD_W = 0, WORLD_H = 0;
 const iso = (gx, gy, z = 0) => ({ x: OX + (gx - gy) * TW, y: OY + (gx + gy) * TH - z });
 const toWorld = (sx, sy) => { const a = (sx - OX) / TW, b = (sy - OY) / TH; return { gx: (a + b) / 2, gy: (b - a) / 2 }; };
@@ -379,7 +403,9 @@ function makeBG() {
   box(g, -.25, -.25, W + .25, 0, 0, 2, '#d9d3c3', '#c9c2b0', '#b4ac99'); box(g, -.25, 0, 0, H + .25, 0, 2, '#d9d3c3', '#c9c2b0', '#b4ac99');
   // buildings on the two far sides, one block per street front
   let k = 0;
-  for (let gx = G0; gx < W + 2; ) { const w = 3 + Math.floor(hash(gx, 1) * 3), h = 44 + Math.floor(hash(gx, 2) * 4) * 10; building(g, gx, -7.5, Math.min(gx + w, W + 2), -2.6, h, FACADES[k++ % FACADES.length], true); gx += w; }
+  const AB0 = WALL_X0 - .4, AB1 = WALL_X0 + PW / 6 + .4; // the abandoned building with the wall everyone paints
+  for (let gx = G0; gx < W + 2; ) { if (gx >= AB0 - .01 && gx < AB1) { gx = AB1; continue; } const w = 3 + Math.floor(hash(gx, 1) * 3), h = 44 + Math.floor(hash(gx, 2) * 4) * 10; const x1 = Math.min(gx + w, W + 2, gx < AB0 ? AB0 : W + 2); building(g, gx, -7.5, x1, -2.6, h, FACADES[k++ % FACADES.length], true); gx = x1; }
+  abandoned(g);
   for (let gy = -2.6; gy < H + 2; ) { const w = 3 + Math.floor(hash(3, gy) * 3), h = 44 + Math.floor(hash(4, gy) * 4) * 10; building(g, -7.5, gy, -2.6, Math.min(gy + w, H + 2), h, FACADES[k++ % FACADES.length], false); gy += w; }
   // the near streets: a low row of trees and bollards (they never hide anyone)
   for (let i = -1; i < W + 2; i += 1.5) { const p = iso(i, H + 1.1, 0); R(g, p.x, p.y - 4, 2, 4, '#2b2836'); const q = iso(W + 1.1, i, 0); R(g, q.x, q.y - 4, 2, 4, '#2b2836'); }
@@ -487,7 +513,7 @@ function hairOn(g, hx, hy, w, o) {
   if (hs === 2) { R(g, o.flip ? hx + w : hx - 1, hy, 1, 2, c); R(g, o.flip ? hx + w + 1 : hx - 2, hy + 1, 1, 3, c); } // ponytail
   eyes();
 }
-function drawPerson(g, p, now) {
+function drawPersonC(g, p, now) {
   const q = iso(p.x, p.y), x = Math.round(q.x), y = Math.round(q.y), lk = p.look;
   // the city aura: a glowing ring on the ground
   const a = auraOf(p.c);
@@ -648,6 +674,7 @@ const cartazCentre = c => {
 };
 function paintCartaz(g, c, x0, x1, yAt, h) { // column by column; yAt gives each column's top
   const col = CARTAZ_COL[c.cor] || CARTAZ_COL[0], ink = CARTAZ_INK[c.cor] || '#1b1464';
+  if (c.px) { for (let x = x0; x <= x1; x++) { const y = yAt(x), edge = x === x0 || x === x1; if (edge) { R(g, x, y, 1, h, '#0b0a0a'); continue; } R(g, x, y, 1, 1, '#0b0a0a'); R(g, x, y + h - 1, 1, 1, '#0b0a0a'); for (let r = 1; r < h - 1; r++) R(g, x, y + r, 1, 1, cartazPxAt(c, (x - x0 - 1) / Math.max(1, x1 - x0 - 1), (r - 1) / Math.max(1, h - 2))); } return; }
   for (let x = x0; x <= x1; x++) {
     const y = yAt(x), edge = x === x0 || x === x1;
     R(g, x, y, 1, h, edge ? '#0b0a0a' : col); if (!edge) { R(g, x, y, 1, 1, '#0b0a0a'); R(g, x, y + h - 1, 1, 1, '#0b0a0a'); }
@@ -664,6 +691,7 @@ function drawCartazes(g) {
     if (Math.floor(c.slot / FACE_UNITS) >= 2) continue; // those hang from the stem (drawStemCartazes)
     const [a, b] = cartazEnds(c), p0 = iso(a.gx, a.gy, 15), p1 = iso(b.gx, b.gy, 15), h = CARTAZ_H[c.fmt] || 8;
     const x0 = Math.round(p0.x), x1 = Math.round(p1.x), col = CARTAZ_COL[c.cor] || CARTAZ_COL[0], ink = CARTAZ_INK[c.cor] || '#1b1464';
+    if (c.px) { paintCartaz(g, c, x0, x1, x => Math.round(p0.y + (p1.y - p0.y) * (x - x0) / ((x1 - x0) || 1)), h); continue; }
     for (let x = x0; x <= x1; x++) { // column by column, following the slope of the stone
       const y = Math.round(p0.y + (p1.y - p0.y) * (x - x0) / ((x1 - x0) || 1)), edge = x === x0 || x === x1;
       R(g, x, y, 1, h, edge ? '#0b0a0a' : col); if (!edge) { R(g, x, y, 1, 1, '#0b0a0a'); R(g, x, y + h - 1, 1, 1, '#0b0a0a'); }
@@ -887,15 +915,17 @@ function addPerson(o) {
   const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
   p.n = o.n; p.c = o.c; p.look = lookOf(o.l); p.w = o.w | 0;
   if (p.x === undefined) { p.x = o.x; p.y = o.y; }
-  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); } p.i = o.i || 0; p.b = !!o.b;
+  p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); } p.i = o.i || 0; p.b = !!o.b; p.g = !!o.g;
   people.set(o.id, p); return p;
 }
 function onMsg(m) {
+  if (wallMsg(m)) return;
   if (m.t === 'welcome') {
     inside = true; myId = m.id; myMode = m.mode; clockOff = (m.now || Date.now()) - Date.now(); closeAt = m.close || 0; live = m.live || live;
     if (m.size) { W = m.size[0]; H = m.size[1]; CXg = W / 2; CYg = H / 2; }
     people.clear(); for (const o of m.people || []) addPerson(o);
-    me = null; if (myMode === 'praca') { me = addPerson(m.me); me.mine = true; camX = null; }
+    me = null; if (m.av !== false && m.me) { me = addPerson(m.me); me.mine = true; camX = null; }
+    wallAll(m.parede); wallGal = m.galeria || 0;
     mural = m.mural || []; counts = m.counts || counts; closedBy = m.by || null;
     if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
     npcs.clear(); for (const o of m.npcs || []) addNpc(o);
@@ -903,8 +933,9 @@ function onMsg(m) {
     if (m.jogos) jogos = m.jogos;
     cartazes = m.cartazes || []; if (Array.isArray(m.meus)) { myCartazes = new Set(m.meus); mineCount = m.meus.length; } convencidos = m.convencidos || 0; setClima(m.clima);
     hideToast();
-    if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
+    if (m.full) toast(L('A praça está cheia: estás a ver sem boneco.', 'The square is full: you’re watching without an avatar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
+    else toast(L('Estás na praça como fantasma: os outros veem que apoias de longe. Toca no chão para andar.', 'You’re in the square as a ghost: the others see you support from afar. Tap the ground to walk.'), 5000);
     showApp(); renderAll(); setTimeout(tourStart, 1500); return;
   }
   if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
@@ -1138,6 +1169,7 @@ cv.addEventListener('pointerup', e => {
   const moved = drag.moved; drag = null; if (moved) return;
   const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
   const hit = hitTest(e.clientX - r.left, e.clientY - r.top); if (hit) { approach(hit); return; }
+  if (onWall((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy)) { openWall(); return; }
   closeSheets(); pending = null;
   if (!me) return;
   const w = toWorld((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy + 3);
@@ -1258,7 +1290,9 @@ function canteenDialog() {
 }
 function showCartaz(c) {
   dialog(L('Cartaz no cravo', 'Poster on the carnation'), '', b => {
-    const p = document.createElement('div'); p.className = 'cartaz fmt-' + (c.fmt || 'm'); p.style.background = CARTAZ_COL[c.cor] || CARTAZ_COL[0]; p.textContent = c.text; b.append(p);
+    const p = document.createElement('div'); p.className = 'cartaz fmt-' + (c.fmt || 'm') + (c.px ? ' drawn' : ''); p.style.background = CARTAZ_COL[c.cor] || CARTAZ_COL[0];
+    if (c.px) { const im = cartazImg(c), big = document.createElement('canvas'); big.width = im.width; big.height = im.height; big.getContext('2d').drawImage(im, 0, 0); p.append(big); if (c.text) { const t = document.createElement('div'); t.textContent = c.text; t.style.marginTop = '6px'; p.append(t); } } else p.textContent = c.text;
+    b.append(p);
     const who = document.createElement('div'); who.className = 'note'; const dot = document.createElement('i'); dot.className = 'dot'; dot.style.background = auraOf(c.city);
     who.append(dot, ` ${c.name} · ${c.city}`); b.append(who);
     if (!myCartazes.has(c.id) && inside) { const r = optBtn(reported.has(-c.id) ? L('Denunciado', 'Reported') : L('⚑ Denunciar', '⚑ Report'), () => { send({ t: 'cartaz-rep', id: c.id }); reported.add(-c.id); store.set('acampada-praca-rep', JSON.stringify([...reported].slice(-200))); r.textContent = L('Denunciado', 'Reported'); r.disabled = true; }); r.className = 'ghost'; r.disabled = reported.has(-c.id); b.append(r); }
@@ -1275,7 +1309,8 @@ function bikeRideInfo() {
   });
 }
 function makeCartazDialog() {
-  dialog(L('Fazer um cartaz', 'Make a poster'), L('Escreve uma frase curta. O cartaz fica pendurado no cravo enquanto a praça estiver aberta.', 'Write a short line. The poster hangs on the carnation while the square is open.'), b => {
+  dialog(L('Fazer um cartaz', 'Make a poster'), L('Escreve uma frase curta ou faz um desenho. O cartaz fica pendurado no cravo enquanto a praça estiver aberta.', 'Write a short line or make a drawing. The poster hangs on the carnation while the square is open.'), b => {
+    let drawMode = false;
     const ta = document.createElement('textarea'); ta.maxLength = 60; ta.rows = 2; ta.className = 'cartazIn'; ta.placeholder = L('Ex.: Casa para viver!', 'E.g. Homes to live in!');
     const cnt = document.createElement('div'); cnt.className = 'note'; const err = document.createElement('span'); err.className = 'err'; err.id = 'cartazErr'; const n = document.createElement('span'); n.textContent = '0/60'; cnt.append(err, n);
     ta.addEventListener('input', () => { n.textContent = `${ta.value.length}/60`; err.textContent = ''; });
@@ -1284,26 +1319,29 @@ function makeCartazDialog() {
     const fits = k => cartazSpot(cartazes, CARTAZ_FMT[k]) >= 0;
     if (!fits('m')) fmt = ['p', 'g', 'f'].find(fits) || 'p';
     const sizes = document.createElement('div'); sizes.className = 'seg';
-    const sync = () => { prev.className = 'cartaz fmt-' + fmt; prev.style.background = CARTAZ_COL[cor]; prev.style.color = CARTAZ_INK[cor]; prev.textContent = ta.value.trim() || L('Casa para viver!', 'Homes to live in!'); for (const x of sizes.children) x.classList.toggle('on', x.dataset.f === fmt); for (const x of cols.children) x.classList.toggle('on', +x.dataset.c === cor); };
+    const sync = () => { if (ped) { ped.setCor(cor); } prev.hidden = drawMode; prev.className = 'cartaz fmt-' + fmt; prev.style.background = CARTAZ_COL[cor]; prev.style.color = CARTAZ_INK[cor]; prev.textContent = ta.value.trim() || L('Casa para viver!', 'Homes to live in!'); for (const x of sizes.children) x.classList.toggle('on', x.dataset.f === fmt); for (const x of cols.children) x.classList.toggle('on', +x.dataset.c === cor); };
     for (const [k, pt, en] of [['p', 'Pequeno', 'Small'], ['m', 'Médio', 'Medium'], ['g', 'Grande', 'Large'], ['f', 'Faixa', 'Banner']]) {
       const x = document.createElement('button'); x.type = 'button'; x.dataset.f = k; x.textContent = L(pt, en); x.disabled = !fits(k); x.title = x.disabled ? L('Já não há espaço para este tamanho', 'No room left for this size') : '';
-      x.addEventListener('click', () => { fmt = k; sync(); }); sizes.append(x);
+      x.addEventListener('click', () => { if (fmt !== k && ped) ped.setFmt(k); fmt = k; sync(); }); sizes.append(x);
     }
     const cols = document.createElement('div'); cols.className = 'cols';
     CARTAZ_COL.forEach((c, i) => { const x = document.createElement('button'); x.type = 'button'; x.dataset.c = i; x.style.background = c; x.setAttribute('aria-label', L('Cor ', 'Colour ') + (i + 1)); x.addEventListener('click', () => { cor = i; sync(); }); cols.append(x); });
     ta.addEventListener('input', sync);
     const go = optBtn(L('Pendurar', 'Hang it'), () => {
-      const v = ta.value.trim(); if (!v) { err.textContent = L('Escreve alguma coisa.', 'Write something.'); return; }
+      const v = ta.value.trim(); if (drawMode ? ped.empty() : !v) { err.textContent = drawMode ? L('Desenha alguma coisa.', 'Draw something.') : L('Escreve alguma coisa.', 'Write something.'); return; }
       if (!fits(fmt)) { err.textContent = L('Já não há espaço para esse tamanho. Escolhe outro.', 'No room for that size any more. Pick another.'); return; }
       if (!ws || ws.readyState !== 1) { err.textContent = L('Sem ligação à praça. Tenta outra vez daqui a pouco.', 'Not connected to the square. Try again in a moment.'); return; }
-      send({ t: 'cartaz', text: v, fmt, cor }); go.disabled = true; go.textContent = '…';
+      send(drawMode ? { t: 'cartaz', text: v, fmt, cor, px: ped.get() } : { t: 'cartaz', text: v, fmt, cor }); go.disabled = true; go.textContent = '…';
       clearTimeout(cartazWait); cartazWait = setTimeout(() => { if (!go.isConnected) return; go.disabled = false; go.textContent = L('Pendurar', 'Hang it'); err.textContent = L('A praça não respondeu. Tenta outra vez.', 'The square didn’t answer. Try again.'); }, 5000);
     });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
     const row = document.createElement('div'); row.className = 'write'; row.append(ta, go); go.id = 'cartazGo';
     const lab1 = document.createElement('label'); lab1.className = 'npclab'; lab1.textContent = L('Tamanho', 'Size');
     const lab2 = document.createElement('label'); lab2.className = 'npclab'; lab2.textContent = L('Cor', 'Colour');
-    b.append(row, cnt, lab1, sizes, lab2, cols, prev); sync(); setTimeout(() => ta.focus(), 50);
+    const ped = posterEditor(fmt, cor, '', () => { err.textContent = ''; }); ped.el.hidden = true;
+    const kind = document.createElement('div'); kind.className = 'seg';
+    for (const [k, pt, en] of [[0, '✍️ Escrever', '✍️ Write'], [1, '🎨 Desenhar', '🎨 Draw']]) { const x = document.createElement('button'); x.type = 'button'; x.textContent = L(pt, en); x.classList.toggle('on', !k); x.addEventListener('click', () => { drawMode = !!k; for (const y of kind.children) y.classList.toggle('on', y === x); ped.el.hidden = !drawMode; ta.placeholder = drawMode ? L('Uma legenda (opcional)', 'A caption (optional)') : L('Ex.: Casa para viver!', 'E.g. Homes to live in!'); sync(); }); kind.append(x); }
+    b.append(kind, row, cnt, lab1, sizes, lab2, cols, ped.el, prev); sync(); setTimeout(() => ta.focus(), 50);
   });
 }
 // the button that shows up next to the carnation
@@ -1336,6 +1374,7 @@ function renderScene(g, ox, oy, vw, vh, now) {
   g.fillStyle = '#2a2440'; g.fillRect(0, 0, vw, vh);
   g.drawImage(bg, -ox, -oy);
   g.translate(-ox, -oy);
+  drawWall(g);
   const list = [];
   for (const d of DECOR) list.push([d.gx + d.gy, () => drawDecor(g, d)]);
   for (const p of people.values()) list.push([p.x + p.y, () => drawPerson(g, p, now)]);
@@ -1468,7 +1507,7 @@ const TOUR = [
   () => L('Ao pé do cravo podes pendurar um cartaz. Bom protesto! ✊', 'By the carnation you can hang a poster. Enjoy the protest! ✊')
 ];
 let tourStep = -1, tourFrom = null;
-function tourStart() { if (myMode !== 'praca' || store.get('acampada-praca-tour') === '1' || tourStep >= 0) return; tourStep = 0; tourFrom = me ? { x: me.x, y: me.y } : null; tourShow(); }
+function tourStart() { if (!me || store.get('acampada-praca-tour') === '1' || tourStep >= 0) return; tourStep = 0; tourFrom = me ? { x: me.x, y: me.y } : null; tourShow(); }
 function tourShow() {
   if (tourStep < 0 || tourStep >= TOUR.length) { $('tour').hidden = true; return; }
   $('tourTxt').textContent = `${tourStep + 1}/${TOUR.length} · ${TOUR[tourStep]()}`; $('tourOk').textContent = tourStep === TOUR.length - 1 ? L('Vamos!', 'Let’s go!') : 'OK'; $('tourSkip').textContent = L('Saltar', 'Skip');
@@ -1491,6 +1530,7 @@ function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (
 function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
   if (photoLater && lastPhoto) { photoLater = false; setTimeout(() => { if (lastPhoto) { $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false; } }, 300); } }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
+$('tWall').addEventListener('click', () => openWall());
 $('tGest').addEventListener('click', () => openSheet('gestSheet'));
 $('tMural').addEventListener('click', () => openSheet('muralSheet'));
 $('tAgenda').addEventListener('click', () => { renderAgenda(); openSheet('agendaSheet'); });
@@ -1571,8 +1611,8 @@ function renderWhere() {
   const meLine = myMode === 'praca' ? L('estás na praça', 'you’re in the square') : L('estás como apoio de longe', 'you’re supporting from afar');
   $('where').innerHTML = ''; $('where').append(title); const s = document.createElement('small'); s.textContent = [meLine, close].filter(Boolean).join(' · '); $('where').append(s);
 }
-function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = myMode !== 'praca'; bikeSync(); }
-function bikeSync() { const b = $('bBike'); b.hidden = myMode !== 'praca' || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
+function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = !me; bikeSync(); }
+function bikeSync() { const b = $('bBike'); b.hidden = !me || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
 $('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
 $('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
 for (const id of ['npcSheet', 'muralSheet']) { const el = $(id); el.addEventListener('focusin', e => { if (e.target.matches('textarea, input') && matchMedia('(pointer: coarse)').matches && innerWidth < 900) el.classList.add('typing'); }); el.addEventListener('focusout', () => setTimeout(() => { if (!el.contains(document.activeElement)) el.classList.remove('typing'); }, 100)); }
@@ -1650,7 +1690,7 @@ function entryScreen(st) {
       <input id="fOther" maxlength="24" placeholder="${L('Qual?', 'Which one?')}" value="${esc(p.other)}" style="margin-top:6px" ${p.city === '_' ? '' : 'hidden'}></div>
     <div><label>${L('Onde estás agora?', 'Where are you now?')}</label><div class="choice">
       <button type="button" data-m="praca" class="${p.mode !== 'apoio' ? 'on' : ''}"><b>${L('Na manif ou na acampada', 'At the protest or a camp')}</b><span>${L('Entras na praça com o teu boneco, a brilhar na cor da tua cidade.', 'You walk into the square with your avatar, glowing in your city’s colour.')}</span></button>
-      <button type="button" data-m="apoio" class="${p.mode === 'apoio' ? 'on' : ''}"><b>${L('Longe, a apoiar', 'Far away, supporting')}</b><span>${L('Contas como apoio, vês a praça e escreves no mural.', 'You count as support, watch the square and write on the wall.')}</span></button>
+      <button type="button" data-m="apoio" class="${p.mode === 'apoio' ? 'on' : ''}"><b>${L('Longe, a apoiar', 'Far away, supporting')}</b><span>${L('Entras como fantasma cinzento: andas, falas e jogas como os outros, mas vê-se que estás em casa.', 'You come in as a grey ghost: you walk, talk and play like everyone else, but it shows you’re at home.')}</span></button>
     </div></div>
     <div id="lookBox"><label>${L('O teu boneco', 'Your avatar')}</label><div class="lookrow"><canvas id="lookCv" width="40" height="40"></canvas><div class="lookbtns"><button type="button" class="btnp sm" id="reroll">🎲 ${L('Sortear', 'Shuffle')}</button><button type="button" class="btnp sm" id="lookEdit">✏️ ${L('Personalizar', 'Customise')}</button></div></div>
       <div id="lookEditor" hidden></div>
@@ -1664,7 +1704,8 @@ function entryScreen(st) {
   const drawLook = () => {
     const c = $('lookCv'), g = c.getContext('2d'), lk = lookOf(profile.look); g.imageSmoothingEnabled = false; g.fillStyle = '#d9d3c3'; g.fillRect(0, 0, 40, 40);
     const city = $('fCity').value, a = auraOf(city === '_' ? '' : city); ell(g, 20, 34, 10, rgba(a, .3)); ell(g, 20, 34, 7, rgba(a, .55));
-    if (profile.bike) drawRider(g, 20, 34, lk, false, 0, lk.bk ? BIKE_COLS[lk.bk - 1] : a); else guy(g, 20, 34, { ...lk });
+    const gl = profile.mode === 'apoio' ? ghostLook(lk) : lk; if (profile.mode === 'apoio') g.globalAlpha = .6;
+    if (profile.bike) drawRider(g, 20, 34, gl, false, 0, lk.bk ? BIKE_COLS[lk.bk - 1] : a); else guy(g, 20, 34, { ...gl }); g.globalAlpha = 1;
   };
   // the editor: one row per part; accessories are two at most (choosing a third drops the oldest)
   const ROWS = [
@@ -1703,7 +1744,7 @@ function entryScreen(st) {
     }
   };
   $('lookEdit').addEventListener('click', () => { const ed = $('lookEditor'); ed.hidden = !ed.hidden; if (!ed.hidden) buildEditor(); });
-  const modeSync = () => { $('lookBox').hidden = profile.mode === 'apoio'; };
+  const modeSync = () => { drawLook(); };
   for (const b of box.querySelectorAll('[data-bk]')) b.addEventListener('click', () => { profile.bike = b.dataset.bk === '1'; for (const x of box.querySelectorAll('[data-bk]')) x.classList.toggle('on', x === b); drawLook(); });
   $('fCity').addEventListener('change', () => { $('fOther').hidden = $('fCity').value !== '_'; drawLook(); });
   $('reroll').addEventListener('click', () => { profile.look = randomLook(); if (!$('lookEditor').hidden) buildEditor(); drawLook(); });
@@ -1731,7 +1772,143 @@ addEventListener('orientationchange', () => { for (const t of [100, 400, 900]) s
 document.addEventListener('gesturestart', e => e.preventDefault());
 showStatus();
 requestAnimationFrame(frame);
-window.__praca = { people, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing, approach };
+/* ================= the 16 colours of the wall and the drawn posters (index.js reads them as 0-f) ================= */
+const PIX = ['#0b0a0a', '#f4f1ea', '#e2283b', '#ff7a80', '#ff8a2a', '#ffd23a', '#c6ff4a', '#3ec46d', '#1f7a45', '#2ad1c9', '#2f8fff', '#1b1464', '#9a6bff', '#ff7ad9', '#8a5a3a', '#9aa0ad'];
+const pixCol = ch => ch && ch !== '-' ? PIX[parseInt(ch, 16)] : null;
+/* ---------- ghosts: the people far away walk in grey, a little see-through, floating ---------- */
+const ghostCache = new WeakMap();
+function ghostLook(lk) {
+  let o = ghostCache.get(lk); if (o) return o;
+  o = {}; for (const [k, v] of Object.entries(lk)) o[k] = typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? (() => { const n = parseInt(v.slice(1), 16), y = Math.round(((n >> 16) * .3 + (n >> 8 & 255) * .59 + (n & 255) * .11) * .55 + 105); return `rgb(${y},${y},${y + 8})`; })() : v;
+  ghostCache.set(lk, o); return o;
+}
+function drawPerson(g, p, now) {
+  if (!p.g) return drawPersonC(g, p, now);
+  const lk = p.look; p.look = ghostLook(lk); g.save(); g.globalAlpha = .58; g.translate(0, -Math.round(1 + Math.sin(now / 400 + p.id) * 1.2));
+  try { drawPersonC(g, p, now); } finally { g.restore(); p.look = lk; }
+}
+/* ---------- the wall of the abandoned building across the road (index.js: PW x PH, kept from one opening to the next) ---------- */
+let wall = '-'.repeat(PW * PH).split(''), wallGal = 0;
+const wallCv = document.createElement('canvas'); wallCv.width = PW; wallCv.height = PH;
+const wallG = wallCv.getContext('2d');
+function wallPaint(i) { const c = pixCol(wall[i]); const x = i % PW, y = (i / PW) | 0; wallG.clearRect(x, y, 1, 1); if (c) { wallG.fillStyle = c; wallG.fillRect(x, y, 1, 1); } }
+function wallAll(d) { if (typeof d === 'string' && d.length === PW * PH) wall = d.split(''); for (let i = 0; i < PW * PH; i++) wallPaint(i); wallEdRedraw(); }
+// in the world: each wall pixel is 2 x 2 screen pixels on the building's face (it climbs 1 pixel every 2 to the right)
+function drawWall(g) { const p = iso(WALL_X0, WALL_Y, WALL_Z); g.save(); g.transform(2, 1, 0, 2, Math.round(p.x), Math.round(p.y)); g.imageSmoothingEnabled = false; g.drawImage(wallCv, 0, 0); g.restore(); }
+function onWall(wx, wy) { const p = iso(WALL_X0, WALL_Y, WALL_Z), u = (wx - p.x) / 2, v = (wy - p.y - u) / 2; return u >= -2 && u < PW + 2 && v >= -2 && v < PH + 2; }
+function abandoned(g) { // the empty building: bare concrete, boarded windows, a fence at the door; its wall left clean for painting
+  const x0 = WALL_X0 - .4, x1 = WALL_X0 + PW / 6 + .4, y0 = -7.5, y1 = WALL_Y, h = 104, col = '#8f8a84';
+  box(g, x0, y0, x1, y1, 0, h, null, shade(col, .92), null);
+  for (let z = 6; z < h; z += 9) for (let gx = x0 + .2; gx < x1; gx += 1.3) { const p = iso(gx, y1, z); R(g, p.x, p.y, 10, 1, shade(col, .84)); }
+  for (let gx = x0 + .7; gx < x1 - .3; gx += 1.6) { const p = iso(gx, y1, 98); R(g, p.x - 2, p.y - 7, 5, 7, hash(gx * 9 | 0, 2) < .5 ? '#6b4a2b' : '#2a2833'); R(g, p.x - 2, p.y - 5, 5, 1, '#8a6a42'); }
+  const bd = iso(x0 + .6, y1, 0); R(g, bd.x - 3, bd.y - 12, 8, 12, '#6b4a2b'); for (let k = 0; k < 3; k++) R(g, bd.x - 3, bd.y - 10 + k * 4, 8, 1, '#8a6a42');
+  for (let gx = x0 + 1.4; gx < x1 - .2; gx += .25) { const p = iso(gx, y1 + .15, 0); R(g, p.x, p.y - 7, 1, 7, '#b4b0a8'); }
+  for (const z of [3, 6]) { const a = iso(x0 + 1.4, y1 + .15, z), b = iso(x1 - .2, y1 + .15, z); g.strokeStyle = '#b4b0a8'; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); }
+  box(g, x0 - .08, y0 - .08, x1 + .08, y1 + .08, h, 3, '#a9a39b', '#98928a', '#86807a');
+}
+/* ---------- the pixel editor: the wall (live) and the posters (drawn before hanging) ---------- */
+// moulds under the wall: a faint drawing to paint over together
+const MOLDES = {
+  cravo: (x, y) => { const cx = 24, fy = 9; if (Math.abs(x - cx - Math.sin(y / 5)) < 1 && y > 13 && y < 30) return 7; if ((x - 18) ** 2 / 9 + (y - 22) ** 2 / 2 < 1 || (x - 30) ** 2 / 9 + (y - 19) ** 2 / 2 < 1) return 7; if ((x - cx) ** 2 / 36 + (y - fy) ** 2 / 20 < 1) return y < 6 ? 3 : 2; if (Math.abs(x - cx) < 2 && y >= 12 && y <= 14) return 8; return -1; },
+  casa: (x, y) => { if (y >= 7 && y < 16 && Math.abs(x - 24) <= y - 3) return 2; if (y >= 16 && y < 30 && x >= 12 && x < 36) { if (x >= 21 && x < 27 && y >= 21) return 14; if ((x >= 15 && x < 19 || x >= 29 && x < 33) && y >= 19 && y < 23) return 10; return 1; } return -1; },
+  tenda: (x, y) => { if (y >= 8 && y < 29 && Math.abs(x - 24) <= (y - 8) * .9) { if (Math.abs(x - 24) < (y - 18) * .35 && y > 18) return 0; return Math.abs(x - 24) < 1 ? 4 : 5; } if (y === 29 && x > 4 && x < 44) return 8; return -1; }
+};
+let wallEd = null; // { tool: 'pintar'|'quem', col, mold, pend, cv }
+function wallEdRedraw(i) {
+  const E = wallEd; if (!E) return; const g = E.cv.getContext('2d'), s = E.cell;
+  const one = k => { const x = k % PW, y = (k / PW) | 0, c = pixCol(wall[k]);
+    g.fillStyle = c || ((x + y) % 2 ? '#7f7a74' : '#89847d'); g.fillRect(x * s, y * s, s, s);
+    if (!c && E.mold) { const m = MOLDES[E.mold](x, y); if (m >= 0) { g.globalAlpha = .38; g.fillStyle = PIX[m]; g.fillRect(x * s, y * s, s, s); g.globalAlpha = 1; } } };
+  if (i != null) one(i); else { for (let k = 0; k < PW * PH; k++) one(k); }
+}
+function wallSize() { const E = wallEd; if (!E) return; const box = $('wallBox').getBoundingClientRect(); const s = Math.max(4, Math.floor(Math.min(box.width / PW, box.height / PH) * (devicePixelRatio || 1))); E.cell = s; E.cv.width = PW * s; E.cv.height = PH * s; E.cv.style.width = (PW * s / (devicePixelRatio || 1)) + 'px'; wallEdRedraw(); }
+function openWall() {
+  closeSheets(); $('wallSheet').hidden = false;
+  wallEd = wallEd || { tool: 'pintar', col: 2, mold: null, pend: [], cv: $('wallCv') };
+  wallTools(); requestAnimationFrame(wallSize);
+}
+function closeWall() { wallFlush(); $('wallSheet').hidden = true; $('wallGal').hidden = true; }
+function wallTools() {
+  const E = wallEd, pal = $('wallPal'); pal.innerHTML = '';
+  PIX.forEach((c, k) => { const b = document.createElement('button'); b.type = 'button'; b.style.background = c; b.className = E.tool === 'pintar' && E.col === k ? 'on' : ''; b.setAttribute('aria-label', L('Cor ', 'Colour ') + (k + 1)); b.addEventListener('click', () => { E.col = k; E.tool = 'pintar'; wallTools(); }); pal.append(b); });
+  const er = document.createElement('button'); er.type = 'button'; er.className = 'erase' + (E.tool === 'pintar' && E.col === -1 ? ' on' : ''); er.textContent = '⌫'; er.title = L('Limpar (volta à parede)', 'Clean (back to the wall)'); er.addEventListener('click', () => { E.col = -1; E.tool = 'pintar'; wallTools(); }); pal.append(er);
+  $('wallQuem').classList.toggle('on', E.tool === 'quem');
+  for (const b of $('wallMold').children) b.classList.toggle('on', (b.dataset.m || null) === E.mold);
+  $('wallInfo').textContent = E.tool === 'quem' ? L('Toca num quadrado para ver quem o pintou.', 'Tap a square to see who painted it.') : L('Pinta com o dedo ou o rato. Toda a gente vê ao vivo.', 'Paint with your finger or the mouse. Everyone sees it live.');
+}
+let wallTimer = 0;
+function wallFlush() { const E = wallEd; if (!E || !E.pend.length) return; send({ t: 'px', a: E.pend.splice(0, 80) }); if (E.pend.length) wallTimer = setTimeout(wallFlush, 120); }
+function wallAt(e) { const E = wallEd, r = E.cv.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * PW), y = Math.floor((e.clientY - r.top) / r.height * PH); return x >= 0 && x < PW && y >= 0 && y < PH ? y * PW + x : -1; }
+function wallDot(i) {
+  const E = wallEd; if (i < 0) return;
+  if (E.tool === 'rep') return;
+  if (E.tool === 'quem') { send({ t: 'quem', i }); return; }
+  const ch = E.col < 0 ? '-' : E.col.toString(16); if (wall[i] === ch) return;
+  wall[i] = ch; wallPaint(i); wallEdRedraw(i);
+  const k = E.pend.findIndex(p => p[0] === i); if (k >= 0) E.pend.splice(k, 1); E.pend.push([i, E.col]);
+  clearTimeout(wallTimer); wallTimer = setTimeout(wallFlush, 120);
+}
+let wallDrag = false, wallLast = -1;
+$('wallCv').addEventListener('pointerdown', e => { wallDrag = true; wallLast = -1; $('wallCv').setPointerCapture(e.pointerId); const i = wallAt(e); wallLast = i; wallDot(i); e.preventDefault(); audioInit(); });
+$('wallCv').addEventListener('pointermove', e => { if (!wallDrag || wallEd.tool !== 'pintar') return; const i = wallAt(e); if (i !== wallLast) { wallLast = i; wallDot(i); } });
+for (const ev of ['pointerup', 'pointercancel']) $('wallCv').addEventListener(ev, () => { wallDrag = false; wallFlush(); });
+$('wallX').addEventListener('click', closeWall);
+$('wallQuem').addEventListener('click', () => { wallEd.tool = wallEd.tool === 'quem' ? 'pintar' : 'quem'; wallTools(); });
+for (const b of $('wallMold').children) b.addEventListener('click', () => { wallEd.mold = b.dataset.m || null; wallTools(); wallEdRedraw(); });
+$('wallRep').addEventListener('click', () => { wallEd.tool = 'rep'; $('wallInfo').textContent = L('Toca na zona com o desenho ofensivo: a organização vai ver.', 'Tap the area with the offensive drawing: the organisers will see it.'); $('wallQuem').classList.remove('on'); });
+$('wallCv').addEventListener('click', e => { if (wallEd && wallEd.tool === 'rep') { const i = wallAt(e); if (i < 0) return; const b = Math.floor((i % PW) / PB) + Math.floor(((i / PW) | 0) / PB) * (PW / PB); send({ t: 'parede-rep', b }); wallEd.tool = 'pintar'; wallTools(); } });
+$('wallGalB').addEventListener('click', () => { send({ t: 'galeria' }); $('wallGal').hidden = false; $('wallGalList').textContent = '…'; });
+$('wallGalX').addEventListener('click', () => { $('wallGal').hidden = true; });
+$('wallSave').addEventListener('click', () => savePng(wall.join(''), 'parede-acampada.png'));
+addEventListener('resize', () => { if (!$('wallSheet').hidden) wallSize(); });
+function pngOf(d, scale = 12) { const c = document.createElement('canvas'); c.width = PW * scale; c.height = PH * scale; const g = c.getContext('2d'); for (let i = 0; i < PW * PH; i++) { const x = i % PW, y = (i / PW) | 0; g.fillStyle = pixCol(d[i]) || ((x + y) % 2 ? '#7f7a74' : '#89847d'); g.fillRect(x * scale, y * scale, scale, scale); } return c; }
+function savePng(d, name) { pngOf(d).toBlob(b => { if (!b) return; const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }); }
+const fmtDay = t => new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
+function wallMsg(m) {
+  if (m.t === 'px') { for (const [i, c] of m.a || []) { if (i < 0 || i >= PW * PH) continue; wall[i] = c < 0 ? '-' : c.toString(16); wallPaint(i); wallEdRedraw(i); } return true; }
+  if (m.t === 'parede') { wallAll(m.d); return true; }
+  if (m.t === 'quem') { $('wallInfo').textContent = m.n ? L(`Pintado por ${m.n} · ${m.c}`, `Painted by ${m.n} · ${m.c}`) : L('Ninguém pintou este quadrado.', 'Nobody has painted this square.'); return true; }
+  if (m.t === 'parede-rep') { $('wallInfo').textContent = L('Obrigado: a organização vai ver essa zona.', 'Thanks: the organisers will look at that area.'); return true; }
+  if (m.t === 'galeria') { const box = $('wallGalList'); box.innerHTML = ''; if (!(m.l || []).length) box.textContent = L('Ainda não há paredes guardadas: a primeira fica guardada quando a praça fechar.', 'No saved walls yet: the first is kept when the square closes.');
+    for (const r of m.l || []) { const b = document.createElement('button'); b.type = 'button'; b.className = 'ghost'; b.textContent = fmtDay(r.at); b.addEventListener('click', () => send({ t: 'galeria1', id: r.id })); box.append(b); } return true; }
+  if (m.t === 'galeria1') { if (!m.g) return true; const box = $('wallGalList'); box.innerHTML = ''; const c = pngOf(m.g.data, 6); c.className = 'galimg'; const cap = document.createElement('div'); cap.className = 'note'; cap.textContent = L('A parede em ', 'The wall on ') + fmtDay(m.g.at);
+    const sv = optBtn(L('Guardar imagem', 'Save image'), () => savePng(m.g.data, 'parede-' + m.g.id + '.png')); const bk = optBtn(L('← Outras', '← Others'), () => send({ t: 'galeria' })); bk.className = sv.className = 'ghost'; box.append(c, cap, sv, bk); return true; }
+  return false;
+}
+/* ---------- drawn posters: a small grid by size (index.js CARTAZ_GRID) ---------- */
+const CARTAZ_GRID = { p: [12, 12], m: [16, 12], g: [16, 14], f: [24, 8] };
+const pxCache = new Map();
+function cartazImg(c) { // the drawing as a little canvas, kept per poster
+  let o = pxCache.get(c.id); if (o && o.px === c.px) return o.cv;
+  const [gw, gh] = CARTAZ_GRID[c.fmt] || CARTAZ_GRID.m, cv2 = document.createElement('canvas'); cv2.width = gw; cv2.height = gh; const g = cv2.getContext('2d');
+  g.fillStyle = CARTAZ_COL[c.cor] || CARTAZ_COL[0]; g.fillRect(0, 0, gw, gh);
+  for (let i = 0; i < gw * gh; i++) { const col = pixCol(c.px[i]); if (col) { g.fillStyle = col; g.fillRect(i % gw, (i / gw) | 0, 1, 1); } }
+  pxCache.set(c.id, { px: c.px, cv: cv2 }); return cv2;
+}
+function cartazPxAt(c, u, v) { // the colour at (u, v) in 0..1 of a drawn poster
+  const [gw, gh] = CARTAZ_GRID[c.fmt] || CARTAZ_GRID.m, i = Math.min(gh - 1, Math.floor(v * gh)) * gw + Math.min(gw - 1, Math.floor(u * gw));
+  return pixCol(c.px[i]) || CARTAZ_COL[c.cor] || CARTAZ_COL[0];
+}
+function posterEditor(fmt, cor, data, onChange) { // returns { el, get(), setFmt(fmt), setCor(cor) }
+  let [gw, gh] = CARTAZ_GRID[fmt], d = data && data.length === gw * gh ? data.split('') : new Array(gw * gh).fill('-'), col = 0, down = false, last = -1;
+  const el = document.createElement('div'); el.className = 'pxed';
+  const cv2 = document.createElement('canvas'); cv2.className = 'pxcv';
+  const pal = document.createElement('div'); pal.className = 'pxpal';
+  const draw = () => { const s = 16; cv2.width = gw * s; cv2.height = gh * s; const g = cv2.getContext('2d'); g.fillStyle = CARTAZ_COL[cor] || CARTAZ_COL[0]; g.fillRect(0, 0, cv2.width, cv2.height);
+    for (let i = 0; i < gw * gh; i++) { const c = pixCol(d[i]); if (c) { g.fillStyle = c; g.fillRect((i % gw) * s, ((i / gw) | 0) * s, s, s); } }
+    g.strokeStyle = 'rgba(0,0,0,.08)'; for (let x = 1; x < gw; x++) { g.beginPath(); g.moveTo(x * s + .5, 0); g.lineTo(x * s + .5, cv2.height); g.stroke(); } for (let y = 1; y < gh; y++) { g.beginPath(); g.moveTo(0, y * s + .5); g.lineTo(cv2.width, y * s + .5); g.stroke(); } };
+  const palSync = () => { pal.innerHTML = ''; PIX.forEach((c, k) => { const b = document.createElement('button'); b.type = 'button'; b.style.background = c; b.className = col === k ? 'on' : ''; b.addEventListener('click', () => { col = k; palSync(); }); pal.append(b); });
+    const er = document.createElement('button'); er.type = 'button'; er.className = 'erase' + (col === -1 ? ' on' : ''); er.textContent = '⌫'; er.addEventListener('click', () => { col = -1; palSync(); }); pal.append(er); };
+  const at = e => { const r = cv2.getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * gw), y = Math.floor((e.clientY - r.top) / r.height * gh); return x >= 0 && x < gw && y >= 0 && y < gh ? y * gw + x : -1; };
+  const dot = i => { if (i < 0) return; const ch = col < 0 ? '-' : col.toString(16); if (d[i] === ch) return; d[i] = ch; draw(); onChange && onChange(); };
+  cv2.addEventListener('pointerdown', e => { down = true; cv2.setPointerCapture(e.pointerId); last = at(e); dot(last); e.preventDefault(); });
+  cv2.addEventListener('pointermove', e => { if (!down) return; const i = at(e); if (i !== last) { last = i; dot(i); } });
+  for (const ev of ['pointerup', 'pointercancel']) cv2.addEventListener(ev, () => { down = false; });
+  el.append(cv2, pal); draw(); palSync();
+  return { el, get: () => d.join(''), empty: () => !d.some(c => c !== '-'), setFmt(f) { [gw, gh] = CARTAZ_GRID[f]; d = new Array(gw * gh).fill('-'); el.style.setProperty('--ar', gw / gh); draw(); }, setCor(c) { cor = c; draw(); } };
+}
+
+window.__praca = { people, get wall() { return wall.join(''); }, openWall, get me() { return me; }, get mode() { return myMode; }, djPos, get mural() { return mural; }, send, skew(ms) { clockOff += ms; }, npcs, get ball() { return ball; }, get cartazes() { return cartazes; }, targets, interact, get diretos() { return diretos; }, get diretoNow() { return diretoNow; }, passing, approach };
 })();
 </script>
 </body>

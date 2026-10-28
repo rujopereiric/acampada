@@ -30,7 +30,12 @@ const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 const CARTAZ_MAX = 60, CRAVO = [11, 11], CARTAZ_POR_PESSOA = 3;
 // posters hang on the two faces of the carnation's plinth that look at the square, 8 spaces wide each; a poster takes
 // as many spaces as its size (multiplayer.html: CARTAZ_FMT, the same numbers)
-const FACE_UNITS = 8, FACES = 8, FILL = [2, 0, 3, 1, 4, 5, 6, 7], CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_CORES = 5; // faces 0-1 the plinth, 2-7 hanging from the stem
+const FACE_UNITS = 8, FACES = 8, FILL = [2, 0, 3, 1, 4, 5, 6, 7], CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_CORES = 5;
+// a drawn poster: one character per pixel, 0-f a colour of the 16 (multiplayer.html PIX), '-' empty; its grid by size
+const CARTAZ_GRID = { p: [12, 12], m: [16, 12], g: [16, 14], f: [24, 8] };
+// the wall of the abandoned building across the road: 48 x 32 pixels everyone paints together, kept from one opening
+// to the next; when the square closes, a copy goes to the gallery (the last 30)
+const PW = 48, PH = 32, PN = PW * PH, PB = 8, PX_MAX = 80, PX_MSGS = 150, GALERIA = 30; // PB: the size of a block the organisers can clear // faces 0-1 the plinth, 2-7 hanging from the stem
 // where a poster of `u` spaces fits: the first gap on either face (slot = face * 8 + first space), or -1
 function cartazSpot(list, u) {
   for (const f of FILL) {
@@ -153,8 +158,12 @@ export class Praca {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS reports (msg INTEGER, who TEXT, PRIMARY KEY (msg, who))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS cartazes (id INTEGER PRIMARY KEY AUTOINCREMENT, slot INTEGER, name TEXT, city TEXT, text TEXT, dev TEXT, at INTEGER, expires INTEGER, hidden INTEGER DEFAULT 0)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS recordes (city TEXT, k TEXT, v INTEGER, PRIMARY KEY (city, k))`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS parede (i INTEGER PRIMARY KEY, c INTEGER, name TEXT, city TEXT, dev TEXT, key TEXT, at INTEGER)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS paredes (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, data TEXT)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS parede_rep (b INTEGER, who TEXT, at INTEGER, PRIMARY KEY (b, who))`);
+    this.wall = new Array(PN).fill('-'); for (const r of this.sql.exec('SELECT i, c FROM parede').toArray()) if (r.i >= 0 && r.i < PN) this.wall[r.i] = r.c.toString(16);
     this.recBy = new Map(); // address key -> records sent in the last hour
-    for (const col of ["fmt TEXT DEFAULT 'm'", 'cor INTEGER DEFAULT 0']) { try { this.sql.exec(`ALTER TABLE cartazes ADD COLUMN ${col}`); } catch (e) {} } // posters from before sizes and colours
+    for (const col of ["fmt TEXT DEFAULT 'm'", 'cor INTEGER DEFAULT 0', "px TEXT DEFAULT ''"]) { try { this.sql.exec(`ALTER TABLE cartazes ADD COLUMN ${col}`); } catch (e) {} } // posters from before sizes and colours
     this.clima = null; this.nextClima = Date.now() + (20 + Math.random() * 30) * 60e3; // the weather: a rain of bananas now and then
     this.pers = new Personagens(this, W, H); this.jogos = new Jogos(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
     this.people = new Map(); // socket -> person
@@ -205,7 +214,22 @@ export class Praca {
   }
   climaNow() { return this.clima && this.clima.until > Date.now() ? this.clima : null; }
   chover(k = 'bananas') { const now = Date.now(); this.clima = { k, at: now, until: now + 20e3 }; this.broadcast({ t: 'clima', c: this.clima }); this.nextClima = now + (25 + Math.random() * 25) * 60e3; }
-  cartazes() { return this.sql.exec('SELECT id, slot, name, city, text, fmt, cor FROM cartazes WHERE hidden = 0 AND expires > ? ORDER BY slot', Date.now()).toArray(); }
+  cartazes() { return this.sql.exec('SELECT id, slot, name, city, text, fmt, cor, px FROM cartazes WHERE hidden = 0 AND expires > ? ORDER BY slot', Date.now()).toArray(); }
+  wallStr() { return this.wall.join(''); }
+  wallSet(i, c, p, now) { // c: 0-15, or -1 to clean the brick
+    this.wall[i] = c < 0 ? '-' : c.toString(16);
+    if (c < 0) this.sql.exec('DELETE FROM parede WHERE i = ?', i);
+    else this.sql.exec('INSERT OR REPLACE INTO parede (i, c, name, city, dev, key, at) VALUES (?, ?, ?, ?, ?, ?, ?)', i, c, p.name, p.city, p.dev, p.key, now);
+  }
+  wallReload() { this.wall.fill('-'); for (const r of this.sql.exec('SELECT i, c FROM parede').toArray()) if (r.i >= 0 && r.i < PN) this.wall[r.i] = r.c.toString(16); this.broadcast({ t: 'parede', d: this.wallStr() }); }
+  wallSnapshot() { // when the square closes: a copy for the gallery, if anything changed since the last one
+    const d = this.wallStr(); if (!/[0-9a-f]/.test(d)) return;
+    const last = this.sql.exec('SELECT data FROM paredes ORDER BY id DESC LIMIT 1').toArray()[0];
+    if (last && last.data === d) return;
+    this.sql.exec('INSERT INTO paredes (at, data) VALUES (?, ?)', Date.now(), d);
+    this.sql.exec('DELETE FROM paredes WHERE id NOT IN (SELECT id FROM paredes ORDER BY id DESC LIMIT ?)', GALERIA);
+  }
+  wallReports() { return this.sql.exec('SELECT b, COUNT(*) AS n, MAX(at) AS at FROM parede_rep GROUP BY b ORDER BY n DESC').toArray(); }
   banned(dev) { const now = Date.now(); return !!dev && this.cfg.bans.some(b => b.dev === dev && b.until > now); }
 
   async fetch(req) {
@@ -220,10 +244,10 @@ export class Praca {
     server.accept();
     if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next, by: st.by })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
     if ([...this.people.values()].filter(q => q.key === key).length >= PER_IP) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
-    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
+    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
     this.people.set(server, p);
     server.addEventListener('message', ev => this.onMessage(p, ev.data));
-    const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); if (p.name && p.mode === 'praca') this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
+    const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
     server.addEventListener('close', bye); server.addEventListener('error', bye);
     this.start();
     return new Response(null, { status: 101, webSocket: client });
@@ -231,51 +255,65 @@ export class Praca {
   onMessage(p, raw) {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
     const now = Date.now();
+    if (m.t === 'px' && p.name) { // painting the wall: no limit per person, only against scripts (150 strokes in 10 s)
+      if (now - p.pxWin > 10e3) { p.pxWin = now; p.pxN = 0; } if (++p.pxN > PX_MSGS || !Array.isArray(m.a)) return;
+      const ok = [];
+      for (const it of m.a.slice(0, PX_MAX)) { if (!Array.isArray(it)) continue; const i = it[0], c = it[1]; if (!Number.isInteger(i) || i < 0 || i >= PN || !Number.isInteger(c) || c < -1 || c > 15) continue; this.wallSet(i, c, p, now); ok.push([i, c]); }
+      if (ok.length) this.broadcast({ t: 'px', a: ok, by: p.id }, p);
+      return;
+    }
     if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) return; // flood guard
     if (m.t === 'hello' && !p.name) {
       p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : '';
       if (this.banned(p.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} return; }
       const n = clean(m.name, 16); p.name = n.ok ? n.text : 'Anónimo';
       const c = String(m.city || '').trim().slice(0, 24); const cc = clean(c, 24); p.city = CITIES.includes(c) ? c : cc.ok ? cc.text : 'Outra';
-      const avatars = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length;
-      p.mode = m.mode === 'praca' && avatars < MAX_AVATARS ? 'praca' : 'apoio';
+      // at the protest (in colour) or far away (a grey ghost): both walk and play; only the counts tell them apart
+      const avatars = [...this.people.values()].filter(q => q.name && q.av).length;
+      p.mode = m.mode === 'praca' ? 'praca' : 'apoio'; p.av = avatars < MAX_AVATARS;
       p.won = (m.won | 0) & 31; p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
-      const others = [...this.people.values()].filter(q => q !== p && q.name && q.mode === 'praca').map(q => this.pub(q));
-      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
-      if (p.mode === 'praca') this.broadcast({ t: 'join', p: this.pub(p) }, p);
+      const others = [...this.people.values()].filter(q => q !== p && q.name && q.av).map(q => this.pub(q));
+      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, av: p.av, full: !p.av, me: this.pub(p), parede: this.wallStr(), galeria: this.sql.exec('SELECT COUNT(*) AS n FROM paredes').one().n, people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
+      if (p.av) this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
       return;
     }
     if (!p.name) return;
-    if (m.t === 'pos' && p.mode === 'praca') { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
-    if (m.t === 'say' && p.mode === 'praca') { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
-    if (m.t === 'emote' && p.mode === 'praca') { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
-    if (m.t === 'cantar' && p.mode === 'praca') { // the collective Grândola: enough people within 15 s, then 5 minutes' rest
+    if (m.t === 'pos' && p.av) { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
+    if (m.t === 'say' && p.av) { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
+    if (m.t === 'emote' && p.av) { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
+    if (m.t === 'cantar' && p.av) { // the collective Grândola: enough people within 15 s, then 5 minutes' rest
       if (this.cantoAt && now - this.cantoAt < 300e3) return this.send(p, { t: 'cantono', wait: Math.ceil((300e3 - (now - this.cantoAt)) / 60e3) });
       this.canto ||= new Map(); for (const [id, t] of this.canto) if (now - t > 15e3) this.canto.delete(id);
       this.canto.set(p.id, now);
-      const praca = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length, need = Math.min(5, Math.max(2, Math.ceil(praca / 2)));
+      const praca = [...this.people.values()].filter(q => q.name && q.av).length, need = Math.min(5, Math.max(2, Math.ceil(praca / 2)));
       if (this.canto.size >= need) { this.cantoAt = now; this.canto.clear(); this.broadcast({ t: 'grandola', n: need }); }
       else this.broadcast({ t: 'canto', id: p.id, n: this.canto.size, need });
       return;
     }
-    if (p.mode === 'praca' && this.jogos.handle(p, m, now)) return;
-    if (p.mode === 'praca' && this.pers.handle(p, m, now)) return;
-    if (m.t === 'bike' && p.mode === 'praca') { const on = !!m.on && this.cfg.ciclistas; if (on !== p.bike) { p.bike = on; p.dirty = true; } if (m.on && !this.cfg.ciclistas) this.send(p, { t: 'npcno', k: 'bike', why: 'off' }); return; }
-    if (m.t === 'cartaz' && p.mode === 'praca') {
+    if (p.av && this.jogos.handle(p, m, now)) return;
+    if (p.av && this.pers.handle(p, m, now)) return;
+    if (m.t === 'bike' && p.av) { const on = !!m.on && this.cfg.ciclistas; if (on !== p.bike) { p.bike = on; p.dirty = true; } if (m.on && !this.cfg.ciclistas) this.send(p, { t: 'npcno', k: 'bike', why: 'off' }); return; }
+    if (m.t === 'cartaz' && p.av) {
       if (Math.hypot(p.x - CRAVO[0], p.y - CRAVO[1]) > 3.6) return this.send(p, { t: 'cartazno', why: 'longe' });
       const mine = p.dev ? this.sql.exec('SELECT COUNT(*) AS n FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).one().n : (p.cartazes || 0);
       if (mine >= CARTAZ_POR_PESSOA) return this.send(p, { t: 'cartazno', why: 'ja' });
       const fmt = CARTAZ_FMT[m.fmt] ? m.fmt : 'm', cor = Number.isInteger(m.cor) && m.cor >= 0 && m.cor < CARTAZ_CORES ? m.cor : 0;
       const slot = cartazSpot(this.cartazes(), CARTAZ_FMT[fmt]);
       if (slot < 0) return this.send(p, { t: 'cartazno', why: 'cheio' });
-      const c = clean(m.text, CARTAZ_MAX); if (!c.ok) return this.send(p, { t: 'cartazno', why: c.why });
+      // written, or drawn (then the words are optional)
+      const [gw, gh] = CARTAZ_GRID[fmt], px = typeof m.px === 'string' && m.px.length === gw * gh && /^[0-9a-f-]+$/.test(m.px) && /[0-9a-f]/.test(m.px) ? m.px : '';
+      const c = px && !String(m.text || '').trim() ? { ok: true, text: '' } : clean(m.text, CARTAZ_MAX); if (!c.ok) return this.send(p, { t: 'cartazno', why: c.why });
       const expires = this.state.close || now + 12 * 3600e3;
-      const row = this.sql.exec('INSERT INTO cartazes (slot, name, city, text, dev, at, expires, fmt, cor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id', slot, p.name, p.city, c.text, p.dev, now, expires, fmt, cor).one();
+      const row = this.sql.exec('INSERT INTO cartazes (slot, name, city, text, dev, at, expires, fmt, cor, px) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id', slot, p.name, p.city, c.text, p.dev, now, expires, fmt, cor, px).one();
       p.cartazes = (p.cartazes || 0) + 1; this.alarmAt(expires + 60e3);
-      this.broadcast({ t: 'cartaz+', c: { id: row.id, slot, name: p.name, city: p.city, text: c.text, fmt, cor }, by: p.id, mine: mine + 1 });
+      this.broadcast({ t: 'cartaz+', c: { id: row.id, slot, name: p.name, city: p.city, text: c.text, fmt, cor, px }, by: p.id, mine: mine + 1 });
       return;
     }
+    if (m.t === 'quem') { const i = m.i | 0; const r = this.sql.exec('SELECT name, city FROM parede WHERE i = ?', i).toArray()[0]; return this.send(p, { t: 'quem', i, n: r ? r.name : '', c: r ? r.city : '' }); }
+    if (m.t === 'galeria') return this.send(p, { t: 'galeria', l: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray() });
+    if (m.t === 'galeria1') { const r = this.sql.exec('SELECT id, at, data FROM paredes WHERE id = ?', m.id | 0).toArray()[0]; return this.send(p, { t: 'galeria1', g: r || null }); }
+    if (m.t === 'parede-rep') { const b = m.b | 0; if (b < 0 || b >= (PW / PB) * (PH / PB)) return; try { this.sql.exec('INSERT INTO parede_rep (b, who, at) VALUES (?, ?, ?)', b, p.key, now); } catch (e) {} return this.send(p, { t: 'parede-rep', b }); }
     if (m.t === 'cartaz-rep') {
       const id = m.id | 0; if (!this.sql.exec('SELECT id FROM cartazes WHERE id = ? AND hidden = 0', id).toArray().length) return;
       try { this.sql.exec('INSERT INTO reports (msg, who) VALUES (?, ?)', -id, p.key); } catch (e) { return; }
@@ -321,7 +359,7 @@ export class Praca {
     return Response.json({ before, novo });
   }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
-  pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0 }; }
+  pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0, g: p.mode === 'apoio' ? 1 : 0 }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
   start() { if (this.timer) return; this.lastDj = null; this.pers.ensure(); this.timer = setInterval(() => this.tick(), TICK_MS); }
@@ -334,13 +372,13 @@ export class Praca {
   }
   async closedNow(st) { // bans and posters last until the square closes
     if (this.cfg.bans.length) { this.cfg.bans = []; await this.save(); }
-    this.sql.exec('DELETE FROM reports WHERE msg < 0'); this.sql.exec('DELETE FROM cartazes'); this.jogos.closed();
+    this.sql.exec('DELETE FROM reports WHERE msg < 0'); this.sql.exec('DELETE FROM cartazes'); this.jogos.closed(); this.wallSnapshot(); // the wall itself stays for the next opening
     this.closeAll(st);
   }
   tick() {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
     const now0 = Date.now();
-    const ch = []; for (const p of this.people.values()) if (p.name && p.mode === 'praca') {
+    const ch = []; for (const p of this.people.values()) if (p.name && p.av) {
       if (p.item && now0 > p.itemUntil) { p.item = 0; p.dirty = true; }
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }
     }
@@ -402,6 +440,17 @@ export class Praca {
       case 'aviso': c.aviso = plain(m.texto, AVISO_MAX); this.broadcast({ t: 'aviso', text: c.aviso }); break;
       case 'clima': this.chover('bananas'); break;
       case 'apagar-direto': { const id = m.id | 0; this.diretos = this.diretos.filter(d => d.id !== id); this.broadcast({ t: 'direto-', id }); break; }
+      case 'apagar-parede': this.sql.exec('DELETE FROM parede'); this.sql.exec('DELETE FROM parede_rep'); this.wallReload(); break;
+      case 'apagar-bloco': { const b = m.b | 0, bx = b % (PW / PB), by = Math.floor(b / (PW / PB));
+        for (let y = by * PB; y < by * PB + PB; y++) this.sql.exec('DELETE FROM parede WHERE i >= ? AND i < ?', y * PW + bx * PB, y * PW + bx * PB + PB);
+        this.sql.exec('DELETE FROM parede_rep WHERE b = ?', b); this.wallReload(); break; }
+      case 'ignorar-bloco': this.sql.exec('DELETE FROM parede_rep WHERE b = ?', m.b | 0); break;
+      case 'apagar-pintor': { const t = [...this.people.values()].find(p => p.id === (m.id | 0)); if (!t) break;
+        if (t.dev) this.sql.exec('DELETE FROM parede WHERE dev = ?', t.dev); else this.sql.exec('DELETE FROM parede WHERE key = ? AND name = ?', t.key, t.name); this.wallReload(); break; }
+      case 'repor-parede': { const r = this.sql.exec('SELECT data FROM paredes WHERE id = ?', m.id | 0).toArray()[0]; if (!r) break;
+        this.sql.exec('DELETE FROM parede'); const now2 = Date.now();
+        for (let i = 0; i < PN; i++) if (r.data[i] && r.data[i] !== '-') this.sql.exec('INSERT INTO parede (i, c, name, city, dev, key, at) VALUES (?, ?, ?, ?, ?, ?, ?)', i, parseInt(r.data[i], 16), '', '', '', '', now2);
+        this.wallReload(); break; }
       case 'tirar-cartaz': { const id = m.id | 0; this.sql.exec('UPDATE cartazes SET hidden = 2 WHERE id = ?', id); this.broadcast({ t: 'cartaz-', id }); break; }
       case 'config': {
         if (m.npcs && typeof m.npcs === 'object') { for (const k of NPC_KINDS) if (typeof m.npcs[k] === 'boolean') c.npcs[k] = m.npcs[k]; if (this.timer) this.pers.ensure(); }
@@ -418,8 +467,8 @@ export class Praca {
     const st = await this.status(true);
     if (before.open && !st.open) await this.closedNow(st);
     const ws = windows(await schedule(this.env), now).filter(w => w.close > now).sort((a, b) => a.open - b.open).slice(0, 8).map(pick);
-    const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev }));
+    const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev, px: p.dev ? this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE dev = ?', p.dev).one().n : this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE key = ? AND name = ?', p.key, p.name).one().n }));
     const mural = this.sql.exec('SELECT id, name, city, text, at, hidden FROM mural WHERE expires > ? ORDER BY id DESC LIMIT 200', now).toArray();
-    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })) });
+    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })) });
   }
 }
