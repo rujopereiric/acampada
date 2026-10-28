@@ -51,6 +51,14 @@
  },
  {
   "date": "2026-10-28",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "Assembleia popular",
+  "where": "Rossio",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-28",
   "at": "17:00",
   "city": "Faro",
   "title": "Programação da acampada",
