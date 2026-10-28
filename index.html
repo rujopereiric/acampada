@@ -4160,12 +4160,13 @@ function openInfo(i) {
   const tag = L('Informação', 'Information');
   show(`${html.replace(tag + '</span>', `${tag} · ${infoIdx + 1}/${ADS.length}</span>`)}<div class="infonav"><button class="btnp arrow${side}" data-a="infoprev" aria-label="${L('Cartaz anterior', 'Previous poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M10.5 2 4.5 8l6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button><button class="btnp narrow${main}" data-a="infoclose">${infoReturn === 'title' ? L('← Início', '← Home') : L('← Voltar', '← Back')}</button><button class="btnp narrow${side}" data-a="infoshare">${L('Partilhar', 'Share')}</button><button class="btnp arrow${side}" data-a="infonext" aria-label="${L('Próximo cartaz', 'Next poster')}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M5.5 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square"/></svg></button></div>`, variant);
 }
-// share the poster on screen as an image (1080 x 1350): the poster's own texts and colours, redrawn on a canvas
+// share the poster on screen as an image for Instagram stories (1080 x 1920): the poster's own texts and colours, redrawn on a canvas.
+// Everything sits between y 250 and 1630, the part stories don't cover with their own buttons.
 function makePoster() {
   const ad = ov.querySelector('.ad'); if (!ad) return null;
-  const c = document.createElement('canvas'); c.width = 1080; c.height = 1350; const g = c.getContext('2d'), M = 80, FW = 1080 - 2 * M;
+  const c = document.createElement('canvas'); c.width = 1080; c.height = 1920; const g = c.getContext('2d'), M = 80, FW = 1080 - 2 * M;
   const bg = getComputedStyle(ov).backgroundColor, fg = getComputedStyle(ad).color;
-  const blocks = []; let k = 1080 / 460 * 1.05;
+  const blocks = []; let k = 1080 / 460 * 1.6; // as big as fits, shrunk below
   const font = (el, sc) => { const cs = getComputedStyle(el); return { size: parseFloat(cs.fontSize) * sc, weight: cs.fontWeight, color: cs.color, align: cs.textAlign === 'center' || ad.classList.contains('center') ? 'center' : cs.textAlign === 'right' ? 'right' : 'left', up: cs.textTransform === 'uppercase' }; };
   for (const el of ad.children) {
     if (el.classList.contains('adtag')) continue;
@@ -4175,23 +4176,25 @@ function makePoster() {
     blocks.push({ el, text: el.innerText });
   }
   const wrap = (t, maxW) => { const out = []; for (const para of t.split('\n')) { let line = ''; for (const w of para.split(' ')) { const tt = line ? line + ' ' + w : w; if (g.measureText(tt).width > maxW && line) { out.push(line); line = w; } else line = tt; } out.push(line); } return out; };
-  const layout = (sc, draw) => {
-    let y = 150;
-    const text = (el, t, x0, w, extra = {}) => { const f = { ...font(el, sc), ...extra }; g.font = `${f.weight} ${Math.round(f.size)}px Jost, "Helvetica Neue", Arial, sans-serif`; const lines = wrap(f.up ? t.toUpperCase() : t, w), lh = f.size * 1.12;
+  let tooWide = false; // a word longer than its column: shrink
+  const layout = (sc, draw, y0 = 0) => {
+    let y = y0; tooWide = false;
+    const text = (el, t, x0, w, extra = {}) => { const f = { ...font(el, sc), ...extra }; g.font = `${f.weight} ${Math.round(f.size)}px Jost, "Helvetica Neue", Arial, sans-serif`; const lines = wrap(f.up ? t.toUpperCase() : t, w), lh = f.size * 1.12; if (lines.some(l => g.measureText(l).width > w + 1)) tooWide = true;
       for (const l of lines) { if (draw) { g.fillStyle = f.color; g.textAlign = f.align; g.fillText(l, f.align === 'center' ? x0 + w / 2 : f.align === 'right' ? x0 + w : x0, y + f.size * .9); } y += lh; } };
     for (const b of blocks) {
       if (b.rule) { if (draw) { g.fillStyle = fg; g.fillRect(M, y + 8, FW, 12); } y += 34; continue; }
-      if (b.cols) { const y0 = y; let yMax = y; b.cols.forEach((cc, i) => { y = y0; text(cc.el, cc.text, M, FW, { align: i ? 'right' : 'left' }); yMax = Math.max(yMax, y); }); y = yMax + 10; continue; }
+      if (b.cols) { const y0 = y; let yMax = y; const cw = (FW - 30) / 2; b.cols.forEach((cc, i) => { y = y0; text(cc.el, cc.text, i ? M + FW - cw : M, cw, { align: i ? 'right' : 'left' }); yMax = Math.max(yMax, y); }); y = yMax + 10; continue; }
       if (b.row) { const y0 = y; if (b.wel) text(b.wel, b.when, M, 250, { align: 'left' }); const y1 = y; y = y0; text(b.el, b.what, M + 270, FW - 270, { align: 'left', up: true }); if (b.small) text(b.el, b.small, M + 270, FW - 270, { align: 'left', size: 15 * sc, weight: 400, up: false }); y = Math.max(y, y1) + 12; continue; }
       text(b.el, b.text, M, FW); y += 16;
     }
     return y;
   };
-  while (layout(k, false) > 1180 && k > .8) k *= .92;
-  g.fillStyle = bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#0b0a0a'; g.fillRect(0, 0, 1080, 1350);
-  g.font = '700 26px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'left'; g.fillText(L('INFORMAÇÃO · ACAMPADA', 'INFORMATION · ACAMPADA'), M, 100);
-  layout(k, true);
-  g.font = '800 34px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'right'; g.fillText('acampadapixel.pt', 1080 - M, 1290); g.textAlign = 'left'; // the address, bottom right
+  const TOP = 380, BOTTOM = 1500; // the poster's body goes here, centred
+  while ((layout(k, false) > BOTTOM - TOP || tooWide) && k > .8) k *= .95;
+  g.fillStyle = bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#0b0a0a'; g.fillRect(0, 0, 1080, 1920);
+  g.font = '700 30px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'left'; g.fillText(L('INFORMAÇÃO · ACAMPADA', 'INFORMATION · ACAMPADA'), M, 300);
+  layout(k, true, TOP + Math.max(0, (BOTTOM - TOP - layout(k, false)) / 2));
+  g.font = '800 38px Jost, "Helvetica Neue", Arial, sans-serif'; g.fillStyle = fg; g.textAlign = 'right'; g.fillText('acampadapixel.pt', 1080 - M, 1590); g.textAlign = 'left'; // the address, bottom right
   return c;
 }
 async function sharePoster(btn) {
