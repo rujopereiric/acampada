@@ -168,6 +168,7 @@ export class Praca {
     this.clima = null; this.nextClima = Date.now() + (20 + Math.random() * 30) * 60e3; // the weather: a rain of bananas now and then
     this.pers = new Personagens(this, W, H); this.jogos = new Jogos(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
     this.people = new Map(); // socket -> person
+    this.conga = []; // the conga line behind the DJ p.45: ids, in order
     this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false; this.wasOpen = null;
     this.muralBy = new Map(); // address key -> times it wrote on the wall in the last minute
     this.fails = new Map(); // address key -> wrong pass-phrases in the last 10 minutes
@@ -256,7 +257,7 @@ export class Praca {
     const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
     this.people.set(server, p);
     server.addEventListener('message', ev => this.onMessage(p, ev.data));
-    const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
+    const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); this.congaOut(p.id); if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
     server.addEventListener('close', bye); server.addEventListener('error', bye);
     this.start();
     return new Response(null, { status: 101, webSocket: client });
@@ -284,7 +285,7 @@ export class Praca {
       p.av = same < (p.mode === 'praca' ? MAX_AVATARS : MAX_GHOSTS); // the far-away ones never take a place from those at the protest
       p.won = (m.won | 0) & 31; p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.av).map(q => this.pub(q));
-      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, av: p.av, full: !p.av, me: this.pub(p), parede: this.wallStr(), galeria: this.sql.exec('SELECT COUNT(*) AS n FROM paredes').one().n, people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
+      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, av: p.av, full: !p.av, me: this.pub(p), parede: this.wallStr(), galeria: this.sql.exec('SELECT COUNT(*) AS n FROM paredes').one().n, people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow(), conga: this.conga });
       if (p.av) this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
       return;
@@ -304,6 +305,12 @@ export class Praca {
     }
     if (p.av && this.jogos.handle(p, m, now)) return;
     if (p.av && this.pers.handle(p, m, now)) return;
+    if (m.t === 'conga' && p.av) { // behind the DJ p.45, while he is in the square
+      if (!this.djInfo(now).on) return this.send(p, { t: 'congano' });
+      if (!this.conga.includes(p.id) && this.conga.length < 40) { this.conga.push(p.id); this.broadcast({ t: 'conga', ids: this.conga, n: p.name }); }
+      return;
+    }
+    if (m.t === 'conga-sai') { this.congaOut(p.id); return; }
     if (m.t === 'bike' && p.av) { const on = !!m.on && this.cfg.ciclistas; if (on !== p.bike) { p.bike = on; p.dirty = true; } if (m.on && !this.cfg.ciclistas) this.send(p, { t: 'npcno', k: 'bike', why: 'off' }); return; }
     if (m.t === 'cartaz' && p.av) {
       if (Math.hypot(p.x - CRAVO[0], p.y - CRAVO[1]) > 3.6) return this.send(p, { t: 'cartazno', why: 'longe' });
@@ -370,6 +377,7 @@ export class Praca {
     return Response.json({ before, novo });
   }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
+  congaOut(id) { const i = this.conga.indexOf(id); if (i < 0) return; this.conga.splice(i, 1); this.broadcast({ t: 'conga', ids: this.conga }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0, g: p.mode === 'apoio' ? 1 : 0 }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
@@ -397,7 +405,8 @@ export class Praca {
     try { this.jogos.tick(now0, this.state && this.state.close); } catch (e) { console.log('jogos', e); }
     if (now0 > this.wallFlushAt) { this.wallFlushAt = now0 + 3e3; this.wallFlush(); }
     if (ch.length || npc.n.length || npc.b) this.broadcast({ t: 'tick', p: ch, n: npc.n, b: npc.b });
-    const dj = this.djInfo(); if (!this.lastDj || this.lastDj.ok !== dj.ok || this.lastDj.mode !== dj.mode) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
+    const dj = this.djInfo(); if (!dj.on && this.conga.length) { this.conga = []; this.broadcast({ t: 'conga', ids: [] }); } // the DJ left: the conga breaks up
+    if (!this.lastDj || this.lastDj.ok !== dj.ok || this.lastDj.mode !== dj.mode) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
     if (this.cfg.climaAuto && !this.climaNow() && now0 > this.nextClima) this.chover();
     const st = this.state, now = Date.now();
     const due = st && ((st.close && now > st.close + 5e3) || (this.cfg.force && this.cfg.force.until && now >= this.cfg.force.until));
