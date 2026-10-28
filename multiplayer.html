@@ -545,7 +545,7 @@ function drawPersonC(g, p, now) {
 }
 
 /* ---------- the DJ p.45: in the square 3 minutes in every 10, the same for everyone (the server's clock) ---------- */
-const DJ_LOOK = { skin: '#e2b48f', hair: '#8a5a3a', shirt: '#5a2440', pants: '#f2efe6' };
+const DJ_LOOK = { skin: '#e2b48f', hair: '#8a5a3a', shirt: '#926cf9', pants: '#f2efe6' }; // the purple jacket
 const DJ_ON = 180e3, DJ_CYCLE = 600e3, DJ_IN = 9e3;
 const serverNow = () => Date.now() + clockOff;
 function djPos(now = serverNow()) {
@@ -561,22 +561,26 @@ function djPos(now = serverNow()) {
   const r = ring(a), dx = -Math.sin(a), dy = Math.cos(a);
   return { gx: r.gx, gy: r.gy, moving: true, step: k / 260, flip: dx - dy < 0, back: dx + dy < 0 };
 }
+// the DJ p.45 comes some visits by bicycle (the same for everyone: from the clock)
+const djBike = (now = serverNow()) => djState.mode === 'sempre' ? Math.floor(now / 75e3) % 3 === 0 : Math.floor(now / DJ_CYCLE) % 3 === 1;
 function drawDJ(g, d, now) {
-  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), bob = Math.floor(now / 250) % 2, f = d.flip ? -1 : 1;
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), bob = Math.floor(now / 250) % 2;
   ell(g, x, y, 12, 'rgba(182,255,59,.18)');
-  const case_ = (cx, col, dark) => { R(g, cx, y - 9, 5, 8, col); R(g, cx, y - 9, 5, 1, shade(col, 1.15)); R(g, cx + 4, y - 9, 1, 8, dark); for (let k = y - 7; k < y - 2; k += 2) R(g, cx + 1, k, 3, 1, dark); R(g, cx + 2, y - 13, 1, 4, '#9aa0ad'); R(g, cx + 1, y - 13, 3, 1, '#9aa0ad'); R(g, cx, y - 1, 1, 1, '#16121a'); R(g, cx + 4, y - 1, 1, 1, '#16121a'); };
-  case_(x - 10, '#9a6bff', '#6f45c9'); // the purple suitcase
-  guy(g, x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
-  // checked trousers, the jacket open on a dark shirt, the beard and the orange beanie
-  for (let yy = y - 5 - bob; yy < y - 1 - bob; yy++) for (const xx of [x - 2, x - 1, x + 1, x + 2]) if ((xx + yy) % 2) R(g, xx, yy, 1, 1, '#16121a');
-  if (!d.back) { R(g, x - 1, y - 10 - bob, 3, 5, '#1f2a38'); R(g, x - 2, y - 11 - bob, 5, 2, '#8a5a3a'); }
-  R(g, x - 3, y - 17 - bob, 7, 3, '#ff7a1a'); R(g, x - 2, y - 18 - bob, 5, 1, '#ff7a1a'); R(g, x - 3, y - 15 - bob, 7, 1, '#e25e0a');
-  case_(x + 6, '#ff7a1a', '#c4540c'); // the orange suitcase (the speaker)
-  // music notes floating up from the orange suitcase
-  for (let i = 0; i < 3; i++) { const tt = ((now / 1400) + i / 3) % 1, nx = x + 8 + Math.sin(tt * 6 + i) * 4, ny = y - 14 - tt * 18; if (tt < .9) { R(g, nx, ny, 2, 2, i % 2 ? '#b6ff3b' : '#39e1ff'); R(g, nx + 1, ny - 4, 1, 4, i % 2 ? '#b6ff3b' : '#39e1ff'); } }
+  if (djBike(now)) { // on his bike: the orange beanie on top
+    drawRider(g, x, y, DJ_LOOK, d.flip, d.step || now / 180, '#ff7a1a');
+    const hx = x - 1, hy = y - 20; R(g, hx - 1, hy - 2, 6, 3, '#ff7a1a'); R(g, hx, hy - 3, 4, 1, '#ff7a1a');
+  } else {
+    guy(g, x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
+    // checked trousers, the purple jacket open on a dark shirt, the beard and the orange beanie
+    for (let yy = y - 5 - bob; yy < y - 1 - bob; yy++) for (const xx of [x - 2, x - 1, x + 1, x + 2]) if ((xx + yy) % 2) R(g, xx, yy, 1, 1, '#16121a');
+    if (!d.back) { R(g, x - 1, y - 10 - bob, 3, 5, '#1f2a38'); R(g, x - 2, y - 11 - bob, 5, 2, '#8a5a3a'); }
+    R(g, x - 3, y - 17 - bob, 7, 3, '#ff7a1a'); R(g, x - 2, y - 18 - bob, 5, 1, '#ff7a1a'); R(g, x - 3, y - 15 - bob, 7, 1, '#e25e0a');
+  }
+  // music notes floating up round him
+  for (let i = 0; i < 3; i++) { const tt = ((now / 1400) + i / 3) % 1, nx = x - 4 + Math.sin(tt * 6 + i) * 6, ny = y - 22 - tt * 18; if (tt < .9) { R(g, nx, ny, 2, 2, i % 2 ? '#b6ff3b' : '#39e1ff'); R(g, nx + 1, ny - 4, 1, 4, i % 2 ? '#b6ff3b' : '#39e1ff'); } }
 }
 const DANCE_R = 3.6;
-let congaIds = []; const CONGA_GAP = 2200; // ms behind the one in front
+let congaIds = [], congaNpc = []; const CONGA_GAP = 2200; // ms behind the one in front; the characters in the line come first (personagens.js)
 const inConga = () => congaIds.indexOf(myId);
 function congaLeave() { if (inConga() < 0) return; congaIds = congaIds.filter(id => id !== myId); send({ t: 'conga-sai' }); }
 
@@ -846,7 +850,8 @@ function drawNpc(g, n, now) {
     return;
   }
   if (n.k === 'fotografa') {
-    guy(g, x, y, { ...LOOK_FOTO, moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    const cg = congaNpc.includes(n.id), w = Math.floor(t * 3 + 1) % 2;
+    guy(g, x, y, { ...LOOK_FOTO, moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp: cg, armUp2: cg, wob: w, wob2: 1 - w });
     R(g, x - 3, y - 16, 7, 2, '#e2283b'); R(g, x + 1, y - 17, 2, 1, '#e2283b');
     const cx = n.flip ? x - 4 : x + 1; R(g, cx, y - 13, 4, 3, '#16121a'); R(g, cx + 1, y - 12, 2, 1, '#5a6a8a');
     if (n.s === 6 && !inPhoto && Math.floor(t * 10) % 3 === 0) { circ(g, cx + 2, y - 12, 6, 'rgba(255,255,255,.85)'); }
@@ -854,7 +859,8 @@ function drawNpc(g, n, now) {
   }
   if (n.k === 'zezinho') { // Zezinho Bailarino: light hair, glasses, a dark coat, the phone up, filming
     const s = n.flip ? -1 : 1;
-    guy(g, x, y, { skin: '#d9a37a', hair: '#e6d48a', shirt: '#1b2033', pants: '#1b2033', moving: n.moving, step: n.step, flip: n.flip, back: n.back });
+    const cg = congaNpc.includes(n.id), w = Math.floor(t * 3) % 2;
+    guy(g, x, y, { skin: '#d9a37a', hair: '#e6d48a', shirt: '#1b2033', pants: '#1b2033', moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp: cg, armUp2: cg, wob: w, wob2: 1 - w });
     if (!n.back) { R(g, x - 2, y - 12, 5, 1, '#3a3a40'); R(g, x - 1, y - 10, 3, 1, '#f4f1ea'); }
     R(g, x + s * 4 - 1, y - 15, 3, 4, '#16121a'); R(g, x + s * 4, y - 14, 1, 2, '#6fb7ff'); if (Math.floor(t * 2) % 2) R(g, x + s * 4 - 1, y - 16, 1, 1, '#ff3b4e');
     return;
@@ -952,7 +958,7 @@ function onMsg(m) {
     npcs.clear(); for (const o of m.npcs || []) addNpc(o);
     ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
     if (m.jogos) jogos = m.jogos;
-    congaIds = m.conga || []; cartazes = m.cartazes || []; if (Array.isArray(m.meus)) { myCartazes = new Set(m.meus); mineCount = m.meus.length; } convencidos = m.convencidos || 0; setClima(m.clima);
+    congaIds = m.conga || []; congaNpc = m.congaNpc || []; cartazes = m.cartazes || []; if (Array.isArray(m.meus)) { myCartazes = new Set(m.meus); mineCount = m.meus.length; } convencidos = m.convencidos || 0; setClima(m.clima);
     hideToast();
     if (m.full) toast(L('A praça está cheia: estás a ver sem boneco.', 'The square is full: you’re watching without an avatar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
@@ -971,6 +977,7 @@ function onMsg(m) {
   if (m.t === 'counts') { counts = m.c; renderCounts(); return; }
   if (m.t === 'dj') { djState = m.dj; return; }
   if (m.t === 'conga') { const was = inConga() >= 0; congaIds = m.ids || []; if (m.n && congaIds.length) toast(L(`💃 ${m.n} entrou na conga do DJ p.45! (${congaIds.length})`, `💃 ${m.n} joined DJ p.45's conga! (${congaIds.length})`), 2500); if (was && inConga() < 0 && !congaIds.length) toast(L('O DJ p.45 saiu: acabou a conga.', 'DJ p.45 left: the conga is over.'), 3000); return; }
+  if (m.t === 'congaNpc') { congaNpc = m.ids || []; return; }
   if (m.t === 'congano') { toast(L('O DJ p.45 não está na praça agora.', 'DJ p.45 isn’t in the square right now.'), 3000); return; }
   if (m.t === 'npc+') { addNpc(m.n); return; }
   if (m.t === 'clima') { setClima(m.c); return; }
@@ -1047,7 +1054,7 @@ function update(dt, now) {
     let dx = 0, dy = 0;
     if (keys.up) { dx -= 1; dy -= 1; } if (keys.down) { dx += 1; dy += 1; } if (keys.left) { dx -= 1; dy += 1; } if (keys.right) { dx += 1; dy -= 1; }
     const jm = Math.hypot(JOY.x, JOY.y); let jk = 1;
-    const ck = inConga(); if (ck >= 0) { if (dx || dy || jm > .2) congaLeave(); else { const t = djPos(serverNow() - (ck + 1) * CONGA_GAP); if (!t) congaLeave(); else me.goal = { gx: clamp(t.gx, .3, W - .3), gy: clamp(t.gy, .3, H - .3) }; } }
+    const ck = inConga(); if (ck >= 0) { if (dx || dy || jm > .2) congaLeave(); else { const t = djPos(serverNow() - (ck + 1 + congaNpc.length) * CONGA_GAP); if (!t) congaLeave(); else me.goal = { gx: clamp(t.gx, .3, W - .3), gy: clamp(t.gy, .3, H - .3) }; } }
     if (jm > .2) { dx = JOY.x * .5 + JOY.y; dy = JOY.y - JOY.x * .5; jk = Math.min(1, jm); } // the walking ball: the screen direction turned into the square's
     if (dx || dy) { const n = Math.hypot(dx, dy); dx /= n; dy /= n; me.goal = null; camFree = 0; me.dir = { gx: dx, gy: dy }; }
     else if (me.goal) { const ex = me.goal.gx - me.x, ey = me.goal.gy - me.y, d = Math.hypot(ex, ey); if (d < .08) me.goal = null; else { dx = ex / d; dy = ey / d; } }

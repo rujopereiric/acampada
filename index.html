@@ -2872,11 +2872,11 @@ function drawGroup(t) {
 const FLOOR = { x0: 10.6, x1: 12.5, y0: 2.4, y1: 5.6 };
 function setFloor() { const f = CITIES[cityIdx].floor; if (f) { [FLOOR.x0, FLOOR.x1, FLOOR.y0, FLOOR.y1] = f; return; } FLOOR.x0 = NX + .6; FLOOR.x1 = NX + 2.5; FLOOR.y0 = NY * .24; FLOOR.y1 = NY * .56; }
 const congaWP = () => [[.7, .7], [NX - .7, .7], [NX - .7, NY - .7], [.7, NY - .7]];
-const DJ_LOOK = { skin: '#7a4a2c', hair: '#16121a', shirt: '#2f8a50', pants: '#2a2a3a' };
+const DJ_LOOK = { skin: '#e2b48f', hair: '#8a5a3a', shirt: '#926cf9', pants: '#f2efe6' }; // orange beanie, beard, purple jacket, checked trousers (drawDJ)
 function skank(loud) { const v = loud ? 1 : .4; tone(98, .22, 'triangle', .07 * v); tone(392, .07, 'square', .022 * v, .25); tone(494, .07, 'square', .018 * v, .25); tone(587, .07, 'square', .016 * v, .25); }
 function spawnDJ() {
   const side = Math.random() < .5;
-  S.dj = { gx: side ? rnd(1, NX - 1) : NX + 1.6, gy: side ? NY + 1.6 : rnd(1, NY - 1), state: 'wander', t: 0, beat: 0, trail: [], followers: [], recruits: [], wp: 0, legs: 0, step: 0, flip: false, back: true, spawnT: 0 };
+  S.dj = { gx: side ? rnd(1, NX - 1) : NX + 1.6, gy: side ? NY + 1.6 : rnd(1, NY - 1), state: 'wander', t: 0, beat: 0, trail: [], followers: [], recruits: [], wp: 0, legs: 0, step: 0, flip: false, back: true, spawnT: 0, bike: Math.random() < .35 };
   [S.dj.tx, S.dj.ty] = randomSpot();
   const q = iso(CX, NY); floatXY(q.x, 64, 'O DJ p.45 está na praça', '#b6ff3b');
 }
@@ -2958,11 +2958,15 @@ function updDJ(dt) {
 function drawDJ(d) {
   const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
   const bob = (d.state !== 'leave' && Math.floor(S.t * 4) % 2) ? 1 : 0;
-  const pack = () => { const px = d.flip ? x + 2 : x - 6; R(px, y - 12 - bob, 5, 8, '#16121a'); circ(ctx, px + 2.5, y - 10 - bob, 1.5, '#39e1ff'); circ(ctx, px + 2.5, y - 6 - bob, 1.2, '#39e1ff'); R(px + 4, y - 17 - bob, 1, 5, '#9aa0ad'); R(px + 4, y - 18 - bob, 1, 1, '#ff3b4e'); };
-  if (!d.back) pack();
-  guy(x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
-  if (d.back) pack();
-  R(x - 3, y - 18 - bob, 7, 1, '#e2283b'); R(x - 3, y - 17 - bob, 7, 1, '#ffd23a'); R(x - 3, y - 16 - bob, 7, 1, '#3ec46d');
+  if (d.bike && (d.state === 'wander' || d.state === 'leave') && d.moving) { // some days he comes by bike
+    bike(q.x, q.y, d.flip, '#ff7a1a', 5); guy(x, y - 5, { ...DJ_LOOK, moving: true, step: S.t * 8, flip: d.flip, back: d.back });
+    R(x - 3, y - 22, 7, 3, '#ff7a1a'); R(x - 2, y - 23, 5, 1, '#ff7a1a');
+  } else {
+    guy(x, y - bob, { ...DJ_LOOK, moving: d.moving, step: d.step, flip: d.flip, back: d.back });
+    for (let yy = y - 5 - bob; yy < y - 1 - bob; yy++) for (const xx of [x - 2, x - 1, x + 1, x + 2]) if ((xx + yy) % 2) R(xx, yy, 1, 1, '#16121a'); // checked trousers
+    if (!d.back) { R(x - 1, y - 10 - bob, 3, 5, '#1f2a38'); R(x - 2, y - 11 - bob, 5, 2, '#8a5a3a'); } // the dark shirt under the open purple jacket, the beard
+    R(x - 3, y - 17 - bob, 7, 3, '#ff7a1a'); R(x - 2, y - 18 - bob, 5, 1, '#ff7a1a'); R(x - 3, y - 15 - bob, 7, 1, '#e25e0a'); // the orange beanie
+  }
   if (d.state === 'wander') drawFloat({ x: q.x, y: q.y - 28, text: 'DJ p.45', color: '#b6ff3b', t: 1 });
 }
 function drawDancer(f, i) {

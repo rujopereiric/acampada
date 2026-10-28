@@ -11,6 +11,9 @@ const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready an
 const CONVINCE = [.7, .6, .85]; // how often each explanation (multiplayer.html: EXPLAIN) wins a passer-by over
 
 const rnd = (a, b) => a + Math.random() * (b - a);
+// the DJ p.45's conga: three characters already in the square dance in line behind him while he walks his circle
+// (multiplayer.html: djPos, the same walk from the same clock). People who join line up after them.
+const CONGA_NPCS = [-6, -3, -5], CONGA_GAP = 2200, DJ_ON = 180e3, DJ_CYCLE = 600e3, DJ_IN = 9e3, LAP = Math.PI * 2 / 75;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
 export class Personagens {
@@ -18,7 +21,25 @@ export class Personagens {
     this.sq = sq; this.W = W; this.H = H;
     this.npcs = new Map(); this.ball = null; this.nextCur = 0; this.curId = 100;
     this.nextCaos = Date.now() + rnd(4, 7) * 60e3; this.nextAuto = 0; this.lastShot = 0;
-    this.convinced = { day: '', n: 0 };
+    this.convinced = { day: '', n: 0 }; this.congaNpc = [];
+  }
+  // where the DJ is on his painted circle at time t (null when he isn't walking it)
+  djAt(t) {
+    const d = this.sq.djInfo(t); if (!d.ok) return null;
+    const C = this.W / 2, ring = a => [C + Math.cos(a) * 5, C + Math.sin(a) * 5];
+    if (d.mode === 'sempre') return ring(Math.PI / 2 + t / 1000 * LAP);
+    const k = t % DJ_CYCLE; if (k < DJ_IN || k > DJ_ON - DJ_IN) return null;
+    return ring(Math.PI / 2 + (k - DJ_IN) / 1000 * LAP);
+  }
+  congaTick(now) { // the characters in the line: each one where the DJ was a little earlier
+    const on = !!this.djAt(now), ids = on ? CONGA_NPCS.filter(id => this.npcs.has(id)).slice(0, 3) : [];
+    if (ids.join() !== this.congaNpc.join()) { this.congaNpc = ids; this.sq.broadcast({ t: 'congaNpc', ids }); }
+    ids.forEach((id, i) => {
+      const n = this.npcs.get(id), t = this.djAt(now - (i + 1) * CONGA_GAP) || this.djAt(now); if (!n || !t) return;
+      if (n.k === 'cao' && this.ball && this.ball.held) { this.ball.held = false; this.ball.dirty = true; }
+      n.tx = t[0]; n.ty = t[1]; n.v = 2.6; n.mode = n.k === 'cao' ? 'walk' : n.mode === 'shoot' ? 'walk' : n.mode; this.step(n, .25); this.setS(n, n.k === 'cao' ? 0 : n.s === 6 ? 0 : n.s);
+    });
+    return ids;
   }
   free(x, y, pad = 0) { return x > .8 && y > .8 && x < this.W - .8 && y < this.H - .8 && OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad); }
   spot(pad = .4) { for (let i = 0; i < 40; i++) { const x = rnd(1, this.W - 1), y = rnd(1, this.H - 1); if (this.free(x, y, pad)) return [x, y]; } return [this.W / 2, this.H - 2]; }
@@ -71,7 +92,9 @@ export class Personagens {
 
   /* four times a second */
   tick(now) {
-    const dt = .25, J = this.npcs.get(-1), O = this.npcs.get(-2), F = this.npcs.get(-3), S = this.npcs.get(-4), D = this.npcs.get(-5), B = this.ball;
+    const inC = this.congaTick(now), free = id => !inC.includes(id); // the ones in the conga do nothing else
+    const dt = .25, J = this.npcs.get(-1), O = this.npcs.get(-2), F = free(-3) ? this.npcs.get(-3) : null, S = this.npcs.get(-4), D = free(-5) ? this.npcs.get(-5) : null, B = this.ball;
+    for (const id of [-3, -5, -6]) { const n = this.npcs.get(id); if (n && free(id) && n.v === 2.6) n.v = id === -3 ? 1.4 : id === -5 ? 1.9 : 1.1; } // back to their own pace
     const byId = id => this.players().find(p => p.id === id);
     // the journalist: walks about; stops to interview; runs when the dog steals her microphone
     if (J) {
@@ -95,7 +118,7 @@ export class Personagens {
     // the labrador and her ball
     if (B && B.flying) { const d = Math.hypot(B.tx - B.x, B.ty - B.y), s = Math.min(d, 7 * dt); if (d < .05) B.flying = false; else { B.x += (B.tx - B.x) / d * s; B.y += (B.ty - B.y) / d * s; } B.dirty = true; }
     if (D) this.dog(D, J, B, now, dt, byId);
-    const Z = this.npcs.get(-6); if (Z) { this.wander(Z, now, [3, 7]); this.setS(Z, Z.waiting ? 1 : 0); } // 1: stopped, the phone up
+    const Z = free(-6) ? this.npcs.get(-6) : null; if (Z) { this.wander(Z, now, [3, 7]); this.setS(Z, Z.waiting ? 1 : 0); } // 1: stopped, the phone up
     // passers-by: up to three at a time, from the street in front
     if (this.on('curiosos')) this.curiosos(now, dt, byId);
     // the moves, in one message
