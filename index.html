@@ -65,6 +65,9 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .wide .bars{ flex:1; min-width:180px; }
 .wide .bar{ margin-top:2px; }
 .wide .pm{ width:64px; } .wide .pm svg{ width:64px; }
+/* medium-wide windows: everything shrinks a little so the bars never run under the Government */
+.wide .top{ flex:0 1 450px; min-width:0; } .wide .hudbody{ min-width:0; } .wide .bars{ min-width:120px; }
+@media (max-width: 1240px){ .wide .hud, .wide .hudbody, .wide .hudL, .wide .stats{ gap:12px; } .wide .top{ flex-basis:330px; } .wide .logo{ font-size:21px; } .wide .stats dd{ font-size:22px; } .wide .stats dt{ font-size:11px; } .wide .bar{ grid-template-columns:72px 1fr; font-size:12px; } }
 .wide .stage{ flex:1; min-height:0; margin:0; display:flex; align-items:center; justify-content:center; border:0; }
 .wide canvas{ width:auto; aspect-ratio:auto; }
 .wide .bottom{ display:grid; grid-template-columns:repeat(4,1fr) 1.3fr; gap:8px; align-items:stretch; }
@@ -90,14 +93,16 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .cam .actions{ margin-top:0; } .cam #ctxBtn{ margin-top:6px; } .cam #ctxBtn[hidden]{ display:block; visibility:hidden; } .cam #help{ display:none; }
 #rotHint{ position:absolute; left:8px; right:62px; bottom:8px; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 6px 6px 10px; background:rgba(11,10,10,.86); color:#f4f1ea; font:600 13px/1.25 Jost, Futura, sans-serif; }
 #rotHint[hidden]{ display:none; }
-#goal{ position:absolute; left:8px; top:8px; z-index:3; max-width:min(70%, 420px); background:rgba(11,10,10,.86); color:#ffd23a; border-left:4px solid #ffd23a; font:700 12px/1.3 "Helvetica Neue", Arial, sans-serif; padding:6px 9px 5px; pointer-events:none; }
+#goal{ position:absolute; left:8px; top:8px; z-index:3; max-width:min(70%, 420px); background:rgba(11,10,10,.86); color:#ffd23a; border-left:4px solid #ffd23a; font:700 12px/1.3 "Helvetica Neue", Arial, sans-serif; padding:6px 9px 5px; cursor:pointer; }
+#ov .tasks{ text-align:left; margin:12px auto 0; max-width:420px; background:rgba(11,10,10,.12); padding:8px 10px; font:400 13px/1.35 "Helvetica Neue", Arial, sans-serif; } #ov .tasks b{ display:block; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; margin-bottom:6px; } #ov .tasks div{ padding:3px 0; } #ov .tasks .now{ font-weight:700; } #ov .tasks .done{ opacity:.6; text-decoration:line-through; } #ov .tasks .bang{ display:inline-block; min-width:12px; text-align:center; background:#fff; border:2px solid #1b1464; color:#ff3b8b; font:800 11px/12px Jost, sans-serif; }
+#goal.alert{ color:#fff; background:#c2342c; border-left-color:#fff; font-size:14px; pointer-events:none; } .wide #goal.alert{ font-size:17px; }
 #goal[hidden]{ display:none; } #goal.ok{ color:#b6ff3b; border-left-color:#b6ff3b; } .cam:not(.land) #goal{ top:auto; bottom:70px; max-width:calc(100% - 80px); } .wide #goal{ font-size:14px; } .bigtext #goal{ font-size:15px; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
 #tut[hidden]{ display:none; }
 #upd{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); transform:translateX(-50%); z-index:50; background:#0b0a0a; color:#f4f1ea; border:2px solid #f4f1ea; padding:8px 8px 8px 14px; font:700 13px/1 Jost, sans-serif; display:flex; align-items:center; gap:10px; white-space:nowrap; box-shadow:0 4px 0 rgba(11,10,10,.4); } #upd button{ background:#b6ff3b; color:#0b0a0a; border:0; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 10px 6px; cursor:pointer; }
 .langsw{ display:flex; justify-content:center; gap:0; margin:0 auto 10px; } .langsw button{ background:transparent; color:#f4f1ea; border:2px solid #f4f1ea; font:800 12px/1 Jost, sans-serif; letter-spacing:1px; padding:5px 10px 4px; cursor:pointer; } .langsw button + button{ border-left:0; } .langsw button.on{ background:#f4f1ea; color:#0b0a0a; } .langsw button:focus-visible{ outline:3px solid #ffd23a; outline-offset:2px; }
 .install{ max-width:330px; margin:12px auto 0; padding:7px 10px; border:1px dashed rgba(244,241,234,.45); color:#d6d0c4; font-size:12.5px; line-height:1.35; text-transform:none; }
-.cj .bang, #tut .bang{ display:inline-block; min-width:16px; height:18px; margin:0 1px; background:#fff; border:2px solid #1b1464; box-shadow:inset 0 3px 0 #c9f6ff; color:#ff3b8b; font:800 13px/15px Jost, sans-serif; text-align:center; vertical-align:-4px; } #tut button{ flex:none; background:#0b0a0a; color:#ffd23a; border:0; font:700 11px Jost, sans-serif; padding:5px 7px; cursor:pointer; text-transform:uppercase; }
+.cj .bang, #tut .bang, #goal .bang{ display:inline-block; min-width:16px; height:18px; margin:0 1px; background:#fff; border:2px solid #1b1464; box-shadow:inset 0 3px 0 #c9f6ff; color:#ff3b8b; font:800 13px/15px Jost, sans-serif; text-align:center; vertical-align:-4px; } #tut button{ flex:none; background:#0b0a0a; color:#ffd23a; border:0; font:700 11px Jost, sans-serif; padding:5px 7px; cursor:pointer; text-transform:uppercase; }
 .cam #tut{ bottom:auto; top:52px; font-size:13px; max-width:calc(100% - 20px); }
 .tutpulse{ animation:tutp 1s ease-in-out infinite; position:relative; z-index:2; } @keyframes tutp{ 0%,100%{ box-shadow:0 0 0 0 #ffd23a; } 50%{ box-shadow:0 0 0 6px #ffd23a; } }
 /* the ALERTA window during a kettle: a live TV news report (computers: picture and captions, bottom left; phones: captions only) */
@@ -213,6 +218,9 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .hudL{ flex:1; min-width:0; }
 .pm{ margin:0; width:84px; flex:none; display:flex; flex-direction:column; align-items:center; }
 .pm svg{ display:block; width:84px; height:auto; overflow:visible; transform-origin:50% 100%; transition:transform .5s; }
+.pm .drop{ animation:pmdrop 1.1s ease-in infinite; } .pm .drop.d2{ animation-delay:.4s; } .pm .drop.d3{ animation-delay:.75s; }
+@keyframes pmdrop{ 0%{ transform:translateY(0); opacity:1; } 100%{ transform:translateY(7px); opacity:0; } }
+@media (prefers-reduced-motion: reduce){ .pm .drop{ animation:none; } }
 .pm figcaption{ position:relative; z-index:1; background:var(--panel); padding:0 3px; font-family:"Helvetica Neue", Arial, sans-serif; font-size:10px; letter-spacing:.4px; text-transform:uppercase; margin-top:2px; }
 .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin:7px 0 6px; }
 .stats div{ display:flex; flex-direction:column; }
@@ -440,8 +448,9 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
             <rect x="54" y="47" width="12" height="13" fill="#c48d64"/>
             <path d="M51 58 C36 60 25 70 24 84 L23 118 L97 118 L96 84 C95 70 84 60 69 58 L60 75 Z" fill="url(#suit)"/>
             <path d="M53 58 L60 75 L67 58 Z" fill="#eef1f6"/>
-            <path d="M58 62 L62 62 L64 87 L60 92 L56 87 Z" fill="#34589f"/>
-            <path d="M58.6 66 h1.2 M60.4 70.5 h1.2 M58.8 75 h1.2 M60.6 79.5 h1.2 M59 84 h1.2" stroke="#a9c6ff" stroke-width=".9"/>
+            <path id="pmCollar" d="M55.5 58 L60 67 L64.5 58 Z" fill="#c48d64" style="display:none"/>
+            <g id="pmTie"><path d="M58 62 L62 62 L64 87 L60 92 L56 87 Z" fill="#34589f"/>
+            <path d="M58.6 66 h1.2 M60.4 70.5 h1.2 M58.8 75 h1.2 M60.6 79.5 h1.2 M59 84 h1.2" stroke="#a9c6ff" stroke-width=".9"/></g>
             <path d="M51 58 L57 81 M69 58 L63 81" stroke="#0c1226" stroke-width="2" fill="none"/>
             <path d="M31 78 C34 92 34 106 33 118" stroke="rgba(255,255,255,.09)" stroke-width="3" fill="none"/>
           </g>
@@ -453,6 +462,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
           </g>
         </defs>
         <path d="M80 118 L104 122 L86 94 Z" fill="#9c7040"/>
+        <g id="pmFolderB" style="display:none" transform="rotate(18 106 66)"><rect x="92" y="54" width="26" height="19" fill="#e8bd78" stroke="#6b4a2b" stroke-width="1.3"/><rect x="92" y="51" width="9" height="4" fill="#e8bd78" stroke="#6b4a2b" stroke-width="1.1"/></g>
         <g id="pose0">
           <use href="#o0" fill="#8a6234" transform="translate(2.5 2)"/><use href="#o0" fill="#c99a5e" stroke="#c99a5e" stroke-width="6" stroke-linejoin="round"/>
           <use href="#torso"/>
@@ -503,6 +513,13 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
           <path d="M30 100 L92 92" stroke="rgba(0,0,0,.25)" stroke-width="1.2"/><path d="M30 101.3 L92 93.3" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
           <use href="#o2" fill="url(#dots)" opacity=".2"/><use class="red" href="#o2" fill="#e0201c" opacity="0" style="mix-blend-mode:multiply"/>
         </g>
+        <!-- the folder held in front; sweat; horns and tail for the kettle; what he says -->
+        <g id="pmFolder" style="display:none" transform="rotate(-8 40 90)"><rect x="22" y="80" width="34" height="23" fill="#e8bd78" stroke="#6b4a2b" stroke-width="1.4"/><rect x="22" y="77" width="11" height="4" fill="#e8bd78" stroke="#6b4a2b" stroke-width="1.2"/>
+          <text x="37.5" y="94" text-anchor="middle" font-family="Jost, Futura, sans-serif" font-weight="800" font-size="6.2" fill="#6b2a1a" id="pmFolderTx" textLength="27" lengthAdjust="spacingAndGlyphs">HABITAÇÃO</text><ellipse cx="57" cy="97" rx="4.5" ry="3.6" fill="url(#skin)"/></g>
+        <g id="pmSweat" style="display:none" fill="#5fc7ff"><path class="drop" d="M43 20 Q40.5 25 43 26.5 Q45.5 25 43 20 Z"/><path class="drop d2" d="M78 24 Q75.5 29 78 30.5 Q80.5 29 78 24 Z"/><path class="drop d3" d="M47 41 Q45 45 47 46.2 Q49 45 47 41 Z"/></g>
+        <g id="pmDevil" style="display:none"><path d="M46 17 L41 2 L54 12 Z M74 17 L79 2 L66 12 Z" fill="#b3121b" stroke="#5a0808" stroke-width="1"/>
+          <path d="M92 112 C112 112 104 92 116 88" stroke="#b3121b" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M112 84 L122 86 L114 93 Z" fill="#b3121b"/></g>
+        <g id="pmSay" style="display:none"><rect x="76" y="2" width="44" height="15" fill="#fff" stroke="#0b0a0a" stroke-width="1.6"/><path d="M84 17 L80 23 L90 17 Z" fill="#fff" stroke="#0b0a0a" stroke-width="1.2"/><text x="98" y="12.8" text-anchor="middle" font-family="Jost, Futura, sans-serif" font-weight="800" font-size="9" fill="#8b2320" id="pmSayTx" textLength="38" lengthAdjust="spacingAndGlyphs"></text></g>
       </svg>
       <figcaption>Governo</figcaption>
     </figure>
@@ -1448,13 +1465,13 @@ const saveKey = i => 'acampada-save-' + i;
 function savedOf(i) { try { const d = JSON.parse(localStorage.getItem(saveKey(i)) || 'null'); return d && d.v === 1 ? d : null; } catch (e) { return null; } }
 function dropSave(i = cityIdx) { try { localStorage.removeItem(saveKey(i)); } catch (e) {} }
 function saveGame() {
-  if (!S || !S.city || S.winning || !['play', 'paused', 'menu', 'quit'].includes(mode) || !S.tents.length) return;
+  if (!S || !S.city || S.winning || !['play', 'paused', 'menu', 'quit'].includes(mode) || (!S.tents.length && S.finalK !== 'done')) return; // an empty square is saved too after the final kettle: it's the time to rebuild
   const K = S.kettle, raidOn = S.raid && !S.patrolRaid;
   const d = { v: 1, city: cityIdx, at: Date.now(), day: 1 + Math.floor((S.clock - 6) / 24), s: {
     t: S.t, clock: S.clock, supplies: S.supplies, morale: S.morale, support: S.support, pressure: S.pressure, detained: S.detained, asmCd: S.asmCd, perks: [...S.perks],
     // a raid or a kettle in progress starts again when the square is loaded: no escaping the police by leaving
     nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0,
-    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: null } : null, cordDone: !!S.cordDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
+    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: S.goal.base } : null, rebuildFrom: S.rebuildFrom || 0, cordDone: !!S.cordDone, liveDone: !!S.liveDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
     tents: S.tents.map(t => [t.tx, t.ty, t.color, t.occ]), stations: S.stations.map(st => [st.k, st.tx, st.ty]) } };
   try { localStorage.setItem(saveKey(cityIdx), JSON.stringify(d)); } catch (e) {}
 }
@@ -1462,7 +1479,7 @@ function loadGame(i) {
   const d = savedOf(i); if (!d) return false;
   cityIdx = i; newLevel(); const g = d.s;
   for (const t of S.tents) S.occ[t.ty * NX + t.tx] = null; S.tents = [];
-  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone']) if (g[k] !== undefined) S[k] = g[k];
+  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
   S.perks = new Set(g.perks || []); if (g.stat) S.stat = g.stat;
   for (const [tx, ty, color, occ] of g.tents || []) { if (S.occ[ty * NX + tx]) continue; const t = { kind: 'tent', tx, ty, gx: tx + .5 + rnd(-.08, .08), gy: ty + .5 + rnd(-.08, .08), color, occ, pop: 0, hit: false, l1: look(S.city.students), l2: look(S.city.students) }; S.occ[ty * NX + tx] = t; S.tents.push(t); }
   for (const [k, tx, ty] of g.stations || []) { if (S.occ[ty * NX + tx] || !STATIONS[k]) continue; const st = { kind: 'station', type: k, k, tx, ty, gx: tx + .5, gy: ty + .5, cd: 0 }; S.occ[ty * NX + tx] = st; S.stations.push(st); }
@@ -1485,31 +1502,45 @@ function summary(won) {
 
 /* ================= short goals for the first minutes; and the cordão, when the first raid begins ================= */
 const GOALS = [
-  { text: () => L('Acolhe 3 pessoas que estão à espera (!)', 'Welcome 3 people who are waiting (!)'), n: 3, val: () => S.stat.welcomed, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
+  { text: () => L('Acolhe 3 pessoas que estão à espera [!]', 'Welcome 3 people who are waiting [!]'), n: 3, val: () => S.stat.welcomed, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
   { text: () => L('Apanha 2 caixas de donativos', 'Pick up 2 donation boxes'), n: 2, val: () => S.stat.crates || 0, reward() { S.supplies = Math.min(20, S.supplies + 2); return L('+2 materiais', '+2 supplies'); } },
   { text: () => L('Monta a cozinha ou o ponto de informação (botão Montar)', 'Build the kitchen or the info point (Build button)'), n: 1, val: () => stationOf('kitchen') || stationOf('info') ? 1 : 0, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
   { text: () => L('Convoca a assembleia popular quando tiveres 8 pessoas', 'Call the people’s assembly once you have 8 people'), n: 1, val: () => S.perks.size ? 1 : 0, start() { S.asmCd = 0; }, reward() { return L('A acampada decidiu', 'The camp has decided'); } }
 ];
+function tasksHTML() { // every task of this square: done, now, still to come; the two of the raid
+  const g = S.goal || { i: 0 }, row = (cls, mark, t) => `<div class="${cls}">${mark} ${esc(t).replace('[!]', '<span class="bang">!</span>')}</div>`;
+  const list = GOALS.map((G, i) => row(i < g.i ? 'done' : i === g.i ? 'now' : '', i < g.i ? '✓' : i === g.i ? '🎯' : '○', G.text()));
+  list.push(row(S.cordDone ? 'done' : '', S.cordDone ? '✓' : '🚨', L('Na rusga: faz um cordão à volta de uma tenda', 'In the raid: make a cordão round a tent')));
+  list.push(row(S.liveDone ? 'done' : '', S.liveDone ? '✓' : '🚨', L('Na rusga: Direto quando a polícia levar tendas', 'In the raid: go Live when the police take tents')));
+  return `<div class="tasks"><b>${L('Tarefas', 'Tasks')}</b>${list.join('')}</div>`;
+}
+const LIVE_GOAL = { text: () => L('A polícia está a levar tendas: carrega em Direto para o país inteiro ver', 'The police are taking tents: press Live so the whole country sees'), reward() { S.support = Math.min(100, S.support + 5); return L('+5 de apoio', '+5 support'); } };
 const CORD_GOAL = { text: () => L('Rusga! Faz um cordão à volta de uma tenda (botão Cordão)', 'Raid! Make a cordão round a tent (Cordão button)'), reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } };
 let goalWas = '';
 function goalTick() {
   const el = $('goal'), show = (mode === 'play' || mode === 'paused') && S && !S.tut && !S.winning;
   if (!show) { if (!el.hidden) el.hidden = true; goalWas = ''; return; }
   S.goal ||= { i: 0, base: null }; const g = S.goal;
-  let txt = '', done = false;
-  if (g.flash && S.t < g.flash.until) { txt = '✓ ' + g.flash.text; done = true; }
+  let txt = '', done = false, alert = false;
+  if (aimOpen()) { alert = true; const n = (S.followers || []).length;
+    txt = S.aimHold > 0 ? L('Sozinho não dá. Escolhe 4 pessoas e vão juntos.', 'You can’t do it alone. Pick 4 people and go together.')
+      : (pcMQ.matches ? L(`Fascistas a atacar! Setas e Enter para escolher 4 pessoas · ${n}/4`, `Fascists attacking! Arrows and Enter to pick 4 people · ${n}/4`) : L(`Fascistas a atacar! Toca em 4 pessoas para irem contigo · ${n}/4`, `Fascists attacking! Tap 4 people to come with you · ${n}/4`)); }
+  else if (g.flash && S.t < g.flash.until) { txt = '✓ ' + g.flash.text; done = true; }
   else if (S.raid && !S.patrolRaid && !S.cordDone && S.tents.length) { // the first raid: the cordão
     if (S.chain && S.tents.some(t => Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r)) { S.cordDone = true; g.flash = { text: `${CORD_GOAL.text().split('! ')[1] || ''} · ${CORD_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
     else txt = '🎯 ' + CORD_GOAL.text();
+  } else if (S.raid && !S.patrolRaid && !S.liveDone && S.police.some(o => o.state === 'dismantle')) { // then the live broadcast, when it matters: tents being taken
+    if (S.live > 0) { S.liveDone = true; g.flash = { text: `${L('Direto', 'Live')} · ${LIVE_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
+    else txt = '🎯 ' + LIVE_GOAL.text();
   } else if (g.i < GOALS.length) {
-    const G = GOALS[g.i]; if (g.base == null) { g.base = G.val(); if (G.start) G.start(); }
+    const G = GOALS[g.i]; if (g.base == null) { g.base = G.n === 1 ? 0 : G.val(); if (G.start) G.start(); } // (a kitchen already built counts)
     const have = Math.min(G.n, G.val() - g.base);
-    if (have >= G.n) { g.flash = { text: `${G.text().split(' (')[0]} · ${G.reward()}`, until: S.t + 3 }; g.i++; g.base = null; sfx('join'); }
+    if (have >= G.n) { g.flash = { text: `${G.text().split(' (')[0].split(' [')[0]} · ${G.reward()}`, until: S.t + 3 }; g.i++; g.base = null; sfx('join'); }
     else txt = `🎯 ${g.i + 1}/${GOALS.length} · ${G.text()}${G.n > 1 ? ` · ${have}/${G.n}` : ''}`;
   }
   if (!txt) { if (!el.hidden) el.hidden = true; return; }
   if (el.hidden) el.hidden = false;
-  if (txt !== goalWas) { goalWas = txt; el.textContent = txt; el.classList.toggle('ok', done); }
+  if (txt !== goalWas) { goalWas = txt; el.innerHTML = esc(txt).replace('[!]', '<span class="bang">!</span>'); el.classList.toggle('ok', done); el.classList.toggle('alert', alert); }
 }
 
 /* ================= the real protests, square by square ================= */
@@ -1614,6 +1645,19 @@ function removeTent(t, byPolice, quiet) { // quiet: no message (the kettle count
   return n;
 }
 function randomSpot() { for (let k = 0; k < 40; k++) { const gx = rnd(.5, NX - .5), gy = rnd(.5, NY - .5); if (!blockedAt(gx, gy) && S.occ[idx(gx, gy)] !== 'R') return [gx, gy]; } return [CX + 1.5, CY + 3.5]; }
+// neighbours with a story: now and then, someone you welcome says why they're here (short, in their own words)
+const STORIES = {
+  all: [['Pago 650 € por um quarto. Ganho 900.', 'I pay €650 for a room. I earn €900.'], ['Vivi 30 anos na mesma casa. Não renovaram o contrato.', 'I lived 30 years in the same flat. They didn’t renew the lease.'],
+    ['Sou enfermeira. Durmo no carro entre turnos.', 'I’m a nurse. I sleep in the car between shifts.'], ['A minha casa virou alojamento local.', 'My home became a holiday let.'], ['Divido um T1 com mais quatro pessoas.', 'I share a one-bedroom flat with four other people.']],
+  Coimbra: [['Não há quartos perto da faculdade.', 'There are no rooms near the university.']], Faro: [['No verão sou despejado para entrar o turista.', 'Every summer I’m put out so the tourists can move in.']],
+  Porto: [['Fecharam a ilha onde nasci.', 'They closed down the ilha where I was born.']], Lisboa: [['Trabalho no centro e vivo a 2 horas.', 'I work in the centre and live 2 hours away.']]
+};
+function storyMaybe() {
+  if (S.t < (S.storyAt || 0) || Math.random() > .35) return;
+  const used = (S.storyUsed ||= []), pool = [...(STORIES[S.city.name] || []), ...STORIES.all].filter(x => !used.includes(x[0])); if (!pool.length) return;
+  const x = pool[Math.floor(Math.random() * pool.length)]; used.push(x[0]); S.storyAt = S.t + 45;
+  floatXY(0, 0, `«${L(x[0], x[1])}»`, '#f4f1ea');
+}
 function spawnArrival(opts = {}) {
   const side = Math.random() < .5;
   const gx = side ? rnd(.5, NX - .5) : NX + 1.6, gy = side ? NY + 1.6 : rnd(.5, NY - .5);
@@ -1790,6 +1834,7 @@ function startFasc() {
     gang: [[-.5, -.15], [.55, -.2], [-.35, .25], [.6, .2]].map(([a, b]) => ({ ...P(along + .1 + a, near + b), step: rnd(0, 9), flip: a > 0, back: false, moving: true })) };
   floatXY(0, 0, 'Fascistas atrás do carro da polícia!', '#ff3b4e', v);
   S.aim = {}; // the reticle's bubble says what to do (N de 4 · Enter)
+  if (!S.fascHint) { S.fascHint = true; S.aimHold = 2.2; } // the first time in each square: the game stops for a moment, with a tip
 }
 function fascLeave(won) {
   const f = S.fasc; if (!f) return;
@@ -2068,7 +2113,7 @@ function drawJournalist(j) {
 }
 /* ================= the kettle: Porto and Lisboa, the riot police at the highest level ================= */
 // with the tension almost at the top, the riot police surround the camp on every side, once per square (very rarely
-// twice), nearly the whole square. Nobody gets in or out; whoever is outside can only watch. During the 10 to 18 s
+// twice), nearly the whole square. Nobody gets in or out; whoever is outside can only watch. During the 28 to 36 s
 // wait, a negotiation at one corner and the ALERTA window (live TV); then (the shields bang faster and
 // faster in the last 3) they charge and close the ring: tasers, 4 dogs, 2 stun grenades. A cordão inside the ring
 // only slows it down. In the end they take everything (tents, structures, posters), but morale goes to the top,
@@ -2084,7 +2129,7 @@ function kettleRing() { // nearly the whole square: only a strip round the edge 
   const m = .9; return { x0: m, x1: NX - m, y0: m, y1: NY - m };
 }
 function kettleSpawn(v) {
-  const K = S.kettle, R = K.R = kettleRing(), n = S.city.violent ? 16 : 14, dogs = [1, 1 + Math.round(n / 4), 1 + Math.round(n / 2), 1 + Math.round(n * 3 / 4)];
+  const K = S.kettle, R = K.R = kettleRing(), n = S.city.violent ? 21 : 19, dogs = [1, 1 + Math.round(n / 4), 1 + Math.round(n / 2), 1 + Math.round(n * 3 / 4)];
   K.R0 = { ...R }; K.c = [(R.x0 + R.x1) / 2, (R.y0 + R.y1) / 2]; K.t = 0; K.neg = []; K.crowd = [];
   for (let i = 0; i < n; i++) {
     const u = (i + .5) / n, [fx, fy] = ringPt(R, u), dog = dogs.includes(i);
@@ -2094,7 +2139,7 @@ function kettleSpawn(v) {
   }
 }
 function kettleClose(K) {
-  const R = K.R, p = S.player; K.phase = 'wait'; K.t = 0; K.wait = rnd(13, 21); K.out = !inBox(p, R);
+  const R = K.R, p = S.player; K.phase = 'wait'; K.t = 0; K.wait = rnd(28, 36); K.out = !inBox(p, R);
   if (K.final) S.rebuild = Math.max(1, Math.ceil(S.tents.length / (S.city.violent ? 2 : 3))); // after the final kettle: rebuild to a third of the tents (Porto: half)
   for (const r of S.residents) r.kin = inBox(r, R);
   for (const t of S.tents) { t.kin = inBox(t, R); t.kT = 0; }
@@ -2117,6 +2162,7 @@ function kettleLeave(wipe) {
   const fresh = []; if (!K.final) for (let i = 0; i < 3; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = .4; fresh.push(t); } }
   for (const m of K.crowd || []) { const t = fresh.length ? pick(fresh) : null; m.go = t ? [t.gx + rnd(-.3, .3), t.gy + .4] : [m.gx + m.n[0] * 3, m.gy + m.n[1] * 3]; }
   det += K.det || 0;
+  if (K.final) S.rebuildFrom = S.clock;
   if (K.final) floatXY(0, 0, `Levaram tudo: ${det} detidas. O país inteiro viu: reconstruir até ${S.rebuild} tendas`, '#b6ff3b');
   else { floatXY(0, 0, `Levaram tudo: ${det} detidas. Quem ficou de fora volta a montar`, '#b6ff3b'); S.returnAt = (Math.floor(S.clock / 24) + 1) * 24 + 10; S.returnN = Math.min(10, Math.max(3, Math.ceil(det / 3))); }
   sfx('chain');
@@ -2303,7 +2349,7 @@ function tvShot(K) {
    by the hour: horoscope 7–10, soap opera 10–19 (Ossitrim ads in between), news 19–21, debate 21–3, teleshopping 3–7;
    the police, the interviews and the live broadcasts interrupt it */
 let tvOff = false; try { tvOff = localStorage.getItem('acampada-tv') === 'off'; } catch (e) {}
-const TV_LINE = 5.5; // seconds each line stays on screen
+const TV_LINE = 10; // seconds each line stays on screen
 const TELLY = { on: false, ev: null, prog: '', cut: 0, acc: 1, lay: 0, n: 0, key: '' };
 const pickOne = a => a[Math.floor(Math.random() * a.length)];
 // the reporter and the Orange Journalist put their interview on air for a few seconds
@@ -2340,15 +2386,24 @@ function tvNow() {
   if (S.raid && cops && (!S.patrolRaid || S.tents.length < (S.raidTents0 || 0))) return 'rusga'; // a patrol that does nothing is no news
   if (ev) return ev.kind;
   if (S.live > 0) return 'direto';
-  if (h >= 7 && h < 19) return Math.floor(S.t / TV_LINE) % 4 === 3 ? 'ossitrim' : h < 10 ? 'horoscopo' : 'novela';
-  if (h >= 19 && h < 21) return 'jornal';
-  if (h >= 21 || h < 3) return 'debate';
-  return 'televendas';
+  return tvBlock();
 }
+// the regular programmes: the hour picks the next one, but each stays on for TV_PROG seconds; between the horoscope
+// and the soap opera, one Ossitrim advert
+const TV_PROG = 30;
+function tvSched() { const h = ((S.clock % 24) + 24) % 24; return h >= 7 && h < 10 ? 'horoscopo' : h >= 10 && h < 19 ? 'novela' : h >= 19 && h < 21 ? 'jornal' : h >= 21 || h < 3 ? 'debate' : 'televendas'; }
+function tvBlock() {
+  const b = TELLY.block; if (b && S.t < b.until) return b.p;
+  const next = tvSched(), day = p => p === 'horoscopo' || p === 'novela';
+  if (b && day(b.p) && day(next)) { TELLY.adN = (TELLY.adN || 0) + 1; TELLY.block = { p: 'ossitrim', from: S.t, until: S.t + TV_LINE }; }
+  else TELLY.block = { p: next, from: S.t, until: S.t + TV_PROG };
+  return TELLY.block.p;
+}
+const tvK = () => TELLY.block && !TV_CUTS.includes(TELLY.prog) ? Math.floor((S.t - TELLY.block.from) / TV_LINE) : Math.floor(S.t / TV_LINE);
 const TV_CUTS = ['alerta', 'rusga', 'rep', 'laranja', 'direto', 'vitoria'];
 // the words for the lower third: [label, text, extra]
 function tvWords(p) {
-  const k = Math.floor(S.t / TV_LINE), lis = S.city.name === 'Lisboa', day = 1 + Math.floor((S.clock - 6) / 24), ev = TELLY.ev, nth = a => a[(k + TELLY.n) % a.length];
+  const k = tvK(), lis = S.city.name === 'Lisboa', day = 1 + Math.floor((S.clock - 6) / 24), ev = TELLY.ev, nth = a => a[(k + TELLY.n) % a.length];
   switch (p) {
     case 'vitoria': return [L('Última hora', 'Breaking news'), L('Governo cede: medidas imediatas para a habitação', 'Government gives in: immediate housing measures'), ''];
     case 'alerta': { const K = S.kettle; return [L('Última hora', 'Breaking news'), K.phase === 'charge' ? T('Polícia avança sobre a acampada') : nth([L(`Polícia cerca a acampada ${TV_PLACE[S.city.name] || ''}`, `Police kettle the camp ${lis ? 'at Rossio' : 'at Praça D. João I'}`), L(`Polícia cerca também ${lis ? 'no Porto' : 'em Lisboa'}`, `Police kettle ${lis ? 'Porto' : 'Lisbon'} too`), T('Negociações em curso'), T('Manifestantes desafiam a polícia')]), '']; }
@@ -2358,7 +2413,7 @@ function tvWords(p) {
     case 'direto': return [L('Em direto da praça', 'Live from the square'), L(`A acampada ${S.city.name} transmite em direto`, `The ${S.city.name} camp is broadcasting live`), ''];
     case 'novela': return [L(`«Amor em Renda Livre» · Ep. ${213 + day}`, `“Love at Market Rent” · Ep. ${213 + day}`), nth(TV_NOVELA()), ''];
     case 'horoscopo': return [L('Bom dia · Horóscopo', 'Good morning · Horoscope'), nth(TV_HORO()), ''];
-    case 'ossitrim': return [L('Publicidade · Ossitrim', 'Advert · Ossitrim'), TV_OSSI()[Math.floor(S.t / (TV_LINE * 4)) % 5], ''];
+    case 'ossitrim': return [L('Publicidade · Ossitrim', 'Advert · Ossitrim'), TV_OSSI()[(TELLY.adN || 0) % 5], ''];
     case 'televendas': { const left = 599 - Math.floor(S.t) % 600; return [L(`Televendas · só nos próximos ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}!`, `Teleshopping · next ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} only!`), nth(TV_SHOP())[1], '']; }
     case 'jornal': return [L(`Telejornal · ${S.city.name}`, `The News · ${S.city.name}`), nth(tvNews()), ''];
     case 'debate': { const d = nth(TV_DEBATE()); return [L('Debate · Acampar resolve?', 'Debate · Does camping help?'), `${d[1]}: ${d[2]}`, '']; }
@@ -2392,7 +2447,7 @@ function tvCop() {
 function tvStudio(g, p) {
   const main = ctx; ctx = g; g.save(); g.translate(0, -15); // everything up, clear of the captions
   try {
-    const k = Math.floor(S.t / TV_LINE) + TELLY.n, blink = Math.floor(S.t * 2) % 2;
+    const k = tvK() + TELLY.n, blink = Math.floor(S.t * 2) % 2;
     if (p === 'novela') {
       R(0, -15, 96, 55, '#6a2f55'); for (let x = 3; x < 96; x += 8) R(x, 0, 1, 40, '#7a3a63'); R(0, 40, 96, 29, '#3a1a2c');
       R(10, 18, 20, 15, '#f2c27a'); R(19, 18, 2, 15, '#6a2f55'); R(10, 25, 20, 1, '#6a2f55'); R(70, 26, 18, 14, '#a3415a'); R(70, 24, 18, 3, '#c2546f');
@@ -2437,7 +2492,7 @@ function tvStudio(g, p) {
 function tellySync(dt) {
   const el = $('telly'), play = mode === 'play' || mode === 'paused' || mode === 'menu';
   TELLY.lay -= dt; if (TELLY.lay <= 0 || !play) { TELLY.lay = .5; TELLY.fits = play && S && tellyPlace(); }
-  if (TELLY.S !== S) { TELLY.S = S; TELLY.ev = null; TELLY.cut = 0; TELLY.prog = ''; TELLY.key = ''; TELLY.cx = TELLY.cy = null; } // a new square: nothing carries over (its clock starts again at 0)
+  if (TELLY.S !== S) { TELLY.S = S; TELLY.block = null; TELLY.ev = null; TELLY.cut = 0; TELLY.prog = ''; TELLY.key = ''; TELLY.cx = TELLY.cy = null; } // a new square: nothing carries over (its clock starts again at 0)
   const p = play && TELLY.fits ? tvNow() : '';
   // switched off: it only comes on for what matters (the police in the square, the interviews, a live broadcast)
   // phones upright: out of the way while a message is showing at the top of the square
@@ -3007,7 +3062,7 @@ function update(dt) {
   const joinR = S.perks.has('megafone') ? 1.3 : .9, info = stationOf('info');
   for (const a of S.arrivals) {
     if (a.state !== 'leave') {
-      if (gd(a, p) < joinR) { a.gone = true; joinOne(a.gx, a.gy); continue; }
+      if (gd(a, p) < joinR) { a.gone = true; joinOne(a.gx, a.gy); storyMaybe(); continue; }
       if (info && gd(a, info) < 2.2) { a.infoT += dt; if (a.infoT > 1.2) { a.gone = true; joinOne(a.gx, a.gy); continue; } }
     }
     if (a.state === 'walk') { if (moveEnt(a, a.tx, a.ty, 1.3, dt)) { a.moving = false; if (a.auto) { a.gone = true; joinOne(a.gx, a.gy); } else a.state = 'wait'; } }
@@ -3077,7 +3132,7 @@ function update(dt) {
       if (S.bikes) { if (Math.random() < dt) { const q = iso(0, NY + 1); floatXY(q.x + 20, q.y - 30, 'Bicicletas travam a carrinha', '#39e1ff'); } }
       else if (moveEnt(v, v.tx, v.gy, 3, dt, true)) {
         v.state = 'parked';
-        if (S.riot) { v.blue = true; S.vans = [-1.9, 1.9].map(d => ({ gx: v.gx + d, gy: v.gy, blue: true })); } // a riot raid brings more vans
+        if (S.riot) { v.blue = true; const k = S.kettle ? 5 : 2, sp = 1.9, lf = Math.floor((v.gx + 2) / sp), rf = Math.floor((NX + 1 - v.gx) / sp), lo = clamp(Math.round(k / 2), Math.max(0, k - rf), Math.max(0, Math.min(k, lf))); S.vans = []; for (let i = -lo; i <= k - lo; i++) if (i) S.vans.push({ gx: v.gx + i * sp, gy: v.gy, blue: true }); } // a riot raid brings more vans (the kettle: six in all)
         const base = S.city.cops || 3; let n = v.patrol ? base - 1 + Math.floor(wins() / 2) : S.light ? 2 + Math.floor(wins() / 2) : Math.min(14, base + Math.floor(S.tents.length / 5) + Math.floor(wins() / 2));
         if (S.swept) n = Math.max(1, n - 2);
         if (S.charge) n = Math.min(18, n * 2 + 2); // the charge after a night concert: twice the officers, faster and staying longer
@@ -3209,7 +3264,7 @@ function update(dt) {
   const busy = S.raid || S.van || S.police.length || S.fasc;
   S.calmT = busy ? 6 : Math.max(0, (S.calmT || 0) - dt);
   if (busy || S.calmT > 0) return;
-  if (people() === 0) return gameOver();
+  if (people() === 0 && !(S.finalK === 'done' && S.clock < (S.rebuildFrom || 0) + 24)) return gameOver(); // after the final kettle the square is empty: a day to start rebuilding
   // (the win itself is above: pressure 100 and morale above 80)
 }
 
@@ -3258,10 +3313,12 @@ function spawnCar() {
   const st = pick(streets()), dir = Math.random() < .5 ? 1 : -1;
   // along gx (eastwards) the right-hand side is +gy; along gy (southwards) it is -gx
   const lane = st.axis === 'x' ? st.c + .4 * dir : st.c - .4 * dir;
-  const c = { id: 'car' + carId++, axis: st.axis, dir, lane, kerb: lane, off: 0, s0: dir > 0 ? st.from : st.to, s: dir > 0 ? st.from : st.to, end: dir > 0 ? st.to : st.from, col: pick(CAR_COLS), state: 'drive', v: 2.2, parkAt: null };
+  const tent = (S.city.violent || S.city.rough) && Math.random() < .14;
+  const c = { tent, id: 'car' + carId++, axis: st.axis, dir, lane, kerb: lane, off: 0, s0: dir > 0 ? st.from : st.to, s: dir > 0 ? st.from : st.to, end: dir > 0 ? st.to : st.from, col: pick(CAR_COLS), state: 'drive', v: 2.2, parkAt: null };
   // some park for a while at the kerb on the square's side, when that is their side of the road
   const kerbSide = st.park && (st.axis === 'x' ? dir < 0 : dir > 0);
-  if (kerbSide && S.cars.filter(k => k.parkAt != null).length < 2 && Math.random() < .4) { c.parkAt = st.axis === 'x' ? rnd(1, NX - 1) : rnd(1, NY - 1); c.kerb = st.c - st.park; }
+  if (tent) c.col = '#d64545';
+  if (kerbSide && !tent && S.cars.filter(k => k.parkAt != null).length < 2 && Math.random() < .4) { c.parkAt = st.axis === 'x' ? rnd(1, NX - 1) : rnd(1, NY - 1); c.kerb = st.c - st.park; }
   carPos(c); S.cars.push(c);
 }
 function carPos(c) { const lat = c.lane + (c.kerb - c.lane) * c.off; if (c.axis === 'x') { c.gx = c.s; c.gy = lat; } else { c.gx = lat; c.gy = c.s; } }
@@ -3295,6 +3352,11 @@ function drawCar0(c) {
   else box(ctx, gx - .23, gy - .26, gx + .23, gy + .22, 5, 3, col, '#2a3550', '#24324f');
   const wh = X ? [[gx - .36, gy + Wd], [gx + .36, gy + Wd]] : [[gx + Wd, gy - .36], [gx + Wd, gy + .36]];
   for (const [a, b] of wh) { const q = iso(a, b); R(q.x - 2, q.y - 2, 4, 3, '#1b1464'); }
+  if (c.tent) { // a tent strapped on the roof
+    const t = iso(gx, gy, 8), x = Math.round(t.x), y = Math.round(t.y);
+    for (let i = 0; i < 6; i++) R(x - 7 + i, y - i, 14 - i * 2, 1, i % 3 === 0 ? '#e0701a' : '#ff8a2a'); R(x - 1, y - 4, 2, 4, '#7a3a10'); R(x - 8, y, 16, 1, '#3a3a44');
+    if (!c.honked && Math.abs((c.axis === 'x' ? gx - CX : gy - CY)) < 1.5) { c.honked = true; floatXY(0, 0, LANG === 'en' ? 'Beep! Beep! A tent on its way to the camp!' : 'Piii! Piii! Uma tenda a caminho da acampada!', '#ffd23a'); sfx('live'); }
+  }
   if (c.state === 'drive') { const f = L * c.dir, q = X ? iso(gx + f, gy, 3) : iso(gx, gy + f, 3), r = X ? iso(gx - f, gy, 3) : iso(gx, gy - f, 3); R(q.x, q.y, 1, 1, '#fff3b0'); R(r.x, r.y, 1, 1, '#ff3b4e'); }
 }
 
@@ -3787,11 +3849,19 @@ function hud() {
   $('bM').style.width = S.morale + '%'; $('bS').style.width = S.support + '%'; $('bP').style.width = S.pressure + '%';
   { const d = S.city.donkey && (S.donkey === 'giant' ? 'Burro +25%' : S.donkey === 'small' ? 'Burro +10%' : ''), el = $('dTag'); el.hidden = !d; if (d && el.textContent !== d) el.textContent = d; } // Lisboa: the donkey's bonus on the pressure
   const play = mode === 'play';
-  const pr = S.pressure, ps = pr < 35 ? 0 : pr < 70 ? 1 : 2;
+  // the Government: laughs while the pressure is low, then gets worried; smug during a raid, a devil inside the kettle,
+  // giving in when the square wins; the «Habitação» folder goes behind his back as the pressure rises
+  const pr = S.pressure, K = S.kettle, devil = !!(K && (K.phase === 'wait' || K.phase === 'charge')), raidOn = !!(S.raid && !S.patrolRaid && S.police.length);
+  let ps = pr < 35 ? 0 : pr < 70 ? 1 : 2; if (devil || raidOn) ps = 0; if (S.winning) ps = 2;
   ['pose0', 'pose1', 'pose2'].forEach((id, i) => { $(id).style.display = i === ps ? '' : 'none'; });
-  document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', (pr / 100 * .75).toFixed(2)));
-  $('pmTear').style.display = pr >= 85 ? '' : 'none';
-  $('pm').style.transform = ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
+  document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', (devil ? .9 : pr / 100 * .75).toFixed(2)));
+  $('pmTear').style.display = pr >= 85 && !devil && !raidOn ? '' : 'none';
+  const loose = pr >= 90 && !devil && !raidOn;
+  $('pmSweat').style.display = loose ? '' : 'none'; $('pmCollar').style.display = loose ? '' : 'none'; $('pmTie').setAttribute('transform', loose ? 'rotate(14 60 62) translate(1 3)' : '');
+  $('pmFolder').style.display = ps === 0 && !devil && !S.winning ? '' : 'none'; $('pmFolderB').style.display = ps === 1 && !raidOn ? '' : 'none';
+  $('pmDevil').style.display = devil ? '' : 'none';
+  { const say = devil ? 'MUAHAHA' : S.winning ? L('CEDEMOS…', 'WE GIVE IN…') : raidOn ? L('ORDEM!', 'ORDER!') : ''; $('pmSay').style.display = say ? '' : 'none'; if ($('pmSayTx').textContent !== say) $('pmSayTx').textContent = say; }
+  $('pm').style.transform = devil ? `translateY(${Math.floor(S.t * 4) % 2}px)` : ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
   $('pm').setAttribute('aria-label', L('Humor do governo: ', 'Government’s mood: ') + (LANG === 'en' ? ['pleased', 'confused', 'defeated'] : ['contente', 'confuso', 'derrotado'])[ps]);
   // computer (mouse): each button shows its key, e.g. Cordão (C)
   const kb = k => pcMQ.matches ? `<span class="key">(${k})</span>` : '', lab = (pt, sub, k) => `${T(pt)}${kb(k)}<small>${T(sub)}</small>`;
@@ -4386,7 +4456,7 @@ function pause() {
   show(`<h2>${L('Acampada', 'Camp')}<br><u>${L('Dia', 'Day')} ${day}</u></h2>
   <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">${L('Assembleia popular', 'People’s assembly')}</span></div>
   <div class="slot"><span class="t">18:00</span><span class="n">${L('Coros', 'Choirs')}</span><span class="d">${L('(ensaio aberto)', '(open rehearsal)')}</span></div><div class="slot"><span class="t">20:30</span><span class="n">${L('Jantar popular', 'Community dinner')}</span></div></div>
-  <p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="quitchap">${L('Praças', 'Squares')}</button><button class="btnp" data-a="quittitle">${L('Menu inicial', 'Main menu')}</button>${optsRow()}`, 'green');
+  ${tasksHTML()}<p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="quitchap">${L('Praças', 'Squares')}</button><button class="btnp" data-a="quittitle">${L('Menu inicial', 'Main menu')}</button>${optsRow()}`, 'green');
 }
 function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
 function begin() { ov.hidden = true; mode = 'play'; { const r = realLine(S.city.name); if (r) floatXY(0, 0, r, '#ff8aa8'); } if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : joyOn() ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : 'Toca para andar', '#ffffff', 26); }
@@ -4456,7 +4526,8 @@ function drawAim() {
   ctx.fillStyle = 'rgba(8,6,22,.48)'; ctx.fillRect(0, 0, W, H);
   const k = S.city.peopleK || 1, tgt = aimTarget();
   const who = [...S.residents.map(r => [r, false]), ...(S.followers || []).map(f => [f, true])].sort((a, b) => a[0].gx + a[0].gy - b[0].gx - b[0].gy);
-  for (const [o, f] of who) { const q = iso(o.gx, o.gy); ell(ctx, q.x, q.y, 6 * k, f ? '#b6ff3b' : 'rgba(255,255,255,.5)'); small(q.x, q.y, () => guy(q.x, q.y, { ...o.look, moving: o.moving, step: o.step, flip: o.flip, back: o.back })); }
+  const pulse = .45 + .4 * Math.abs(Math.sin(S.t * 4));
+  for (const [o, f] of who) { const q = iso(o.gx, o.gy); ell(ctx, q.x, q.y, 6 * k, f ? '#b6ff3b' : `rgba(255,210,58,${pulse.toFixed(2)})`); if (f) { R(q.x - 1, q.y - 26 * k, 1, 2, '#b6ff3b'); R(q.x, q.y - 25 * k, 1, 2, '#b6ff3b'); R(q.x + 1, q.y - 27 * k, 1, 2, '#b6ff3b'); R(q.x + 2, q.y - 29 * k, 1, 2, '#b6ff3b'); } small(q.x, q.y, () => guy(q.x, q.y, { ...o.look, moving: o.moving, step: o.step, flip: o.flip, back: o.back })); }
   { const p = S.player, q = iso(p.gx, p.gy); small(q.x, q.y, () => drawPlayer()); }
   if (tgt) { const q = iso(tgt.gx, tgt.gy), x = Math.round(q.x), y = Math.round(q.y), h = Math.round(20 * k), w = Math.round(8 * k), c = Math.floor(S.t * 4) % 2 ? '#ffd23a' : '#ffffff';
     for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const cx = x + sx * w, cy = sy < 0 ? y - h : y + 3; R(sx < 0 ? cx : cx - 3, cy, 4, 1, c); R(cx, sy < 0 ? cy : cy - 3, 1, 4, c); }
@@ -4555,6 +4626,7 @@ $('ctxBtn').addEventListener('click', () => { const c = contextAction(); if (c &
 $('info').addEventListener('click', () => openInfo(0));
 $('rules').addEventListener('click', openRules);
 $('quit').addEventListener('click', e => { e.currentTarget.blur(); quitAsk(); });
+$('goal').addEventListener('click', () => { if (mode === 'play' && !aimOpen()) pause(); }); // the task list
 $('pauseBtn').addEventListener('click', () => { if (mode === 'play') pause(); else if (mode === 'paused') { ov.hidden = true; mode = 'play'; } });
 $('mute').addEventListener('click', () => { muted = !muted; if (muted) winSongStop(); $('mute').textContent = muted ? '×' : '♪'; $('mute').setAttribute('aria-label', muted ? L('Ligar o som', 'Sound on') : L('Desligar o som', 'Sound off')); });
 document.addEventListener('visibilitychange', () => { if (document.hidden) pause(); });
@@ -4751,7 +4823,7 @@ if (document.fullscreenEnabled && pcMQ.matches) {
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
-  if (mode === 'play') update(aimOpen() ? dt * .4 : dt); else S.t += dt; // the aim slows the game down
+  if (mode === 'play') { if (S.aimHold > 0) { S.aimHold -= dt; S.t += dt; } else update(aimOpen() ? dt * .4 : dt); } else S.t += dt; // the aim slows the game down (and stops it, the first time)
   songTick(); choirTick(); saxTick(dt);
   updCam(dt); draw(); tellySync(dt); tvSync(); newsSync();
   hudT -= dt; if (hudT <= 0) { hud(); goalTick(); hudT = .1; }

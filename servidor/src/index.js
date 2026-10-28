@@ -345,7 +345,7 @@ export class Praca {
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }
     }
     let npc = { n: [], b: null }; try { npc = this.pers.tick(now0); } catch (e) { console.log('personagens', e); }
-    try { this.jogos.tick(now0); } catch (e) { console.log('jogos', e); }
+    try { this.jogos.tick(now0, this.state && this.state.close); } catch (e) { console.log('jogos', e); }
     if (ch.length || npc.n.length || npc.b) this.broadcast({ t: 'tick', p: ch, n: npc.n, b: npc.b });
     const dj = this.djInfo(); if (!this.lastDj || this.lastDj.ok !== dj.ok || this.lastDj.mode !== dj.mode) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
     if (this.cfg.climaAuto && !this.climaNow() && now0 > this.nextClima) this.chover();
@@ -393,6 +393,7 @@ export class Praca {
         for (const p of [...this.people.values()]) if (p === target || (target.dev && p.dev === target.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} }
         break; }
       case 'desbanir': c.bans = c.bans.filter(b => b.dev !== m.dev); break;
+      case 'apagar-mural': { this.sql.exec('UPDATE mural SET hidden = 2 WHERE hidden = 0 AND expires > ?', now); this.broadcast({ t: 'mural-tudo' }); break; }
       case 'apagar': { const id = m.id | 0; this.sql.exec('UPDATE mural SET hidden = 2 WHERE id = ?', id); this.broadcast({ t: 'mural-', id }); break; }
       case 'repor': {
         const id = m.id | 0; this.sql.exec('UPDATE mural SET hidden = 0 WHERE id = ?', id); this.sql.exec('DELETE FROM reports WHERE msg = ?', id);

@@ -945,6 +945,7 @@ function onMsg(m) {
   if (m.t === 'banned') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} bannedScreen(); return; }
   if (m.t === 'mural+') { if (m.by === myId) mine.add(m.m.id); mural.push(m.m); if (mural.length > 200) mural.shift(); renderMural(true); if (m.by !== myId) muralPing(); return; }
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
+  if (m.t === 'mural-tudo') { mural = []; renderMural(); return; } // the organisers cleared the wall
   if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
   if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
   if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }

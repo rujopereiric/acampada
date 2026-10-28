@@ -84,6 +84,7 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
     <section><h2>Mural</h2>
       <div class="sw"><span>Mural só para leitura<small>Ninguém escreve; o que lá está continua visível.</small></span><button id="muralRO" class="sm"></button></div>
       <div class="list" id="mural" style="margin-top:8px"></div>
+      <div id="muralAll" style="margin-top:10px"></div>
     </section>
 
     <section><h2>DJ p.45</h2>
@@ -206,6 +207,8 @@ function render() {
   sw('muralRO', c.muralRO);
   const ml = $('mural'); ml.innerHTML = '';
   if (!S.mural.length) ml.append(el('div', 'muted', 'O mural está vazio.'));
+  const ma = $('muralAll'); ma.innerHTML = ''; // everything at once: asks twice
+  if (S.mural.some(x => !x.hidden)) ma.append(btn('Apagar o mural todo', 'red', () => api('apagar-mural'), 'Tens a certeza? Toca outra vez para apagar tudo'));
   for (const x of S.mural) {
     const t = el('span'); const d = el('i', 'dot'); d.style.background = AURA[x.city] || '#fff'; t.append(d, el('b', '', x.name + ' · ' + x.city + ' · ' + hm(x.at)), el('div', '', x.text));
     const sub = x.hidden === 1 ? 'Escondida por denúncias' : x.hidden === 2 ? 'Apagada pela organização' : '';

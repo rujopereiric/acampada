@@ -9,6 +9,8 @@ const HOLD = 6e3; // how long a peg or an end waits for the second person
 const TENTS_MAX = 8, TENT_EVERY = 150e3, BANNER_OPEN = 180e3, BANNER_EVERY = 120e3;
 const SLOGANS = 15; // multiplayer.html PHRASES: the banner carries one of them
 const rnd = (a, b) => a + Math.random() * (b - a);
+// the square's benches and trees (multiplayer.html: makeDecor): nothing is laid on top of them
+const DECOR = [[4, 2], [2, 5], [2, 16], [20, 5], [20, 16], [19, 3], [3, 19]];
 
 export class Jogos {
   constructor(sq, W, H) { this.sq = sq; this.W = W; this.H = H; this.id = 1; this.tent = null; this.built = []; this.banner = null; this.nextTent = 0; this.nextBanner = 0; }
@@ -16,7 +18,7 @@ export class Jogos {
     const taken = [...this.built, this.tent, this.banner].filter(Boolean);
     for (let i = 0; i < 60; i++) {
       const x = rnd(2.5, this.W - 2.5), y = rnd(2.5, this.H - 2.5);
-      if (OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad) && taken.every(o => Math.hypot(x - o.x, y - o.y) > 2.2)) return [x, y];
+      if (OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad) && DECOR.every(([dx, dy]) => Math.hypot(x - dx, y - dy) > 1.6) && taken.every(o => Math.hypot(x - o.x, y - o.y) > 2.2)) return [x, y];
     }
     return null;
   }
@@ -31,8 +33,12 @@ export class Jogos {
   send() { this.sq.broadcast({ t: 'jogos', j: this.pub() }); }
   // the two ends of each thing, so that two people can stand at them
   ends(o) { return [[o.x - .55, o.y + .55], [o.x + .55, o.y - .55]]; } // level on the screen
-  tick(now) {
+  tick(now, close) {
     let ch = false;
+    // a new opening: what was built in the last one is gone (also when nobody was in the square as it closed)
+    if (close && this.until && now <= this.until) this.until = close; // still the same opening (maybe extended)
+    if (this.until && now > this.until) { this.closed(); ch = true; }
+    if (!this.until && close) this.until = close;
     if (!this.tent && this.built.length < TENTS_MAX && now > this.nextTent) { const s = this.spot(1.2); if (s) { this.tent = { id: this.id++, x: s[0], y: s[1], c: Math.floor(Math.random() * 8), pegs: [null, null] }; ch = true; } }
     if (!this.banner && now > this.nextBanner) { const s = this.spot(1.4); if (s) { this.banner = { id: this.id++, x: s[0], y: s[1], ends: [null, null], open: false, f: 0 }; ch = true; } }
     const b = this.banner; if (b && b.open && now > b.until) { this.banner = null; this.nextBanner = now + BANNER_EVERY; ch = true; }
@@ -69,5 +75,5 @@ export class Jogos {
     this.send(); return true;
   }
   no(p, why) { this.sq.send(p, { t: 'jogono', why }); return true; }
-  closed() { this.tent = null; this.built = []; this.banner = null; this.nextTent = 0; this.nextBanner = 0; }
+  closed() { this.tent = null; this.built = []; this.banner = null; this.nextTent = 0; this.nextBanner = 0; this.until = 0; }
 }
