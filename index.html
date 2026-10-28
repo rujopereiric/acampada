@@ -285,9 +285,6 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .bigtext .flt{ font-size:11px; } .bigtext #ban{ font-size:16px; } .bigtext .cam #ban{ font-size:18px; } .bigtext #tut{ font-size:15px; } .bigtext .help{ font-size:14px; }
 .bigtext .stats dt{ font-size:12px; } .bigtext .bar{ font-size:12px; } .bigtext.land .stats dt{ font-size:10px; } .bigtext.land .bar{ font-size:11px; } .bigtext .act small{ font-size:12px; }
 .bigtext .chap .pl, .bigtext .chap .real{ font-size:14px; } .bigtext .summ span, .bigtext .summ small{ font-size:12px; }
-/* more contrast */
-.hicon #ov .help, .hicon .cj-small, .hicon .cj-card span, .hicon .chap .pl, .hicon .summ span{ color:#ffffff !important; } .hicon #ov.green .help, .hicon #ov.needs small{ color:#000 !important; }
-.hicon .help, .hicon .stats dt, .hicon .bar > span{ color:var(--ink) !important; } .hicon .flt{ background:#000; } .hicon #telly .txt{ background:#000; }
 .chap .ok{ font-weight:800; font-size:11px; color:#0b0a0a; background:#4ba36f; padding:2px 6px; text-transform:uppercase; }
 .chap.done{ border-color:#4ba36f; }
 .chap:focus-visible{ outline:3px solid #ffd23a; outline-offset:3px; }
@@ -1455,10 +1452,10 @@ function look(student) {
 }
 const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* ================= options: calm mode, bigger letters, high contrast (kept in this browser) ================= */
-const OPTS = (() => { try { return { calm: false, big: false, hc: false, ...JSON.parse(localStorage.getItem('acampada-opts') || '{}') }; } catch (e) { return { calm: false, big: false, hc: false }; } })();
-function optsApply() { const de = document.documentElement; de.classList.toggle('bigtext', !!OPTS.big); de.classList.toggle('hicon', !!OPTS.hc); try { localStorage.setItem('acampada-opts', JSON.stringify(OPTS)); } catch (e) {} if (TELLY) TELLY.lay = 0; }
-const optsRow = () => `<div class="opts"><button class="opt${OPTS.calm ? ' on' : ''}" data-a="opt" data-o="calm">${OPTS.calm ? '☾' : '☀'} ${L('Modo calmo', 'Calm mode')}</button><button class="opt${OPTS.big ? ' on' : ''}" data-a="opt" data-o="big">Aa ${L('Letra maior', 'Bigger text')}</button><button class="opt${OPTS.hc ? ' on' : ''}" data-a="opt" data-o="hc">◐ ${L('Mais contraste', 'More contrast')}</button></div>
-  <p class="help optnote">${OPTS.calm ? L('Modo calmo: rusgas leves e só de dois em dois dias, sem polícia de choque nem fascistas, a moral desce mais devagar.', 'Calm mode: light raids every other day, no riot police or fascists, morale drops more slowly.') : ''}</p>`;
+const OPTS = (() => { try { return { calm: false, big: false, ...JSON.parse(localStorage.getItem('acampada-opts') || '{}') }; } catch (e) { return { calm: false, big: false }; } })();
+function optsApply() { const de = document.documentElement; de.classList.toggle('bigtext', !!OPTS.big); de.classList.remove('hicon'); delete OPTS.hc; try { localStorage.setItem('acampada-opts', JSON.stringify(OPTS)); } catch (e) {} if (TELLY) TELLY.lay = 0; }
+const optsRow = (inGame) => `<div class="opts">${inGame ? '' : `<button class="opt${OPTS.calm ? ' on' : ''}" data-a="opt" data-o="calm">${OPTS.calm ? '☾' : '☀'} ${L('Modo calmo', 'Calm mode')}</button>`}<button class="opt${OPTS.big ? ' on' : ''}" data-a="opt" data-o="big">Aa ${L('Letra maior', 'Bigger text')}</button>${!inGame && tasksAny() ? `<button class="opt" data-a="tasksreset">↺ ${L('Repetir as tarefas', 'Redo the tasks')}</button>` : ''}</div>
+  <p class="help optnote">${inGame ? (S.calm ? L('Esta praça está em modo calmo. Escolhe o modo antes de começar uma praça.', 'This square is in calm mode. Pick the mode before you start a square.') : '') : OPTS.calm ? L('Modo calmo: rusgas leves e só de dois em dois dias, sem polícia de choque nem fascistas, a moral desce mais devagar.', 'Calm mode: light raids every other day, no riot police or fascists, morale drops more slowly.') : ''}</p>`;
 
 /* ================= saving a square half-way (one per square, in this browser) ================= */
 const saveKey = i => 'acampada-save-' + i;
@@ -1470,7 +1467,7 @@ function saveGame() {
   const d = { v: 1, city: cityIdx, at: Date.now(), day: 1 + Math.floor((S.clock - 6) / 24), s: {
     t: S.t, clock: S.clock, supplies: S.supplies, morale: S.morale, support: S.support, pressure: S.pressure, detained: S.detained, asmCd: S.asmCd, perks: [...S.perks],
     // a raid or a kettle in progress starts again when the square is loaded: no escaping the police by leaving
-    nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0,
+    nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0, calm: !!S.calm,
     finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: S.goal.base } : null, rebuildFrom: S.rebuildFrom || 0, cordDone: !!S.cordDone, liveDone: !!S.liveDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
     tents: S.tents.map(t => [t.tx, t.ty, t.color, t.occ]), stations: S.stations.map(st => [st.k, st.tx, st.ty]) } };
   try { localStorage.setItem(saveKey(cityIdx), JSON.stringify(d)); } catch (e) {}
@@ -1479,7 +1476,7 @@ function loadGame(i) {
   const d = savedOf(i); if (!d) return false;
   cityIdx = i; newLevel(); const g = d.s;
   for (const t of S.tents) S.occ[t.ty * NX + t.tx] = null; S.tents = [];
-  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
+  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'calm', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
   S.perks = new Set(g.perks || []); if (g.stat) S.stat = g.stat;
   for (const [tx, ty, color, occ] of g.tents || []) { if (S.occ[ty * NX + tx]) continue; const t = { kind: 'tent', tx, ty, gx: tx + .5 + rnd(-.08, .08), gy: ty + .5 + rnd(-.08, .08), color, occ, pop: 0, hit: false, l1: look(S.city.students), l2: look(S.city.students) }; S.occ[ty * NX + tx] = t; S.tents.push(t); }
   for (const [k, tx, ty] of g.stations || []) { if (S.occ[ty * NX + tx] || !STATIONS[k]) continue; const st = { kind: 'station', type: k, k, tx, ty, gx: tx + .5, gy: ty + .5, cd: 0 }; S.occ[ty * NX + tx] = st; S.stations.push(st); }
@@ -1501,13 +1498,18 @@ function summary(won) {
 }
 
 /* ================= short goals for the first minutes; and the cordão, when the first raid begins ================= */
+// the tasks teach the game: each one, once done, stays done in every square and every later game (on this device)
+const TASKS = (() => { try { return { g: 0, cord: false, live: false, ...JSON.parse(localStorage.getItem('acampada-tasks') || '{}') }; } catch (e) { return { g: 0, cord: false, live: false }; } })();
+function tasksSave() { try { localStorage.setItem('acampada-tasks', JSON.stringify(TASKS)); } catch (e) {} }
+const tasksAny = () => TASKS.g > 0 || TASKS.cord || TASKS.live, tasksAll = () => TASKS.g >= GOALS.length && TASKS.cord && TASKS.live;
 const GOALS = [
   { text: () => L('Acolhe 3 pessoas que estão à espera [!]', 'Welcome 3 people who are waiting [!]'), n: 3, val: () => S.stat.welcomed, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
   { text: () => L('Apanha 2 caixas de donativos', 'Pick up 2 donation boxes'), n: 2, val: () => S.stat.crates || 0, reward() { S.supplies = Math.min(20, S.supplies + 2); return L('+2 materiais', '+2 supplies'); } },
   { text: () => L('Monta a cozinha ou o ponto de informação (botão Montar)', 'Build the kitchen or the info point (Build button)'), n: 1, val: () => stationOf('kitchen') || stationOf('info') ? 1 : 0, reward() { S.morale = Math.min(100, S.morale + 5); return L('+5 de moral', '+5 morale'); } },
   { text: () => L('Convoca a assembleia popular quando tiveres 8 pessoas', 'Call the people’s assembly once you have 8 people'), n: 1, val: () => S.perks.size ? 1 : 0, start() { S.asmCd = 0; }, reward() { return L('A acampada decidiu', 'The camp has decided'); } }
 ];
-function tasksHTML() { // every task of this square: done, now, still to come; the two of the raid
+function tasksHTML() { // every task: done, now, still to come; the two of the raid
+  if (tasksAll()) return `<div class="tasks"><b>${L('Tarefas', 'Tasks')}</b><div class="done">✓ ${L('Todas feitas', 'All done')}</div></div>`;
   const g = S.goal || { i: 0 }, row = (cls, mark, t) => `<div class="${cls}">${mark} ${esc(t).replace('[!]', '<span class="bang">!</span>')}</div>`;
   const list = GOALS.map((G, i) => row(i < g.i ? 'done' : i === g.i ? 'now' : '', i < g.i ? '✓' : i === g.i ? '🎯' : '○', G.text()));
   list.push(row(S.cordDone ? 'done' : '', S.cordDone ? '✓' : '🚨', L('Na rusga: faz um cordão à volta de uma tenda', 'In the raid: make a cordão round a tent')));
@@ -1520,22 +1522,22 @@ let goalWas = '';
 function goalTick() {
   const el = $('goal'), show = (mode === 'play' || mode === 'paused') && S && !S.tut && !S.winning;
   if (!show) { if (!el.hidden) el.hidden = true; goalWas = ''; return; }
-  S.goal ||= { i: 0, base: null }; const g = S.goal;
+  S.goal ||= { i: 0, base: null }; const g = S.goal; if (g.i < TASKS.g) { g.i = TASKS.g; g.base = null; } if (TASKS.cord) S.cordDone = true; if (TASKS.live) S.liveDone = true;
   let txt = '', done = false, alert = false;
   if (aimOpen()) { alert = true; const n = (S.followers || []).length;
     txt = S.aimHold > 0 ? L('Sozinho não dá. Escolhe 4 pessoas e vão juntos.', 'You can’t do it alone. Pick 4 people and go together.')
       : (pcMQ.matches ? L(`Fascistas a atacar! Setas e Enter para escolher 4 pessoas · ${n}/4`, `Fascists attacking! Arrows and Enter to pick 4 people · ${n}/4`) : L(`Fascistas a atacar! Toca em 4 pessoas para irem contigo · ${n}/4`, `Fascists attacking! Tap 4 people to come with you · ${n}/4`)); }
   else if (g.flash && S.t < g.flash.until) { txt = '✓ ' + g.flash.text; done = true; }
   else if (S.raid && !S.patrolRaid && !S.cordDone && S.tents.length) { // the first raid: the cordão
-    if (S.chain && S.tents.some(t => Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r)) { S.cordDone = true; g.flash = { text: `${CORD_GOAL.text().split('! ')[1] || ''} · ${CORD_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
+    if (S.chain && S.tents.some(t => Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r)) { S.cordDone = TASKS.cord = true; tasksSave(); g.flash = { text: `${CORD_GOAL.text().split('! ')[1] || ''} · ${CORD_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
     else txt = '🎯 ' + CORD_GOAL.text();
   } else if (S.raid && !S.patrolRaid && !S.liveDone && S.police.some(o => o.state === 'dismantle')) { // then the live broadcast, when it matters: tents being taken
-    if (S.live > 0) { S.liveDone = true; g.flash = { text: `${L('Direto', 'Live')} · ${LIVE_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
+    if (S.live > 0) { S.liveDone = TASKS.live = true; tasksSave(); g.flash = { text: `${L('Direto', 'Live')} · ${LIVE_GOAL.reward()}`, until: S.t + 3 }; sfx('join'); }
     else txt = '🎯 ' + LIVE_GOAL.text();
   } else if (g.i < GOALS.length) {
     const G = GOALS[g.i]; if (g.base == null) { g.base = G.n === 1 ? 0 : G.val(); if (G.start) G.start(); } // (a kitchen already built counts)
     const have = Math.min(G.n, G.val() - g.base);
-    if (have >= G.n) { g.flash = { text: `${G.text().split(' (')[0].split(' [')[0]} · ${G.reward()}`, until: S.t + 3 }; g.i++; g.base = null; sfx('join'); }
+    if (have >= G.n) { g.flash = { text: `${G.text().split(' (')[0].split(' [')[0]} · ${G.reward()}`, until: S.t + 3 }; g.i++; g.base = null; TASKS.g = Math.max(TASKS.g, g.i); tasksSave(); sfx('join'); }
     else txt = `🎯 ${g.i + 1}/${GOALS.length} · ${G.text()}${G.n > 1 ? ` · ${have}/${G.n}` : ''}`;
   }
   if (!txt) { if (!el.hidden) el.hidden = true; return; }
@@ -1555,7 +1557,7 @@ function newLevel() {
   stopSong(); winSongStop();
   const city = CITIES[cityIdx];
   [NX, NY] = city.size || [10, 10]; CX = NX / 2; CY = NY / 2; GWX = NX + 3; GWY = NY + 3; OY = city.viewY || 100; setFloor();
-  S = { city, t: 0, clock: 17, dark: 0, occ: new Array(NX * NY).fill(null),
+  S = { city, calm: !!OPTS.calm, t: 0, clock: 17, dark: 0, occ: new Array(NX * NY).fill(null),
     tents: [], stations: [], residents: [], arrivals: [], crates: [], police: [], parts: [], floats: [], cars: [],
     van: null, bikes: null, tandem: null, chain: null,
     supplies: 4, morale: 70, support: 15, pressure: 0, detained: 0,
@@ -1856,7 +1858,7 @@ function nightEvents(dt) {
   // never on day 1: the first night only counts after midnight
   if (S.fascNight !== night && inWin && night >= 0) { S.fascNight = night; let at = S.clock + rnd(0, 3.4); if (at < 24) at = rnd(24, 25.4); S.fascAt = Math.random() < .6 ? at : 0; }
   if (S.fascAt && hr >= 5 && hr < 21) S.fascAt = 0; // held back all night: not this time
-  if (S.fascAt && !OPTS.calm && S.clock >= S.fascAt && !S.fasc && !S.raid && !S.van && !S.bikes && !S.ambush && !S.winning && S.raidsOver && calm()) { S.fascAt = 0; startFasc(); } // never during a bicicletada, never before the first raid
+  if (S.fascAt && !S.calm && S.clock >= S.fascAt && !S.fasc && !S.raid && !S.van && !S.bikes && !S.ambush && !S.winning && S.raidsOver && calm()) { S.fascAt = 0; startFasc(); } // never during a bicicletada, never before the first raid
   const f = S.fasc;
   if (f) {
     // a few seconds of warning before they start; the time doesn't run while you choose activists in the aim
@@ -2669,12 +2671,12 @@ const WIN_MORALE = 80; // the Moral bar has a mark here
 const BIG_GAP = 25; // seconds of real time (a game day is 72 s): 40 left almost no nights for the fascists
 const calm = () => (S.quietT ?? 99) >= BIG_GAP && S.clock < S.nextRaid - 1;
 function startRaid(patrol, charge, force) { // force: the final kettle (Porto, Lisboa: pressure at 100)
-  S.light = !patrol && !charge && !force && (!S.firstRaidDone || OPTS.calm); if (!patrol && !charge) S.firstRaidDone = true; // the first dawn raid of each square is light: a few officers, no riot police
+  S.light = !patrol && !charge && !force && (!S.firstRaidDone || S.calm); if (!patrol && !charge) S.firstRaidDone = true; // the first dawn raid of each square is light: a few officers, no riot police
   S.raid = true; S.patrolRaid = !!patrol; S.harmless = !!patrol && S.clock < (S.calmUntil || 0); S.raidTents0 = S.tents.length; S.raidT = 0; // a patrol during the rest only walks through S.raidDetained = 0; S.warned = false; S.charge = !!charge;
   // riot police (rare): only with 15 tents or more. 5% of police actions, +3% with posters on the statue, +10% with the
   // pressure almost at the top, +15% in Porto; after a concert at night, 50% (65% in Porto)
   const pr = S.light ? 0 : charge ? (S.city.violent ? .65 : .5) : .05 + (S.perks.has('cartazes') ? .03 : 0) + (S.pressure >= 85 ? .1 : 0) + (S.city.violent ? .15 : S.city.rough ? .07 : 0) + .02 * wins();
-  S.riot = !!force || (!OPTS.calm && S.finalK !== 'done' && S.tents.length >= 15 && Math.random() < pr); // after the final kettle: ordinary raids only S.riotAct = false; S.wiped = false; S.formT = 0;
+  S.riot = !!force || (!S.calm && S.finalK !== 'done' && S.tents.length >= 15 && Math.random() < pr); // after the final kettle: ordinary raids only S.riotAct = false; S.wiped = false; S.formT = 0;
   S.standoff = S.riot && S.pressure >= 85 ? { t: 20 } : null; // high tension: a line that holds, and may never come in
   // Porto and Lisboa: the kettle. Always once, at the very end (pressure at 100); before that only after a night
   // concert past the legal limit, by chance, at most once (Porto 35%, Lisboa 25%)
@@ -2686,7 +2688,7 @@ function startRaid(patrol, charge, force) { // force: the final kettle (Porto, L
   if (!patrol && !charge && !force && !S.bikes && !S.fasc && S.support >= 12 && Math.random() < .7) { startBikes(); const c = iso(CX, NY, 20); floatXY(c.x, c.y - 42, 'Contra a rusga!', '#39e1ff'); }
 }
 function onRaidEnd() {
-  if (!S.patrolRaid) { S.raidsOver = (S.raidsOver || 0) + 1; S.calmUntil = S.clock + (OPTS.calm ? 36 : 12); if (S.stat) S.stat.raids++; } // patrols don't count; after a raid, 12 h of rest (calm mode: the next dawn raid is two days later)
+  if (!S.patrolRaid) { S.raidsOver = (S.raidsOver || 0) + 1; S.calmUntil = S.clock + (S.calm ? 36 : 12); if (S.stat) S.stat.raids++; } // patrols don't count; after a raid, 12 h of rest (calm mode: the next dawn raid is two days later)
   S.harmless = false;
   S.vans = []; S.kettle = null; saxLeave(); if (S.finalK === 'on') S.finalK = 'done';
   S.swept = false; S.charge = false; S.riot = false;
@@ -3102,7 +3104,7 @@ function update(dt) {
   }
 
   // the charge after a night concert
-  if (S.chargeT > 0 && (S.clock < (S.calmUntil || 0) || OPTS.calm)) S.chargeT = 0; // no charge during the rest
+  if (S.chargeT > 0 && (S.clock < (S.calmUntil || 0) || S.calm)) S.chargeT = 0; // no charge during the rest
   if (S.chargeT > 0) { S.chargeT -= dt; if (S.chargeT <= 0) { if (S.raid) S.chargeT = 2; else { sfx('siren'); startRaid(false, true); } } }
   // an evening bicicletada (18:00 to midnight), on top of the one that answers the dawn raid
   { const day = Math.floor(S.clock / 24), hr = S.clock % 24;
@@ -3223,7 +3225,7 @@ function update(dt) {
   updEvents(dt, hr);
 
   // meters
-  S.morale = Math.max(0, S.morale - dt * (.5 + S.tents.length * .012) * (1 + .4 * S.dark) * (S.perks.has('turnos') ? .7 : 1) * (OPTS.calm ? .7 : 1));
+  S.morale = Math.max(0, S.morale - dt * (.5 + S.tents.length * .012) * (1 + .4 * S.dark) * (S.perks.has('turnos') ? .7 : 1) * (S.calm ? .7 : 1));
   if (S.morale < 20 && !S.kettle) { /* a kettle: nobody gets out either */ S.leaveT -= dt; if (S.leaveT <= 0 && S.tents.length) { S.leaveT = 3; const t = pick(S.tents); t.occ--; float(t.gx, t.gy, 'Foi para casa', '#d6d0e6'); sfx('leave'); if (t.occ <= 0) removeTent(t, false); } }
   if (S.support > 10) S.support = Math.max(10, S.support - dt * .22);
   const dk = S.donkey === 'giant' ? 1.25 : S.donkey === 'small' ? 1.1 : 1;
@@ -4456,7 +4458,7 @@ function pause() {
   show(`<h2>${L('Acampada', 'Camp')}<br><u>${L('Dia', 'Day')} ${day}</u></h2>
   <div class="slots"><div class="slot"><span class="t">17:00</span><span class="n">Skate</span></div><div class="slot"><span class="t">19:00</span><span class="n">${L('Assembleia popular', 'People’s assembly')}</span></div>
   <div class="slot"><span class="t">18:00</span><span class="n">${L('Coros', 'Choirs')}</span><span class="d">${L('(ensaio aberto)', '(open rehearsal)')}</span></div><div class="slot"><span class="t">20:30</span><span class="n">${L('Jantar popular', 'Community dinner')}</span></div></div>
-  ${tasksHTML()}<p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="quitchap">${L('Praças', 'Squares')}</button><button class="btnp" data-a="quittitle">${L('Menu inicial', 'Main menu')}</button>${optsRow()}`, 'green');
+  ${tasksHTML()}<p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="quitchap">${L('Praças', 'Squares')}</button><button class="btnp" data-a="quittitle">${L('Menu inicial', 'Main menu')}</button>${optsRow(true)}`, 'green');
 }
 function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
 function begin() { ov.hidden = true; mode = 'play'; { const r = realLine(S.city.name); if (r) floatXY(0, 0, r, '#ff8aa8'); } if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : joyOn() ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : 'Toca para andar', '#ffffff', 26); }
@@ -4474,6 +4476,7 @@ ov.addEventListener('click', e => {
   if (a === 'install') { const ev = installEvt; installEvt = null; if (ev) ev.prompt(); titleScreen(); }
   else if (a === 'chapters') chapterScreen();
   else if (a === 'title') titleScreen();
+  else if (a === 'tasksreset') { TASKS.g = 0; TASKS.cord = TASKS.live = false; tasksSave(); chapterScreen(); }
   else if (a === 'reset') { cleared.clear(); saveCleared(); chapterScreen(); }
   else if (a === 'retry') { dropSave(); newLevel(); introScreen(); }
   else if (a === 'info') openInfo(0);
