@@ -6,6 +6,7 @@
 // Nothing that identifies anyone is kept; the mural is deleted 24 h after the square closes.
 import { GESTAO_HTML } from './gestao.js';
 import { Personagens, NPC_KINDS } from './personagens.js';
+import { Jogos } from './jogos.js';
 
 const OPEN_BEFORE = 60, DEFAULT_HOURS = 3, CLEANUP_AFTER = 24 * 3600e3;
 const MAX_AVATARS = 250, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MAX = 140, HIDE_REPORTS = 3, AVISO_MAX = 160;
@@ -29,10 +30,10 @@ const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 const CARTAZ_MAX = 60, CRAVO = [11, 11], CARTAZ_POR_PESSOA = 3;
 // posters hang on the two faces of the carnation's plinth that look at the square, 8 spaces wide each; a poster takes
 // as many spaces as its size (multiplayer.html: CARTAZ_FMT, the same numbers)
-const FACE_UNITS = 8, FACES = 2, CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_CORES = 5;
+const FACE_UNITS = 8, FACES = 8, FILL = [2, 0, 3, 1, 4, 5, 6, 7], CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_CORES = 5; // faces 0-1 the plinth, 2-7 hanging from the stem
 // where a poster of `u` spaces fits: the first gap on either face (slot = face * 8 + first space), or -1
 function cartazSpot(list, u) {
-  for (let f = 0; f < FACES; f++) {
+  for (const f of FILL) {
     const used = new Array(FACE_UNITS).fill(false);
     for (const c of list) { if (Math.floor(c.slot / FACE_UNITS) !== f) continue; const o = c.slot % FACE_UNITS, w = CARTAZ_FMT[c.fmt] || 3; for (let i = o; i < o + w && i < FACE_UNITS; i++) used[i] = true; }
     for (let o = 0; o + u <= FACE_UNITS; o++) { let ok = true; for (let i = o; i < o + u; i++) if (used[i]) { ok = false; break; } if (ok) return f * FACE_UNITS + o; }
@@ -148,7 +149,7 @@ export class Praca {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS cartazes (id INTEGER PRIMARY KEY AUTOINCREMENT, slot INTEGER, name TEXT, city TEXT, text TEXT, dev TEXT, at INTEGER, expires INTEGER, hidden INTEGER DEFAULT 0)`);
     for (const col of ["fmt TEXT DEFAULT 'm'", 'cor INTEGER DEFAULT 0']) { try { this.sql.exec(`ALTER TABLE cartazes ADD COLUMN ${col}`); } catch (e) {} } // posters from before sizes and colours
     this.clima = null; this.nextClima = Date.now() + (20 + Math.random() * 30) * 60e3; // the weather: a rain of bananas now and then
-    this.pers = new Personagens(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
+    this.pers = new Personagens(this, W, H); this.jogos = new Jogos(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
     this.people = new Map(); // socket -> person
     this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false; this.wasOpen = null;
     this.muralBy = new Map(); // address key -> times it wrote on the wall in the last minute
@@ -230,9 +231,9 @@ export class Praca {
       const c = String(m.city || '').trim().slice(0, 24); const cc = clean(c, 24); p.city = CITIES.includes(c) ? c : cc.ok ? cc.text : 'Outra';
       const avatars = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length;
       p.mode = m.mode === 'praca' && avatars < MAX_AVATARS ? 'praca' : 'apoio';
-      p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
+      p.won = (m.won | 0) & 31; p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.mode === 'praca').map(q => this.pub(q));
-      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
+      this.send(p, { t: 'welcome', id: p.id, mode: p.mode, full: m.mode === 'praca' && p.mode !== 'praca', me: this.pub(p), people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow() });
       if (p.mode === 'praca') this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
       return;
@@ -241,6 +242,16 @@ export class Praca {
     if (m.t === 'pos' && p.mode === 'praca') { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
     if (m.t === 'say' && p.mode === 'praca') { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
     if (m.t === 'emote' && p.mode === 'praca') { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
+    if (m.t === 'cantar' && p.mode === 'praca') { // the collective Grândola: enough people within 15 s, then 5 minutes' rest
+      if (this.cantoAt && now - this.cantoAt < 300e3) return this.send(p, { t: 'cantono', wait: Math.ceil((300e3 - (now - this.cantoAt)) / 60e3) });
+      this.canto ||= new Map(); for (const [id, t] of this.canto) if (now - t > 15e3) this.canto.delete(id);
+      this.canto.set(p.id, now);
+      const praca = [...this.people.values()].filter(q => q.name && q.mode === 'praca').length, need = Math.min(5, Math.max(2, Math.ceil(praca / 2)));
+      if (this.canto.size >= need) { this.cantoAt = now; this.canto.clear(); this.broadcast({ t: 'grandola', n: need }); }
+      else this.broadcast({ t: 'canto', id: p.id, n: this.canto.size, need });
+      return;
+    }
+    if (p.mode === 'praca' && this.jogos.handle(p, m, now)) return;
     if (p.mode === 'praca' && this.pers.handle(p, m, now)) return;
     if (m.t === 'bike' && p.mode === 'praca') { const on = !!m.on && this.cfg.ciclistas; if (on !== p.bike) { p.bike = on; p.dirty = true; } if (m.on && !this.cfg.ciclistas) this.send(p, { t: 'npcno', k: 'bike', why: 'off' }); return; }
     if (m.t === 'cartaz' && p.mode === 'praca') {
@@ -287,7 +298,7 @@ export class Praca {
     }
   }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
-  pub(p) { return { id: p.id, n: p.name, c: p.city, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0 }; }
+  pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0 }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
   start() { if (this.timer) return; this.lastDj = null; this.pers.ensure(); this.timer = setInterval(() => this.tick(), TICK_MS); }
@@ -300,7 +311,7 @@ export class Praca {
   }
   async closedNow(st) { // bans and posters last until the square closes
     if (this.cfg.bans.length) { this.cfg.bans = []; await this.save(); }
-    this.sql.exec('DELETE FROM reports WHERE msg < 0'); this.sql.exec('DELETE FROM cartazes');
+    this.sql.exec('DELETE FROM reports WHERE msg < 0'); this.sql.exec('DELETE FROM cartazes'); this.jogos.closed();
     this.closeAll(st);
   }
   tick() {
@@ -311,6 +322,7 @@ export class Praca {
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }
     }
     let npc = { n: [], b: null }; try { npc = this.pers.tick(now0); } catch (e) { console.log('personagens', e); }
+    try { this.jogos.tick(now0); } catch (e) { console.log('jogos', e); }
     if (ch.length || npc.n.length || npc.b) this.broadcast({ t: 'tick', p: ch, n: npc.n, b: npc.b });
     const dj = this.djInfo(); if (!this.lastDj || this.lastDj.ok !== dj.ok || this.lastDj.mode !== dj.mode) { this.lastDj = dj; this.broadcast({ t: 'dj', dj }); }
     if (this.cfg.climaAuto && !this.climaNow() && now0 > this.nextClima) this.chover();

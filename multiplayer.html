@@ -44,6 +44,14 @@ button{ cursor:pointer; touch-action:manipulation; }
 .tb small{ display:block; font:500 11px/1 Jost, sans-serif; text-transform:none; margin-top:3px; color:#5b554f; }
 .tb.red{ background:var(--redbox); color:#fff; } .tb.red small{ color:#f0c9c4; }
 .tb.green{ background:var(--green); color:var(--ink); } .tb.green small{ color:#1f3a2a; }
+.tb.ink{ background:#16121a; color:var(--paper); box-shadow:inset 0 0 0 2px var(--paper); } .tb.ink small{ color:#c9c4c4; }
+#agendaList{ overflow:auto; display:flex; flex-direction:column; gap:8px; }
+.agev{ background:#f4f1ea; color:#0b0a0a; padding:8px 10px; display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; }
+.agev b{ font:800 15px/1.15 Jost, sans-serif; text-transform:uppercase; } .agev .when{ font:700 12px/1.2 Jost, sans-serif; color:#8b2320; text-transform:uppercase; }
+.agev small{ grid-column:1; font:500 12px/1.3 "Helvetica Neue", Arial, sans-serif; color:#3a3a44; } .agev .now{ background:#b6ff3b; padding:1px 5px; margin-left:4px; color:#0b0a0a; }
+.agev button{ grid-column:2; grid-row:1 / span 3; border:2px solid #0b0a0a; background:#fff; color:#0b0a0a !important; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 8px 6px; }
+#tour{ position:absolute; left:8px; right:8px; top:54px; z-index:4; display:flex; align-items:center; gap:10px; background:var(--lime); color:var(--ink); border:2px solid var(--ink); font:800 14px/1.25 Jost, sans-serif; padding:8px 10px; }
+#tour[hidden]{ display:none; } #tour .tb2{ display:flex; gap:6px; margin-left:auto; } #tour button{ border:2px solid var(--ink); background:var(--ink); color:var(--lime); font:800 12px/1 Jost, sans-serif; text-transform:uppercase; padding:6px 8px 5px; white-space:nowrap; } #tour #tourSkip{ background:transparent; color:var(--ink); }
 .tb.new{ position:relative; } .tb.new::after{ content:''; position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); }
 .tb.open{ outline:3px solid var(--lime); outline-offset:-3px; }
 .tb:active{ transform:translateY(2px); }
@@ -57,6 +65,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .grid button{ background:var(--paper); color:var(--ink); border:none; font:700 14px/1.15 Jost, sans-serif; padding:9px 8px 8px; text-align:left; }
 .grid button.wait{ opacity:.45; }
 .gest{ grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); }
+.grid button.wide{ grid-column:1 / -1; } .gest button.wide b{ display:inline; font-size:18px; margin-right:6px; }
 .gest button{ text-align:center; } .gest button b{ display:block; font-size:24px; line-height:1.1; font-weight:400; }
 
 /* the mural */
@@ -127,7 +136,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 #fotoSheet .row2{ flex:none; } #fotoSheet .row2 .redbtn, #fotoSheet .row2 .ghost{ margin-top:0; }
 .row2{ display:flex; gap:8px; justify-content:center; } .row2 button{ flex:1; max-width:220px; }
 .zoom{ position:absolute; right:8px; bottom:8px; z-index:2; width:44px; height:44px; background:var(--paper); color:var(--ink); border:2px solid var(--ink); font:800 22px/1 Jost, sans-serif; padding:0; }
-@media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } }
+@media (max-width: 520px){ #where small{ display:none; } .logo{ font-size:17px; } .tb{ font-size:13px; padding:9px 3px 8px; } .tb small{ font-size:9.5px; } }
 
 /* the entry and closed screens (the same poster style as the game's title screen) */
 #ov{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; padding:calc(env(safe-area-inset-top,0px) + 16px) max(18px, calc(env(safe-area-inset-right,0px) + 10px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(18px, calc(env(safe-area-inset-left,0px) + 10px)); overflow:auto; text-align:center; background:var(--ink); }
@@ -196,12 +205,15 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div class="sheet" id="npcSheet" hidden><h3><span id="npcTitle"></span><button class="x" data-close>✕</button></h3><div id="npcBody"></div></div>
     <div class="sheet" id="fotoSheet" hidden><h3><span data-t="photo"></span><button class="x" data-close>✕</button></h3><img id="fotoImg" alt=""><div class="row2"><button class="redbtn" id="fotoShare" data-t="share"></button><button class="ghost" id="fotoSave" data-t="save"></button></div></div>
     <div class="sheet" id="phraseSheet" hidden><h3><span data-t="phrases"></span><button class="x" data-close>✕</button></h3><div class="grid" id="phraseGrid"></div></div>
+    <div class="sheet" id="agendaSheet" hidden><h3><span data-t="agendaT"></span><button class="x" data-close>✕</button></h3><div id="agendaList"></div></div>
+    <div id="tour" hidden><span id="tourTxt"></span><span class="tb2"><button id="tourOk">OK</button><button id="tourSkip"></button></span></div>
     <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
   </div>
   <nav id="tools">
     <button class="tb" id="tPhrase"><span data-t="say"></span><small data-t="sayS"></small></button>
     <button class="tb green" id="tGest"><span data-t="gest"></span><small data-t="gestS"></small></button>
     <button class="tb red" id="tMural"><span data-t="mural"></span><small data-t="muralS"></small></button>
+    <button class="tb ink" id="tAgenda"><span data-t="agenda"></span><small data-t="agendaS"></small></button>
   </nav>
   <aside id="side">
     <div class="sheet" id="muralSheet" hidden>
@@ -255,6 +267,9 @@ function lookOf(o) {
 }
 function randomLook() { const r = n => Math.floor(Math.random() * n), o = {}; for (const [k, n] of Object.entries(LOOK_RANGES)) o[k] = r(n); if (Math.random() < .5) o.a1 = 0; if (Math.random() < .7) o.a2 = 0; if (o.a2 === o.a1) o.a2 = 0; if (Math.random() < .6) o.bk = 0; if (Math.random() < .5) o.tp = 0; return o; }
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
+// the squares this browser won in the game (index.html keeps them; its CITIES are in this order)
+const GAME_CITIES = ['Porto', 'Lisboa', 'Coimbra', 'Braga', 'Faro'];
+function wonMask() { try { let m = 0; for (const i of JSON.parse(store.get('acampada3-cleared') || '[]')) { const k = CITIES.indexOf(GAME_CITIES[i]); if (k >= 0) m |= 1 << k; } return m; } catch (e) { return 0; } }
 const AURA = { Faro: '#7fd6ff', Coimbra: '#ff8a2a', Braga: '#3ec46d', Lisboa: '#e2283b', Porto: '#2f5bff' };
 const auraOf = c => AURA[c] || '#ffffff';
 const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
@@ -284,7 +299,7 @@ const GESTURES = [null,
 const TXT = {
   phrases: ['Gritar uma palavra de ordem', 'Shout a slogan'], gestures: ['Fazer um gesto', 'Make a gesture'],
   say: ['Gritar', 'Shout'], sayS: ['Palavras de ordem', 'Slogans'], gest: ['Gestos', 'Gestures'], gestS: ['Acenar, palmas…', 'Wave, clap…'],
-  mural: ['Mural', 'Wall'], breaking: ['Última hora', 'Breaking'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
+  mural: ['Mural', 'Wall'], breaking: ['Última hora', 'Breaking'], live: ['Em direto', 'Live'], photo: ['A tua foto de grupo', 'Your group photo'], share: ['Partilhar', 'Share'], save: ['Guardar', 'Save'], muralS: ['Mensagens', 'Messages'], agenda: ['Agenda', 'Agenda'], agendaS: ['Próximas manifs', 'Next protests'], agendaT: ['Próximas manifestações', 'Next protests'], muralT: ['Mural da praça', 'The square’s wall'], send: ['Enviar', 'Send']
 };
 function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
@@ -399,6 +414,7 @@ function drawCravo(g, d) {
   // stem, slightly bent, and the leaves
   for (let i = 0; i < 92; i++) { const sx = x + Math.round(Math.sin(i / 28) * 4); R(g, sx - 2, y - i, 4, 1, i % 9 < 2 ? '#2f7a45' : '#3e9a57'); R(g, sx + 1, y - i, 1, 1, '#25603a'); }
   for (let i = 0; i < 22; i++) { R(g, x - 3 - i, y - 30 - Math.round(i * .8 - (i * i) / 50), 3, 2, '#46a862'); R(g, x + 5 + i, y - 52 - Math.round(i * .7 - (i * i) / 55), 3, 2, '#3a9152'); }
+  drawStemCartazes(g, x, y);
   // the calyx: a long green tube with pointed tips
   const fy = y - 92, fx = x + Math.round(Math.sin(92 / 28) * 4);
   for (let i = 0; i < 16; i++) R(g, fx - 4 + (i > 11 ? -1 : 0), fy - i, 9 + (i > 11 ? 2 : 0), 1, i % 4 === 0 ? '#2f7a45' : '#3e9a57');
@@ -477,6 +493,8 @@ function drawPerson(g, p, now) {
   let bob = 0;
   if (p.dancing && !p.moving && !p.b) { bob = ph % 2; o.moving = bob === 0; o.step = ph; o.flip = ph > 1; o.back = false; o.armUp = ph % 2 === 0; o.armUp2 = ph % 2 === 1; }
   const e = p.e && now - p.eAt < 4000 ? p.e : 0;
+  const singing = now < grandolaUntil || (p.singAt && now - p.singAt < 4000);
+  if (singing && !p.b) { o.armUp = o.armUp2 = true; o.wob = o.wob2 = Math.floor(t * 2 + Math.abs(p.id)) % 2; if (Math.floor(t * 2 + p.id) % 2) { R(g, x + 4, y - 25, 1, 4, '#ffd23a'); R(g, x + 2, y - 22, 3, 2, '#ffd23a'); } }
   if (e === 1) { o.armUp2 = true; o.wob2 = Math.floor(t * 6) % 2; }
   else if (e === 2 || e === 7) o.armUp2 = true;
   else if (e === 3) { o.armUp = o.armUp2 = Math.floor(t * 6) % 2 === 0; }
@@ -596,10 +614,11 @@ function drawCantina(g, d) {
 let cartazes = [], myCartazes = new Set(), mineCount = 0;
 // the two faces of the plinth that look at the square, 8 spaces wide each; a poster takes as many as its size
 // (the server places them with the same numbers: index.js CARTAZ_FMT)
-const FACE_UNITS = 8, CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_H = { p: 6, m: 8, g: 11, f: 5 }, CARTAZ_POR_PESSOA = 3;
+const FACE_UNITS = 8, FACES = 8, FILL = [2, 0, 3, 1, 4, 5, 6, 7], CARTAZ_FMT = { p: 2, m: 3, g: 4, f: 6 }, CARTAZ_H = { p: 6, m: 8, g: 11, f: 5 }, CARTAZ_POR_PESSOA = 3;
 const CARTAZ_COL = ['#f2efe6', '#ffe36a', '#ffb3c7', '#bfe7ff', '#d6f5b0'], CARTAZ_INK = ['#1b1464', '#b3121b', '#1b1464', '#b3121b', '#1b1464'];
+// faces 0-1: the plinth; 2-7: hanging from the stem, three heights, left and right (filled in FILL order: index.js the same)
 function cartazSpot(list, u) {
-  for (let f = 0; f < 2; f++) {
+  for (const f of FILL) {
     const used = new Array(FACE_UNITS).fill(false);
     for (const c of list) { if (Math.floor(c.slot / FACE_UNITS) !== f) continue; const o = c.slot % FACE_UNITS, w = CARTAZ_FMT[c.fmt] || 3; for (let i = o; i < o + w && i < FACE_UNITS; i++) used[i] = true; }
     for (let o = 0; o + u <= FACE_UNITS; o++) { let ok = true; for (let i = o; i < o + u; i++) if (used[i]) { ok = false; break; } if (ok) return f * FACE_UNITS + o; }
@@ -612,9 +631,33 @@ function cartazEnds(c) {
   const a = o * k + .04, b = (o + u) * k - .04;
   return f === 0 ? [{ gx: 11 - 1.1 + a, gy: 12.1 }, { gx: 11 - 1.1 + b, gy: 12.1 }] : [{ gx: 12.1, gy: 12.1 - a }, { gx: 12.1, gy: 12.1 - b }];
 }
-const cartazCentre = c => { const [a, b] = cartazEnds(c); return { gx: (a.gx + b.gx) / 2, gy: (a.gy + b.gy) / 2 }; };
+const STEM_PX = 3.4; // a space on the stem, in pixels
+function stemCartaz(c) { // a poster on the stem: its box in pixels from the stem's foot (x to the right, up from y)
+  const f = Math.floor(c.slot / FACE_UNITS), o = c.slot % FACE_UNITS, u = CARTAZ_FMT[c.fmt] || 3, lv = (f - 2) >> 1, right = (f - 2) & 1;
+  const up = 26 + lv * 22, sx = Math.round(Math.sin(up / 28) * 4), w = Math.round(u * STEM_PX), h = CARTAZ_H[c.fmt] || 8;
+  const x0 = right ? sx + 3 + Math.round(o * STEM_PX) : sx - 2 - Math.round(o * STEM_PX) - w;
+  return { x0, x1: x0 + w - 1, up, h };
+}
+const cartazCentre = c => {
+  if (Math.floor(c.slot / FACE_UNITS) >= 2) { const b = stemCartaz(c), dx = (b.x0 + b.x1) / 2; return { gx: 11 + dx / (2 * TW), gy: 11 - dx / (2 * TW), z: 16 + b.up - b.h / 2 }; }
+  const [a, b] = cartazEnds(c); return { gx: (a.gx + b.gx) / 2, gy: (a.gy + b.gy) / 2, z: 11 };
+};
+function paintCartaz(g, c, x0, x1, yAt, h) { // column by column; yAt gives each column's top
+  const col = CARTAZ_COL[c.cor] || CARTAZ_COL[0], ink = CARTAZ_INK[c.cor] || '#1b1464';
+  for (let x = x0; x <= x1; x++) {
+    const y = yAt(x), edge = x === x0 || x === x1;
+    R(g, x, y, 1, h, edge ? '#0b0a0a' : col); if (!edge) { R(g, x, y, 1, 1, '#0b0a0a'); R(g, x, y + h - 1, 1, 1, '#0b0a0a'); }
+    const i = x - x0; if (!edge && i > 1 && x < x1 - 1) for (let r = 2; r < h - 2; r += 2) if (hash(c.id * 31 + i, r) < .75) R(g, x, y + r, 1, 1, r === 2 ? ink : '#3a3a44');
+  }
+}
+function drawStemCartazes(g, x, y) {
+  for (const c of cartazes) { if (Math.floor(c.slot / FACE_UNITS) < 2) continue; const b = stemCartaz(c), sx = x + Math.round(Math.sin(b.up / 28) * 4);
+    R(g, (b.x0 + b.x1 > 0 ? sx + 1 : sx - 2) , y - b.up - 1, 2, 1, '#6b4a2b'); // the string round the stem
+    paintCartaz(g, c, x + b.x0, x + b.x1, xx => y - b.up + Math.round(Math.abs(xx - sx) * .08), b.h); }
+}
 function drawCartazes(g) {
   for (const c of cartazes) {
+    if (Math.floor(c.slot / FACE_UNITS) >= 2) continue; // those hang from the stem (drawStemCartazes)
     const [a, b] = cartazEnds(c), p0 = iso(a.gx, a.gy, 15), p1 = iso(b.gx, b.gy, 15), h = CARTAZ_H[c.fmt] || 8;
     const x0 = Math.round(p0.x), x1 = Math.round(p1.x), col = CARTAZ_COL[c.cor] || CARTAZ_COL[0], ink = CARTAZ_INK[c.cor] || '#1b1464';
     for (let x = x0; x <= x1; x++) { // column by column, following the slope of the stone
@@ -643,6 +686,32 @@ function passing(kind, now = serverNow()) {
   const flip = st.axis === 'x' ? st.dir < 0 : st.dir > 0; // which way they face on the screen
   return { k, st, slot, at, flip, ...at(0) };
 }
+/* ---------- the two-person games: a tent to pitch, a banner to open ---------- */
+const GAME_TENT = ['#ff8a2a', '#3ec46d', '#2f8fff', '#ffd23a', '#ff4f8b', '#9a6bff', '#2ad1c9', '#c6ff4a'];
+function drawGameTent(g, t) { // pitched: the same tents as in the game
+  const q = iso(t.x, t.y), x = Math.round(q.x), y = Math.round(q.y), c = GAME_TENT[t.c] || GAME_TENT[0];
+  ell(g, x, y + 1, 12, 'rgba(30,10,70,.25)');
+  for (let i = 0; i < 11; i++) { R(g, x - 11 + i, y - i, 22 - i * 2, 1, i % 4 === 0 ? shade(c, .85) : c); }
+  R(g, x - 2, y - 6, 4, 6, shade(c, .5)); R(g, x, y - 11, 1, 2, '#3a3a44');
+}
+const gameEnds = o => [[o.x - .55, o.y + .55], [o.x + .55, o.y - .55]]; // level on the screen (servidor/src/jogos.js: ends)
+function drawFolded(g, t, now) { // folded on the ground, a peg at each end
+  const q = iso(t.x, t.y), x = Math.round(q.x), y = Math.round(q.y), c = GAME_TENT[t.c] || GAME_TENT[0];
+  ell(g, x, y + 1, 9, 'rgba(30,10,70,.22)'); R(g, x - 7, y - 3, 14, 3, c); R(g, x - 7, y - 3, 14, 1, shade(c, 1.2)); R(g, x - 2, y - 4, 4, 1, '#3a3a44');
+  gameEnds(t).forEach(([ex, ey], k) => { const p = iso(ex, ey), held = t.p && t.p[k]; R(g, p.x, p.y - (held ? 5 : 3), 1, held ? 5 : 3, '#6b4a2b'); if (held) R(g, p.x - 1, p.y - 7, 3, 2, '#b6ff3b'); else if (Math.floor(now / 500) % 2) R(g, p.x - 1, p.y - 6, 3, 1, '#ffd23a'); });
+}
+function drawBanner(g, b, now) {
+  const [a, c] = gameEnds(b), p0 = iso(a[0], a[1]), p1 = iso(c[0], c[1]);
+  if (!b.open) { // rolled up on the ground
+    for (let x = Math.round(p0.x) + 2; x <= Math.round(p1.x) - 2; x++) { const y = Math.round(p0.y + (p1.y - p0.y) * (x - p0.x) / (p1.x - p0.x)); R(g, x, y - 3, 1, 3, (x >> 1) % 2 ? '#f2efe6' : '#e2283b'); }
+    [p0, p1].forEach((p, k) => { const held = b.e && b.e[k]; R(g, p.x, p.y - (held ? 7 : 3), 1, held ? 7 : 3, '#6b4a2b'); if (held) R(g, p.x - 1, p.y - 9, 3, 2, '#b6ff3b'); else if (Math.floor(now / 500) % 2) R(g, p.x - 1, p.y - 6, 3, 1, '#ffd23a'); });
+    return;
+  }
+  // open: two poles and the cloth between them
+  for (const p of [p0, p1]) R(g, p.x, p.y - 30, 1, 30, '#6b4a2b');
+  for (let x = Math.round(p0.x) + 1; x < Math.round(p1.x); x++) { const y = Math.round(p0.y + (p1.y - p0.y) * (x - p0.x) / (p1.x - p0.x)) - 28 + Math.round(Math.sin(now / 400 + x / 5)); R(g, x, y, 1, 14, '#f2efe6'); R(g, x, y, 1, 2, '#e2283b'); R(g, x, y + 12, 1, 2, '#e2283b'); }
+}
+let sparkleAt = 0; function sparkle() { sparkleAt = performance.now(); if (actx && !muted) { const t = actx.currentTime; [523, 659, 784].forEach((f, i) => { const o = actx.createOscillator(), gg = actx.createGain(); o.type = 'square'; o.frequency.value = f; gg.gain.setValueAtTime(.03, t + i * .09); gg.gain.exponentialRampToValueAtTime(.0001, t + i * .09 + .12); o.connect(gg).connect(actx.destination); o.start(t + i * .09); o.stop(t + i * .09 + .14); }); } }
 function drawTentCar(g, c, now) {
   const { gx, gy } = c, alongX = c.st.axis === 'x', L = alongX ? .95 : .42, Wd = alongX ? .42 : .95;
   const q0 = iso(gx, gy); ell(g, q0.x, q0.y + 2, 16, 'rgba(30,10,70,.25)');
@@ -672,7 +741,8 @@ function streetSound(c) {
 }
 
 /* ---------- the weather: a rain of bananas (the square starts it now and then, or the organisers do) ---------- */
-let clima = null, bananaAcc = 0; const bananas = [];
+let clima = null, bananaAcc = 0, cravoRain = 0, grandolaUntil = 0; const bananas = [];
+const CRAVO_BMP = ['.RR.', 'RRRR', '.RR.', '..G.', '.GG.', '..G.'], CRAVO_PAL = { R: '#e8303a', G: '#3e9a57' };
 const BANANA = ['....YK', 'YYYYY.', '.DDD..'], BANANA_PAL = { Y: '#ffd23a', D: '#d9a320', K: '#6b4a2b' };
 function setClima(c) {
   clima = c && c.k === 'bananas' ? c : null; if (!clima) return;
@@ -682,6 +752,7 @@ function setClima(c) {
 function updClima(dt, now) {
   const on = clima && serverNow() < clima.until;
   if (on) bananaAcc += 40 * dt; // bananas a second, over the square and round it
+  if (cravoRain > 0) { cravoRain -= dt * 1000; for (let i = 0; i < 2 && bananas.length < 200; i++) if (Math.random() < dt * 30) bananas.push({ gx: Math.random() * W, gy: Math.random() * H, z: 150 + Math.random() * 60, v: 45 + Math.random() * 30, f: Math.random() < .5, at: 0, c: 1 }); } // carnations
   for (; bananaAcc >= 1 && bananas.length < 160; bananaAcc--) bananas.push({ gx: Math.random() * (W + 4) - 2, gy: Math.random() * (H + 4) - 2, z: 150 + Math.random() * 60, v: 70 + Math.random() * 60, f: Math.random() < .5, at: 0 });
   for (const b of bananas) { if (b.z > 0) { b.z -= b.v * dt; if (b.z <= 0) { b.z = 0; b.at = now; } } }
   for (let i = bananas.length - 1; i >= 0; i--) if (bananas[i].at && now - bananas[i].at > 5000) bananas.splice(i, 1);
@@ -689,6 +760,7 @@ function updClima(dt, now) {
 }
 function drawBanana(g, b, now) {
   const q = iso(b.gx, b.gy, b.z), x = Math.round(q.x), y = Math.round(q.y);
+  if (b.c) { if (b.z > 0) { bmp(g, CRAVO_BMP, CRAVO_PAL, x - 2, y - 6, b.f); return; } if (now - b.at > 4000) g.globalAlpha = Math.max(0, 1 - (now - b.at - 4000) / 1000); bmp(g, ['RR.GG', '.RR..'], CRAVO_PAL, x - 2, y - 1, b.f); g.globalAlpha = 1; return; }
   if (b.z > 0) { const s = iso(b.gx, b.gy); ell(g, s.x, s.y, 2, 'rgba(30,10,70,.18)'); bmp(g, BANANA, BANANA_PAL, x - 3, y - 3, Math.floor(now / 150 + b.v) % 2 === 0, b.f); return; }
   if (now - b.at > 4000) g.globalAlpha = Math.max(0, 1 - (now - b.at - 4000) / 1000);
   bmp(g, BANANA, BANANA_PAL, x - 3, y - 2, b.f); g.globalAlpha = 1;
@@ -697,6 +769,7 @@ function plop(first) { if (!actx || muted) return; const t = actx.currentTime; f
 
 /* ---------- the characters ---------- */
 const npcs = new Map(); let ball = null;
+let jogos = { tent: null, built: [], banner: null }; // the two-person games (servidor/src/jogos.js)
 const npcSay = new Map(); // id -> { text, at }: what a character just said
 function addNpc(o) {
   const n = npcs.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false };
@@ -790,7 +863,7 @@ function connect() {
   wantOpen = true; closedByServer = false;
   try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
-  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike })); };
+  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike, won: wonMask() })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
@@ -808,7 +881,7 @@ function fail() {
 const send = m => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
 function addPerson(o) {
   const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
-  p.n = o.n; p.c = o.c; p.look = lookOf(o.l);
+  p.n = o.n; p.c = o.c; p.look = lookOf(o.l); p.w = o.w | 0;
   if (p.x === undefined) { p.x = o.x; p.y = o.y; }
   p.tx = o.x; p.ty = o.y; if (GESTURES[o.e]) { p.e = o.e; p.eAt = performance.now(); } p.i = o.i || 0; p.b = !!o.b;
   people.set(o.id, p); return p;
@@ -823,11 +896,12 @@ function onMsg(m) {
     if (m.dj) djState = m.dj; if (m.cfg) cfg = m.cfg; setAviso(m.aviso || '');
     npcs.clear(); for (const o of m.npcs || []) addNpc(o);
     ball = m.ball ? { x: m.ball[0], y: m.ball[1], tx: m.ball[0], ty: m.ball[1], held: !!m.ball[2] } : null;
+    if (m.jogos) jogos = m.jogos;
     cartazes = m.cartazes || []; if (Array.isArray(m.meus)) { myCartazes = new Set(m.meus); mineCount = m.meus.length; } convencidos = m.convencidos || 0; setClima(m.clima);
     hideToast();
     if (m.full) toast(L('A praça está cheia: entraste como apoio de longe.', 'The square is full: you joined as support from afar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
-    showApp(); renderAll(); return;
+    showApp(); renderAll(); setTimeout(tourStart, 1500); return;
   }
   if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
   if (m.t === 'leave') { people.delete(m.id); return; }
@@ -842,6 +916,12 @@ function onMsg(m) {
   if (m.t === 'dj') { djState = m.dj; return; }
   if (m.t === 'npc+') { addNpc(m.n); return; }
   if (m.t === 'clima') { setClima(m.c); return; }
+  if (m.t === 'jogos') { jogos = m.j || jogos; return; }
+  if (m.t === 'jogo-ok') { if (m.k === 'tenda') toast(L(`⛺ ${m.n.join(' e ')} montaram uma tenda!`, `⛺ ${m.n.join(' and ')} pitched a tent!`), 4000); else { const ph = PHRASES[m.f]; toast(L(`🏳️ ${m.n.join(' e ')} abriram uma faixa: «${ph ? ph[0] : ''}»`, `🏳️ ${m.n.join(' and ')} opened a banner: “${ph ? ph[1] : ''}”`), 4500); } sparkle(); return; }
+  if (m.t === 'jogono') { toast({ longe: L('Chega-te mais perto da ponta.', 'Get closer to the end.'), sozinho: L('Precisas de outra pessoa na outra ponta!', 'You need someone else at the other end!') }[m.why] || '', 3000); return; }
+  if (m.t === 'canto') { const p = people.get(m.id); if (p) p.singAt = performance.now(); toast(L(`🎶 ${m.n}/${m.need} pessoas querem cantar a Grândola: junta-te em Gestos!`, `🎶 ${m.n}/${m.need} people want to sing Grândola: join in under Gestures!`), 5000); return; }
+  if (m.t === 'cantono') { toast(L(`A praça cantou a Grândola há pouco. Daqui a ${m.wait} min.`, `The square sang Grândola a moment ago. Again in ${m.wait} min.`), 3500); return; }
+  if (m.t === 'grandola') { grandolaUntil = performance.now() + 15000; cravoRain = 15000; hymn(); toast(L('🌹 A praça inteira canta a Grândola!', '🌹 The whole square sings Grândola!'), 6000); return; }
   if (m.t === 'npc-') { npcs.delete(m.id); return; }
   if (m.t === 'ball') { ball = m.b ? { x: m.b[0], y: m.b[1], tx: m.b[0], ty: m.b[1], held: !!m.b[2] } : null; return; }
   if (m.t === 'pergunta') { journalistDialog(m.q); return; }
@@ -914,6 +994,7 @@ function update(dt, now) {
       const nx = clamp(me.x + dx * sp * dt, .3, W - .3), ny = clamp(me.y + dy * sp * dt, .3, H - .3);
       if (!blocked(nx, ny)) { me.x = nx; me.y = ny; } else if (!blocked(nx, me.y)) me.x = nx; else if (!blocked(me.x, ny)) me.y = ny; else me.goal = null;
       face(me, dx, dy); me.moving = true; me.step += dt * 8;
+      if (tourStep === 0 && tourFrom && Math.hypot(me.x - tourFrom.x, me.y - tourFrom.y) > 1.5) tourDone(0);
       if (now - (me.sentAt || 0) > 600) sendPos(now);
     } else { if (me.moving) sendPos(now, true); me.moving = false; }
   }
@@ -932,6 +1013,7 @@ function update(dt, now) {
   }
   if (ball) { const ex = ball.tx - ball.x, ey = ball.ty - ball.y, d = Math.hypot(ex, ey); if (d > .03) { const s = Math.min(d, Math.max(3, d * 6) * dt); ball.x += ex / d * s; ball.y += ey / d * s; ball.moving = !ball.held; } else ball.moving = false; }
   checkPending(); ctxSync(); diretoSync(now); updClima(dt, now);
+  { const tv = tourStep >= 0 && tourStep < TOUR.length && ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet'].every(id => $(id).hidden); if ($('tour').hidden === tv) $('tour').hidden = !tv; if (tv) $('tour').style.top = $('aviso').hidden ? '54px' : '98px'; } // the tips wait while a panel is open
   // dancing: anyone near the DJ
   const dj = djPos();
   for (const p of people.values()) p.dancing = !!dj && !dj.leaving && Math.hypot(p.x - dj.gx, p.y - dj.gy) < DANCE_R;
@@ -966,6 +1048,10 @@ function draw(now) {
     if (!many || near || p === me || talking) {
       ctx.font = '700 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(p.n, q.x, headY - (p === me ? 20 : 3));
       ctx.fillStyle = p === me ? '#b6ff3b' : '#ffffff'; ctx.fillText(p.n, q.x, headY - (p === me ? 20 : 3));
+      if (p.w) { // a little square in the city's colour for every square won in the game
+        let bx = q.x + ctx.measureText(p.n).width / 2 + 4; const by = headY - (p === me ? 20 : 3) - 8;
+        for (let k = 0; k < CITIES.length; k++) if (p.w & (1 << k)) { ctx.fillStyle = '#0b0a0a'; ctx.fillRect(bx - 1, by - 1, 8, 8); ctx.fillStyle = auraOf(CITIES[k]); ctx.fillRect(bx, by, 6, 6); bx += 8; }
+      }
     }
     const e = p.e && now - p.eAt < 4000 ? GESTURES[p.e] : null;
     if (e) { ctx.font = '20px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif'; ctx.fillText(e.i, q.x + 14, headY + 4); }
@@ -978,6 +1064,12 @@ function draw(now) {
     if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
     if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
     const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
+  }
+  { // the games: what to do, who is holding an end, and the banner's slogan
+    const T = jogos.tent, B = jogos.banner, lab = (text, gx, gy, z, col) => { const q = S(gx, gy, z); if (q.x < -80 || q.x > cssW + 80 || q.y < -20 || q.y > cssH + 40) return; ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(text, q.x, q.y); ctx.fillStyle = col; ctx.fillText(text, q.x, q.y); };
+    if (T) { lab(L('⛺ Montar tenda · 2 pessoas', '⛺ Pitch a tent · 2 people'), T.x, T.y, 14, '#ffd23a'); gameEnds(T).forEach(([ex, ey], k) => { if (T.p && T.p[k]) lab(T.p[k], ex, ey, 10, '#b6ff3b'); }); }
+    if (B && !B.open) { lab(L('🏳️ Abrir faixa · 2 pessoas', '🏳️ Open a banner · 2 people'), B.x, B.y, 14, '#ffd23a'); gameEnds(B).forEach(([ex, ey], k) => { if (B.e && B.e[k]) lab(B.e[k], ex, ey, 12, '#b6ff3b'); }); }
+    if (B && B.open && PHRASES[B.f]) { const q = S(B.x, B.y, 21), w = 1.1 * TW * 2 * scale - 6, t = L(PHRASES[B.f][0], PHRASES[B.f][1]).toUpperCase(); let fs = 13; ctx.font = `800 ${fs}px Jost, sans-serif`; while (fs > 6 && ctx.measureText(t).width > w) { fs--; ctx.font = `800 ${fs}px Jost, sans-serif`; } ctx.fillStyle = '#b3121b'; ctx.fillText(t, q.x, q.y + fs / 2); }
   }
   const car = passing('carro'); streetSound(car);
   const onScreen = q => q.x > -20 && q.x < cssW + 20 && q.y > 0 && q.y < cssH + 40;
@@ -1019,8 +1111,8 @@ const KEYMAP = { ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', Arr
 addEventListener('keydown', e => {
   if (e.target.closest && e.target.closest('input, textarea, select')) return;
   const k = KEYMAP[e.code]; if (k && !$('app').hidden) { keys[k] = 1; e.preventDefault(); }
-  if (e.key === 'Escape') { const open = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet'].some(id => !$(id).hidden); if (open) closeSheets(); else if (!$('app').hidden) quitDialog(); }
-  const sheetOpen = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet'].some(id => !$(id).hidden);
+  if (e.key === 'Escape') { const open = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet'].some(id => !$(id).hidden); if (open) closeSheets(); else if (!$('app').hidden) quitDialog(); }
+  const sheetOpen = ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet'].some(id => !$(id).hidden);
   if ((e.code === 'KeyE' || e.code === 'Space') && me && !$('app').hidden && !sheetOpen && !(e.target.closest && e.target.closest('button, a'))) { // (Space on a button presses the button) // talk to whoever is closest, or make a poster by the carnation
     const t = targets().filter(x => x.kind !== 'cartaz').map(x => [x, distTo(x)]).filter(([, d]) => d <= REACH).sort((a, b) => a[1] - b[1])[0];
     if (t) { e.preventDefault(); interact(t[0]); } else if (nearCravo() && !$('ctxBtn').hidden && !$('ctxBtn').disabled) { e.preventDefault(); makeCartazDialog(); }
@@ -1057,7 +1149,12 @@ function targets() {
   for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
   if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
   const bici = passing('bicicletada'); if (bici) for (let i = 0; i < BICI_N; i++) { const p = bici.at(i * 1.15); out.push({ kind: 'bicicletada', id: 0, x: p.gx, y: p.gy, z: 12 }); }
-  for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: 11, c }); }
+  const J = jogos;
+  if (J.tent) gameEnds(J.tent).forEach(([x, y], k) => out.push({ kind: 'estaca', id: J.tent.id * 2 + k, gid: J.tent.id, k, x, y, z: 3 }));
+  if (J.banner && !J.banner.open) gameEnds(J.banner).forEach(([x, y], k) => out.push({ kind: 'faixa', id: J.banner.id * 2 + k, gid: J.banner.id, k, x, y, z: 3 }));
+  for (const t of J.built || []) out.push({ kind: 'tenda', id: t.id, x: t.x, y: t.y, z: 6, t });
+  if (J.banner && J.banner.open) out.push({ kind: 'faixaab', id: J.banner.id, x: J.banner.x, y: J.banner.y, z: 21 });
+  for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: s.z, c }); }
   return out;
 }
 function hitTest(sx, sy) {
@@ -1073,6 +1170,8 @@ const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
 function approach(t) {
   if (t.kind === 'cartaz') return showCartaz(t.c);
   if (t.kind === 'bicicletada') return bikeRideInfo();
+  if (t.kind === 'tenda') return toast(L(`⛺ Montada por ${t.t.n.join(' e ')}`, `⛺ Pitched by ${t.t.n.join(' and ')}`), 3000);
+  if (t.kind === 'faixaab') return toast(L(`🏳️ Aberta por ${(jogos.banner && jogos.banner.n || []).join(' e ')}`, `🏳️ Opened by ${(jogos.banner && jogos.banner.n || []).join(' and ')}`), 3000);
   if (!me) return toast(L('Só quem está na praça com um boneco pode falar com as personagens.', 'Only people in the square with an avatar can talk to the characters.'), 3000);
   if (distTo(t) <= REACH) return interact(t);
   const a = Math.atan2(me.y - t.y, me.x - t.x);
@@ -1087,13 +1186,17 @@ function checkPending() {
   else if (!me.goal) pending = null;
 }
 function interact(t) {
-  audioInit();
+  audioInit(); tourDone(2);
   if (t.kind === 'jornalista') { send({ t: 'entrevista' }); return; }
   if (t.kind === 'curioso') { const n = npcs.get(t.id); if (n && n.g) return say(t.id, L('Já estou convosco! ✊', 'I’m with you already! ✊')); return curiousDialog(t.id); }
   if (t.kind === 'fotografa') return photoDialog();
   if (t.kind === 'cantina') return canteenDialog();
   if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
   if (t.kind === 'bola') { send({ t: 'bola' }); return; }
+  if (t.kind === 'estaca') { const T = jogos.tent; if (!T) return; send({ t: 'estaca', id: t.gid, k: t.k }); if (!(T.p && T.p[1 - t.k])) toast(L('Estaca na mão! Falta alguém na outra ponta (6 s).', 'Peg in hand! Someone needs to take the other end (6 s).'), 3500); return; }
+  if (t.kind === 'faixa') { const B = jogos.banner; if (!B) return;
+    if (B.e && B.e[1 - t.k]) { send({ t: 'faixa', id: t.gid, k: t.k }); return; } // the other end is up: lift this one and it opens
+    return dialog(L('Que frase leva a faixa?', 'Which slogan goes on the banner?'), L('Escolhe, levanta a tua ponta e espera que alguém pegue na outra (6 s).', 'Pick one, lift your end and wait for someone to take the other (6 s).'), b => { const gr = optGrid(b); PHRASES.slice(0, 9).forEach((ph, i) => gr.append(optBtn(L(ph[0], ph[1]), () => { send({ t: 'faixa', id: t.gid, k: t.k, f: i }); closeSheets(); toast(L('Ponta levantada! Falta alguém na outra.', 'End lifted! Someone needs to take the other.'), 3500); }))); }); }
 }
 // leaving the square: asked first
 function quitDialog() {
@@ -1202,7 +1305,7 @@ function makeCartazDialog() {
 let ctxWas = '', cartazWait = 0;
 function ctxSync() {
   const el = $('ctxBtn'); let t = '', dis = false;
-  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet'].every(id => $(id).hidden)) {
+  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet', 'agendaSheet'].every(id => $(id).hidden)) {
     const mineNow = cartazes.filter(c => myCartazes.has(c.id)).length;
     if (mineNow >= CARTAZ_POR_PESSOA) t = '';
     else if (cartazSpot(cartazes, CARTAZ_FMT.p) < 0) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
@@ -1235,6 +1338,9 @@ function renderScene(g, ox, oy, vw, vh, now) {
   if (ball) list.push([ball.x + ball.y + .01, () => drawBall(g, ball, now)]);
   const dj = djPos(); if (dj) list.push([dj.gx + dj.gy, () => drawDJ(g, dj, now)]);
   for (const b of bananas) list.push([b.gx + b.gy + (b.z > 0 ? 50 : 0), () => drawBanana(g, b, now)]); // falling ones in front of everything
+  for (const t of jogos.built || []) list.push([t.x + t.y, () => drawGameTent(g, t)]);
+  if (jogos.tent) list.push([jogos.tent.x + jogos.tent.y, () => drawFolded(g, jogos.tent, now)]);
+  if (jogos.banner) list.push([jogos.banner.x + jogos.banner.y + .5, () => drawBanner(g, jogos.banner, now)]);
   const car = passing('carro'); if (car) list.push([car.gx + car.gy, () => drawTentCar(g, car, now)]);
   const bici = passing('bicicletada'); if (bici) list.push([bici.gx + bici.gy, () => drawBicicletada(g, bici, now)]);
   list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
@@ -1284,6 +1390,12 @@ const NPC_NO = {
 };
 
 /* ================= sound: the DJ's ska loop, louder the closer you are ================= */
+function hymn() { // voices holding long chords: a crowd singing, without playing any song's tune
+  if (!actx || muted) return; const t0 = actx.currentTime + .05;
+  [[262, 330, 392], [220, 262, 330], [175, 220, 262], [196, 247, 294], [262, 330, 392]].forEach((ch, i) => { for (const f of ch) for (const d of [-3, 3]) {
+    const o = actx.createOscillator(), g = actx.createGain(), t = t0 + i * 2.6; o.type = 'triangle'; o.frequency.value = f; o.detune.value = d;
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.018, t + .6); g.gain.setValueAtTime(.018, t + 2.1); g.gain.linearRampToValueAtTime(.0001, t + 2.7); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 2.8); } });
+}
 let musicVol = 0, actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
 function audioInit() {
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
@@ -1340,10 +1452,28 @@ function buildSheets() {
   PHRASES.forEach((p, k) => { const b = document.createElement('button'); b.textContent = L(p[0], p[1]); b.addEventListener('click', () => sayIt(k)); pg.appendChild(b); });
   const gg = $('gestGrid'); gg.innerHTML = '';
   GESTURES.forEach((g, k) => { if (!g) return; const b = document.createElement('button'); b.innerHTML = `<b>${g.i}</b>`; b.append(L(g.pt, g.en)); b.addEventListener('click', () => gesture(k)); gg.appendChild(b); });
+  // the Grândola: when enough people ask for it at the same time, the whole square sings
+  const gr = document.createElement('button'); gr.className = 'wide'; gr.innerHTML = '<b>🎶</b>'; gr.append(L('Cantar a Grândola (com mais gente)', 'Sing Grândola (with others)'));
+  gr.addEventListener('click', () => { if (!me) return; send({ t: 'cantar' }); me.singAt = performance.now(); closeSheets(); }); gg.appendChild(gr);
 }
+const TOUR = [
+  () => matchMedia('(pointer: coarse)').matches ? L('Toca no chão para andar pela praça.', 'Tap the ground to walk round the square.') : L('Clica no chão (ou usa as setas) para andar pela praça.', 'Click the ground (or use the arrows) to walk round the square.'),
+  () => L('Toca em GRITAR para dizer uma palavra de ordem a toda a praça.', 'Tap SHOUT to call a slogan to the whole square.'),
+  () => L('Vês um 💬 ou 🐾? Toca na jornalista, na fotógrafa, na cantina ou no cão para falar com eles.', 'See a 💬 or 🐾? Tap the journalist, the photographer, the canteen or the dog to talk to them.'),
+  () => L('Ao pé do cravo podes pendurar um cartaz. Bom protesto! ✊', 'By the carnation you can hang a poster. Enjoy the protest! ✊')
+];
+let tourStep = -1, tourFrom = null;
+function tourStart() { if (myMode !== 'praca' || store.get('acampada-praca-tour') === '1' || tourStep >= 0) return; tourStep = 0; tourFrom = me ? { x: me.x, y: me.y } : null; tourShow(); }
+function tourShow() {
+  if (tourStep < 0 || tourStep >= TOUR.length) { $('tour').hidden = true; return; }
+  $('tourTxt').textContent = `${tourStep + 1}/${TOUR.length} · ${TOUR[tourStep]()}`; $('tourOk').textContent = tourStep === TOUR.length - 1 ? L('Vamos!', 'Let’s go!') : 'OK'; $('tourSkip').textContent = L('Saltar', 'Skip');
+}
+function tourDone(step) { if (tourStep !== step) return; tourStep++; if (tourStep >= TOUR.length) tourEnd(); else tourShow(); }
+function tourEnd() { tourStep = TOUR.length; store.set('acampada-praca-tour', '1'); $('tour').hidden = true; }
+$('tourOk').addEventListener('click', () => tourDone(tourStep)); $('tourSkip').addEventListener('click', tourEnd);
 function sayIt(k) {
   if (!me) return; const now = performance.now();
-  if (now - lastSay < 2600) return; lastSay = now;
+  if (now - lastSay < 2600) return; lastSay = now; tourDone(1);
   send({ t: 'say', k }); me.say = k; me.sayAt = now; closeSheets();
   for (const b of $('phraseGrid').children) b.classList.add('wait'); setTimeout(() => { for (const b of $('phraseGrid').children) b.classList.remove('wait'); }, 2600);
 }
@@ -1352,12 +1482,40 @@ function gesture(k) {
   if (!me) return; send({ t: 'emote', k }); me.e = k; me.eAt = performance.now(); closeSheets();
   clearTimeout(gestTimer); gestTimer = setTimeout(() => { send({ t: 'emote', k: 0 }); if (me) me.e = 0; }, 4000);
 }
-function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
-function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
+function openSheet(id) { const el = $(id), was = !el.hidden; closeSheets(); if (!was) { el.hidden = false; const btn = { phraseSheet: 'tPhrase', gestSheet: 'tGest', muralSheet: 'tMural', agendaSheet: 'tAgenda' }[id]; $(btn).classList.add('open'); if (id === 'muralSheet') { $('tMural').classList.remove('new'); renderMural(true); } } }
+function closeSheets() { if (interviewOpen && !$('npcSheet').hidden) send({ t: 'resposta', cancel: true }); interviewOpen = false; pendingFree = false; for (const id of ['phraseSheet', 'gestSheet', 'muralSheet', 'npcSheet', 'fotoSheet', 'agendaSheet']) { $(id).hidden = true; } for (const b of document.querySelectorAll('.tb')) b.classList.remove('open');
   if (photoLater && lastPhoto) { photoLater = false; setTimeout(() => { if (lastPhoto) { $('fotoImg').src = lastPhoto.url; $('fotoSheet').hidden = false; } }, 300); } }
 $('tPhrase').addEventListener('click', () => openSheet('phraseSheet'));
 $('tGest').addEventListener('click', () => openSheet('gestSheet'));
 $('tMural').addEventListener('click', () => openSheet('muralSheet'));
+$('tAgenda').addEventListener('click', () => { renderAgenda(); openSheet('agendaSheet'); });
+let AGENDA = [];
+fetch('manifestacoes.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : []).then(l => { AGENDA = Array.isArray(l) ? l : []; renderAgenda(); }).catch(() => {});
+function lisbonAt(date, at) { // a day and an hour in Portugal, as an instant (summer time included)
+  const guess = new Date(`${date}T${at.padStart(5, '0')}:00Z`), parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Lisbon', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(guess);
+  const h = +parts.find(x => x.type === 'hour').value, m = +parts.find(x => x.type === 'minute').value, [ah, am] = at.split(':').map(Number);
+  return guess.getTime() - ((h * 60 + m) - (ah * 60 + am)) * 60e3;
+}
+function renderAgenda() {
+  const box = $('agendaList'); if (!box) return; box.innerHTML = '';
+  const now = serverNow(), list = AGENDA.filter(e => e && e.date && e.at && !e.so_praca && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && /^\d{1,2}:\d{2}$/.test(e.at))
+    .map(e => ({ ...e, t: lisbonAt(e.date, e.at) })).filter(e => e.t + (+e.horas || 3) * 3600e3 > now).sort((a, b) => a.t - b.t).slice(0, 15);
+  if (!list.length) { const d = document.createElement('div'); d.className = 'empty'; d.textContent = L('Não há manifestações marcadas por agora.', 'No protests scheduled for now.'); box.append(d); return; }
+  for (const e of list) {
+    const d = document.createElement('div'); d.className = 'agev';
+    const w = document.createElement('span'); w.className = 'when'; w.textContent = fmtWhen(e.t) + (e.city ? ' · ' + e.city : '');
+    if (e.t <= now) { const n = document.createElement('span'); n.className = 'now'; n.textContent = L('Agora', 'Now'); w.append(n); }
+    const b = document.createElement('b'); b.textContent = e.title || '';
+    const sm = document.createElement('small'); sm.textContent = [e.where, e.note].filter(Boolean).join(' · ');
+    const sh = document.createElement('button'); sh.textContent = L('Partilhar', 'Share');
+    sh.addEventListener('click', async () => {
+      const text = `${e.title}${e.city ? ' · ' + e.city : ''} · ${fmtWhen(e.t)}${e.where ? ' · ' + e.where : ''}\n#acampadapelahabitação · https://acampadapixel.pt`;
+      if (navigator.share) { try { await navigator.share({ text }); } catch (x) {} return; }
+      try { await navigator.clipboard.writeText(text); toast(L('Copiado: cola onde quiseres.', 'Copied: paste it anywhere.'), 2500); } catch (x) {}
+    });
+    d.append(w, sh, b, sm); box.append(d);
+  }
+}
 for (const b of document.querySelectorAll('[data-close]')) b.addEventListener('click', closeSheets);
 $('bLang').addEventListener('click', () => { LANG = LANG === 'en' ? 'pt' : 'en'; store.set('acampada-lang', LANG); applyTexts(); if (!$('ov').hidden) showStatus(lastStatus); });
 
