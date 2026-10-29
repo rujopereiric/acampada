@@ -924,7 +924,7 @@ function connect() {
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
   ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike, won: wonMask() })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
-  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002) return; if (wantOpen) fail(); };
+  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002 || ev.code === 4005) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
 }
 function fail() {
@@ -1008,6 +1008,9 @@ function onMsg(m) {
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
   if (m.t === 'mural-tudo') { mural = []; renderMural(); return; } // the organisers cleared the wall
   if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
+  if (m.t === 'castigo') { // this network sent far too much (a script, or something stuck): out for 10 minutes
+    wantOpen = false; closedByServer = true; const txt = L('Chegaram demasiados pedidos a partir desta rede. Tenta outra vez daqui a 10 minutos.', 'Too many requests came from this network. Try again in 10 minutes.');
+    const e = $('formErr'), b = $('enter'); if (e) e.textContent = txt; if (b) b.disabled = false; toast(txt, 8000); return; }
   if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
   if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
 }
@@ -1931,6 +1934,7 @@ function pngOf(d, scale = 12) { const c = document.createElement('canvas'); c.wi
 function savePng(d, name) { pngOf(d).toBlob(b => { if (!b) return; const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }); }
 const fmtDay = t => new Intl.DateTimeFormat(LANG === 'en' ? 'en-GB' : 'pt-PT', { timeZone: 'Europe/Lisbon', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
 function wallMsg(m) {
+  if (m.t === 'pxs') { for (const [by, a] of m.l || []) wallMsg({ t: 'px', a, by }); return true; } // the square sends all the painters' strokes 4 times a second, in one go
   if (m.t === 'px') { // everyone's strokes in the square's order; mine only once the last one I sent for that pixel is back (no flicker)
     for (const [i, c] of m.a || []) { if (i < 0 || i >= PW * PH) continue;
       if (m.by === myId) { const n = (wallFly.get(i) || 1) - 1; if (n > 0) { wallFly.set(i, n); continue; } wallFly.delete(i); if (wallEd && wallEd.pend.some(q => q[0] === i)) continue; }

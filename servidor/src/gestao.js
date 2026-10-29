@@ -81,6 +81,17 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <div id="bansBox" hidden><label>Banidos até a praça fechar</label><div class="list" id="bans"></div></div>
     </section>
 
+    <section><h2>Proteção <span class="muted" id="nCastigos"></span></h2>
+      <p class="muted" style="margin:0 0 8px">Redes castigadas por 10 minutos: mandaram pedidos ou mensagens a mais, ou pintaram mais depressa do que uma mão consegue. Ninguém é identificado: cada rede é só um código que muda todos os dias. Perdoar aqui pode demorar uns minutos a chegar a todos os servidores da Cloudflare.</p>
+      <div class="list" id="castigos"></div>
+      <div class="row" style="margin-top:8px"><button class="ghost" id="perdoarTodos">Perdoar todos</button></div>
+    </section>
+
+    <section><h2>Recordes do jogo</h2>
+      <p class="muted" style="margin:0 0 8px">Os melhores de todos os jogadores, praça a praça. Se um recorde for impossível (alguém a fazer batota), apaga-o: o próximo jogo a sério volta a pô-lo.</p>
+      <div class="list" id="recordes"></div>
+    </section>
+
     <section><h2>Mural</h2>
       <div class="sw"><span>Mural só para leitura<small>Ninguém escreve; o que lá está continua visível.</small></span><button id="muralRO" class="sm"></button></div>
       <div class="list" id="mural" style="margin-top:8px"></div>
@@ -217,6 +228,17 @@ function render() {
     if (p.px) pb.unshift(btn('Apagar o que pintou (' + p.px + ')', 'ghost', () => api('apagar-pintor', { id: p.id }).then(r => r && toast('Apagado da parede')), 'Confirmar'));
     pl.append(item(t, p.city + ' · ' + (p.mode === 'praca' ? 'na praça' : 'fantasma, de longe') + (p.dev ? '' : ' · (só sai, pode voltar)'), pb));
   }
+  const cs = S.castigos || [], csl = $('castigos'); csl.innerHTML = ''; $('nCastigos').textContent = cs.length ? cs.length : ''; $('perdoarTodos').disabled = !cs.length;
+  if (!cs.length) csl.append(el('div', 'muted', 'Nenhuma rede castigada.'));
+  const MOTIVO = { pedidos: 'pedidos a mais', mensagens: 'mensagens a mais', grandes: 'mensagens gigantes', parede: 'pintura a mais' };
+  for (const x of cs) csl.append(item('Rede ' + x.k.slice(0, 6), (MOTIVO[x.why] || x.why) + ' · até às ' + hm(x.until), [btn('Perdoar', 'ghost', () => api('perdoar', { k: x.k }))]));
+  const REC = { tents: 'Tendas (máx.)', welcomed: 'Pessoas acolhidas', days: 'Dias até ganhar' }, rl0 = $('recordes'); rl0.innerHTML = '';
+  const recs = S.recordes || {}; let nrec = 0;
+  for (const city of ['Porto', 'Lisboa', 'Coimbra', 'Braga', 'Faro']) for (const k of ['tents', 'welcomed', 'days']) {
+    const v = (recs[city] || {})[k]; if (v == null) continue; nrec++;
+    rl0.append(item(city + ' · ' + REC[k], String(v), [btn('Apagar', 'red', () => api('apagar-recorde', { city: city, k: k }).then(r => r && toast('Recorde apagado')), 'Confirmar')]));
+  }
+  if (!nrec) rl0.append(el('div', 'muted', 'Ainda não há recordes.'));
   $('bansBox').hidden = !S.bans.length; const bl = $('bans'); bl.innerHTML = '';
   for (const b of S.bans) bl.append(item(b.name || '—', 'até às ' + hm(b.until), [btn('Levantar', 'ghost', () => api('desbanir', { dev: b.dev }))]));
 
@@ -270,6 +292,7 @@ function render() {
 }
 
 for (const b of document.querySelectorAll('[data-abrir]')) b.addEventListener('click', () => api('abrir', { horas: +b.dataset.abrir, titulo: $('tituloAbrir').value }).then(r => r && toast('Praça aberta')));
+$('perdoarTodos').addEventListener('click', () => api('perdoar-todos').then(r => r && toast('Todas as redes perdoadas')));
 $('fechar').addEventListener('click', function () { if (!this.dataset.armed) { this.dataset.armed = '1'; this.textContent = 'Confirmar: fechar'; setTimeout(() => { this.dataset.armed = ''; this.textContent = 'Fechar agora'; }, 4000); return; } this.dataset.armed = ''; this.textContent = 'Fechar agora'; api('fechar').then(r => r && toast('Praça fechada')); });
 $('paredeCv').addEventListener('click', e => { const r = $('paredeCv').getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * PW), y = Math.floor((e.clientY - r.top) / r.height * PH); selBloco = Math.floor(x / PB) + Math.floor(y / PB) * (PW / PB); render(); });
 $('horario').addEventListener('click', () => api('horario').then(r => r && toast('A seguir o horário')));

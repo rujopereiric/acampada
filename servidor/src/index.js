@@ -25,6 +25,21 @@ const PHRASES = 15, GESTURES = 8; // as many as in multiplayer.html (PHRASES, GE
 // one address can be many people: phone networks put hundreds of phones behind one address (CGNAT), so the limits per
 // address are generous; they only stop one script from filling the square or the wall
 const PER_IP = 60, MURAL_PER_IP = 10; // connections, and wall messages per minute, from one address
+// protection against scripts. A normal phone never gets near these: it sends a few messages a second at most.
+// MSG_MAX: the biggest message the square reads (a drawn poster is under 1 KB); HELLO_MS: a connection that doesn't say
+// who it is in that time is closed; LOUD_MAX: actions that everyone hears (phrases, conga, games...) per person in 10 s;
+// MAX_SOCKETS: connections in the square in all. Three strikes from one address in 10 minutes (too many messages,
+// messages too big, painting faster than any hand) and that address is punished for 10 minutes.
+const MSG_MAX = 4096, BODY_MAX = 16384, REC_MAX = 1024, HELLO_MS = 15e3, LOUD_MAX = 15, MAX_SOCKETS = 900;
+const STRIKES = 3, STRIKE_WIN = 10 * 60e3, CASTIGO_MS = 10 * 60e3;
+// at the door (the Worker): more than HTTP_MAX requests in HTTP_WIN from one address to the square's addresses
+// (/gestao/api is not here: the organisers must always get in, even from a punished network, to pardon it; it has
+// its own lock, 10 wrong pass-phrases in 10 minutes, and Cloudflare Access in front)
+const HTTP_MAX = 40, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/estado', '/mural', '/recordes']);
+// actions that change nothing for the others (or only answer the one who asked): not counted in LOUD_MAX
+const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1']);
+// the most tents a square can hold (index.html: CITIES size, columns x rows); anything above it can't be a real game
+const CELLS = { Porto: 100, Lisboa: 128, Coimbra: 132, Braga: 140, Faro: 144 };
 const DJ_ON = 180e3, DJ_CYCLE = 600e3; // the DJ p.45: 3 minutes in every 10 (multiplayer.html walks him from the same clock)
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
 const CARTAZ_MAX = 60, CRAVO = [11, 11], CARTAZ_POR_PESSOA = 3;
@@ -89,33 +104,85 @@ function windows(list, now = Date.now()) {
 const pick = w => w && { city: w.city, title: w.title, where: w.where, date: w.date, at: w.at, start: w.start, open: w.open, close: w.close, dj: w.dj };
 
 /* ---------- the Worker ---------- */
+// a JSON body, read only up to `max` bytes: a huge body is dropped without being read whole
+async function bodyJson(req, max) {
+  if (+(req.headers.get('Content-Length') || 0) > max || !req.body) return null;
+  const rd = req.body.getReader(), parts = []; let len = 0;
+  for (;;) {
+    const { done, value } = await rd.read(); if (done) break;
+    len += value.length; if (len > max) { try { await rd.cancel(); } catch (e) {} return null; }
+    parts.push(value);
+  }
+  const buf = new Uint8Array(len); let o = 0; for (const v of parts) { buf.set(v, o); o += v.length; }
+  try { return JSON.parse(new TextDecoder().decode(buf)); } catch (e) { return null; }
+}
+// the door: requests per address, counted by each copy of the Worker (Cloudflare runs several); the square keeps the
+// list of punished addresses (hashed), and the Worker remembers the ones it has seen for as long as they last
+const hits = new Map(), castigados = new Map(); // address -> [window start, n]; address -> until
+function door(ip, now, max = HTTP_MAX) { // 0: in; > 0: punished until then; < 0: punished just now, until -that
+  const until = castigados.get(ip); if (until) { if (until > now) return until; castigados.delete(ip); }
+  let h = hits.get(ip); if (!h || now - h[0] > HTTP_WIN) { h = [now, 0]; hits.set(ip, h); }
+  if (++h[1] <= max) { if (hits.size > 20000) hits.clear(); return 0; }
+  hits.delete(ip); castigados.set(ip, now + CASTIGO_MS); if (castigados.size > 20000) castigados.clear();
+  return -(now + CASTIGO_MS);
+}
+const tooMany = (until, h) => new Response('Demasiados pedidos. Tenta daqui a 10 minutos.', { status: 429, headers: { ...h, 'Retry-After': String(Math.max(1, Math.ceil((until - Date.now()) / 1000))) } });
 function cors(req, env) {
   const o = req.headers.get('Origin') || '';
-  const ok = (env.ORIGINS || '').split(',').includes(o) || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
+  // pages on this computer only while testing (wrangler dev --var LOCAL:1), never on the real server
+  const ok = !!o && ((env.ORIGINS || '').split(',').includes(o) || (env.LOCAL === '1' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o)));
   return ok ? { 'Access-Control-Allow-Origin': o, 'Vary': 'Origin' } : {};
 }
 export default {
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url), h = cors(req, env);
     if (req.method === 'OPTIONS') return new Response(null, { headers: { ...h, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '86400' } });
     const stub = env.PRACA.get(env.PRACA.idFromName('praca'));
+    const ip = req.headers.get('CF-Connecting-IP') || 'local', now = Date.now();
+    if (DOOR.has(url.pathname)) {
+      const d = door(ip, now, +env.PORTA_MAX || HTTP_MAX); // PORTA_MAX: only for tests with many robots on one computer
+      if (d < 0) ctx.waitUntil(stub.fetch(new Request(new URL('/castigo', req.url), { method: 'POST', headers: { 'CF-Connecting-IP': ip, 'X-Motivo': 'pedidos' } })).catch(() => {})); // the square writes it down
+      if (d) return tooMany(Math.abs(d), h);
+    }
+    // what the square answers when an address is punished: the Worker remembers it, so the next ones stop at the door
+    const fromSquare = async r => { if (r.status === 429) { const u = +r.headers.get('X-Castigo'); if (u > now) castigados.set(ip, u); return tooMany(u || now + CASTIGO_MS, h); } return null; };
     if (url.pathname === '/ws') {
       if (req.headers.get('Upgrade') !== 'websocket') return new Response('websocket', { status: 426 });
-      if (!cors(req, env)['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 }); // only the game's pages
-      return stub.fetch(req);
+      if (!h['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 }); // only the game's pages
+      const r = await stub.fetch(req);
+      return (await fromSquare(r)) || r;
     }
     if (url.pathname === '/recordes') { // the game's records, for everyone (index.html: summary)
       if (req.method === 'POST' && !h['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 });
+      if (req.method === 'POST' && +(req.headers.get('Content-Length') || 0) > REC_MAX) return new Response('grande', { status: 413, headers: h });
       const r = await stub.fetch(req);
-      return new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      return (await fromSquare(r)) || new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
     if (url.pathname === '/estado' || url.pathname === '/mural') {
-      const r = await stub.fetch(new Request(new URL(url.pathname, req.url), { method: 'GET' }));
-      return new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+      // one copy for everyone for a few seconds, kept by Cloudflare near each player: a crowd (or a script) asking
+      // over and over doesn't reach the square. The key is the path alone, so adding ?anything doesn't get past it.
+      const cache = caches.default, ck = new Request(url.origin + url.pathname);
+      let r = await cache.match(ck);
+      if (!r) {
+        const o = await stub.fetch(new Request(new URL(url.pathname, req.url), { method: 'GET' }));
+        r = new Response(await o.text(), { status: o.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=' + (url.pathname === '/estado' ? 5 : 20) } });
+        if (o.ok) ctx.waitUntil(cache.put(ck, r.clone()));
+      }
+      let body = await r.text();
+      if (url.pathname === '/estado') { try { const j = JSON.parse(body); j.now = Date.now(); body = JSON.stringify(j); } catch (e) {} } // the clock is always fresh
+      return new Response(body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
     // the management page: same address, a pass-phrase kept in Cloudflare (GESTAO_FRASE), never in the code
     if (url.pathname === '/gestao') return new Response(GESTAO_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer' } });
-    if (url.pathname === '/gestao/api' && req.method === 'POST') return stub.fetch(req);
+    if (url.pathname === '/gestao/api' && req.method === 'POST') {
+      if (req.headers.get('Origin') !== url.origin) return new Response('origem', { status: 403 }); // only from the management page itself
+      if (+(req.headers.get('Content-Length') || 0) > BODY_MAX) return new Response('grande', { status: 413 });
+      const r = await stub.fetch(req);
+      // the organisers changed something (opened, closed, wrote a notice...): the copies of /estado and /mural kept
+      // near them go, so the players around them see it now and not in a few seconds
+      if (r.ok) ctx.waitUntil(Promise.all(['/estado', '/mural'].map(k => caches.default.delete(new Request(url.origin + k)))).catch(() => {}));
+      return r;
+    }
     return new Response('Acampada Pixel · praça', { headers: h });
   }
 };
@@ -172,6 +239,9 @@ export class Praca {
     this.nextId = 1; this.timer = null; this.state = null; this.stateAt = 0; this.checking = false; this.wasOpen = null;
     this.muralBy = new Map(); // address key -> times it wrote on the wall in the last minute
     this.fails = new Map(); // address key -> wrong pass-phrases in the last 10 minutes
+    this.strikes = new Map(); // address key -> when it broke the limits (the last 10 minutes)
+    this.castigo = new Map(); // address key -> { until, why }: punished addresses, 10 minutes
+    this.pxOut = new Map(); // strokes on the wall waiting for the next tick: person id -> [[i, c], ...]
     this.cfg = { ...CFG0 };
     ctx.blockConcurrencyWhile(async () => { const saved = (await ctx.storage.get('cfg')) || {}; this.cfg = { ...CFG0, ...saved, npcs: { ...CFG0.npcs, ...(saved.npcs || {}) } }; if (!(saved.v >= 2)) { this.cfg.ciclistas = true; this.cfg.v = 2; } }); // v2: bicycles on by default
   }
@@ -241,23 +311,42 @@ export class Praca {
   }
   wallReports() { return this.sql.exec('SELECT b, COUNT(*) AS n, MAX(at) AS at FROM parede_rep GROUP BY b ORDER BY n DESC').toArray(); }
   banned(dev) { const now = Date.now(); return !!dev && this.cfg.bans.some(b => b.dev === dev && b.until > now); }
+  punished(key, now = Date.now()) { const c = this.castigo.get(key); if (!c) return 0; if (c.until > now) return c.until; this.castigo.delete(key); return 0; }
+  // one more broken limit from this address; the third in 10 minutes punishes it
+  strike(key, why) {
+    const now = Date.now(), l = (this.strikes.get(key) || []).filter(t => now - t < STRIKE_WIN); l.push(now); this.strikes.set(key, l);
+    if (this.strikes.size > 5000) this.strikes.clear();
+    if (l.length >= STRIKES) this.punish(key, why);
+  }
+  punish(key, why) {
+    const now = Date.now(), until = now + CASTIGO_MS; this.strikes.delete(key);
+    this.castigo.set(key, { until, why, at: now }); if (this.castigo.size > 5000) { for (const [k, c] of this.castigo) if (c.until <= now) this.castigo.delete(k); }
+    for (const [ws, p] of [...this.people]) if (p.key === key) { this.send(p, { t: 'castigo', until }); try { ws.close(4005, 'castigo'); } catch (e) {} this.gone(ws, p); }
+  }
 
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname === '/gestao/api') return this.admin(req);
+    if (url.pathname === '/castigo') { this.punish(await addrKey(req), plain(req.headers.get('X-Motivo'), 20) || 'pedidos'); return new Response('ok'); } // from the Worker (its door)
     if (url.pathname === '/recordes') return this.recordes(req);
     const st = await this.status();
     if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.djInfo(), aviso: this.cfg.aviso });
     if (url.pathname === '/mural') return Response.json({ mural: this.mural(true) });
-    const key = await addrKey(req);
+    const key = await addrKey(req), until = this.punished(key);
+    if (until) return new Response('castigo', { status: 429, headers: { 'X-Castigo': String(until) } });
     const pair = new WebSocketPair(), [client, server] = Object.values(pair);
     server.accept();
     if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next, by: st.by })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
-    if ([...this.people.values()].filter(q => q.key === key).length >= PER_IP) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
-    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), dirty: true };
+    const mine = [...this.people.values()].filter(q => q.key === key).length;
+    if (mine >= PER_IP || this.people.size >= MAX_SOCKETS) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
+    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), loud: 0, loudWin: 0, at: Date.now(), dirty: true };
     this.people.set(server, p);
-    server.addEventListener('message', ev => this.onMessage(p, ev.data));
-    const bye = () => { if (!this.people.has(server)) return; this.people.delete(server); this.congaOut(p.id); if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id }); this.broadcast({ t: 'counts', c: this.counts() }); if (!this.people.size) this.stop(); };
+    server.addEventListener('message', ev => {
+      const d = ev.data;
+      if (typeof d !== 'string' || d.length > MSG_MAX) { this.strike(key, 'grandes'); try { server.close(1009, 'grande'); } catch (e) {} return this.gone(server, p); } // binary or huge: not from the game
+      this.onMessage(p, d);
+    });
+    const bye = () => this.gone(server, p);
     server.addEventListener('close', bye); server.addEventListener('error', bye);
     this.start();
     return new Response(null, { status: 101, webSocket: client });
@@ -267,13 +356,15 @@ export class Praca {
     const now = Date.now();
     if (m.t === 'px' && p.name) { // painting the wall: no limit per person, only against scripts (150 strokes in 10 s)
       if (this.cfg.paredeRO) return this.send(p, { t: 'pxno', why: 'fechada', d: this.wallStr() });
-      if (now - p.pxWin > 10e3) { p.pxWin = now; p.pxN = 0; } if (++p.pxN > PX_MSGS || !Array.isArray(m.a)) return;
-      const ok = [];
+      if (now - p.pxWin > 10e3) { p.pxWin = now; p.pxN = 0; }
+      if (++p.pxN > PX_MSGS) { if (p.pxN === PX_MSGS + 1) this.strike(p.key, 'parede'); return; }
+      if (!Array.isArray(m.a)) return;
+      const ok = this.pxOut.get(p.id) || [];
       for (const it of m.a.slice(0, PX_MAX)) { if (!Array.isArray(it)) continue; const i = it[0], c = it[1]; if (!Number.isInteger(i) || i < 0 || i >= PN || !Number.isInteger(c) || c < -1 || c > 15) continue; this.wallSet(i, c, p, now); ok.push([i, c]); }
-      if (ok.length) this.broadcast({ t: 'px', a: ok, by: p.id });
+      if (ok.length) this.pxOut.set(p.id, ok); // everyone gets them with the next tick, all painters in one message
       return;
     }
-    if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) return; // flood guard
+    if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) { if (p.msgs === 61) this.strike(p.key, 'mensagens'); return; } // flood guard
     if (m.t === 'hello' && !p.name) {
       p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : '';
       if (this.banned(p.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} return; }
@@ -291,6 +382,8 @@ export class Praca {
       return;
     }
     if (!p.name) return;
+    // what everyone hears: a few per person, so one person can't make the square shout at everybody
+    if (!QUIET.has(m.t)) { if (now - p.loudWin > 10e3) { p.loudWin = now; p.loud = 0; } if (++p.loud > LOUD_MAX) return; }
     if (m.t === 'pos' && p.av) { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
     if (m.t === 'say' && p.av) { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
     if (m.t === 'emote' && p.av) { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
@@ -365,26 +458,39 @@ export class Praca {
   recDump() { const o = {}; for (const r of this.sql.exec('SELECT city, k, v FROM recordes').toArray()) (o[r.city] ||= {})[r.k] = r.v; return o; }
   async recordes(req) {
     if (req.method !== 'POST') return Response.json(this.recDump());
-    let m; try { m = await req.json(); } catch (e) { return Response.json({ erro: 'pedido' }, { status: 400 }); }
+    const key = await addrKey(req), until = this.punished(key);
+    if (until) return new Response('castigo', { status: 429, headers: { 'X-Castigo': String(until) } });
+    const m = await bodyJson(req, REC_MAX); if (!m || typeof m !== 'object') return Response.json({ erro: 'pedido' }, { status: 400 });
     const city = CITIES.includes(m.city) ? m.city : null; if (!city) return Response.json({ erro: 'cidade' }, { status: 400 });
-    const key = await addrKey(req), now = Date.now(), sent = (this.recBy.get(key) || []).filter(t => now - t < 3600e3);
+    const now = Date.now(), sent = (this.recBy.get(key) || []).filter(t => now - t < 3600e3);
     const before = this.recDump()[city] || {};
-    if (sent.length >= 30) return Response.json({ before, novo: [] }); // one address sending too many: answered, not counted
+    // a game takes minutes: more than 6 in an hour from one address is answered, not counted (a school sharing one
+    // address still gets its best ones in, just not every game)
+    if (sent.length >= 6) return Response.json({ before, novo: [] });
     sent.push(now); this.recBy.set(key, sent); if (this.recBy.size > 5000) this.recBy.clear();
     const int = (v, a, b) => Number.isInteger(v) && v >= a && v <= b ? v : null, novo = [];
     const put = (k, v, more) => { if (v == null) return; const old = before[k]; if (old == null || (more ? v > old : v < old)) { this.sql.exec('INSERT OR REPLACE INTO recordes (city, k, v) VALUES (?, ?, ?)', city, k, v); novo.push(k); } };
-    put('tents', int(m.tents, 0, 150), true); put('welcomed', int(m.welcomed, 0, 5000), true); if (m.won === true) put('days', int(m.days, 1, 60), false);
+    // only what a real game can reach: no more tents than the square has room for, no more people than the days allow
+    const days = int(m.days, 1, 60); if (days == null) return Response.json({ before, novo: [] });
+    put('tents', int(m.tents, 0, CELLS[city] || 100), true); put('welcomed', int(m.welcomed, 0, 30 + days * 80), true); if (m.won === true) put('days', days, false);
     return Response.json({ before, novo });
   }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
   congaOut(id) { const i = this.conga.indexOf(id); if (i < 0) return; this.conga.splice(i, 1); this.broadcast({ t: 'conga', ids: this.conga }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0, g: p.mode === 'apoio' ? 1 : 0 }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
+  gone(ws, p) { // someone left (closed, dropped, or put out): once
+    if (!this.people.has(ws)) return; this.people.delete(ws); this.congaOut(p.id);
+    if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id });
+    if (p.name) this.broadcast({ t: 'counts', c: this.counts() });
+    if (!this.people.size) this.stop();
+  }
   broadcast(m, except) { const s = JSON.stringify(m); for (const p of this.people.values()) if (p !== except && p.name) { try { p.ws.send(s); } catch (e) {} } }
   start() { if (this.timer) return; this.lastDj = null; this.pers.ensure(); this.timer = setInterval(() => this.tick(), TICK_MS); }
   stop() { clearInterval(this.timer); this.timer = null; this.wallFlush(); }
   // everyone out: the square closed (by the clock or by the organisers)
   closeAll(st) {
+    if (this.pxOut.size) { this.broadcast({ t: 'pxs', l: [...this.pxOut] }); this.pxOut.clear(); }
     this.broadcast({ t: 'closed', next: st.next, by: st.by });
     for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} }
     this.people.clear(); this.stop();
@@ -397,6 +503,8 @@ export class Praca {
   tick() {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
     const now0 = Date.now();
+    for (const [ws, p] of [...this.people]) if (!p.name && now0 - p.at > HELLO_MS) { try { ws.close(4003, 'sem nome'); } catch (e) {} this.gone(ws, p); } // connected, never said who it is
+    if (this.pxOut.size) { this.broadcast({ t: 'pxs', l: [...this.pxOut] }); this.pxOut.clear(); }
     const ch = []; for (const p of this.people.values()) if (p.name && p.av) {
       if (p.item && now0 > p.itemUntil) { p.item = 0; p.dirty = true; }
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }
@@ -426,7 +534,7 @@ export class Praca {
     const tries = (this.fails.get(key) || []).filter(t => now - t < 10 * 60e3);
     if (tries.length >= 10) return Response.json({ erro: 'Demasiadas tentativas. Espera 10 minutos.' }, { status: 429 });
     if (!this.env.GESTAO_FRASE) return Response.json({ erro: 'Falta criar a palavra-passe GESTAO_FRASE na Cloudflare.' }, { status: 503 });
-    let m; try { m = await req.json(); } catch (e) { return Response.json({ erro: 'Pedido inválido.' }, { status: 400 }); }
+    const m = await bodyJson(req, BODY_MAX); if (!m || typeof m !== 'object') return Response.json({ erro: 'Pedido inválido.' }, { status: 400 });
     if (!(await samePhrase(String(m.frase || ''), this.env.GESTAO_FRASE))) { tries.push(now); this.fails.set(key, tries); return Response.json({ erro: 'Palavra-passe errada.' }, { status: 401 }); }
     this.fails.delete(key);
     this.wallFlush(); const before = await this.status(true), c = this.cfg;
@@ -473,6 +581,9 @@ export class Praca {
         this.sql.exec('DELETE FROM parede'); const now2 = Date.now();
         for (let i = 0; i < PN; i++) if (r.data[i] && r.data[i] !== '-') this.sql.exec('INSERT INTO parede (i, c, name, city, dev, key, at) VALUES (?, ?, ?, ?, ?, ?, ?)', i, parseInt(r.data[i], 16), '', '', '', '', now2);
         this.wallReload(); break; }
+      case 'perdoar': this.castigo.delete(String(m.k || '')); break;
+      case 'perdoar-todos': this.castigo.clear(); this.strikes.clear(); break;
+      case 'apagar-recorde': if (CITIES.includes(m.city) && ['tents', 'welcomed', 'days'].includes(m.k)) this.sql.exec('DELETE FROM recordes WHERE city = ? AND k = ?', m.city, m.k); break;
       case 'tirar-cartaz': { const id = m.id | 0; this.sql.exec('UPDATE cartazes SET hidden = 2 WHERE id = ?', id); this.broadcast({ t: 'cartaz-', id }); break; }
       case 'config': {
         if (m.npcs && typeof m.npcs === 'object') { for (const k of NPC_KINDS) if (typeof m.npcs[k] === 'boolean') c.npcs[k] = m.npcs[k]; if (this.timer) this.pers.ensure(); }
@@ -492,6 +603,6 @@ export class Praca {
     const ws = windows(await schedule(this.env), now).filter(w => w.close > now).sort((a, b) => a.open - b.open).slice(0, 8).map(pick);
     const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev, px: p.dev ? this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE dev = ?', p.dev).one().n : this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE key = ? AND name = ?', p.key, p.name).one().n }));
     const mural = this.sql.exec('SELECT id, name, city, text, at, hidden FROM mural WHERE expires > ? ORDER BY id DESC LIMIT 200', now).toArray();
-    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })) });
+    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })), castigos: [...this.castigo].filter(([, x]) => x.until > now).map(([k, x]) => ({ k, why: x.why, at: x.at, until: x.until })), recordes: this.recDump() });
   }
 }
