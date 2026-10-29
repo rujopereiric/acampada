@@ -3288,7 +3288,7 @@ function update(dt) {
   // the square is full: people also walk on the raised levels (Porto's road, Coimbra's esplanade, steps and pavement)
   const TR = S.city.terrace, UA = S.city.upArea, full = (TR || UA) && freeTiles().length < 14;
   // the demo also brings people who don't camp: more of them with more support
-  const want = emptyNow || !S.tents.length ? 0 : Math.min(full ? 40 : 18, S.dark > .8 ? Math.ceil(people() / 3) : people() + Math.floor(S.support / 8));
+  const want = emptyNow || !S.tents.length ? 0 : Math.min(full ? 30 : 18, S.dark > .8 ? Math.ceil(people() / 3) : people() + Math.floor(S.support / 8));
   const upSpot = UA ? () => { const a = pick(UA); return [rnd(a[0], a[2]), rnd(a[1], a[3])]; } : () => [Math.random() < .8 ? rnd(2.25, 2.5) : rnd(.15, .5), rnd(1.5, NY - 1.5)];
   while (S.residents.length < want && S.tents.length) { const t = pick(S.tents), up = full && S.residents.length >= 14 && Math.random() < .6; const r = { gx: t.gx + rnd(-.3, .3), gy: t.gy + .4, tx: t.gx, ty: t.gy, wait: rnd(0, 3), look: look(S.city.students), step: 0, up };
     if (up) [r.tx, r.ty] = upSpot(); S.residents.push(r); }
@@ -3365,12 +3365,86 @@ function update(dt) {
 /* ================= characters ================= */
 let OFF = null, OFFX = null;
 // draw a person (or a rider...) at its normal size off screen, then put it on the picture smaller (Porto: S.city.peopleK)
-function small(x, y, fn) {
-  const k = S.city.peopleK || 1; if (k === 1) return fn();
+// The smaller people (Porto): a figure is drawn at full size and shrunk. Instead of drawing every figure again each frame
+// on a scratch canvas and shrinking it (one clear, one drawing, one copy per person, slow on phones), what a figure draws
+// is first written down, relative to where it stands; a figure that looks exactly like one drawn before is a single
+// copy of a ready, already shrunk picture. Anything the recorder doesn't know (a transform, a gradient, a text size)
+// draws that figure the old way.
+const SPR = new Map(), SPR_MAX = 3000, NOREC = { norec: true }; // about 20 x 20 pixels each: 3000 are about 4 MB
+// a figure is kept only the second time it is seen: one that changes every frame (the player's rainbow ring) would
+// otherwise fill the cache with pictures used once
+const SPR_SEEN = new Set(), SEEN_MAX = 6000;
+const REC_XY = { fillRect: [[0], [1]], strokeRect: [[0], [1]], clearRect: [[0], [1]], rect: [[0], [1]], moveTo: [[0], [1]], lineTo: [[0], [1]], arc: [[0], [1]], ellipse: [[0], [1]], quadraticCurveTo: [[0, 2], [1, 3]], bezierCurveTo: [[0, 2, 4], [1, 3, 5]], fillText: [[1], [2]], strokeText: [[1], [2]] };
+const REC_PLAIN = new Set(['beginPath', 'closePath', 'fill', 'stroke', 'save', 'restore']);
+const REC_ST0 = { globalAlpha: 1, fillStyle: '#000000', strokeStyle: '#000000', lineWidth: 1, font: '10px sans-serif', textAlign: 'start', textBaseline: 'alphabetic', globalCompositeOperation: 'source-over', imageSmoothingEnabled: false, lineCap: 'butt', lineJoin: 'miter' };
+let REC = null, IMG_ID = new WeakMap(), IMG_N = 0;
+const recFns = {};
+function recBox(x0, y0, x1, y1) { const B = REC.bb; if (x0 > x1) [x0, x1] = [x1, x0]; if (y0 > y1) [y0, y1] = [y1, y0]; if (x0 < B[0]) B[0] = x0; if (y0 < B[1]) B[1] = y0; if (x1 > B[2]) B[2] = x1; if (y1 > B[3]) B[3] = y1; }
+function recOp(name, a) {
+  const xy = REC_XY[name], args = a.slice(), key = REC.key, lw = (+REC.st.lineWidth || 1) + 1;
+  if (name === 'drawImage') { // the picture by a number, and where it goes relative to the figure
+    if (!IMG_ID.has(a[0])) IMG_ID.set(a[0], ++IMG_N);
+    const d = a.length > 5 ? 5 : 1; args[d] = Math.round((a[d] - REC.x) * 2) / 2; args[d + 1] = Math.round((a[d + 1] - REC.y) * 2) / 2;
+    const w = a.length > 5 ? a[7] : a.length > 3 ? a[3] : a[0].width, h = a.length > 5 ? a[8] : a.length > 3 ? a[4] : a[0].height;
+    recBox(args[d], args[d + 1], args[d] + w, args[d + 1] + h);
+    key.push('I', IMG_ID.get(a[0])); for (let i = 1; i < args.length; i++) key.push(args[i]);
+  } else {
+    if (xy) { for (const i of xy[0]) args[i] = Math.round((a[i] - REC.x) * 2) / 2; for (const i of xy[1]) args[i] = Math.round((a[i] - REC.y) * 2) / 2; }
+    if (name === 'fillRect' || name === 'clearRect' || name === 'rect') recBox(args[0], args[1], args[0] + a[2], args[1] + a[3]);
+    else if (name === 'strokeRect') recBox(args[0] - lw, args[1] - lw, args[0] + a[2] + lw, args[1] + a[3] + lw);
+    else if (name === 'arc') recBox(args[0] - a[2] - lw, args[1] - a[2] - lw, args[0] + a[2] + lw, args[1] + a[2] + lw);
+    else if (name === 'ellipse') recBox(args[0] - a[2] - lw, args[1] - a[3] - lw, args[0] + a[2] + lw, args[1] + a[3] + lw);
+    else if (name === 'fillText' || name === 'strokeText') REC.full = true; // its width isn't known here: the whole box
+    else if (xy) for (let j = 0; j < xy[0].length; j++) recBox(args[xy[0][j]] - lw, args[xy[1][j]] - lw, args[xy[0][j]] + lw, args[xy[1][j]] + lw);
+    key.push(name); for (const v of args) key.push(v);
+  }
+  REC.ops.push(name, args);
+}
+const recCtx = new Proxy({}, {
+  get(_, k) {
+    if (k in REC.st) return REC.st[k];
+    if (REC_XY[k] || REC_PLAIN.has(k) || k === 'drawImage') return recFns[k] ||= (...a) => recOp(k, a);
+    throw NOREC; // a transform, a gradient, a text size...: this figure is drawn the old way
+  },
+  set(_, k, v) {
+    if (v !== null && typeof v === 'object') throw NOREC; // a gradient or a pattern
+    REC.st[k] = v; REC.ops.push('=', [k, v]); REC.key.push('=', k, v); return true;
+  }
+});
+function sprReplay(g, ops) { for (let i = 0; i < ops.length; i += 2) { const n = ops[i], a = ops[i + 1]; if (n === '=') g[a[0]] = a[1]; else g[n](...a); } }
+// the step that keeps the shrinking exact: the box starts on a multiple of it (k = .8: every 5 pixels become 4)
+const sprStep = k => { for (let m = 1; m <= 20; m++) if (Math.abs(m * k - Math.round(m * k)) < 1e-9) return m; return 0; };
+function small(x, y, fn, arg) {
+  const k = S.city.peopleK || 1; if (k === 1 || REC) return fn(arg); // (a figure inside a figure: part of the outer one)
   if (!OFF) { OFF = document.createElement('canvas'); OFF.width = 120; OFF.height = 120; OFFX = OFF.getContext('2d'); OFFX.imageSmoothingEnabled = false; }
-  x = Math.round(x); y = Math.round(y); OFFX.clearRect(0, 0, 120, 120);
-  const main = ctx; ctx = OFFX; ctx.save(); ctx.translate(60 - x, 100 - y); try { fn(); } finally { ctx.restore(); ctx = main; }
-  ctx.imageSmoothingEnabled = false; ctx.drawImage(OFF, Math.round(x - 60 * k), Math.round(y - 100 * k), Math.round(120 * k), Math.round(120 * k));
+  x = Math.round(x); y = Math.round(y);
+  const main = ctx, dx = Math.round(x - 60 * k), dy = Math.round(y - 100 * k), w = Math.round(120 * k);
+  REC = { x, y, ops: [], key: [], st: { ...REC_ST0 }, bb: [1e9, 1e9, -1e9, -1e9], full: false }; let ok = true;
+  ctx = recCtx; try { fn(arg); } catch (e) { if (e !== NOREC) { ctx = main; REC = null; throw e; } ok = false; } finally { ctx = main; }
+  if (ok) {
+    if (!REC.ops.length) { REC = null; return; }
+    const key = REC.key.join(','); let spr = SPR.get(key);
+    if (spr) { SPR.delete(key); SPR.set(key, spr); } // the ones in use stay at the front of the queue
+    else {
+      OFFX.clearRect(0, 0, 120, 120); OFFX.save(); OFFX.translate(60, 100); sprReplay(OFFX, REC.ops); OFFX.restore();
+      if (!SPR_SEEN.has(key)) { // the first time: drawn as before, and remembered
+        if (SPR_SEEN.size >= SEEN_MAX) SPR_SEEN.clear(); SPR_SEEN.add(key);
+        REC = null; ctx.imageSmoothingEnabled = false; ctx.drawImage(OFF, dx, dy, w, w); return;
+      }
+      const m = sprStep(k), B = REC.bb, whole = REC.full || !m || B[0] > B[2];
+      const sx = whole ? 0 : clamp(Math.floor((B[0] + 60) / m) * m, 0, 120), sy = whole ? 0 : clamp(Math.floor((B[1] + 100) / m) * m, 0, 120);
+      const ex = whole ? 120 : clamp(Math.ceil((B[2] + 60) / m) * m, 0, 120), ey = whole ? 120 : clamp(Math.ceil((B[3] + 100) / m) * m, 0, 120);
+      spr = { c: null, x: Math.round(sx * k), y: Math.round(sy * k) };
+      if (ex > sx && ey > sy) { const c = spr.c = document.createElement('canvas'); c.width = Math.round((ex - sx) * k); c.height = Math.round((ey - sy) * k); const sg = c.getContext('2d'); sg.imageSmoothingEnabled = false; sg.drawImage(OFF, sx, sy, ex - sx, ey - sy, 0, 0, c.width, c.height); }
+      if (SPR.size >= SPR_MAX) SPR.delete(SPR.keys().next().value); // the one unused for longest goes
+      SPR.set(key, spr);
+    }
+    REC = null; if (spr.c) { ctx.imageSmoothingEnabled = false; ctx.drawImage(spr.c, dx + spr.x, dy + spr.y); } return;
+  }
+  REC = null; // the old way
+  OFFX.clearRect(0, 0, 120, 120);
+  ctx = OFFX; ctx.save(); ctx.translate(60 - x, 100 - y); try { fn(arg); } finally { ctx.restore(); ctx = main; }
+  ctx.imageSmoothingEnabled = false; ctx.drawImage(OFF, dx, dy, w, w);
 }
 function guy(x, y, o) {
   x = Math.round(x); y = Math.round(y);
@@ -3567,22 +3641,30 @@ function drawArrival(a) {
     if (a.rent) drawFloat({ x: q.x, y: q.y - 33, text: a.rent + '€ quarto', color: '#ffd36b', t: 1 });
   }
 }
+// a tent is the same picture until its colour, its jump, the night or its second camper change: drawn once, then copied
+// (about 40 strokes each, with sixty tents more than half of the whole square)
+const TENT_SPR = new Map();
 function drawTent(t) {
   if (S.city.noTents) return drawGroup(t);
   const q = iso(t.gx, t.gy); let cx = Math.round(q.x); const cy = Math.round(q.y);
   if (t.hit) cx += (Math.floor(S.t * 20) % 2) ? 1 : -1;
-  const lift = Math.round(t.pop * 10);
+  const lift = clamp(Math.round(t.pop * 10), 0, 14), dark = S.dark > .5, two = t.occ === 2, key = t.color + '|' + lift + '|' + (dark ? 1 : 0) + (two ? 1 : 0);
+  let c = TENT_SPR.get(key);
+  if (!c) { c = document.createElement('canvas'); c.width = 24; c.height = 40; const main = ctx; ctx = c.getContext('2d'); try { tentBody(12, 34, t.color, lift, dark, two); } finally { ctx = main; } TENT_SPR.set(key, c); }
+  ctx.drawImage(c, cx - 12, cy - 34);
+}
+function tentBody(cx, cy, color, lift, dark, two) {
   ell(ctx, cx, cy, 9, 'rgba(30,10,70,.28)');
   for (let dx = -8; dx < 8; dx++) {
     const e = Math.sqrt(Math.max(0, 1 - ((dx + .5) / 8) ** 2)), k = (dx + .5) / 8;
-    const col = k < -.3 ? shade(t.color, 1.14) : k < .35 ? t.color : shade(t.color, .76);
+    const col = k < -.3 ? shade(color, 1.14) : k < .35 ? color : shade(color, .76);
     vl(ctx, cx + dx, cy - 1 - lift - 11 * e, cy - 1 - lift + 3.5 * e, col);
   }
   R(cx - 4, cy - 11 - lift, 3, 1, 'rgba(255,255,255,.7)'); R(cx - 6, cy - 9 - lift, 2, 1, 'rgba(255,255,255,.5)');
   R(cx, cy - 12 - lift, 1, 1, '#1b1464');
-  const dc = S.dark > .5 ? '#ffcf6b' : '#2a2350';
+  const dc = dark ? '#ffcf6b' : '#2a2350';
   R(cx - 4, cy - 5 - lift, 4, 5, dc); R(cx - 3, cy - 6 - lift, 2, 1, dc);
-  if (t.occ === 2) R(cx + 4, cy - 4 - lift, 1, 1, '#ffffff');
+  if (two) R(cx + 4, cy - 4 - lift, 1, 1, '#ffffff');
 }
 function drawCrate(c) {
   if (c.life < 3 && Math.floor(S.t * 6) % 2) return;
@@ -3856,6 +3938,21 @@ function syncMsgs() {
   MSG.floats.length = 0; MSG.bubs.length = 0;
 }
 function drawFloat(f) { MSG.floats.push(LANG === 'en' ? { ...f, text: T(f.text) } : f); }
+// what is drawn in the square, back to front. The entries are kept from frame to frame and reused (no new objects and
+// functions for every tent and every person, every frame: less work for the garbage collector, fewer small stalls)
+const DL = []; let DLn = 0;
+function dlPush(gx, gy, f, a, p) { let o = DL[DLn]; if (!o) o = DL[DLn] = { k: 0, i: 0, gx: 0, gy: 0, f: null, a: null, p: false }; o.k = gx + gy; o.i = DLn; o.gx = gx; o.gy = gy; o.f = f; o.a = a; o.p = p; DLn++; }
+const dlCmp = (a, b) => a.k - b.k || a.i - b.i; // same depth: in the order they were added (as before)
+function dlDraw() {
+  for (let i = DLn; i < DL.length; i++) { const o = DL[i]; o.k = Infinity; o.i = i; o.f = o.a = null; } // last frame's leftovers go to the end
+  DL.sort(dlCmp);
+  for (let i = 0; i < DLn; i++) { const o = DL[i]; if (o.p) { const q = iso(o.gx, o.gy); small(q.x, q.y, o.f, o.a); } else o.f(o.a); }
+}
+function drawResident(r) {
+  const q = iso(r.gx, r.gy); if (r.stun > 0) return drawLying(q.x, q.y, r.look);
+  guy(q.x, q.y - (S.winning ? Math.round(Math.abs(Math.sin(S.t * 7 + (r.step || 0))) * 3) : 0), { ...r.look, moving: r.moving, step: r.step, flip: r.flip, back: r.back });
+  if (r.chainK != null && S.chain && S.chain.helmet) { R(q.x - 3, q.y - 17, 7, 3, '#2f6bff'); R(q.x - 2, q.y - 17, 2, 1, '#9fd0ff'); }
+}
 function draw() {
   const d = S.dark;
   const sky = ctx.createLinearGradient(0, SKYDY, 0, 140 + SKYDY);
@@ -3873,26 +3970,26 @@ function draw() {
 
   if (S.choir && S.choir.state === 'sing') { const c = S.choir, q = iso(c.cx, c.cy); ctx.fillStyle = c.grandola ? 'rgba(255,59,78,.22)' : 'rgba(255,211,107,.2)'; ctx.beginPath(); ctx.ellipse(q.x, q.y, (CHOIR_R + .45) * TW * 1.414, (CHOIR_R + .45) * TH * 1.414, 0, 0, Math.PI * 2); ctx.fill(); }
   if (S.dj && S.dj.state === 'party') { const st = .45; for (let a = FLOOR.x0; a < FLOOR.x1 - .01; a += st) for (let b = FLOOR.y0; b < FLOOR.y1 - .01; b += st) { const c = ['#ff5fc8', '#39e1ff', '#b6ff3b', '#ffd36b'][(Math.floor((a + b) / st + S.t * 4)) % 4]; box(ctx, a, b, a + st, b + st, 0, 1, c, shade(c, .7), shade(c, .55)); } }
-  const list = [];
-  const add = (gx, gy, f) => list.push({ k: gx + gy, f });
-  const addP = (gx, gy, f) => add(gx, gy, () => { const q = iso(gx, gy); small(q.x, q.y, f); });
+  DLn = 0;
+  const add = (gx, gy, f, a) => dlPush(gx, gy, f, a, false);
+  const addP = (gx, gy, f, a) => dlPush(gx, gy, f, a, true); // people: smaller in Porto (see small)
   for (const dd of S.city.deco) {
     const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd) }[dd.t];
     add(dd.gx, dd.gy, S.perks.has('cartazes') && posterSpots(dd) ? () => { fn(); if (dd.t === 'column') drawColumnProtest(); posterSpots(dd).forEach(([a, b, z, k]) => { const q = iso(a, b, z); drawPoster(q.x, q.y, k); }); } : fn);
   }
   drawFloorBanners();
   if (S.stains) { S.stains = S.stains.filter(b => (b.t -= 1 / 60) > 0); for (const b of S.stains) { const q = iso(b.gx, b.gy); ctx.globalAlpha = Math.min(1, b.t / 10); ell(ctx, q.x, q.y, 2.5, '#7a0b12'); R(Math.round(q.x) + 2, Math.round(q.y), 2, 1, '#b3121b'); ctx.globalAlpha = 1; } }
-  if (S.wounded) S.wounded.forEach(w => addP(w.gx, w.gy, () => drawWounded(w)));
-  S.tents.forEach(t => add(t.gx, t.gy, () => drawTent(t)));
-  S.stations.forEach(s => add(s.gx, s.gy, () => drawStation(s)));
-  S.crates.forEach(c => add(c.gx, c.gy, () => drawCrate(c)));
+  if (S.wounded) for (const w of S.wounded) addP(w.gx, w.gy, drawWounded, w);
+  for (const t of S.tents) add(t.gx, t.gy, drawTent, t);
+  for (const s of S.stations) add(s.gx, s.gy, drawStation, s);
+  for (const c of S.crates) add(c.gx, c.gy, drawCrate, c);
   if (S.prPaper) add(S.prPaper.gx, S.prPaper.gy, () => drawPaper(S.prPaper));
-  S.residents.forEach(r => addP(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); if (r.stun > 0) return drawLying(q.x, q.y, r.look); guy(q.x, q.y - (S.winning ? Math.round(Math.abs(Math.sin(S.t * 7 + (r.step || 0))) * 3) : 0), { ...r.look, moving: r.moving, step: r.step, flip: r.flip, back: r.back }); if (r.chainK != null && S.chain && S.chain.helmet) { R(q.x - 3, q.y - 17, 7, 3, '#2f6bff'); R(q.x - 2, q.y - 17, 2, 1, '#9fd0ff'); } }));
-  S.arrivals.forEach(a => addP(a.gx, a.gy, () => drawArrival(a)));
-  S.police.forEach(o => addP(o.gx, o.gy, () => drawCop(o)));
+  for (const r of S.residents) addP(r.gx, r.gy, drawResident, r);
+  for (const a of S.arrivals) addP(a.gx, a.gy, drawArrival, a);
+  for (const o of S.police) addP(o.gx, o.gy, drawCop, o);
   if (S.sax) addP(S.sax.gx, S.sax.gy, () => drawSax(S.sax));
-  if (S.party) for (const m of S.party) addP(m.gx, m.gy, () => drawPartier(m));
-  if (S.kettle) for (const m of [...(S.kettle.neg || []), ...(S.kettle.crowd || [])]) addP(m.gx, m.gy, () => drawNeg(m));
+  if (S.party) for (const m of S.party) addP(m.gx, m.gy, drawPartier, m);
+  if (S.kettle) { for (const m of S.kettle.neg || []) addP(m.gx, m.gy, drawNeg, m); for (const m of S.kettle.crowd || []) addP(m.gx, m.gy, drawNeg, m); }
   addP(S.player.gx, S.player.gy, drawPlayer);
   // the human chain: drawn with the residents who form it (see update)
   if (S.bikes) S.bikes.riders.forEach((r, i, all) => r.vis !== false && addP(r.gx, r.gy, () => { const q = iso(r.gx, r.gy); bike(q.x, q.y, r.flip, r.col, 5); const lead = S.bikes.path ? i === 0 : i === all.length - 1; if (lead && S.bikes.woman) drawLeader(q.x, q.y - 5, r.flip); else { guy(q.x, q.y - 5, { ...r.look, moving: true, step: S.t * 8, flip: r.flip }); if (lead) drawMegaphone(q.x, q.y - 5, r.flip); } }));
@@ -3914,7 +4011,7 @@ function draw() {
   if (S.drums) S.drums.crew.forEach(m => addP(m.gx, m.gy, () => drawDrummer(m, S.drums.kind)));
   if (S.choir) { const c = S.choir; c.members.forEach(m => addP(m.gx, m.gy, () => drawChorister(m, c))); }
   if (S.dj) { const d = S.dj; addP(d.gx, d.gy, () => drawDJ(d)); d.followers.forEach((f, i) => addP(f.gx, f.gy, () => drawDancer(f, i))); d.recruits.forEach((f, i) => addP(f.gx, f.gy, () => drawDancer(f, i))); }
-  list.sort((a, b) => a.k - b.k).forEach(o => o.f());
+  dlDraw();
 
   // night
   if (d > 0) {
@@ -3955,36 +4052,44 @@ function draw() {
 
 /* ================= hud ================= */
 let ctxCache = null;
+// the HUD touches the page only where something changed: writing the same number, width or button again still makes
+// the browser lay the page out again, ten times a second
+const setTx = (el, v) => { v = String(v); if (el.textContent !== v) el.textContent = v; };
+const setHt = (el, v) => { if (el._ht !== v) { el._ht = v; el.innerHTML = v; } }; // only hud() writes these buttons
+const setSt = (el, k, v) => { if (el.style[k] !== v) el.style[k] = v; };
+const setAt = (el, k, v) => { if (el.getAttribute(k) !== v) el.setAttribute(k, v); };
+const setDis = (el, v) => { if (el.disabled !== v) el.disabled = v; };
+const PM_RED = { op: null, tf: null }; // the Government's face: what hud() last set
 function hud() {
-  $('sT').textContent = S.tents.length; $('sP').textContent = fmt(crowd()); $('sSup').textContent = S.supplies; $('sD').textContent = S.detained;
+  setTx($('sT'), S.tents.length); setTx($('sP'), fmt(crowd())); setTx($('sSup'), S.supplies); setTx($('sD'), S.detained);
   const h = Math.floor(S.clock % 24), m = Math.floor((S.clock % 1) * 60 / 10) * 10;
-  $('clock').textContent = `${L('DIA', 'DAY')} ${1 + Math.floor((S.clock - 6) / 24)} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  $('bM').style.width = S.morale + '%'; $('bS').style.width = S.support + '%'; $('bP').style.width = S.pressure + '%';
+  setTx($('clock'), `${L('DIA', 'DAY')} ${1 + Math.floor((S.clock - 6) / 24)} · ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+  setSt($('bM'), 'width', +S.morale.toFixed(1) + '%'); setSt($('bS'), 'width', +S.support.toFixed(1) + '%'); setSt($('bP'), 'width', +S.pressure.toFixed(1) + '%'); // tenths: the same number reads back the same
   { const d = S.city.donkey && (S.donkey === 'giant' ? 'Burro +25%' : S.donkey === 'small' ? 'Burro +10%' : ''), el = $('dTag'); el.hidden = !d; if (d && el.textContent !== d) el.textContent = d; } // Lisboa: the donkey's bonus on the pressure
   const play = mode === 'play';
   // the Government: laughs while the pressure is low, then gets worried; smug during a raid, a devil inside the kettle,
   // giving in when the square wins; the «Habitação» folder goes behind his back as the pressure rises
   const pr = S.pressure, K = S.kettle, devil = !!(K && (K.phase === 'wait' || K.phase === 'charge')), raidOn = !!(S.raid && !S.patrolRaid && S.police.length);
   let ps = pr < 35 ? 0 : pr < 70 ? 1 : 2; if (devil || raidOn) ps = 0; if (S.winning) ps = 2;
-  ['pose0', 'pose1', 'pose2'].forEach((id, i) => { $(id).style.display = i === ps ? '' : 'none'; });
-  document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', (devil ? .9 : pr / 100 * .75).toFixed(2)));
-  $('pmTear').style.display = pr >= 85 && !devil && !raidOn ? '' : 'none';
+  ['pose0', 'pose1', 'pose2'].forEach((id, i) => setSt($(id), 'display', i === ps ? '' : 'none'));
+  { const op = (devil ? .9 : pr / 100 * .75).toFixed(2); if (PM_RED.op !== op) { PM_RED.op = op; document.querySelectorAll('#pm .red').forEach(el => el.setAttribute('opacity', op)); } }
+  setSt($('pmTear'), 'display', pr >= 85 && !devil && !raidOn ? '' : 'none');
   const loose = pr >= 90 && !devil && !raidOn;
-  $('pmSweat').style.display = loose ? '' : 'none'; $('pmCollar').style.display = loose ? '' : 'none'; $('pmTie').setAttribute('transform', loose ? 'rotate(14 60 62) translate(1 3)' : '');
-  $('pmFolder').style.display = ps === 0 && !devil && !S.winning ? '' : 'none'; $('pmFolderB').style.display = ps === 1 && !raidOn ? '' : 'none';
-  $('pmDevil').style.display = devil ? '' : 'none';
-  { const say = devil ? 'MUAHAHA' : S.winning ? L('CEDEMOS…', 'WE GIVE IN…') : raidOn ? L('ORDEM!', 'ORDER!') : ''; $('pmSay').style.display = say ? '' : 'none'; if ($('pmSayTx').textContent !== say) $('pmSayTx').textContent = say; }
-  $('pm').style.transform = devil ? `translateY(${Math.floor(S.t * 4) % 2}px)` : ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : '';
-  $('pm').setAttribute('aria-label', L('Humor do governo: ', 'Government’s mood: ') + (LANG === 'en' ? ['pleased', 'confused', 'defeated'] : ['contente', 'confuso', 'derrotado'])[ps]);
+  setSt($('pmSweat'), 'display', loose ? '' : 'none'); setSt($('pmCollar'), 'display', loose ? '' : 'none'); setAt($('pmTie'), 'transform', loose ? 'rotate(14 60 62) translate(1 3)' : '');
+  setSt($('pmFolder'), 'display', ps === 0 && !devil && !S.winning ? '' : 'none'); setSt($('pmFolderB'), 'display', ps === 1 && !raidOn ? '' : 'none');
+  setSt($('pmDevil'), 'display', devil ? '' : 'none');
+  { const say = devil ? 'MUAHAHA' : S.winning ? L('CEDEMOS…', 'WE GIVE IN…') : raidOn ? L('ORDEM!', 'ORDER!') : ''; setSt($('pmSay'), 'display', say ? '' : 'none'); setTx($('pmSayTx'), say); }
+  { const tf = devil ? `translateY(${Math.floor(S.t * 4) % 2}px)` : ps === 2 ? `rotate(${(3 + (pr - 70) / 10).toFixed(1)}deg) translateY(${Math.round((pr - 70) / 15)}px)` : ps === 1 ? 'rotate(-1.5deg)' : ''; if (PM_RED.tf !== tf) { PM_RED.tf = tf; $('pm').style.transform = tf; } }
+  setAt($('pm'), 'aria-label', L('Humor do governo: ', 'Government’s mood: ') + (LANG === 'en' ? ['pleased', 'confused', 'defeated'] : ['contente', 'confuso', 'derrotado'])[ps]);
   // computer (mouse): each button shows its key, e.g. Cordão (C)
   const kb = k => pcMQ.matches ? `<span class="key">(${k})</span>` : '', lab = (pt, sub, k) => `${T(pt)}${kb(k)}<small>${T(sub)}</small>`;
-  const bc = $('btnChain'); bc.innerHTML = lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger', 'Z'); bc.disabled = !play || S.chainCd > 0;
-  const bl = $('btnLive'); bl.innerHTML = lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir', 'X'); bl.disabled = !play || S.liveCd > 0;
-  { const h = lab('Montar', 'Construir', 'C'); if ($('btnBuild').innerHTML !== h) $('btnBuild').innerHTML = h; }
-  $('btnBuild').disabled = !play || !Object.entries(STATIONS).some(([k, d]) => !stationOf(k) && S.supplies >= d.cost);
-  const bv = $('btnVote'); bv.innerHTML = lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar', 'V'); bv.disabled = !play || S.asmCd > 0;
+  const bc = $('btnChain'); setHt(bc, lab('Cordão', S.chainCd > 0 ? Math.ceil(S.chainCd) + 's' : 'Proteger', 'Z')); setDis(bc, !play || S.chainCd > 0);
+  const bl = $('btnLive'); setHt(bl, lab(S.live > 0 ? '● Direto' : 'Direto', S.live > 0 ? 'No ar' : S.liveCd > 0 ? Math.ceil(S.liveCd) + 's' : 'Transmitir', 'X')); setDis(bl, !play || S.liveCd > 0);
+  setHt($('btnBuild'), lab('Montar', 'Construir', 'C'));
+  setDis($('btnBuild'), !play || !Object.entries(STATIONS).some(([k, d]) => !stationOf(k) && S.supplies >= d.cost));
+  const bv = $('btnVote'); setHt(bv, lab('Assembleia', S.asmCd > 0 ? Math.ceil(S.asmCd) + 's' : 'Votar', 'V')); setDis(bv, !play || S.asmCd > 0);
   ctxCache = contextAction(); const cb = $('ctxBtn');
-  if (ctxCache) { cb.hidden = false; cb.innerHTML = T(ctxCache.label) + kb(T('Espaço')); cb.disabled = !ctxCache.ok; } else cb.hidden = true;
+  if (ctxCache) { if (cb.hidden) cb.hidden = false; setHt(cb, T(ctxCache.label) + kb(T('Espaço'))); setDis(cb, !ctxCache.ok); } else if (!cb.hidden) cb.hidden = true;
 }
 
 /* ================= screens ================= */
