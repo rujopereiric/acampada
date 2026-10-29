@@ -4152,6 +4152,14 @@ let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
+  () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
+    <div><span class="when">${L('Todos os dias', 'Every day')} · 19:00</span><span class="what">Lisboa<small>${L('Rossio: A Acampada Resiste, protesto diário decidido em assembleia', 'Rossio: the camp resists, a daily protest decided in assembly')}</small></span></div>
+    <div><span class="when">${L('Todos os dias', 'Every day')} · 19:00</span><span class="what">Porto<small>${L('Praça D. João I: A Acampada Resiste, protesto diário decidido em assembleia', 'Praça D. João I: the camp resists, a daily protest decided in assembly')}</small></span></div>
+    <div><span class="when">${L('Qui 29', 'Thu 29')} · 18:30</span><span class="what">Castelo Branco<small>${L('Praça 25 de Abril: assembleia popular pela habitação', 'Praça 25 de Abril: people’s assembly for housing')}</small></span></div>
+    <div><span class="when">${L('Sex 30', 'Fri 30')} · 18:00</span><span class="what">Évora<small>${L('Praça do Giraldo: por mais habitação', 'Praça do Giraldo: for more housing')}</small></span></div>
+    <div><span class="when">${L('Sáb 31 e dom 1', 'Sat 31 & Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
+    <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques and Praça do Marquês. And dozens of other towns')}</small></span></div>
+  </div>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Castelo Branco · Acampada', 'Castelo Branco · Camp')}</p><div class="rule"></div>
     <p class="t">${L('Assembleia popular pela habitação', 'People’s assembly for housing')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Quinta<br><b>29 out. 2026</b>', 'Thursday<br><b>29 Oct 2026</b>')}<br><b>18:30</b></div><div><b>Praça 25 de Abril</b><br>Castelo Branco</div></div>
@@ -4160,13 +4168,6 @@ const ADS = [
     <p class="t">${L('A Acampada Resiste', 'The camp resists')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Quinta<br><b>29 out. 2026</b>', 'Thursday<br><b>29 Oct 2026</b>')}<br><b>19:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
     <p class="src">${L('Depois de mais um despejo no Rossio, a assembleia decidiu: protesto todos os dias às 19h. Aparece e traz quem puderes!', 'After another eviction at Rossio, the assembly decided: a protest every day at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
-  () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
-    <div><span class="when">${L('Todos os dias', 'Every day')} · 19:00</span><span class="what">Lisboa<small>${L('Rossio: A Acampada Resiste, protesto diário decidido em assembleia', 'Rossio: the camp resists, a daily protest decided in assembly')}</small></span></div>
-    <div><span class="when">${L('Qui 29', 'Thu 29')} · 18:30</span><span class="what">Castelo Branco<small>${L('Praça 25 de Abril: assembleia popular pela habitação', 'Praça 25 de Abril: people’s assembly for housing')}</small></span></div>
-    <div><span class="when">${L('Sex 30', 'Fri 30')} · 18:00</span><span class="what">Évora<small>${L('Praça do Giraldo: por mais habitação', 'Praça do Giraldo: for more housing')}</small></span></div>
-    <div><span class="when">${L('Sáb 31 e dom 1', 'Sat 31 & Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
-    <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques and Praça do Marquês. And dozens of other towns')}</small></span></div>
-  </div>${CHECK()}</div>`],
   () => ['', `<div class="ad center"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="p-red rough">${L('14 de novembro', '14 November')}</h2><p class="p-big rough">${L('Casa para viver', 'Homes to live in')}</p>
     <p class="p-mid rough">${L('Não nos vão roubar<br>o direito a morar', 'They won’t steal<br>our right to a home')}</p>
     <div class="agenda" style="color:#fff"><div><span class="when">15:00</span><span class="what">Lisboa<small>Alameda D. Afonso Henriques</small></span></div>
