@@ -6,7 +6,7 @@
 import { OBST } from './personagens.js';
 
 const HOLD = 6e3; // how long a peg or an end waits for the second person
-const TENTS_MAX = 8, TENT_EVERY = 150e3, BANNER_OPEN = 180e3, BANNER_EVERY = 120e3;
+const TENTS_MAX = 8, TENT_EVERY = 20e3, BANNER_OPEN = 180e3, BANNER_EVERY = 120e3; // TENT_EVERY: after one goes up, the next to pitch
 const SLOGANS = 15; // multiplayer.html PHRASES: the banner carries one of them
 const rnd = (a, b) => a + Math.random() * (b - a);
 // the square's benches and trees (multiplayer.html: makeDecor): nothing is laid on top of them
@@ -14,13 +14,24 @@ const DECOR = [[4, 2], [2, 5], [2, 16], [20, 5], [20, 16], [19, 3], [3, 19]];
 
 export class Jogos {
   constructor(sq, W, H) { this.sq = sq; this.W = W; this.H = H; this.id = 1; this.tent = null; this.built = []; this.banner = null; this.nextTent = 0; this.nextBanner = 0; }
+  // where to lay a game: never behind the carnation (on the screen the plinth, its posters and the stem cover it), and
+  // of the places that fit, the freest one (furthest from the things, the tents and the people around)
   spot(pad) {
-    const taken = [...this.built, this.tent, this.banner].filter(Boolean);
-    for (let i = 0; i < 60; i++) {
+    const taken = [...this.built, this.tent, this.banner].filter(Boolean), avatars = [...this.sq.people.values()].filter(p => p.name && p.av);
+    const [cx, cy] = OBST[0], d0 = cx + cy;
+    let best = null, bs = -1;
+    for (let i = 0; i < 80; i++) {
       const x = rnd(2.5, this.W - 2.5), y = rnd(2.5, this.H - 2.5);
-      if (OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad) && DECOR.every(([dx, dy]) => Math.hypot(x - dx, y - dy) > 1.6) && taken.every(o => Math.hypot(x - o.x, y - o.y) > 2.2)) return [x, y];
+      if (x + y < d0 + .8 && x + y > d0 - 11 && Math.abs((x - y) - (cx - cy)) < 3.6) continue; // behind the carnation
+      if (!(OBST.every(([ox, oy, r]) => Math.hypot(x - ox, y - oy) > r + pad) && DECOR.every(([dx, dy]) => Math.hypot(x - dx, y - dy) > 1.6) && taken.every(o => Math.hypot(x - o.x, y - o.y) > 2.2))) continue;
+      let sc = 4; // how free: the distance to the nearest thing, up to 4 tiles
+      for (const [ox, oy, r] of OBST) sc = Math.min(sc, Math.hypot(x - ox, y - oy) - r);
+      for (const [dx, dy] of DECOR) sc = Math.min(sc, Math.hypot(x - dx, y - dy) - .6);
+      for (const o of taken) sc = Math.min(sc, Math.hypot(x - o.x, y - o.y) - 1);
+      for (const p of avatars) sc = Math.min(sc, Math.hypot(x - p.x, y - p.y) + .4);
+      if (sc > bs) { bs = sc; best = [x, y]; }
     }
-    return null;
+    return best;
   }
   pub() {
     const t = this.tent, b = this.banner, now = Date.now(), who = h => h && h.until > now ? h.n : '';

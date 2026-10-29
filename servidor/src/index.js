@@ -9,7 +9,7 @@ import { Personagens, NPC_KINDS } from './personagens.js';
 import { Jogos } from './jogos.js';
 
 const OPEN_BEFORE = 60, DEFAULT_HOURS = 3, CLEANUP_AFTER = 24 * 3600e3;
-const MAX_AVATARS = 250, MAX_GHOSTS = 100, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 30e3, MURAL_MAX = 140, HIDE_REPORTS = 3, AVISO_MAX = 160;
+const MAX_AVATARS = 250, MAX_GHOSTS = 100, TICK_MS = 250, SAY_MS = 2500, MURAL_MS = 10e3, MURAL_MAX = 140, HIDE_REPORTS = 3, AVISO_MAX = 160;
 const W = 22, H = 22; // the square in tiles
 const CITIES = ['Faro', 'Coimbra', 'Braga', 'Lisboa', 'Porto'];
 const LOOKS = 5 * 6 * 9; // the old looks: one number (skin x hair x shirt)
@@ -40,7 +40,13 @@ const STRIKES = 3, STRIKE_WIN = 10 * 60e3, CASTIGO_MS = 10 * 60e3;
 // connections: whoever is already in the square stays (the square itself puts out those who misbehave inside).
 const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes']);
 // actions that change nothing for the others (or only answer the one who asked): not counted in LOUD_MAX
-const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1']);
+const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1', 'hb']);
+// IDLE_MS: someone who does nothing for 5 minutes leaves the square (their place goes to others). GONE_MS: a phone that
+// stopped answering (no sign of life, not even the page's heartbeat every 25 s) is taken out, instead of standing still
+// in the square until the connection finally drops
+const IDLE_MS = 5 * 60e3, GONE_MS = 150e3;
+// one name per square: compared without capitals or accents
+const nameKey = n => String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 // the most tents a square can hold (index.html: CITIES size, columns x rows); anything above it can't be a real game
 const CELLS = { Porto: 100, Lisboa: 128, Coimbra: 132, Braga: 140, Faro: 144 };
 const DJ_ON = 180e3, DJ_CYCLE = 600e3; // the DJ p.45: 3 minutes in every 10 (multiplayer.html walks him from the same clock)
@@ -342,11 +348,12 @@ export class Praca {
     if (!st.open) { server.send(JSON.stringify({ t: 'closed', next: st.next, by: st.by })); server.close(4000, 'fechado'); return new Response(null, { status: 101, webSocket: client }); }
     const mine = [...this.people.values()].filter(q => q.key === key).length;
     if (mine >= PER_IP || this.people.size >= MAX_SOCKETS) { server.send(JSON.stringify({ t: 'busy' })); server.close(4001, 'demasiadas'); return new Response(null, { status: 101, webSocket: client }); }
-    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), loud: 0, loudWin: 0, at: Date.now(), dirty: true };
+    const p = { id: this.nextId++, key, dev: '', ws: server, name: null, mode: 'apoio', av: false, pxWin: 0, pxN: 0, city: '', x: W / 2, y: H - 2, look: 0, emote: 0, lastSay: 0, lastMural: 0, msgs: 0, winStart: Date.now(), loud: 0, loudWin: 0, at: Date.now(), seen: Date.now(), act: Date.now(), dirty: true };
     this.people.set(server, p);
     server.addEventListener('message', ev => {
       const d = ev.data;
       if (typeof d !== 'string' || d.length > MSG_MAX) { this.strike(key, 'grandes'); try { server.close(1009, 'grande'); } catch (e) {} return this.gone(server, p); } // binary or huge: not from the game
+      p.seen = Date.now(); if (d.length > 12 || !d.includes('"hb"')) p.act = p.seen; // the heartbeat says «still here», not «doing something»
       this.onMessage(p, d);
     });
     const bye = () => this.gone(server, p);
@@ -373,7 +380,15 @@ export class Praca {
     if (m.t === 'hello' && !p.name) {
       p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : '';
       if (this.banned(p.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} return; }
-      const n = clean(m.name, 16); p.name = n.ok ? n.text : 'Anónimo';
+      const n = clean(m.name, 16); let name = n.ok ? n.text : 'Anónimo';
+      // the same browser coming back (a phone that changed network, a second tab): the old connection goes, so the
+      // same person never stands twice in the square
+      if (p.dev) for (const [ws, q] of [...this.people]) if (q !== p && q.dev === p.dev && q.name) { this.send(q, { t: 'outra' }); try { ws.close(4007, 'outra ligação'); } catch (e) {} this.gone(ws, q); }
+      // a name already in the square (someone else): choose another one. «Anónimo» (a name that didn't pass) gets a number
+      const taken = new Set([...this.people.values()].filter(q => q !== p && q.name).map(q => nameKey(q.name)));
+      if (name === 'Anónimo') { let i = 2; const base = name; while (taken.has(nameKey(name))) name = base + ' ' + i++; }
+      else if (taken.has(nameKey(name))) { this.send(p, { t: 'nome' }); try { p.ws.close(4008, 'nome'); } catch (e) {} return this.gone(p.ws, p); }
+      p.name = name;
       const c = String(m.city || '').trim().slice(0, 24); const cc = clean(c, 24); p.city = CITIES.includes(c) ? c : cc.ok ? cc.text : 'Outra';
       // at the protest (in colour) or far away (a grey ghost): both walk and play; only the counts tell them apart
       p.mode = m.mode === 'praca' ? 'praca' : 'apoio';
@@ -508,7 +523,11 @@ export class Praca {
   tick() {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
     const now0 = Date.now();
-    for (const [ws, p] of [...this.people]) if (!p.name && now0 - p.at > HELLO_MS) { try { ws.close(4003, 'sem nome'); } catch (e) {} this.gone(ws, p); } // connected, never said who it is
+    for (const [ws, p] of [...this.people]) {
+      if (!p.name && now0 - p.at > HELLO_MS) { try { ws.close(4003, 'sem nome'); } catch (e) {} this.gone(ws, p); } // connected, never said who it is
+      else if (p.name && now0 - p.seen > (+this.env.GONE_MS || GONE_MS)) { try { ws.close(4009, 'sem sinal'); } catch (e) {} this.gone(ws, p); } // the phone stopped answering
+      else if (p.name && now0 - p.act > (+this.env.IDLE_MS || IDLE_MS)) { this.send(p, { t: 'inativo' }); try { ws.close(4006, 'inativo'); } catch (e) {} this.gone(ws, p); } // 5 minutes doing nothing
+    }
     if (this.pxOut.length) { this.broadcast({ t: 'pxs', l: this.pxOut }); this.pxOut = []; }
     const ch = []; for (const p of this.people.values()) if (p.name && p.av) {
       if (p.item && now0 > p.itemUntil) { p.item = 0; p.dirty = true; }

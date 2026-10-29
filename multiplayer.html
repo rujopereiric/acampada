@@ -757,9 +757,28 @@ function drawBanner(g, b, now) {
     [p0, p1].forEach((p, k) => { const held = b.e && b.e[k]; R(g, p.x, p.y - (held ? 7 : 3), 1, held ? 7 : 3, '#6b4a2b'); if (held) R(g, p.x - 1, p.y - 9, 3, 2, '#b6ff3b'); else if (Math.floor(now / 500) % 2) R(g, p.x - 1, p.y - 6, 3, 1, '#ffd23a'); });
     return;
   }
-  // open: two poles and the cloth between them
-  for (const p of [p0, p1]) R(g, p.x, p.y - 30, 1, 30, '#6b4a2b');
-  for (let x = Math.round(p0.x) + 1; x < Math.round(p1.x); x++) { const y = Math.round(p0.y + (p1.y - p0.y) * (x - p0.x) / (p1.x - p0.x)) - 28 + Math.round(Math.sin(now / 400 + x / 5)); R(g, x, y, 1, 14, '#f2efe6'); R(g, x, y, 1, 2, '#e2283b'); R(g, x, y + 12, 1, 2, '#e2283b'); }
+  // open: as wide as its slogan (one line, or two), between two poles
+  const G = bannerGeom(b), c0 = iso(b.x, b.y), x0 = Math.round(c0.x - G.w / 2), x1 = x0 + G.w, base = Math.round(c0.y);
+  for (const x of [x0 - 1, x1]) R(g, x, base - G.top - 2, 1, G.top + 2, '#6b4a2b');
+  for (let x = x0; x < x1; x++) { const y = base - G.top + Math.round(Math.sin(now / 400 + x / 5)); R(g, x, y, 1, G.h, '#f2efe6'); R(g, x, y, 1, 2, '#e2283b'); R(g, x, y + G.h - 2, 1, 2, '#e2283b'); }
+}
+// the banner's slogan in lines (one, or two when it is long), its letters' size and the cloth's size, in the square's
+// pixels: the cloth is drawn with the square, the letters on top, sharp (see draw)
+const BANNER_FS = 6, BANNER_LINE = 64, bannerCache = new Map();
+let measCtx = null;
+function bannerGeom(b) {
+  const t = PHRASES[b.f] ? L(PHRASES[b.f][0], PHRASES[b.f][1]).toUpperCase() : '', ready = !document.fonts || document.fonts.check('800 10px Jost');
+  const key = t + '|' + ready; let G = bannerCache.get(key); if (G) return G;
+  measCtx ||= document.createElement('canvas').getContext('2d'); measCtx.font = '800 100px Jost, sans-serif';
+  const wid = s => measCtx.measureText(s).width * BANNER_FS / 100;
+  let lines = [t];
+  if (wid(t) > BANNER_LINE && t.includes(' ')) { // two lines, cut at the space nearest the middle
+    let best = null; for (let i = t.indexOf(' '); i >= 0; i = t.indexOf(' ', i + 1)) { const a = t.slice(0, i), z = t.slice(i + 1), w = Math.max(wid(a), wid(z)); if (!best || w < best[0]) best = [w, a, z]; }
+    lines = [best[1], best[2]];
+  }
+  const fs = Math.min(BANNER_FS, BANNER_FS * BANNER_LINE * 1.25 / Math.max(...lines.map(wid))); // very long words: smaller letters
+  const lw = Math.max(...lines.map(l => wid(l) * fs / BANNER_FS)), w = Math.max(22, Math.ceil(lw) + 8), h = Math.ceil(lines.length * fs * 1.35) + 9;
+  G = { lines, fs, w, h, top: 27 + h }; bannerCache.set(key, G); return G; // top: above the heads and the names of the two holding it
 }
 let sparkleAt = 0; function sparkle() { sparkleAt = performance.now(); if (actx && !muted) { const t = actx.currentTime; [523, 659, 784].forEach((f, i) => { const o = actx.createOscillator(), gg = actx.createGain(); o.type = 'square'; o.frequency.value = f; gg.gain.setValueAtTime(.03, t + i * .09); gg.gain.exponentialRampToValueAtTime(.0001, t + i * .09 + .12); o.connect(gg).connect(actx.destination); o.start(t + i * .09); o.stop(t + i * .09 + .14); }); } }
 function drawTentCar(g, c, now) {
@@ -924,7 +943,7 @@ function connect() {
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
   ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike, won: wonMask() })); };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
-  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002 || ev.code === 4005) return; if (wantOpen) fail(); };
+  ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002 || ev.code === 4005 || ev.code === 4006 || ev.code === 4007 || ev.code === 4008) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
 }
 function fail() {
@@ -938,6 +957,8 @@ function fail() {
   setTimeout(() => { if (wantOpen && !ws) connect(); }, wait * 1000);
 }
 const send = m => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(m)); };
+// still here: every 25 s, so the square can tell a phone that stopped answering from someone standing still
+setInterval(() => { if (ws && ws.readyState === 1 && inside) ws.send('{"t":"hb"}'); }, 25e3);
 function addPerson(o) {
   const p = people.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false, e: 0, eAt: 0 };
   p.n = o.n; p.c = o.c; p.look = lookOf(o.l); p.w = o.w | 0;
@@ -1008,6 +1029,12 @@ function onMsg(m) {
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
   if (m.t === 'mural-tudo') { mural = []; renderMural(); return; } // the organisers cleared the wall
   if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
+  if (m.t === 'nome') { // that name is already in the square: back to the form, to choose another
+    closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} hideToast();
+    if (!$('fName') || $('ov').hidden) showStatus(lastStatus);
+    const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Já está alguém na praça com esse nome. Escolhe outro.', 'Someone in the square already has that name. Choose another one.'); if (b) b.disabled = false; if ($('fName')) $('fName').focus(); return; }
+  if (m.t === 'inativo') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} hideToast(); msgScreen(L('Saíste da praça', 'You left the square'), L('Ficaste 5 minutos sem fazer nada, por isso o teu lugar ficou livre para outra pessoa.', 'You did nothing for 5 minutes, so your place went to someone else.'), L('Voltar à praça', 'Back to the square'), () => showStatus()); return; }
+  if (m.t === 'outra') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} hideToast(); msgScreen(L('A Praça está aberta noutro lado', 'The Square is open somewhere else'), L('Entraste na praça noutra janela ou noutro separador. Cada pessoa só pode estar lá uma vez.', 'You entered the square in another window or tab. Each person can only be there once.'), L('Entrar aqui', 'Enter here'), () => showStatus()); return; }
   if (m.t === 'castigo') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} hideToast(); castigoScreen(); return; } // this network sent far too much (a script, or something stuck): out for 10 minutes
   if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
   if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
@@ -1141,7 +1168,10 @@ function draw(now) {
     const T = jogos.tent, B = jogos.banner, lab = (text, gx, gy, z, col) => { const q = S(gx, gy, z); if (q.x < -80 || q.x > cssW + 80 || q.y < -20 || q.y > cssH + 40) return; ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(text, q.x, q.y); ctx.fillStyle = col; ctx.fillText(text, q.x, q.y); };
     if (T) { lab(L('⛺ Montar tenda · 2 pessoas', '⛺ Pitch a tent · 2 people'), T.x, T.y, 14, '#ffd23a'); gameEnds(T).forEach(([ex, ey], k) => { if (T.p && T.p[k]) lab(T.p[k], ex, ey, 10, '#b6ff3b'); }); }
     if (B && !B.open) { lab(L('🏳️ Abrir faixa · 2 pessoas', '🏳️ Open a banner · 2 people'), B.x, B.y, 14, '#ffd23a'); gameEnds(B).forEach(([ex, ey], k) => { if (B.e && B.e[k]) lab(B.e[k], ex, ey, 12, '#b6ff3b'); }); }
-    if (B && B.open && PHRASES[B.f]) { const q = S(B.x, B.y, 21), w = 1.1 * TW * 2 * scale - 6, t = L(PHRASES[B.f][0], PHRASES[B.f][1]).toUpperCase(); let fs = 13; ctx.font = `800 ${fs}px Jost, sans-serif`; while (fs > 6 && ctx.measureText(t).width > w) { fs--; ctx.font = `800 ${fs}px Jost, sans-serif`; } ctx.fillStyle = '#b3121b'; ctx.fillText(t, q.x, q.y + fs / 2); }
+    if (B && B.open && PHRASES[B.f]) { // the slogan on the cloth (bannerGeom: its lines and size, in the square's pixels)
+      const G = bannerGeom(B), fs = G.fs * scale, lh = G.fs * 1.35; ctx.font = `800 ${fs.toFixed(1)}px Jost, sans-serif`; ctx.fillStyle = '#b3121b'; ctx.textBaseline = 'middle';
+      G.lines.forEach((l, i) => { const q = S(B.x, B.y, G.top - 4.5 - lh * (i + .5)); ctx.fillText(l, q.x, q.y); });
+      ctx.textBaseline = 'alphabetic'; }
   }
   const car = passing('carro'); streetSound(car);
   const onScreen = q => q.x > -20 && q.x < cssW + 20 && q.y > 0 && q.y < cssH + 40;
@@ -1505,6 +1535,10 @@ function hymn() { // voices holding long chords: a crowd singing, without playin
     g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.018, t + .6); g.gain.setValueAtTime(.018, t + 2.1); g.gain.linearRampToValueAtTime(.0001, t + 2.7); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 2.8); } });
 }
 let musicVol = 0, actx = null, master = null, nextT = 0, step = 0, muted = store.get('acampada-praca-mute') === '1';
+// phones put the sound to sleep (a call, the screen off, another app): any touch or key wakes it up again
+const audioWake = () => { if (actx && actx.state !== 'running') actx.resume().catch(() => {}); };
+for (const ev of ['pointerdown', 'touchend', 'keydown']) document.addEventListener(ev, audioWake, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') audioWake(); });
 function audioInit() {
   if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
@@ -1718,6 +1752,12 @@ async function showStatus(st) {
   closedScreen(st);
 }
 function wireLang() { for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); showStatus(lastStatus); }); }
+function msgScreen(title, text, btn, fn) { // a short message instead of the square, with one button
+  $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
+  $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${esc(title)}</p><p class="help">${esc(text)}</p><p><button class="btnp" id="msgBtn">${esc(btn)}</button></p>${FOOT()}`;
+  for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); showStatus(); });
+  $('msgBtn').addEventListener('click', fn);
+}
 function castigoScreen() {
   $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
   $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('Chegaram demasiados pedidos a partir desta rede', 'Too many requests came from this network')}</p><p class="help">${L('Para proteger a praça, esta rede fica de fora durante 10 minutos. Depois podes voltar a entrar.', 'To protect the square, this network stays out for 10 minutes. Then you can come back in.')}</p><p><button class="btnp" id="castigoBack">${L('Tentar outra vez', 'Try again')}</button></p>${FOOT()}`;
