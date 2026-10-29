@@ -1499,7 +1499,7 @@ function saveGame() {
     t: S.t, clock: S.clock, supplies: S.supplies, morale: S.morale, support: S.support, pressure: S.pressure, detained: S.detained, asmCd: S.asmCd, perks: [...S.perks],
     // a raid or a kettle in progress starts again when the square is loaded: no escaping the police by leaving
     nextRaid: raidOn ? S.clock + .3 : S.nextRaid, nextPatrol: S.nextPatrol, nextLimit: S.nextLimit, calmUntil: S.calmUntil || 0, calm: !!S.calm, prDone: !!S.prDone,
-    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: S.goal.base } : null, rebuildFrom: S.rebuildFrom || 0, cordDone: !!S.cordDone, liveDone: !!S.liveDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
+    finalK: K && K.final ? null : S.finalK === 'on' ? 'done' : S.finalK, rebuild: S.rebuild || 0, firstRaidDone: !!S.firstRaidDone, raidsOver: S.raidsOver || 0, tagged: !!S.tagged, goal: S.goal ? { i: S.goal.i, base: S.goal.base } : null, rebuildFrom: S.rebuildFrom || 0, zezN: S.zezN || 0, cordDone: !!S.cordDone, liveDone: !!S.liveDone, choirDay: S.choirDay, donkey: S.donkey, stat: S.stat,
     tents: S.tents.map(t => [t.tx, t.ty, t.color, t.occ]), stations: S.stations.map(st => [st.k, st.tx, st.ty]) } };
   try { localStorage.setItem(saveKey(cityIdx), JSON.stringify(d)); } catch (e) {}
 }
@@ -1507,7 +1507,7 @@ function loadGame(i) {
   const d = savedOf(i); if (!d) return false;
   cityIdx = i; newLevel(); const g = d.s;
   for (const t of S.tents) S.occ[t.ty * NX + t.tx] = null; S.tents = [];
-  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'calm', 'prDone', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom']) if (g[k] !== undefined) S[k] = g[k];
+  for (const k of ['t', 'clock', 'supplies', 'morale', 'support', 'pressure', 'detained', 'asmCd', 'nextRaid', 'nextPatrol', 'nextLimit', 'calmUntil', 'calm', 'prDone', 'finalK', 'rebuild', 'firstRaidDone', 'raidsOver', 'tagged', 'choirDay', 'donkey', 'goal', 'cordDone', 'liveDone', 'rebuildFrom', 'zezN']) if (g[k] !== undefined) S[k] = g[k];
   S.perks = new Set(g.perks || []); if (g.stat) S.stat = g.stat;
   for (const [tx, ty, color, occ] of g.tents || []) { if (S.occ[ty * NX + tx]) continue; const t = { kind: 'tent', tx, ty, gx: tx + .5 + rnd(-.08, .08), gy: ty + .5 + rnd(-.08, .08), color, occ, pop: 0, hit: false, l1: look(S.city.students), l2: look(S.city.students) }; S.occ[ty * NX + tx] = t; S.tents.push(t); }
   for (const [k, tx, ty] of g.stations || []) { if (S.occ[ty * NX + tx] || !STATIONS[k]) continue; const st = { kind: 'station', type: k, k, tx, ty, gx: tx + .5, gy: ty + .5, cd: 0 }; S.occ[ty * NX + tx] = st; S.stations.push(st); }
@@ -1816,9 +1816,9 @@ function contextAction() {
   if (S.winning && S.winT > 3) return { label: 'Continuar →', ok: true, fn: () => { S.winGo = true; } }; // after the win: you choose when to move on
   if (S.graf && S.graf.state === 'spray' && gd(p, S.graf) < 2.4) return { label: 'Travar o grafíti', ok: true, fn: () => { const g = S.graf; g.hits++; sparkle(g.gx, g.gy, 3, g.z + 10); tone(520 + g.hits * 40, .06, 'square', .03); } }; // Space, again and again (or tap the climber)
   if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 2) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
-  if (S.zez && gd(p, S.zez) < 1.6) { const z = S.zez, cd = S.zezCd > 0; // Porto: Zezinho goes live on TikTok, +5 support (once a minute)
-    return { label: z.live > 0 ? L('Zezinho em direto no TikTok', 'Zezinho live on TikTok') : cd ? L(`Live no TikTok · ${Math.ceil(S.zezCd)}s`, `TikTok live · ${Math.ceil(S.zezCd)}s`) : L('Pedir ao Zezinho um live no TikTok', 'Ask Zezinho to go live on TikTok'), ok: !cd && !(z.live > 0),
-      fn: () => { S.zezCd = 60; z.live = 7; z.wait = 7; z.moving = false; z.flip = p.gx - z.gx - (p.gy - z.gy) < 0; S.support = Math.min(100, S.support + 5); float(z.gx, z.gy, L('Live no TikTok! +5 de apoio', 'TikTok live! +5 support'), '#ff3b8b', 30); sfx('join'); } }; }
+  if (S.zez && gd(p, S.zez) < 1.6) { const z = S.zez, cd = S.zezCd > 0, done = (S.zezN || 0) >= ZEZ_LIVES; // Porto: Zezinho goes live on TikTok, +5 support (once a minute, 3 times a game)
+    return { label: z.live > 0 ? L('Zezinho em direto no TikTok', 'Zezinho live on TikTok') : done ? L('O Zezinho já fez os 3 lives', 'Zezinho has done his 3 lives') : cd ? L(`Live no TikTok · ${Math.ceil(S.zezCd)}s`, `TikTok live · ${Math.ceil(S.zezCd)}s`) : L(`Pedir ao Zezinho um live no TikTok (${ZEZ_LIVES - (S.zezN || 0)})`, `Ask Zezinho to go live on TikTok (${ZEZ_LIVES - (S.zezN || 0)})`), ok: !cd && !done && !(z.live > 0),
+      fn: () => { S.zezN = (S.zezN || 0) + 1; S.zezCd = 60; z.live = 7; z.wait = 7; z.moving = false; z.flip = p.gx - z.gx - (p.gy - z.gy) < 0; S.support = Math.min(100, S.support + 5); float(z.gx, z.gy, L('Live no TikTok! +5 de apoio', 'TikTok live! +5 support'), '#ff3b8b', 30); sfx('join'); } }; }
   if (Math.hypot(p.gx - (S.city.singAt || [CX, CY])[0], p.gy - (S.city.singAt || [CX, CY])[1]) < 2.2) { const n = people(); return { label: n < 12 ? 'Cantar Grândola · falta gente' : S.singCd > 0 ? 'Cantar Grândola ' + Math.ceil(S.singCd) + 's' : 'Cantar Grândola', ok: n >= 12 && S.singCd <= 0, fn: sing }; }
   for (const st of S.stations) {
     if (gd(p, st) > 1.25) continue;
@@ -1963,9 +1963,10 @@ function updReporter(dt) {
 }
 // Porto: Zezinho Bailarino walks round the square filming with his phone; he does nothing else. He goes home when the
 // riot police close the square, and comes back once it fills again.
+const ZEZ_DAY = 3, ZEZ_LIVES = 3; // Zezinho comes to the square on the third day, and goes live 3 times at most
 function updZez(dt) {
   if (!S.city.zez) return;
-  if (S.kettle || S.emptyK || S.clock < (S.emptyUntil || 0) || !S.tents.length) { S.zez = null; return; }
+  if (1 + Math.floor((S.clock - 6) / 24) < ZEZ_DAY || S.kettle || S.emptyK || S.clock < (S.emptyUntil || 0) || !S.tents.length) { S.zez = null; return; }
   const spot = () => { const f = freeTiles(); if (!f.length) return null; const [x, y] = pick(f); return [x + .5, y + .5]; };
   if (!S.zez) { const sp = spot(); if (!sp) return; S.zez = { gx: sp[0], gy: sp[1], tx: sp[0], ty: sp[1], wait: rnd(1, 3), step: 0, flip: false, back: false }; }
   const z = S.zez; if (S.zezCd > 0) S.zezCd -= dt; if (z.live > 0) z.live -= dt;
