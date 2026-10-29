@@ -32,10 +32,13 @@ const PER_IP = 60, MURAL_PER_IP = 10; // connections, and wall messages per minu
 // messages too big, painting faster than any hand) and that address is punished for 10 minutes.
 const MSG_MAX = 4096, BODY_MAX = 16384, REC_MAX = 1024, HELLO_MS = 15e3, LOUD_MAX = 15, MAX_SOCKETS = 900;
 const STRIKES = 3, STRIKE_WIN = 10 * 60e3, CASTIGO_MS = 10 * 60e3;
-// at the door (the Worker): more than HTTP_MAX requests in HTTP_WIN from one address to the square's addresses
-// (/gestao/api is not here: the organisers must always get in, even from a punished network, to pardon it; it has
-// its own lock, 10 wrong pass-phrases in 10 minutes, and Cloudflare Access in front)
-const HTTP_MAX = 40, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/estado', '/mural', '/recordes']);
+// at the door (the Worker): more than HTTP_MAX requests in HTTP_WIN from one address to what reaches the square.
+// Generous on purpose: at a protest a whole crowd on one phone network (one address) walks in at the same moment.
+// /estado and /mural are not counted: Cloudflare's copy answers them, they never reach the square. /gestao/api isn't
+// either: the organisers must always get in, even from a punished network, to pardon it (it has its own lock, 10
+// wrong pass-phrases in 10 minutes, and Cloudflare Access in front). A punishment at the door only stops new
+// connections: whoever is already in the square stays (the square itself puts out those who misbehave inside).
+const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes']);
 // actions that change nothing for the others (or only answer the one who asked): not counted in LOUD_MAX
 const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1']);
 // the most tents a square can hold (index.html: CITIES size, columns x rows); anything above it can't be a real game
@@ -141,7 +144,7 @@ export default {
     const ip = req.headers.get('CF-Connecting-IP') || 'local', now = Date.now();
     if (DOOR.has(url.pathname)) {
       const d = door(ip, now, +env.PORTA_MAX || HTTP_MAX); // PORTA_MAX: only for tests with many robots on one computer
-      if (d < 0) ctx.waitUntil(stub.fetch(new Request(new URL('/castigo', req.url), { method: 'POST', headers: { 'CF-Connecting-IP': ip, 'X-Motivo': 'pedidos' } })).catch(() => {})); // the square writes it down
+      if (d < 0) ctx.waitUntil(stub.fetch(new Request(new URL('/castigo', req.url), { method: 'POST', headers: { 'CF-Connecting-IP': ip, 'X-Motivo': 'pedidos' } })).catch(() => {})); // the square writes it down (for the management page; nobody is put out)
       if (d) return tooMany(Math.abs(d), h);
     }
     // what the square answers when an address is punished: the Worker remembers it, so the next ones stop at the door
@@ -241,7 +244,7 @@ export class Praca {
     this.fails = new Map(); // address key -> wrong pass-phrases in the last 10 minutes
     this.strikes = new Map(); // address key -> when it broke the limits (the last 10 minutes)
     this.castigo = new Map(); // address key -> { until, why }: punished addresses, 10 minutes
-    this.pxOut = new Map(); // strokes on the wall waiting for the next tick: person id -> [[i, c], ...]
+    this.pxOut = []; // strokes on the wall waiting for the next tick, in the order they came: [[person id, [[i, c], ...]], ...]
     this.cfg = { ...CFG0 };
     ctx.blockConcurrencyWhile(async () => { const saved = (await ctx.storage.get('cfg')) || {}; this.cfg = { ...CFG0, ...saved, npcs: { ...CFG0.npcs, ...(saved.npcs || {}) } }; if (!(saved.v >= 2)) { this.cfg.ciclistas = true; this.cfg.v = 2; } }); // v2: bicycles on by default
   }
@@ -318,16 +321,16 @@ export class Praca {
     if (this.strikes.size > 5000) this.strikes.clear();
     if (l.length >= STRIKES) this.punish(key, why);
   }
-  punish(key, why) {
+  punish(key, why, out = true) { // out: also put out whoever is in the square from that address
     const now = Date.now(), until = now + CASTIGO_MS; this.strikes.delete(key);
     this.castigo.set(key, { until, why, at: now }); if (this.castigo.size > 5000) { for (const [k, c] of this.castigo) if (c.until <= now) this.castigo.delete(k); }
-    for (const [ws, p] of [...this.people]) if (p.key === key) { this.send(p, { t: 'castigo', until }); try { ws.close(4005, 'castigo'); } catch (e) {} this.gone(ws, p); }
+    if (out) for (const [ws, p] of [...this.people]) if (p.key === key) { this.send(p, { t: 'castigo', until }); try { ws.close(4005, 'castigo'); } catch (e) {} this.gone(ws, p); }
   }
 
   async fetch(req) {
     const url = new URL(req.url);
     if (url.pathname === '/gestao/api') return this.admin(req);
-    if (url.pathname === '/castigo') { this.punish(await addrKey(req), plain(req.headers.get('X-Motivo'), 20) || 'pedidos'); return new Response('ok'); } // from the Worker (its door)
+    if (url.pathname === '/castigo') { this.punish(await addrKey(req), plain(req.headers.get('X-Motivo'), 20) || 'pedidos', false); return new Response('ok'); } // from the Worker (its door): new connections only
     if (url.pathname === '/recordes') return this.recordes(req);
     const st = await this.status();
     if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.djInfo(), aviso: this.cfg.aviso });
@@ -359,9 +362,11 @@ export class Praca {
       if (now - p.pxWin > 10e3) { p.pxWin = now; p.pxN = 0; }
       if (++p.pxN > PX_MSGS) { if (p.pxN === PX_MSGS + 1) this.strike(p.key, 'parede'); return; }
       if (!Array.isArray(m.a)) return;
-      const ok = this.pxOut.get(p.id) || [];
+      // everyone gets them with the next tick, all painters in one message, in the order they came (two people on the
+      // same brick: the last one wins for everybody, as on the server); one person's strokes in a row go together
+      const last = this.pxOut[this.pxOut.length - 1], ok = last && last[0] === p.id ? last[1] : [];
       for (const it of m.a.slice(0, PX_MAX)) { if (!Array.isArray(it)) continue; const i = it[0], c = it[1]; if (!Number.isInteger(i) || i < 0 || i >= PN || !Number.isInteger(c) || c < -1 || c > 15) continue; this.wallSet(i, c, p, now); ok.push([i, c]); }
-      if (ok.length) this.pxOut.set(p.id, ok); // everyone gets them with the next tick, all painters in one message
+      if (ok.length && ok !== (last && last[1])) this.pxOut.push([p.id, ok]);
       return;
     }
     if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) { if (p.msgs === 61) this.strike(p.key, 'mensagens'); return; } // flood guard
@@ -464,9 +469,9 @@ export class Praca {
     const city = CITIES.includes(m.city) ? m.city : null; if (!city) return Response.json({ erro: 'cidade' }, { status: 400 });
     const now = Date.now(), sent = (this.recBy.get(key) || []).filter(t => now - t < 3600e3);
     const before = this.recDump()[city] || {};
-    // a game takes minutes: more than 6 in an hour from one address is answered, not counted (a school sharing one
-    // address still gets its best ones in, just not every game)
-    if (sent.length >= 6) return Response.json({ before, novo: [] });
+    // a game takes minutes: more than 20 in an hour from one address is answered, not counted (a school or a phone
+    // network sharing one address still gets most of its games in)
+    if (sent.length >= 20) return Response.json({ before, novo: [] });
     sent.push(now); this.recBy.set(key, sent); if (this.recBy.size > 5000) this.recBy.clear();
     const int = (v, a, b) => Number.isInteger(v) && v >= a && v <= b ? v : null, novo = [];
     const put = (k, v, more) => { if (v == null) return; const old = before[k]; if (old == null || (more ? v > old : v < old)) { this.sql.exec('INSERT OR REPLACE INTO recordes (city, k, v) VALUES (?, ?, ?)', city, k, v); novo.push(k); } };
@@ -490,7 +495,7 @@ export class Praca {
   stop() { clearInterval(this.timer); this.timer = null; this.wallFlush(); }
   // everyone out: the square closed (by the clock or by the organisers)
   closeAll(st) {
-    if (this.pxOut.size) { this.broadcast({ t: 'pxs', l: [...this.pxOut] }); this.pxOut.clear(); }
+    if (this.pxOut.length) { this.broadcast({ t: 'pxs', l: this.pxOut }); this.pxOut = []; }
     this.broadcast({ t: 'closed', next: st.next, by: st.by });
     for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} }
     this.people.clear(); this.stop();
@@ -504,7 +509,7 @@ export class Praca {
     // targets that changed (where each avatar is walking to), 4 times a second, in one message for everyone (what the server sends is free)
     const now0 = Date.now();
     for (const [ws, p] of [...this.people]) if (!p.name && now0 - p.at > HELLO_MS) { try { ws.close(4003, 'sem nome'); } catch (e) {} this.gone(ws, p); } // connected, never said who it is
-    if (this.pxOut.size) { this.broadcast({ t: 'pxs', l: [...this.pxOut] }); this.pxOut.clear(); }
+    if (this.pxOut.length) { this.broadcast({ t: 'pxs', l: this.pxOut }); this.pxOut = []; }
     const ch = []; for (const p of this.people.values()) if (p.name && p.av) {
       if (p.item && now0 > p.itemUntil) { p.item = 0; p.dirty = true; }
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }

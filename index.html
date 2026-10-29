@@ -610,7 +610,7 @@ const EN_RX = [
   [/^Pressão no máximo: sobe a moral acima de (\d+) para ganhar$/, 'Pressure at the top: get morale above $1 to win'],
   [/^Concerto a decorrer$/, 'Concert on'], [/^(.+) a tocar$/, '$1 playing'], [/^Concerto (.+)$/, 'Concert: $1']
 ];
-const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and a crew sweeps the square so the police have no excuse.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia, com cozinha, assembleia e música.": "Rossio became a small village, with a kitchen, an assembly and music.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. A Praça 8 de Maio encheu-se de estudantes e de vizinhos.": "Coimbra held out. Praça 8 de Maio filled with students and neighbours.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda: a assembleia no chafariz nunca parou.": "Braga held out without a single tent: the assembly at the fountain never stopped.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir! A Praça da Liberdade fez jus ao nome.": "Long live the Algarve resisting! Praça da Liberdade lived up to its name."};
+const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e depois de cada rusga a equipa de limpeza lava a praça.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and after each raid the cleaning crew washes the square.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia, com cozinha, assembleia e música.": "Rossio became a small village, with a kitchen, an assembly and music.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. A Praça 8 de Maio encheu-se de estudantes e de vizinhos.": "Coimbra held out. Praça 8 de Maio filled with students and neighbours.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda: a assembleia no chafariz nunca parou.": "Braga held out without a single tent: the assembly at the fountain never stopped.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir! A Praça da Liberdade fez jus ao nome.": "Long live the Algarve resisting! Praça da Liberdade lived up to its name."};
 function T(s) { // English for a message, when the game is in English
   if (LANG !== 'en' || typeof s !== 'string') return s;
   if (EN[s] != null) return EN[s];
@@ -767,7 +767,7 @@ const CITIES = [
   { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', violent: true, peopleK: .8, bikeK: .8, police: 1.3, cops: 5, patrols: true, helmets: true, cleaners: true,
     // artists who played at the Porto acampada (from @acampadaporto's daily programmes, October 2026)
     artists: ['Manel Cruz', 'Emmy Curl', 'Clã', 'Capicua', 'Egoísticos Implacáveis', 'Unsafe Space Garden', 'Sapatrux', 'Roídos na Acampada'], tag: 'Capacetes azuis e a equipa de limpeza', tagEn: 'Blue helmets and the cleaning crew',
-    intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e uma equipa varre a praça para a polícia não ter desculpas.',
+    intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e depois de cada rusga a equipa de limpeza lava a praça.',
     clear: 'O Porto aguentou as noites, debaixo da polícia mais violenta.',
     // as in the photos: the Palácio Atlântico (Millennium) on the west side, a raised road in front of it behind a granite
     // wall, stairs at the wall's ends with the two bronze horses on red granite pedestals, trees along the north side.
@@ -785,7 +785,7 @@ const CITIES = [
     L: [{ a: 0, b: 10, h: 64, style: 'atlantico', roof: '#b8ad94' }],
     R: [{ a: 2.6, b: 6.4, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 6.4, b: 10, h: 40, style: 'pombal', col: '#e3b54b', neon: '#ff5fc8' }],
     C: { h: 96, style: 'rialto', roof: '#b0a588' } },
-  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true,
+  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true, cleaners: true,
     // artists who played, or were announced, at the Rossio acampada (October 2026)
     artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro', tagEn: 'DJ p.45 and the donkey head',
     intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.',
@@ -2233,7 +2233,7 @@ function kettleLeave(wipe) {
   for (const st of S.stations) S.occ[st.ty * NX + st.tx] = null; S.stations = []; S.perks.delete('cartazes');
   S.detained += det; S.raidDetained += det; S.chain = null; for (const r of S.residents) r.chainK = null;
   // ...but the country saw it: morale to the top, support +20, the pressure stays; the people left outside start again
-  S.morale = 100; S.support = Math.min(100, S.support + 20);
+  S.morale = 100; S.support = Math.min(100, S.support + (S.city.violent && K.final ? 12 : 20)); // Porto: the rebuild after the last kettle is slower
   // after the final kettle the square is left empty: the rebuild starts from nothing
   // the square is left empty, only the wounded on the ground; the people outside come back once the police have gone
   S.emptyK = true; S.freshK = !K.final; S.residents = []; S.arrivals = [];
@@ -2764,6 +2764,7 @@ function startRaid(patrol, charge, force) { // force: the final kettle (Porto, L
   if (!patrol && !charge && !force && !S.bikes && !S.fasc && S.support >= 12 && Math.random() < .7) { startBikes(); const c = iso(CX, NY, 20); floatXY(c.x, c.y - 42, 'Contra a rusga!', '#39e1ff'); }
 }
 function onRaidEnd() {
+  if (S.city.cleaners && !S.patrolRaid) S.cleanAt = S.t + 8; // the cleaning crew, a few seconds after the police leave (Porto, Lisboa)
   if (!S.patrolRaid) { S.raidsOver = (S.raidsOver || 0) + 1; S.calmUntil = S.clock + (S.calm ? 36 : 12); if (S.stat) S.stat.raids++; } // patrols don't count; after a raid, 12 h of rest (calm mode: the next dawn raid is two days later)
   S.harmless = false;
   S.vans = []; S.kettle = null; saxLeave(); if (S.finalK === 'on') S.finalK = 'done';
@@ -2797,15 +2798,20 @@ function updEvents(dt, hr) {
     if (!S.hcrate && S.helmets === 0 && !S.kettle) { S.helmetT -= dt; if (S.helmetT <= 0) { const side = Math.random() < .5; S.hcrate = { gx: side ? rnd(1, NX - 1) : NX + .25, gy: side ? NY + .25 : rnd(1, NY - 1), life: 30 }; const q = iso(S.hcrate.gx, S.hcrate.gy, 14); floatXY(q.x, q.y, 'Capacetes!', '#39e1ff'); S.helmetT = 70; } }
     if (S.hcrate) { S.hcrate.life -= dt; if (gd(S.hcrate, p) < .7) { S.helmets = 2; float(p.gx, p.gy, 'Capacetes: próximos 2 cordões', '#39e1ff', 26); sparkle(S.hcrate.gx, S.hcrate.gy, 10, 6); sfx('crate'); S.hcrate = null; } else if (S.hcrate.life <= 0) S.hcrate = null; }
   }
-  // Porto: cleaning crew before dawn
-  if (c.cleaners && !S.cleaners && !S.swept && !S.raid && S.clock >= S.nextRaid - 3.4 && S.clock < S.nextRaid - .5) {
+  // Porto and Lisboa: once the police have gone, the city's cleaning crew comes through and washes the square
+  if (c.cleaners && S.cleanAt && S.t >= S.cleanAt && !S.cleaners && !S.raid && !S.kettle) {
+    S.cleanAt = 0;
     S.cleaners = { crew: [1.5, 3.8, 6.2, 8.5].map((y, i) => ({ gx: (c.terrace ? c.terrace.w + .3 : -.2) - i * .4, gy: y * NY / 10, step: 0, flip: false, back: false, look: look(false) })) };
-    const q = iso(CX, CY, 30); floatXY(q.x, q.y, 'Limpeza: sem desculpas', '#4ba36f');
+    const q = iso(CX, CY, 30); floatXY(q.x, q.y, L('Depois da rusga, a equipa de limpeza', 'After the raid, the cleaning crew'), '#4ba36f');
   }
   if (S.cleaners) {
     let done = true;
-    for (const m of S.cleaners.crew) { if (!moveEnt(m, NX + .4, m.gy, 1.9, dt, true)) done = false; if (Math.random() < dt * 6) { const q = iso(m.gx, m.gy, 1); S.parts.push({ x: q.x - 4, y: q.y, vx: rnd(-8, -2), vy: rnd(-6, -1), life: .6, type: 'steam', col: '#ffffff' }); } }
-    if (done) { S.cleaners = null; S.swept = true; const q = iso(CX, CY, 30); floatXY(q.x, q.y, 'Praça limpa: rusga mais curta', '#4ba36f'); }
+    for (const m of S.cleaners.crew) {
+      if (!moveEnt(m, NX + .4, m.gy, 1.9, dt, true)) done = false;
+      if (Math.random() < dt * 6) { const q = iso(m.gx, m.gy, 1); S.parts.push({ x: q.x - 4, y: q.y, vx: rnd(-8, -2), vy: rnd(-6, -1), life: .6, type: 'steam', col: '#ffffff' }); }
+      if (S.stains) S.stains = S.stains.filter(b => Math.hypot(b.gx - m.gx, b.gy - m.gy) > 1.2); // what the raid left on the ground goes with the water
+    }
+    if (done) { S.cleaners = null; const q = iso(CX, CY, 30); floatXY(q.x, q.y, L('Praça lavada: como se nada tivesse acontecido', 'Square washed: as if nothing had happened'), '#4ba36f'); }
   }
   // a band that brings people (they join on their own): Coimbra's drums, Braga's tuna, Faro's neighbourhood march.
   // Faro (chapter 1) gets the most help, Braga the least; Lisboa and Porto have their own (DJ, choir, donkey, helmets)
@@ -3144,7 +3150,8 @@ function update(dt) {
   if (S.emptyK && !S.kettle) { S.emptyK = false; S.emptyUntil = S.clock + 4; } // once the riot police have gone: 4 more hours of an empty square
   const emptyNow = S.emptyK || S.clock < (S.emptyUntil || 0);
   if (S.freshK && !emptyNow) { S.freshK = false; for (let i = 0; i < 3; i++) { const t = addTent(); if (t) { t.occ = 2; t.pop = .4; } } const c = iso(CX, NY); floatXY(c.x, 70, L('Quem ficou de fora volta a montar as primeiras tendas', 'Those left outside pitch the first tents again'), '#b6ff3b'); }
-  if (!S.kettle && !emptyNow) S.arrivalT -= dt * night * evening * slow; // a kettle, and the empty square after it: nobody gets in
+  const rebuildK = S.city.violent && S.finalK === 'done' && S.tents.length < (S.rebuild || 0) ? .6 : 1; // Porto, rebuilding after the last kettle: people come back more slowly
+  if (!S.kettle && !emptyNow) S.arrivalT -= dt * night * evening * slow * rebuildK; // a kettle, and the empty square after it: nobody gets in
   if (S.arrivalT <= 0) { spawnArrival(); S.arrivalT = Math.max(1.1, 5.5 - S.support * .045) * rnd(.7, 1.3); }
   const joinR = S.perks.has('megafone') ? 1.3 : .9, info = stationOf('info');
   for (const a of S.arrivals) {
@@ -3226,6 +3233,11 @@ function update(dt) {
         if (S.kettle) kettleSpawn(v);
         else if (S.riot) { n = S.city.violent ? 10 : S.city.rough ? 9 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, dog: false, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
         else for (let i = 0; i < n; i++) S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'walk', target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true });
+        if (S.city.violent && !S.kettle) { // Porto: a fifth more officers, those with dogs, and a taser on every third of the others
+          const k = S.police.length, extra = Math.max(1, Math.round(k * .2));
+          S.police.forEach((o, i) => { if (!o.kettle && i % 3 === 1) o.taser = true; });
+          for (let i = 0; i < extra; i++) { const o = { ...S.police[i % k], gx: v.gx + rnd(-.6, .6), gy: NY + .7, dog: true, taser: false, target: null, prog: 0, step: rnd(0, 9), re: 0 }; if (o.form) o.form = [clamp(o.form[0] + (i % 2 ? .35 : -.35), .4, NX - .4), o.form[1] - .6]; S.police.push(o); }
+        }
         const q = iso(CX, NY); floatXY(q.x, 64, S.kettle ? 'Polícia de choque: estão a cercar a praça!' : S.riot ? 'Polícia de choque!' : v.patrol ? 'Patrulha!' : S.charge ? 'Carga policial!' : S.light ? 'Primeira rusga: poucos agentes' : 'Rusga de madrugada!', '#ff8aa8');
       }
     } else if (v.state === 'parked') { S.raidT += dt; if (!S.police.length) v.state = 'leave'; }
@@ -3266,6 +3278,14 @@ function update(dt) {
     }
   }
   updKettle(dt);
+  if (S.city.violent && !S.kettle && !(S.freeze > 0) && !S.harmless) { // Porto's raids: now and then a taser on someone close to an officer who carries one
+    S.zapT = (S.zapT ?? 3) - dt;
+    if (S.zapT <= 0) {
+      S.zapT = rnd(2.5, 5); let best = null, bd = 1.8;
+      for (const o of S.police) if (o.taser && !o.kettle && o.state !== 'back' && o.state !== 'form') for (const r of S.residents) if (!(r.stun > 0)) { const d = gd(o, r); if (d < bd) { bd = d; best = [o, r]; } }
+      if (best) { const [o, r] = best; (S.zaps ||= []).push({ a: { gx: o.gx, gy: o.gy }, b: { gx: r.gx, gy: r.gy }, t: .35 }); sfx('taser'); r.stun = 3; S.morale = Math.max(0, S.morale - 2); float(r.gx, r.gy, L('Taser!', 'Taser!'), '#ffd23a', 26); }
+    }
+  }
   S.police = S.police.filter(o => !o.done);
   if (S.standoff && S.van && S.van.state === 'parked') { // the line holds; a cordão or a live stream makes it more likely they pull back
     const so = S.standoff; if (!so.said) { so.said = true; floatXY(0, 0, 'A polícia de choque forma uma linha…', '#ff8aa8', { gx: CX, gy: NY - .5 }); }
@@ -3524,10 +3544,14 @@ function drawDog(x, y, flip, t) {
   bmp(ctx, DOG, DOG_PAL, x - 7, y - 10, 1, flip);
   if (Math.floor(t * 2.5) % 5 === 0) { const bx = flip ? x - 9 : x + 8; R(bx, y - 8, 1, 1, '#ffffff'); R(bx + (flip ? -1 : 1), y - 9, 1, 1, '#ffffff'); }
 }
+function copDog(o, x, y) { // a police dog on a lead, beside the officer
+  if (!o.dog) return;
+  const dx = x + (o.flip ? -11 : 11), dy = y + 3, hx = x + (o.flip ? -2 : 2), ex = dx + (o.flip ? -5 : 5); drawDog(dx, dy, o.flip, S.t + o.step); ctx.fillStyle = '#0b0a0a'; for (let i = 1; i < 6; i++) ctx.fillRect(Math.round(hx + (ex - hx) * i / 6), Math.round(y - 7 + (dy - 8 - (y - 7)) * i / 6), 1, 1); // the lead, from the hand to the collar
+}
 function drawCop(o) {
   if (o.riot) {
     const q = iso(o.gx, o.gy), x = Math.round(q.x), y = Math.round(q.y);
-    if (o.dog) { const dx = x + (o.flip ? -11 : 11), dy = y + 3, hx = x + (o.flip ? -2 : 2), ex = dx + (o.flip ? -5 : 5); drawDog(dx, dy, o.flip, S.t + o.step); ctx.fillStyle = '#0b0a0a'; for (let i = 1; i < 6; i++) ctx.fillRect(Math.round(hx + (ex - hx) * i / 6), Math.round(y - 7 + (dy - 8 - (y - 7)) * i / 6), 1, 1); } // the lead, from the hand to the collar
+    copDog(o, x, y);
     guy(x, y, { skin: '#d9a37a', hair: '#0b0a0a', shirt: '#11151f', pants: '#0b0d14', moving: o.moving, step: o.step, flip: o.flip, back: o.back });
     R(x - 3, y - 17, 7, 5, '#0b0a0a'); if (!o.back) R(x - 2, y - 14, 5, 2, '#3a4a5a'); // helmet and visor
     const sb = o.bang > 0 ? 2 : 0; ctx.fillStyle = 'rgba(160,190,220,.6)'; const sx = o.flip ? x - 6 : x + 2; ctx.fillRect(sx, y - 13 - sb, 5, 11); R(sx, y - 13 - sb, 5, 1, '#e6f6ff'); // the shield jumps when they bang on it
@@ -3539,8 +3563,9 @@ function drawCop(o) {
     return;
   }
   const q = iso(o.gx, o.gy), x = Math.round(q.x), y = Math.round(q.y);
+  copDog(o, x, y);
   guy(x, y, { skin: '#d9a37a', hair: '#141a33', shirt: '#1d2747', pants: '#141a33', moving: o.moving, step: o.step, flip: o.flip, back: o.back });
-  R(x - 3, y - 16, 7, 4, '#141a33'); if (!o.back) R(x - 2, y - 13, 5, 1, '#7fe7ff');
+  R(x - 3, y - 16, 7, 4, '#141a33'); if (!o.back) R(x - 2, y - 13, 5, 1, '#7fe7ff'); if (o.taser) R(x - 1, y - 6, 2, 2, '#ffd23a'); // the taser, on the belt
   ctx.fillStyle = 'rgba(190,225,255,.55)'; const sx = o.flip ? x - 6 : x + 2; ctx.fillRect(sx, y - 12, 5, 10); R(sx, y - 12, 5, 1, '#e6f6ff');
   if (o.state === 'back' && o.carry) guy(x + (o.flip ? 6 : -6), y, { skin: '#d9a37a', hair: '#3a2a1a', shirt: '#9a9fb0', pants: '#55596b', moving: true, step: o.step });
   if (o.state === 'dismantle') { R(x - 6, y - 21, 12, 3, '#1b1464'); R(x - 5, y - 20, Math.round(10 * o.prog / 2.2), 1, '#ff5fc8'); }

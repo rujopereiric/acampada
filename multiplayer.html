@@ -1008,9 +1008,7 @@ function onMsg(m) {
   if (m.t === 'mural-') { mural = mural.filter(x => x.id !== m.id); renderMural(); return; }
   if (m.t === 'mural-tudo') { mural = []; renderMural(); return; } // the organisers cleared the wall
   if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
-  if (m.t === 'castigo') { // this network sent far too much (a script, or something stuck): out for 10 minutes
-    wantOpen = false; closedByServer = true; const txt = L('Chegaram demasiados pedidos a partir desta rede. Tenta outra vez daqui a 10 minutos.', 'Too many requests came from this network. Try again in 10 minutes.');
-    const e = $('formErr'), b = $('enter'); if (e) e.textContent = txt; if (b) b.disabled = false; toast(txt, 8000); return; }
+  if (m.t === 'castigo') { closedByServer = true; wantOpen = false; inside = false; try { ws && ws.close(); } catch (e) {} hideToast(); castigoScreen(); return; } // this network sent far too much (a script, or something stuck): out for 10 minutes
   if (m.t === 'busy') { wantOpen = false; hideToast(); const e = $('formErr'), b = $('enter'); if (e) e.textContent = L('Há demasiadas ligações a partir desta rede. Tenta daqui a pouco.', 'Too many connections from this network. Try again in a bit.'); if (b) b.disabled = false; return; }
   if (m.t === 'closed') { inside = false; if (m.by) closedBy = m.by; closedByServer = true; wantOpen = false; try { ws && ws.close(); } catch (e) {} showStatus(); return; }
 }
@@ -1720,6 +1718,12 @@ async function showStatus(st) {
   closedScreen(st);
 }
 function wireLang() { for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); showStatus(lastStatus); }); }
+function castigoScreen() {
+  $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
+  $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('Chegaram demasiados pedidos a partir desta rede', 'Too many requests came from this network')}</p><p class="help">${L('Para proteger a praça, esta rede fica de fora durante 10 minutos. Depois podes voltar a entrar.', 'To protect the square, this network stays out for 10 minutes. Then you can come back in.')}</p><p><button class="btnp" id="castigoBack">${L('Tentar outra vez', 'Try again')}</button></p>${FOOT()}`;
+  for (const b of $('ovIn').querySelectorAll('.langsw button')) b.addEventListener('click', () => { LANG = b.dataset.l; store.set('acampada-lang', LANG); applyTexts(); castigoScreen(); });
+  $('castigoBack').addEventListener('click', () => location.reload());
+}
 function bannedScreen() {
   $('app').hidden = true; $('ov').hidden = false; clearTimeout(statusTimer);
   $('ovIn').innerHTML = `${langSw()}<h1 class="p-red rough">${L('A Praça', 'The Square')}</h1><p class="p-mid rough">${L('A organização retirou-te da praça', 'The organisers removed you from the square')}</p><p class="help">${L('Podes voltar quando esta praça fechar e abrir a próxima.', 'You can come back once this square closes and the next one opens.')}</p>${FOOT()}`;
