@@ -3233,11 +3233,6 @@ function update(dt) {
         if (S.kettle) kettleSpawn(v);
         else if (S.riot) { n = S.city.violent ? 10 : S.city.rough ? 9 : 8; for (let i = 0; i < n; i++) { const fx = clamp(CX - (n - 1) * .35 + i * .7, .4, NX - .4); S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'form', form: [fx, NY - .5], riot: true, dog: false, target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true }); } }
         else for (let i = 0; i < n; i++) S.police.push({ gx: v.gx + rnd(-.6, .6), gy: NY + .7, state: 'walk', target: null, prog: 0, step: rnd(0, 9), re: 0, flip: false, back: true });
-        if (S.city.violent && !S.kettle) { // Porto: a fifth more officers, those with dogs, and a taser on every third of the others
-          const k = S.police.length, extra = Math.max(1, Math.round(k * .2));
-          S.police.forEach((o, i) => { if (!o.kettle && i % 3 === 1) o.taser = true; });
-          for (let i = 0; i < extra; i++) { const o = { ...S.police[i % k], gx: v.gx + rnd(-.6, .6), gy: NY + .7, dog: true, taser: false, target: null, prog: 0, step: rnd(0, 9), re: 0 }; if (o.form) o.form = [clamp(o.form[0] + (i % 2 ? .35 : -.35), .4, NX - .4), o.form[1] - .6]; S.police.push(o); }
-        }
         const q = iso(CX, NY); floatXY(q.x, 64, S.kettle ? 'Polícia de choque: estão a cercar a praça!' : S.riot ? 'Polícia de choque!' : v.patrol ? 'Patrulha!' : S.charge ? 'Carga policial!' : S.light ? 'Primeira rusga: poucos agentes' : 'Rusga de madrugada!', '#ff8aa8');
       }
     } else if (v.state === 'parked') { S.raidT += dt; if (!S.police.length) v.state = 'leave'; }
@@ -3278,14 +3273,6 @@ function update(dt) {
     }
   }
   updKettle(dt);
-  if (S.city.violent && !S.kettle && !(S.freeze > 0) && !S.harmless) { // Porto's raids: now and then a taser on someone close to an officer who carries one
-    S.zapT = (S.zapT ?? 3) - dt;
-    if (S.zapT <= 0) {
-      S.zapT = rnd(2.5, 5); let best = null, bd = 1.8;
-      for (const o of S.police) if (o.taser && !o.kettle && o.state !== 'back' && o.state !== 'form') for (const r of S.residents) if (!(r.stun > 0)) { const d = gd(o, r); if (d < bd) { bd = d; best = [o, r]; } }
-      if (best) { const [o, r] = best; (S.zaps ||= []).push({ a: { gx: o.gx, gy: o.gy }, b: { gx: r.gx, gy: r.gy }, t: .35 }); sfx('taser'); r.stun = 3; S.morale = Math.max(0, S.morale - 2); float(r.gx, r.gy, L('Taser!', 'Taser!'), '#ffd23a', 26); }
-    }
-  }
   S.police = S.police.filter(o => !o.done);
   if (S.standoff && S.van && S.van.state === 'parked') { // the line holds; a cordão or a live stream makes it more likely they pull back
     const so = S.standoff; if (!so.said) { so.said = true; floatXY(0, 0, 'A polícia de choque forma uma linha…', '#ff8aa8', { gx: CX, gy: NY - .5 }); }
