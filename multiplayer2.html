@@ -1,0 +1,371 @@
+<!-- ... existing code ... -->
+    <button class="tb red" id="tMural"><span data-t="mural"></span><small data-t="muralS"></small></button>
+    <button class="tb ink" id="tAgenda"><span data-t="agenda"></span><small data-t="agendaS"></small></button>
+    <button class="tb purple" id="tWall"><span data-t="wall"></span><small data-t="wallS"></small></button>
+  </nav>
+  <!-- Tab de atalho para retomar o Mini Xadrez minimizado -->
+  <button id="chessMinTab" class="zoom" style="bottom:158px; width:auto; padding:0 10px; font-size:12px; font-weight:800; border-radius:4px; background:#9a6bff; color:#fff; display:flex; align-items:center; gap:4px; border:2px solid #fff;" hidden>♟️ XADREZ</button>
+  <aside id="side">
+    <div class="sheet" id="muralSheet" hidden>
+      <h3><span data-t="muralT"></span><button class="x" data-close>✕</button></h3>
+      <div class="who-list" id="whoList"></div>
+      <div id="muralList"></div>
+      <div class="write"><textarea id="muralIn" maxlength="140" rows="2"></textarea><button id="muralSend" data-t="send"></button></div>
+      <div class="note"><span id="muralErr"></span><span id="muralCnt">0/140</span></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Modal do Mini Xadrez (O Povo vs Fascistas) -->
+<div id="chessModal" class="sheet" style="top:10px; bottom:10px; max-height:none; z-index:50;" hidden>
+  <h3 style="display:flex; justify-content:space-between; align-items:center; color:#fde047;">
+    <span>♟️ MINI XADREZ: O POVO VS FASCISTAS</span>
+    <div style="display:flex; gap:6px;">
+      <button class="x" id="chessMinBtn" style="border:1px solid var(--paper); padding:2px 8px; font-size:12px;">_ Minimizar</button>
+      <button class="x" id="chessX">✕</button>
+    </div>
+  </h3>
+  <div style="flex:1; display:flex; flex-direction:column; gap:8px; overflow:auto; padding:8px;">
+    <!-- Status & Controlo -->
+    <div style="background:rgba(15,23,42,0.9); padding:8px; border-radius:4px; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+      <div style="display:flex; justify-content:space-between; border-bottom:1px solid #334155; padding-bottom:4px;">
+        <span style="color:#94a3b8;">TURNO:</span>
+        <span id="chess-turn" style="color:#34d399; font-weight:bold;">O POVO</span>
+      </div>
+      <div id="chess-mode-desc" style="font-size:11px; color:#fde047;">
+        Modo: Contra IA Fascista
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <button id="btn-chess-ai" class="tb green" style="padding:6px; font-size:12px;">🎮 JOGAR VS IA</button>
+        <button id="btn-chess-invite" class="tb purple" style="padding:6px; font-size:12px;">👥 DESAFIAR JOGADOR</button>
+      </div>
+      <div id="chess-status" style="padding:6px; background:#1e293b; border-radius:4px; font-size:11px; color:#fef08a;">
+        Derrota a tirania! Faz o teu movimento.
+      </div>
+
+      <!-- Guia de Peças recolhido por defeito -->
+      <details style="margin-top:8px;">
+        <summary style="cursor:pointer; color:#fde047; font-weight:bold;">📖 Guia das Peças</summary>
+        <div style="font-size:10px; margin-top:4px; display:flex; flex-direction:column; gap:2px; color:#cbd5e1;">
+          <div><b style="color:#34d399;">👑 Rei:</b> O Povo Unido</div>
+          <div><b style="color:#34d399;">♛ Dama:</b> Líder Rebelde</div>
+          <div><b style="color:#34d399;">♜ Torre:</b> Rádio Livre</div>
+          <div><b style="color:#34d399;">♞ Cavalo:</b> Ciclista</div>
+          <div><b style="color:#34d399;">♟ Peão:</b> Manifestante</div>
+          <hr style="border-color:#334155; margin:4px 0;">
+          <div><b style="color:#f87171;">👹 Fascistas:</b> Ditador, PIDE, Carro Blindado e Guardas</div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Canvas do Xadrez -->
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center;">
+      <canvas id="chess-cv" width="360" height="360" style="cursor:pointer; border-radius:4px; border:2px solid #334155; background:#020617; max-width:100%;"></canvas>
+      <div id="chess-over-overlay" style="display:none; position:absolute; inset:0; background:rgba(0,0,0,0.85); flex-direction:column; align-items:center; justify-content:center; padding:16px;">
+        <h2 id="chess-over-title" style="font-size:16px; font-weight:bold; margin-bottom:8px;">FIM DE JOGO</h2>
+        <p id="chess-over-desc" style="font-size:12px; color:#cbd5e1; margin-bottom:12px;"></p>
+        <button id="btn-chess-restart" class="tb green" style="padding:6px 16px; font-size:12px;">JOGAR NOVAMENTE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="wallSheet" hidden>
+<!-- ... existing code ... -->
+function makeDecor() {
+  DECOR = [];
+  for (const [x, y] of [[1, 1], [W - 1, 1], [1, H - 1], [W - 1, H - 1], [CXg, .8], [.8, CYg], [W - .8, CYg], [CXg, H - .8]]) DECOR.push({ gx: x, gy: y, k: 'lamp' });
+  for (const [x, y, r] of [[4, 2, 0], [2, 5, 1], [2, H - 6, 1], [W - 2, 5, 1], [W - 2, H - 6, 1]]) DECOR.push({ gx: x, gy: y, k: 'bench', r });
+  for (const [x, y] of [[W - 3, 3], [3, H - 3]]) DECOR.push({ gx: x, gy: y, k: 'tree' });
+  DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' });
+  DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' });
+  DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' });
+  DECOR.push({ gx: 4.8, gy: 16.5, k: 'xadrez' });
+}
+function drawDecor(g, d) {
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+  if (d.k === 'cravo') return drawCravo(g, d);
+  if (d.k === 'fonte') return drawFonte(g, d);
+  if (d.k === 'cantina') return drawCantina(g, d);
+  if (d.k === 'xadrez') return drawMesaXadrez(g, d);
+  if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
+  else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
+  else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
+}
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, xadrez: 1.2 }[d.k]));
+
+function drawMesaXadrez(g, d) {
+  const c = d.gx, r = d.gy;
+  box(g, c - 0.8, r - 0.8, c + 0.8, r + 0.8, 0, 8, '#5a3a2b', '#42281d', '#311c13');
+  const q = iso(c, r, 8), x = Math.round(q.x), y = Math.round(q.y);
+  R(g, x - 8, y - 5, 16, 10, '#f4f1ea');
+  for (let i = -6; i < 6; i += 4) {
+    for (let j = -3; j < 3; j += 2) {
+      if (((i + j) / 2) % 2 === 0) R(g, x + i, y + j, 3, 2, '#2b2640');
+    }
+  }
+}
+<!-- ... existing code ... -->
+function targets() {
+  const out = [];
+  for (const n of npcs.values()) out.push({ kind: n.k === 'operador' ? 'jornalista' : n.k, id: n.k === 'operador' ? -1 : n.id, x: n.x, y: n.y, z: 10 });
+  if (ball) out.push({ kind: 'bola', id: 0, x: ball.x, y: ball.y, z: 2 });
+  { const d = djPos(); if (d && !d.leaving) out.push({ kind: 'dj', id: 0, x: d.gx, y: d.gy, z: 10 }); }
+  out.push({ kind: 'xadrez', id: 99, x: 4.8, y: 16.5, z: 8 });
+  const bici = passing('bicicletada'); if (bici) for (let i = 0; i < BICI_N; i++) { const p = bici.at(i * 1.15); out.push({ kind: 'bicicletada', id: 0, x: p.gx, y: p.gy, z: 12 }); }
+<!-- ... existing code ... -->
+function interact(t) {
+  audioInit(); tourDone(2);
+  if (t.kind === 'xadrez') { openChessGame(); return; }
+  if (t.kind === 'jornalista') { send({ t: 'entrevista' }); return; }
+<!-- ... existing code ... -->
+  ctx.font = '700 13px Jost, sans-serif';
+  const words = text.split(' '), lines = []; let cur = '';
+  for (const w of words) { const t = cur ? cur + ' ' + w : w; if (ctx.measureText(t).width > 150 && cur) { lines.push(cur); cur = w; } else cur = t; }
+  lines.push(cur);
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + 14, h = lines.length * 15 + 8, a = age > life - 600 ? Math.max(0, 1 - (age - life + 600) / 600) : 1;
+  const bx = clamp(x - w / 2, 4, cssW - w - 4), by = Math.max(4, y - h);
+  ctx.globalAlpha = a;
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#0b0a0a'; ctx.lineWidth = 2;
+  ctx.fillRect(bx, by, w, h); ctx.strokeRect(bx, by, w, h);
+  ctx.beginPath(); ctx.moveTo(clamp(x, bx + 8, bx + w - 8) - 5, by + h - 1); ctx.lineTo(clamp(x, bx + 8, bx + w - 8), by + h + 6); ctx.lineTo(clamp(x, bx + 8, bx + w - 8) + 5, by + h - 1); ctx.fill(); ctx.stroke();
+  ctx.fillRect(clamp(x, bx + 8, bx + w - 8) - 4, by + h - 2, 8, 2);
+  ctx.fillStyle = '#0b0a0a'; ctx.textAlign = 'center';
+  lines.forEach((l, i) => ctx.fillText(l, bx + w / 2, by + 16 + i * 15));
+  ctx.globalAlpha = 1;
+}
+
+// Rótulo da Mesa de Xadrez na Praça
+function drawChessLabel() {
+  const S = (gx, gy, z) => { const q = iso(gx, gy, z); return { x: (q.x - lastView.ox) * scale, y: (q.y - lastView.oy) * scale }; };
+  const q = S(4.8, 16.5, 12);
+  if (q.x > -60 && q.x < cssW + 60 && q.y > -40 && q.y < cssH + 60) {
+    ctx.font = '800 11px Jost, sans-serif';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(11,10,10,.85)';
+    ctx.strokeText('♟️ Jogar Xadrez', q.x, q.y);
+    ctx.fillStyle = '#9a6bff';
+    ctx.fillText('♟️ Jogar Xadrez', q.x, q.y);
+  }
+function onMsg(m) {
+  if (wallMsg(m)) return;
+  if (m.t === 'mural-tudo') { mural = []; renderMural(); return; }
+  if (m.t === 'chess-invite') {
+    toast('♟️ Convite de Xadrez recebido na praça!', 6000);
+    return;
+  }
+  if (m.t === 'chess-move') {
+    if (typeof applyRemoteChessMove === 'function') applyRemoteChessMove(m.from, m.to);
+    return;
+  }
+  if (m.t === 'muralno') { const why = { espera: L(`Espera ${m.wait} s para escrever outra vez.`, `Wait ${m.wait} s to write again.`), links: L('Sem links nem endereços, por favor.', 'No links or addresses, please.'), palavras: L('Essa mensagem não passa no filtro da praça.', 'That message doesn’t pass the square’s filter.'), vazio: L('Escreve alguma coisa.', 'Write something.'), fechado: L('O mural está só para leitura.', 'The wall is read-only for now.') }[m.why] || ''; $('muralErr').textContent = why; $('muralErr').className = 'err'; return; }
+<!-- ... existing code ...=========
+  const d = djPos();
+  if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
+  djTag(d);
+  drawChessLabel();
+}
+
+function drawChessLabel() {
+  const S = (gx, gy, z) => { const q = iso(gx, gy, z); return { x: (q.x - lastView.ox) * scale, y: (q.y - lastView.oy) * scale }; };
+  const q = S(4.8, 16.5, 12);
+  if (q.x > -60 && q.x < cssW + 60 && q.y > -40 && q.y < cssH + 60) {
+    ctx.font = '800 11px Jost, sans-serif';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(11,10,10,.85)';
+    ctx.strokeText('♟️ Jogar Xadrez', q.x, q.y);
+    ctx.fillStyle = '#9a6bff';
+    ctx.fillText('♟️ Jogar Xadrez', q.x, q.y);
+  }
+}
+initChessSprites();
+
+let chessVsAI = true;
+let chessBoard = [
+  ['F_rook', 'F_knight', 'F_queen', 'F_king', 'F_knight', 'F_rook'],
+  ['F_pawn', 'F_pawn',   'F_pawn',  'F_pawn', 'F_pawn',   'F_pawn'],
+  [null, null, null, null, null, null],
+  [null, null, null, null, null, null],
+  ['P_pawn', 'P_pawn',   'P_pawn',  'P_pawn', 'P_pawn',   'P_pawn'],
+  ['P_rook', 'P_knight', 'P_queen', 'P_king', 'P_knight', 'P_rook']
+];
+let chessTurn = 'P';
+let chessSelected = null;
+let chessLegalMoves = [];
+let chessLastMove = null;
+
+function resetChessBoard() {
+  chessBoard = [
+    ['F_rook', 'F_knight', 'F_queen', 'F_king', 'F_knight', 'F_rook'],
+    ['F_pawn', 'F_pawn',   'F_pawn',  'F_pawn', 'F_pawn',   'F_pawn'],
+    [null, null, null, null, null, null],
+    [null, null, null, null, null, null],
+    ['P_pawn', 'P_pawn',   'P_pawn',  'P_pawn', 'P_pawn',   'P_pawn'],
+    ['P_rook', 'P_knight', 'P_queen', 'P_king', 'P_knight', 'P_rook']
+  ];
+  chessTurn = 'P';
+  chessSelected = null;
+  chessLegalMoves = [];
+  chessLastMove = null;
+  $('chess-over-overlay').style.display = 'none';
+  renderChessBoard();
+}
+
+function openChessGame() {
+  closeSheets();
+  $('chessModal').hidden = false;
+  $('chessMinTab').hidden = true;
+  resetChessBoard();
+}
+
+function minimizeChessGame() {
+  $('chessModal').hidden = true;
+  $('chessMinTab').hidden = false;
+}
+
+$('chessX').addEventListener('click', () => { $('chessModal').hidden = true; $('chessMinTab').hidden = true; });
+$('chessMinBtn').addEventListener('click', minimizeChessGame);
+$('chessMinTab').addEventListener('click', () => {
+  $('chessModal').hidden = false;
+  $('chessMinTab').hidden = true;
+});
+
+$('btn-chess-ai').addEventListener('click', () => { chessVsAI = true; $('chess-mode-desc').textContent = 'Modo: Contra IA Fascista'; resetChessBoard(); });
+$('btn-chess-invite').addEventListener('click', () => {
+  chessVsAI = false;
+  $('chess-mode-desc').textContent = 'Modo: Multiplayer online na Praça';
+  send({ t: 'chess-invite' });
+  toast('Convite para xadrez enviado para a praça!', 3000);
+});
+$('btn-chess-restart').addEventListener('click', resetChessBoard);
+
+function renderChessBoard() {
+  const cv = $('chess-cv'), ctx = cv.getContext('2d'), size = cv.width / 6;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 6; c++) {
+      const x = c * size, y = r * size, isDark = (r + c) % 2 === 1;
+      ctx.fillStyle = isDark ? '#2b293e' : '#e6e2d3';
+      ctx.fillRect(x, y, size, size);
+
+      if (chessLastMove && ((chessLastMove.from.r === r && chessLastMove.from.c === c) || (chessLastMove.to.r === r && chessLastMove.to.c === c))) {
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.35)'; ctx.fillRect(x, y, size, size);
+      }
+      if (chessSelected && chessSelected.r === r && chessSelected.c === c) {
+        ctx.fillStyle = 'rgba(52, 211, 153, 0.5)'; ctx.fillRect(x, y, size, size);
+      }
+
+      const p = chessBoard[r][c];
+      if (p && chessCache[p]) {
+        ctx.drawImage(chessCache[p], x + 4, y + 4, size - 8, size - 8);
+      }
+    }
+  }
+
+  for (const m of chessLegalMoves) {
+    ctx.beginPath();
+    ctx.fillStyle = '#34d399';
+    ctx.arc(m.c * size + size / 2, m.r * size + size / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  $('chess-turn').textContent = chessTurn === 'P' ? 'O POVO' : 'FASCISTAS';
+}
+
+$('chess-cv').addEventListener('click', (e) => {
+  const cv = $('chess-cv'), rect = cv.getBoundingClientRect();
+  const col = Math.floor((e.clientX - rect.left) / (rect.width / 6));
+  const row = Math.floor((e.clientY - rect.top) / (rect.height / 6));
+
+  if (chessSelected) {
+    const move = chessLegalMoves.find(m => m.r === row && m.c === col);
+    if (move) {
+      const from = chessSelected;
+      makeChessMove(from, { r: row, c: col });
+      chessSelected = null; chessLegalMoves = [];
+      renderChessBoard();
+      
+      if (!chessVsAI) {
+        send({ t: 'chess-move', from, to: { r: row, c: col } });
+      } else if (chessTurn === 'F') {
+        setTimeout(makeAIMove, 400);
+      }
+      return;
+    }
+  }
+
+  const piece = chessBoard[row][col];
+  if (piece && piece.startsWith(chessTurn)) {
+    chessSelected = { r: row, c: col };
+    chessLegalMoves = getChessMoves(row, col);
+    renderChessBoard();
+  }
+});
+
+function applyRemoteChessMove(from, to) {
+  makeChessMove(from, to);
+  renderChessBoard();
+}
+
+function getChessMoves(r, c) {
+  const piece = chessBoard[r][c]; if (!piece) return [];
+  const side = piece.startsWith('P') ? 'P' : 'F', type = piece.split('_')[1], moves = [];
+  const dir = side === 'P' ? -1 : 1;
+
+  if (type === 'pawn') {
+    if (r + dir >= 0 && r + dir < 6 && !chessBoard[r + dir][c]) {
+      moves.push({ r: r + dir, c });
+      const startRow = side === 'P' ? 4 : 1;
+      if (r === startRow && !chessBoard[r + dir * 2][c]) {
+        moves.push({ r: r + dir * 2, c });
+      }
+    }
+    [-1, 1].forEach(dc => {
+      if (c + dc >= 0 && c + dc < 6 && r + dir >= 0 && r + dir < 6) {
+        const target = chessBoard[r + dir][c + dc];
+        if (target && !target.startsWith(side)) moves.push({ r: r + dir, c: c + dc });
+      }
+    });
+  } else if (type === 'king' || type === 'queen' || type === 'rook' || type === 'knight') {
+    const dirs = type === 'knight' ? [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]] : [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+    dirs.forEach(([dr, dc]) => {
+      const nr = r + dr, nc = c + dc;
+      if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6) {
+        const target = chessBoard[nr][nc];
+        if (!target || !target.startsWith(side)) moves.push({ r: nr, c: nc });
+      }
+    });
+  }
+  return moves;
+}
+
+function makeChessMove(from, to) {
+  const piece = chessBoard[from.r][from.c];
+  chessBoard[to.r][to.c] = piece;
+  chessBoard[from.r][from.c] = null;
+
+  // Promocao
+  if (piece === 'P_pawn' && to.r === 0) chessBoard[to.r][to.c] = 'P_queen';
+  if (piece === 'F_pawn' && to.r === 5) chessBoard[to.r][to.c] = 'F_queen';
+
+  chessLastMove = { from, to };
+  chessTurn = chessTurn === 'P' ? 'F' : 'P';
+}
+
+function makeAIMove() {
+  const allMoves = [];
+  for (let r = 0; r < 6; r++) {
+    for (let c = 0; c < 6; c++) {
+      if (chessBoard[r][c] && chessBoard[r][c].startsWith('F')) {
+        const moves = getChessMoves(r, c);
+        moves.forEach(m => allMoves.push({ from: { r, c }, to: m }));
+      }
+    }
+  }
+  if (allMoves.length > 0) {
+    const randomMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+    makeChessMove(randomMove.from, randomMove.to);
+    renderChessBoard();
+  }
+}
