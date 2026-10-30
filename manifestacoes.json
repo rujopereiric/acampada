@@ -132,6 +132,22 @@
  },
  {
   "date": "2026-10-31",
+  "at": "16:00",
+  "city": "Lisboa",
+  "title": "Não temos casas, ficam as tendas",
+  "where": "Largo de Camões → Rossio",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-31",
+  "at": "16:00",
+  "city": "Porto",
+  "title": "Manifestação pela habitação",
+  "where": "Batalha (16h) → Praça D. João I (16h30)",
+  "horas": 3
+ },
+ {
+  "date": "2026-10-31",
   "at": "17:00",
   "city": "Lisboa",
   "title": "Acampada",
@@ -236,6 +252,22 @@
  },
  {
   "date": "2026-11-06",
+  "at": "17:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · a partir das 17h · 19h assembleia popular",
+  "horas": 5
+ },
+ {
+  "date": "2026-11-07",
+  "at": "17:00",
+  "city": "Lisboa",
+  "title": "Acampada",
+  "where": "Rossio · a partir das 17h · 19h assembleia popular",
+  "horas": 5
+ },
+ {
+  "date": "2026-11-07",
   "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
