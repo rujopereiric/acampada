@@ -4270,24 +4270,37 @@ let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Faro · Skate Park de Faro', 'Faro · Faro Skate Park')}</p><div class="rule"></div>
+    <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>14:00</b></div><div><b>Skate Park de Faro</b><br>Faro</div></div>
+    <p class="src">${L('A partir das 14h, com a Wallride: ação de sensibilização sobre a crise da habitação, assembleia popular, oficina de t-shirts, cartazes, lona coletiva e stencils, e muito mais!', 'From 2 pm, with Wallride: awareness action on the housing crisis, people’s assembly, workshop for t-shirts, posters, a collective banner and stencils, and much more!')}</p>${CHECK()}</div>`],
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Largo de Camões', 'Lisboa · Largo de Camões')}</p><div class="rule"></div>
+    <p class="t">${L('Não temos casas, ficam as tendas', 'No homes, so the tents stay')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>16:00</b></div><div><b>Largo de Camões → Rossio</b><br>Lisboa</div></div>
+    <p class="src">${L('Manifestação pelo direito à habitação, do Largo de Camões até ao Rossio. Depois, o Rossio enche-se de música.', 'March for the right to housing, from Largo de Camões to Rossio. Then Rossio fills up with music.')}</p>${CHECK()}</div>`],
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Batalha', 'Porto · Batalha')}</p><div class="rule"></div>
+    <p class="t">${L('Manifestação pela habitação', 'Housing march')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>16:00</b></div><div><b>Batalha → Praça D. João I</b><br>Porto</div></div>
+    <p class="src">${L('Concentração às 16h na Batalha e, às 16h30, marcha até à Praça D. João I. O Porto não se vende!', 'Gathering at 4 pm in Batalha and, at 4:30 pm, march to Praça D. João I. Porto is not for sale!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Sexta<br><b>30 out. 2026</b>', 'Friday<br><b>30 Oct 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Sexta<br><b>30 out. 2026</b>', 'Friday<br><b>30 Oct 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
-  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Évora · Praça do Giraldo', 'Évora · Praça do Giraldo')}</p><div class="rule"></div>
-    <p class="t">${L('Por mais habitação', 'For more housing')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Sexta<br><b>30 out. 2026</b>', 'Friday<br><b>30 Oct 2026</b>')}<br><b>18:00</b></div><div><b>Praça do Giraldo</b><br>Évora</div></div>
-    <p class="src">${L('Uma casa é um direito, não um luxo. Aparece e traz um amigo.', 'A home is a right, not a luxury. Come and bring a friend.')}</p>${CHECK()}</div>`],
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
+    <p class="t">${L('Acampada convida', 'The camp invites')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>31 out. 2026</b>', 'Saturday<br><b>31 Oct 2026</b>')}<br><b>21:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <p class="src">${L('Concerto com Criatura, Sarah Negra e Mayra Andrade, e mais surpresas.', 'Concert with Criatura, Sarah Negra and Mayra Andrade, plus surprises.')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Lisboa<small>${L('Rossio: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Rossio: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
-    <div><span class="when">${L('Sex 30', 'Fri 30')} · 18:00</span><span class="what">Évora<small>${L('Praça do Giraldo: por mais habitação', 'Praça do Giraldo: for more housing')}</small></span></div>
+    <div><span class="when">${L('Sáb 31', 'Sat 31')} · 14:00</span><span class="what">Faro<small>${L('Skate Park de Faro, com a Wallride: ação sobre a crise da habitação, assembleia popular, oficinas e muito mais', 'Faro Skate Park, with Wallride: action on the housing crisis, people’s assembly, workshops and much more')}</small></span></div>
     <div><span class="when">${L('Sáb 31', 'Sat 31')} · 16:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Manifestações pela habitação: Largo de Camões → Rossio; Batalha → Praça D. João I', 'Housing marches: Largo de Camões → Rossio; Batalha → Praça D. João I')}</small></span></div>
-    <div><span class="when">${L('Sáb 31 e dom 1', 'Sat 31 & Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
+    <div><span class="when">${L('Sáb 31', 'Sat 31')} · 21:00</span><span class="what">Lisboa<small>${L('Rossio: Acampada convida, concerto com Criatura, Sarah Negra, Mayra Andrade e surpresas', 'Rossio: the camp invites, concert with Criatura, Sarah Negra, Mayra Andrade and surprises')}</small></span></div>
+    <div><span class="when">${L('Dom 1', 'Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
     <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques and Praça do Marquês. And dozens of other towns')}</small></span></div>
   </div>${CHECK()}</div>`],
   () => ['', `<div class="ad center"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="p-red rough">${L('14 de novembro', '14 November')}</h2><p class="p-big rough">${L('Casa para viver', 'Homes to live in')}</p>
@@ -4360,10 +4373,12 @@ const RALLIES = [
   { date: '2026-10-30', at: '18:00', city: 'Évora', title: 'Por mais habitação', where: 'Praça do Giraldo' },
   { date: '2026-10-30', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-10-30', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-10-31', at: '14:00', city: 'Faro', title: 'Acampada', where: 'Skate Park de Faro · a partir das 14h · assembleia popular', horas: 6 },
   { date: '2026-10-31', at: '16:00', city: 'Lisboa', title: 'Não temos casas, ficam as tendas', where: 'Largo de Camões → Rossio', horas: 3 },
   { date: '2026-10-31', at: '16:00', city: 'Porto', title: 'Manifestação pela habitação', where: 'Batalha (16h) → Praça D. João I (16h30)', horas: 3 },
   { date: '2026-10-31', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-10-31', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-10-31', at: '21:00', city: 'Lisboa', title: 'Acampada convida', where: 'Rossio · concerto: Criatura, Sarah Negra, Mayra Andrade', horas: 3 },
   { date: '2026-11-01', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-01', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-02', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
