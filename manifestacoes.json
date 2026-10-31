@@ -135,8 +135,9 @@
   "at": "14:00",
   "city": "Faro",
   "title": "Acampada",
-  "where": "Skate Park de Faro · a partir das 14h · assembleia popular",
-  "horas": 6
+  "where": "Skate Park de Faro · com a Wallride · a partir das 14h",
+  "horas": 6,
+  "tags": "wallride.pt"
  },
  {
   "date": "2026-10-31",
