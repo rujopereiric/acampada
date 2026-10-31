@@ -4,7 +4,7 @@
 // interview, a passer-by who joins, a group photo) goes through here.
 
 // the square's furniture that the characters walk around (multiplayer.html draws it in the same places)
-export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5]]; // the carnation, the fountain, the canteen
+export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5], [17.6, 19.8, 1]]; // the carnation, the fountain, the canteen, the chess table (multiplayer.html XADREZ)
 const SOPA = { x: 15.9, y: 1.85 }; // the canteen lady, behind her table
 export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada']; // the last two pass in the street: multiplayer.html times them from the clock
 const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready answers (multiplayer.html: INTERVIEW)

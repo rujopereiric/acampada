@@ -5,7 +5,7 @@
 // People at a protest or a camp walk in the square; people elsewhere watch, are counted by city and write on the mural.
 // Nothing that identifies anyone is kept; the mural is deleted 24 h after the square closes.
 import { GESTAO_HTML } from './gestao.js';
-import { Personagens, NPC_KINDS } from './personagens.js';
+import { Personagens, NPC_KINDS, OBST } from './personagens.js';
 import { Jogos } from './jogos.js';
 
 const OPEN_BEFORE = 60, DEFAULT_HOURS = 3, CLEANUP_AFTER = 24 * 3600e3;
@@ -40,7 +40,10 @@ const STRIKES = 3, STRIKE_WIN = 10 * 60e3, CASTIGO_MS = 10 * 60e3;
 // connections: whoever is already in the square stays (the square itself puts out those who misbehave inside).
 const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes']);
 // actions that change nothing for the others (or only answer the one who asked): not counted in LOUD_MAX
-const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1', 'hb']);
+const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1', 'hb', 'chess-invite', 'chess-answer', 'chess-move', 'chess-end', 'chess-act', 'chess-who']);
+// Mini Xadrez (multiplayer.html): a challenge waits a minute for an answer; a game with no move for 5 minutes ends;
+// one challenge every 5 seconds per person. The square only passes the moves on: each phone checks them against the rules
+const CHESS_INVITE_MS = 60e3, CHESS_IDLE_MS = 5 * 60e3, CHESS_INVITE_EVERY = 5e3;
 // IDLE_MS: someone who does nothing for 5 minutes leaves the square (their place goes to others). GONE_MS: a phone that
 // stopped answering (no sign of life, not even the page's heartbeat every 25 s) is taken out, instead of standing still
 // in the square until the connection finally drops
@@ -250,6 +253,7 @@ export class Praca {
     this.fails = new Map(); // address key -> wrong pass-phrases in the last 10 minutes
     this.strikes = new Map(); // address key -> when it broke the limits (the last 10 minutes)
     this.castigo = new Map(); // address key -> { until, why }: punished addresses, 10 minutes
+    this.chess = new Map(); this.chessInv = new Map(); this.chessN = 1; // chess games (id -> { w, b, last }) and challenges (id -> { from, to, at })
     this.pxOut = []; // strokes on the wall waiting for the next tick, in the order they came: [[person id, [[i, c], ...]], ...]
     this.cfg = { ...CFG0 };
     ctx.blockConcurrencyWhile(async () => { const saved = (await ctx.storage.get('cfg')) || {}; this.cfg = { ...CFG0, ...saved, npcs: { ...CFG0.npcs, ...(saved.npcs || {}) } }; if (!(saved.v >= 2)) { this.cfg.ciclistas = true; this.cfg.v = 2; } }); // v2: bicycles on by default
@@ -363,6 +367,7 @@ export class Praca {
   }
   onMessage(p, raw) {
     let m; try { m = JSON.parse(raw); } catch (e) { return; }
+    if (!m || typeof m !== 'object' || typeof m.t !== 'string') return; // not one of the game's messages
     const now = Date.now();
     if (m.t === 'px' && p.name) { // painting the wall: no limit per person, only against scripts (150 strokes in 10 s)
       if (this.cfg.paredeRO) return this.send(p, { t: 'pxno', why: 'fechada', d: this.wallStr() });
@@ -394,7 +399,7 @@ export class Praca {
       p.mode = m.mode === 'praca' ? 'praca' : 'apoio';
       const same = [...this.people.values()].filter(q => q.name && q.av && q.mode === p.mode).length;
       p.av = same < (p.mode === 'praca' ? MAX_AVATARS : MAX_GHOSTS); // the far-away ones never take a place from those at the protest
-      p.won = (m.won | 0) & 31; p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2;
+      p.won = (m.won | 0) & 31; p.look = cleanLook(m.look); p.bike = !!m.bike && this.cfg.ciclistas; p.item = 0; for (let i = 0; i < 12; i++) { p.x = 2 + Math.random() * (W - 4); p.y = H - 1.5 - Math.random() * 2; if (OBST.every(([ox, oy, r]) => Math.hypot(p.x - ox, p.y - oy) > r + .4)) break; } // not inside the chess table
       const others = [...this.people.values()].filter(q => q !== p && q.name && q.av).map(q => this.pub(q));
       this.send(p, { t: 'welcome', id: p.id, mode: p.mode, av: p.av, full: !p.av, me: this.pub(p), parede: this.wallStr(), galeria: this.sql.exec('SELECT COUNT(*) AS n FROM paredes').one().n, people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow(), conga: this.conga, congaNpc: this.pers.congaNpc });
       if (p.av) this.broadcast({ t: 'join', p: this.pub(p) }, p);
@@ -404,6 +409,7 @@ export class Praca {
     if (!p.name) return;
     // what everyone hears: a few per person, so one person can't make the square shout at everybody
     if (!QUIET.has(m.t)) { if (now - p.loudWin > 10e3) { p.loudWin = now; p.loud = 0; } if (++p.loud > LOUD_MAX) return; }
+    if (m.t.startsWith('chess-')) return this.chessMsg(p, m, now);
     if (m.t === 'pos' && p.av) { const x = +m.x, y = +m.y; if (isFinite(x) && isFinite(y)) { p.x = Math.max(.3, Math.min(W - .3, x)); p.y = Math.max(.3, Math.min(H - .3, y)); p.dirty = true; } return; }
     if (m.t === 'say' && p.av) { const k = m.k; if (!Number.isInteger(k) || k < 0 || k >= PHRASES || now - p.lastSay < SAY_MS) return; p.lastSay = now; this.broadcast({ t: 'say', id: p.id, k }); return; }
     if (m.t === 'emote' && p.av) { const k = m.k; p.emote = Number.isInteger(k) && k >= 0 && k < GESTURES ? k : 0; p.dirty = true; return; }
@@ -499,8 +505,45 @@ export class Praca {
   congaOut(id) { const i = this.conga.indexOf(id); if (i < 0) return; this.conga.splice(i, 1); this.broadcast({ t: 'conga', ids: this.conga }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0, g: p.mode === 'apoio' ? 1 : 0 }; }
   send(p, m) { try { p.ws.send(JSON.stringify(m)); } catch (e) {} }
+  byId(id) { for (const q of this.people.values()) if (q.id === id && q.name) return q; return null; }
+  // Mini Xadrez: challenges, the start, the moves passed on to the other player, the end
+  chessMsg(p, m, now) {
+    if (m.t === 'chess-act') return; // a move against the computer: only "still playing"
+    if (m.t === 'chess-who') { // who can be challenged: everyone with a name, the grey ghosts too (once a second)
+      if (now - (p.chessWhoAt || 0) < 1e3) return; p.chessWhoAt = now; const l = [];
+      for (const q of this.people.values()) { if (q.name && q !== p) l.push([q.id, q.name, q.city, q.chessG ? 1 : 0]); if (l.length >= 40) break; }
+      return this.send(p, { t: 'chess-who', l });
+    }
+    if (m.t === 'chess-invite') {
+      if (now - (p.chessInvAt || 0) < CHESS_INVITE_EVERY) return this.send(p, { t: 'chess-no', why: 'espera' });
+      const q = this.byId(m.to | 0); if (!q || q === p) return this.send(p, { t: 'chess-no', why: 'saiu' });
+      if (p.chessG || q.chessG || [...this.chessInv.values()].some(v => v.to === q.id)) return this.send(p, { t: 'chess-no', why: 'ocupado', n: q.name }); // (one challenge at a time for each person)
+      p.chessInvAt = now; const i = this.chessN++; this.chessInv.set(i, { from: p.id, to: q.id, at: now });
+      return this.send(q, { t: 'chess-invite', i, from: p.id, n: p.name });
+    }
+    if (m.t === 'chess-answer') {
+      const v = this.chessInv.get(m.i | 0); if (!v) return m.ok ? this.send(p, { t: 'chess-no', why: 'tempo' }) : undefined; if (v.to !== p.id) return; this.chessInv.delete(m.i | 0);
+      const f = this.byId(v.from); if (!f) return this.send(p, { t: 'chess-no', why: 'saiu' });
+      if (!m.ok) return this.send(f, { t: 'chess-no', why: 'recusou', n: p.name });
+      if (f.chessG || p.chessG) return this.send(p, { t: 'chess-no', why: 'ocupado', n: f.name });
+      const g = this.chessN++; this.chess.set(g, { w: f.id, b: p.id, last: now }); f.chessG = g; p.chessG = g; // who challenges plays the People
+      const start = { t: 'chess-start', g, w: f.id, b: p.id, nw: f.name, nb: p.name }; this.send(f, start); this.send(p, start); return;
+    }
+    const G = this.chess.get(m.g | 0); if (!G || p.chessG !== (m.g | 0)) return;
+    const other = this.byId(G.w === p.id ? G.b : G.w);
+    if (m.t === 'chess-move') {
+      if (now - (p.chessMvWin || 0) > 1e3) { p.chessMvWin = now; p.chessMv = 0; } if (++p.chessMv > 4) return; // no more than 4 a second
+      if (!Array.isArray(m.m) || m.m.length !== 2 || !m.m.every(v => Number.isInteger(v) && v >= 0 && v < 36)) return;
+      G.last = now; if (other) this.send(other, { t: 'chess-move', g: m.g | 0, m: m.m }); return;
+    }
+    if (m.t === 'chess-end') return this.chessEnd(m.g | 0, m.why === 'desistiu' ? 'desistiu' : 'fim', p.id);
+  }
+  chessEnd(g, why, by) { // the game ends: the other one hears why; both count as just having done something (no «inativo» right after)
+    const G = this.chess.get(g); if (!G) return; this.chess.delete(g);
+    for (const id of [G.w, G.b]) { const q = this.byId(id); if (!q) continue; q.chessG = 0; q.act = Date.now(); if (id !== by) this.send(q, { t: 'chess-end', g, why }); }
+  }
   gone(ws, p) { // someone left (closed, dropped, or put out): once
-    if (!this.people.has(ws)) return; this.people.delete(ws); this.congaOut(p.id);
+    if (!this.people.has(ws)) return; this.people.delete(ws); this.congaOut(p.id); if (p.chessG) this.chessEnd(p.chessG, 'saiu', p.id);
     if (p.name && p.av) this.broadcast({ t: 'leave', id: p.id });
     if (p.name) this.broadcast({ t: 'counts', c: this.counts() });
     if (!this.people.size) this.stop();
@@ -513,7 +556,7 @@ export class Praca {
     if (this.pxOut.length) { this.broadcast({ t: 'pxs', l: this.pxOut }); this.pxOut = []; }
     this.broadcast({ t: 'closed', next: st.next, by: st.by });
     for (const ws of this.people.keys()) { try { ws.close(4000, 'fechado'); } catch (e) {} }
-    this.people.clear(); this.stop();
+    this.people.clear(); this.chess.clear(); this.chessInv.clear(); this.stop(); // (the chess games end with the square)
   }
   async closedNow(st) { // bans and posters last until the square closes
     if (this.cfg.bans.length) { this.cfg.bans = []; await this.save(); }
@@ -526,9 +569,11 @@ export class Praca {
     for (const [ws, p] of [...this.people]) {
       if (!p.name && now0 - p.at > HELLO_MS) { try { ws.close(4003, 'sem nome'); } catch (e) {} this.gone(ws, p); } // connected, never said who it is
       else if (p.name && now0 - p.seen > (+this.env.GONE_MS || GONE_MS)) { try { ws.close(4009, 'sem sinal'); } catch (e) {} this.gone(ws, p); } // the phone stopped answering
-      else if (p.name && now0 - p.act > (+this.env.IDLE_MS || IDLE_MS)) { this.send(p, { t: 'inativo' }); try { ws.close(4006, 'inativo'); } catch (e) {} this.gone(ws, p); } // 5 minutes doing nothing
+      else if (p.name && !p.chessG && now0 - p.act > (+this.env.IDLE_MS || IDLE_MS)) { this.send(p, { t: 'inativo' }); try { ws.close(4006, 'inativo'); } catch (e) {} this.gone(ws, p); } // 5 minutes doing nothing
     }
     if (this.pxOut.length) { this.broadcast({ t: 'pxs', l: this.pxOut }); this.pxOut = []; }
+    for (const [g, G] of this.chess) if (now0 - G.last > CHESS_IDLE_MS) this.chessEnd(g, 'tempo', 0);
+    for (const [i, v] of this.chessInv) if (now0 - v.at > CHESS_INVITE_MS) { this.chessInv.delete(i); const f = this.byId(v.from), q = this.byId(v.to); if (f) this.send(f, { t: 'chess-no', why: 'tempo' }); if (q) this.send(q, { t: 'chess-gone', i }); }
     const ch = []; for (const p of this.people.values()) if (p.name && p.av) {
       if (p.item && now0 > p.itemUntil) { p.item = 0; p.dirty = true; }
       if (p.dirty) { ch.push([p.id, +p.x.toFixed(2), +p.y.toFixed(2), p.emote, p.item || 0, p.bike ? 1 : 0]); p.dirty = false; }

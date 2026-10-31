@@ -201,6 +201,24 @@ button{ cursor:pointer; touch-action:manipulation; }
 .pxed{ display:flex; flex-direction:column; gap:8px; align-items:center; margin:8px 0; } .pxed[hidden]{ display:none; } .pxcv{ width:min(100%, 320px, 46vh); image-rendering:pixelated; touch-action:none; border:3px solid var(--ink); cursor:crosshair; }
 .cartaz canvas{ display:block; width:100%; image-rendering:pixelated; margin:0 auto; } .cartaz.drawn{ padding:6px; }
 .tb.purple{ background:#9a6bff; color:#fff; } .tb.purple small{ color:#efe6ff; }
+
+/* Mini Xadrez */
+#chess{ position:absolute; inset:0; z-index:6; display:flex; align-items:center; justify-content:center; background:rgba(11,10,10,.72); padding:8px; }
+#chess[hidden]{ display:none; }
+#chess .chp{ background:#1d1830; border:2px solid var(--paper); width:min(100%, 440px); max-height:100%; overflow:auto; padding:10px 12px 12px; display:flex; flex-direction:column; gap:8px; }
+#chess h3{ margin:0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font:800 18px/1.1 Jost, sans-serif; text-transform:uppercase; }
+#chess h3 small{ display:block; font-weight:600; font-size:12px; color:var(--muted); text-transform:none; margin-top:2px; }
+#chessCv{ width:min(100%, 384px, 56vh); aspect-ratio:1; image-rendering:pixelated; margin:0 auto; display:block; border:3px solid var(--ink); touch-action:manipulation; cursor:pointer; }
+#chessSt{ margin:0; min-height:1.3em; text-align:center; font-weight:700; }
+#chessBar{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+#chessBar button, #chessPick button{ font:800 14px/1 Jost, sans-serif; text-transform:uppercase; border:none; padding:10px 12px 8px; background:#fff; color:var(--ink); }
+#chessBar .go{ background:var(--lime); } #chessBar .red{ background:var(--redbox); color:#fff; }
+#chessInv{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; align-items:center; background:var(--lime); color:var(--ink); padding:8px; } #chessInv[hidden]{ display:none; } #chessInv p{ margin:0; width:100%; text-align:center; font-weight:700; } #chessInv button{ font:800 14px/1 Jost, sans-serif; text-transform:uppercase; border:2px solid var(--ink); padding:9px 12px 7px; background:#fff; color:var(--ink); } #chessInv .red{ background:var(--redbox); color:#fff; }
+#chessPick{ display:flex; flex-direction:column; gap:5px; } #chessPick[hidden]{ display:none; } #chessPick p{ margin:0; }
+#chessGuide summary{ cursor:pointer; font-weight:800; text-transform:uppercase; font-size:13px; }
+.chg{ display:flex; gap:6px; align-items:center; margin:6px 0; } .chg canvas{ width:40px; height:40px; flex:none; image-rendering:pixelated; background:#ebe5d6; } .chg canvas+canvas{ background:#4b4654; } .chg p, .chn{ margin:0; font-size:13px; line-height:1.3; }
+#chessTab{ position:absolute; bottom:0; z-index:4; background:var(--lime); color:var(--ink); border:none; border-top:2px solid var(--ink); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:9px 8px 7px; }
+#chessTab{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } #chessTab[hidden]{ display:none; } .chtab .zoom{ transform:translateY(-38px); } /* the zoom buttons move up over the tab */ #chessTab.turn{ animation:chpulse 1s infinite alternate; } @keyframes chpulse{ from{ background:#b6ff3b; } to{ background:#ffd23a; } }
 </style>
 </head>
 <body>
@@ -233,6 +251,13 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div class="sheet" id="agendaSheet" hidden><h3><span data-t="agendaT"></span><button class="x" data-close>✕</button></h3><div id="agendaList"></div></div>
     <div id="tour" hidden><span id="tourTxt"></span><span class="tb2"><button id="tourOk">OK</button><button id="tourSkip"></button></span></div>
     <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
+    <div id="chess" hidden><div class="chp" role="dialog" aria-label="Mini Xadrez">
+      <h3><span>Mini Xadrez<small id="chessSub"></small></span><button class="x" id="chessX" aria-label="Fechar">✕</button></h3>
+      <canvas id="chessCv" width="192" height="192"></canvas>
+      <p id="chessSt"></p><div id="chessInv" hidden></div><div id="chessBar"></div><div id="chessPick" hidden></div>
+      <details id="chessGuide"><summary></summary><div></div></details>
+    </div></div>
+    <button id="chessTab" hidden></button>
   </div>
   <nav id="tools">
     <button class="tb" id="tPhrase"><span data-t="say"></span><small data-t="sayS"></small></button>
@@ -429,17 +454,19 @@ function makeDecor() {
   DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' }); // the giant carnation of the 25th of April, in the middle
   DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' }); // the fountain (the characters walk round it: personagens.js OBST)
   DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' }); // the canteen's table
+  DECOR.push({ gx: XADREZ.gx, gy: XADREZ.gy, k: 'xadrez' }); // the chess table
 }
 function drawDecor(g, d) {
   const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
   if (d.k === 'cravo') return drawCravo(g, d);
   if (d.k === 'fonte') return drawFonte(g, d);
   if (d.k === 'cantina') return drawCantina(g, d);
+  if (d.k === 'xadrez') return drawXadrez(g, d);
   if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
   else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
   else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
 }
-const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1 }[d.k]));
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, xadrez: .8 }[d.k]));
 // the statue: a granite plinth, a bronze-green stem with two leaves and a huge red carnation on top
 function drawCravo(g, d) {
   const c = d.gx, r = d.gy;
@@ -968,7 +995,9 @@ function addPerson(o) {
 }
 function onMsg(m) {
   if (wallMsg(m)) return;
+  if (typeof m.t === 'string' && m.t.startsWith('chess-')) return chessMsg(m);
   if (m.t === 'welcome') {
+    chInvite = null; if (chess && chess.mode === 'mp' && !chess.over) { chess.over = { r: 'saiu', w: null }; chess.overTxt = L('A ligação caiu e a partida acabou.', 'The connection dropped and the game ended.'); chessRender(); chessTab(); }
     inside = true; myId = m.id; myMode = m.mode; clockOff = (m.now || Date.now()) - Date.now(); closeAt = m.close || 0; live = m.live || live;
     if (m.size) { W = m.size[0]; H = m.size[1]; CXg = W / 2; CYg = H / 2; }
     people.clear(); for (const o of m.people || []) addPerson(o);
@@ -1166,6 +1195,7 @@ function draw(now) {
   }
   { // the games: what to do, who is holding an end, and the banner's slogan
     const T = jogos.tent, B = jogos.banner, lab = (text, gx, gy, z, col) => { const q = S(gx, gy, z); if (q.x < -80 || q.x > cssW + 80 || q.y < -20 || q.y > cssH + 40) return; ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(text, q.x, q.y); ctx.fillStyle = col; ctx.fillText(text, q.x, q.y); };
+    lab(L('♟ Jogar Xadrez', '♟ Play chess'), XADREZ.gx, XADREZ.gy, 20, '#ffffff');
     if (T) { lab(L('⛺ Montar tenda · 2 pessoas', '⛺ Pitch a tent · 2 people'), T.x, T.y, 14, '#ffd23a'); gameEnds(T).forEach(([ex, ey], k) => { if (T.p && T.p[k]) lab(T.p[k], ex, ey, 10, '#b6ff3b'); }); }
     if (B && !B.open) { lab(L('🏳️ Abrir faixa · 2 pessoas', '🏳️ Open a banner · 2 people'), B.x, B.y, 14, '#ffd23a'); gameEnds(B).forEach(([ex, ey], k) => { if (B.e && B.e[k]) lab(B.e[k], ex, ey, 12, '#b6ff3b'); }); }
     if (B && B.open && PHRASES[B.f]) { // the slogan on the cloth (bannerGeom: its lines and size, in the square's pixels)
@@ -1283,19 +1313,21 @@ function targets() {
   for (const t of J.built || []) out.push({ kind: 'tenda', id: t.id, x: t.x, y: t.y, z: 6, t });
   if (J.banner && J.banner.open) out.push({ kind: 'faixaab', id: J.banner.id, x: J.banner.x, y: J.banner.y, z: 21 });
   for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: s.z, c }); }
+  out.push({ kind: 'xadrez', id: 0, x: XADREZ.gx, y: XADREZ.gy, z: 12 });
   return out;
 }
 function hitTest(sx, sy) {
   const { ox, oy } = lastView; let best = null, bd = 1e9;
   for (const t of targets()) {
     const q = iso(t.x, t.y, t.z), px = (q.x - ox) * scale, py = (q.y - oy) * scale, d = Math.hypot(px - sx, py - sy);
-    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : 11) * scale + 6;
+    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : t.kind === 'xadrez' ? 16 : 11) * scale + 6;
     if (d < r && d < bd) { bd = d; best = t; }
   }
   return best;
 }
 const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
 function approach(t) {
+  if (t.kind === 'xadrez') return chessOpen(); // the chess table: from anywhere in the square
   if (t.kind === 'cartaz') return showCartaz(t.c);
   if (t.kind === 'bicicletada') return bikeRideInfo();
   if (t.kind === 'tenda') return toast(L(`⛺ Montada por ${t.t.n.join(' e ')}`, `⛺ Pitched by ${t.t.n.join(' and ')}`), 3000);
@@ -1871,6 +1903,461 @@ function entryScreen(st) {
   });
 }
 
+/* ================= Mini Xadrez 6x6: the rules and the opponent ================= */
+// The board, 36 squares, row 0 at the top: the Fascists (lower-case letters) start at the top, the People (capitals) at
+// the bottom and move first. No bishops (Los Alamos layout): rook, knight, queen, king, knight, rook. Pawns may move two
+// squares from their starting row (and can then be taken en passant), and become a queen on the far row. No castling.
+function chessEngine() {
+  const KN = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]];
+  const KG = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+  const RO = [[-1, 0], [1, 0], [0, -1], [0, 1]], QU = KG;
+  const side = p => p ? (p < 'a' ? 'w' : 'b') : null; // capitals: the People (w)
+  const up = p => p.toUpperCase();
+  function start() {
+    const b = Array(36).fill(null);
+    'rnqknr'.split('').forEach((p, i) => { b[i] = p; b[30 + i] = up(p); });
+    for (let i = 0; i < 6; i++) { b[6 + i] = 'p'; b[24 + i] = 'P'; }
+    const s = { b, turn: 'w', ep: -1, half: 0, reps: new Map() }; s.reps.set(key(s), 1); return s;
+  }
+  const key = s => s.b.map(p => p || '.').join('') + s.turn + s.ep;
+  function pseudo(s, col, out) {
+    const b = s.b;
+    for (let i = 0; i < 36; i++) {
+      const p = b[i]; if (!p || side(p) !== col) continue;
+      const r = (i / 6) | 0, c = i % 6, t = up(p);
+      if (t === 'P') {
+        const dir = col === 'w' ? -1 : 1, r1 = r + dir; if (r1 < 0 || r1 > 5) continue;
+        const prom = r1 === 0 || r1 === 5, j = r1 * 6 + c;
+        if (!b[j]) { out.push({ f: i, t: j, p: prom }); if (r === (col === 'w' ? 4 : 1) && !b[j + dir * 6]) out.push({ f: i, t: j + dir * 6, d: 1 }); }
+        for (const dc of [-1, 1]) { const cc = c + dc; if (cc < 0 || cc > 5) continue; const k = r1 * 6 + cc; if (b[k] && side(b[k]) !== col) out.push({ f: i, t: k, p: prom }); else if (k === s.ep) out.push({ f: i, t: k, e: 1 }); }
+      } else if (t === 'N' || t === 'K') {
+        for (const [dr, dc] of t === 'N' ? KN : KG) { const rr = r + dr, cc = c + dc; if (rr < 0 || rr > 5 || cc < 0 || cc > 5) continue; const j = rr * 6 + cc; if (!b[j] || side(b[j]) !== col) out.push({ f: i, t: j }); }
+      } else {
+        for (const [dr, dc] of t === 'R' ? RO : QU) { let rr = r + dr, cc = c + dc; while (rr >= 0 && rr < 6 && cc >= 0 && cc < 6) { const j = rr * 6 + cc; if (!b[j]) out.push({ f: i, t: j }); else { if (side(b[j]) !== col) out.push({ f: i, t: j }); break; } rr += dr; cc += dc; } }
+      }
+    }
+    return out;
+  }
+  // is square sq attacked by side `by`?
+  function attacked(b, sq, by) {
+    const r = (sq / 6) | 0, c = sq % 6, P = by === 'w' ? 'P' : 'p', N = by === 'w' ? 'N' : 'n', K = by === 'w' ? 'K' : 'k', R = by === 'w' ? 'R' : 'r', Q = by === 'w' ? 'Q' : 'q';
+    const pr = by === 'w' ? r + 1 : r - 1; // a pawn of `by` attacks from the row it came from
+    if (pr >= 0 && pr < 6) for (const dc of [-1, 1]) { const cc = c + dc; if (cc >= 0 && cc < 6 && b[pr * 6 + cc] === P) return true; }
+    for (const [dr, dc] of KN) { const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && b[rr * 6 + cc] === N) return true; }
+    for (const [dr, dc] of KG) { const rr = r + dr, cc = c + dc; if (rr >= 0 && rr < 6 && cc >= 0 && cc < 6 && b[rr * 6 + cc] === K) return true; }
+    for (const [dr, dc] of KG) {
+      const straight = dr === 0 || dc === 0; let rr = r + dr, cc = c + dc;
+      while (rr >= 0 && rr < 6 && cc >= 0 && cc < 6) { const x = b[rr * 6 + cc]; if (x) { if (x === Q || (straight && x === R)) return true; break; } rr += dr; cc += dc; }
+    }
+    return false;
+  }
+  const kingAt = (b, col) => b.indexOf(col === 'w' ? 'K' : 'k');
+  const inCheck = (s, col = s.turn) => { const k = kingAt(s.b, col); return k >= 0 && attacked(s.b, k, col === 'w' ? 'b' : 'w'); };
+  function make(s, m) {
+    const b = s.b, p = b[m.f], u = { m, cap: b[m.t], ep: s.ep, half: s.half, capAt: m.t };
+    if (m.e) { u.capAt = m.t + (s.turn === 'w' ? 6 : -6); u.cap = b[u.capAt]; b[u.capAt] = null; }
+    b[m.t] = m.p ? (s.turn === 'w' ? 'Q' : 'q') : p; b[m.f] = null; u.piece = p;
+    s.ep = m.d ? (m.f + m.t) / 2 : -1;
+    s.half = up(p) === 'P' || u.cap ? 0 : s.half + 1;
+    s.turn = s.turn === 'w' ? 'b' : 'w';
+    return u;
+  }
+  function unmake(s, u) {
+    const b = s.b, m = u.m; s.turn = s.turn === 'w' ? 'b' : 'w';
+    b[m.f] = u.piece; b[m.t] = null; if (u.cap) b[u.capAt] = u.cap;
+    s.ep = u.ep; s.half = u.half;
+  }
+  function legal(s) {
+    const out = [], col = s.turn;
+    for (const m of pseudo(s, col, [])) { const u = make(s, m); if (!attacked(s.b, kingAt(s.b, col), s.turn)) out.push(m); unmake(s, u); }
+    return out;
+  }
+  // a real move in the game (keeps the count of repeated positions)
+  function play(s, m) { make(s, m); const k = key(s); s.reps.set(k, (s.reps.get(k) || 0) + 1); }
+  function insufficient(b) { const left = b.filter(p => p && up(p) !== 'K'); return !left.length || (left.length === 1 && up(left[0]) === 'N'); }
+  // the game: null while it goes on, or { r: 'mate' | 'afogado' | 'material' | '50' | 'repeticao', w: 'w' | 'b' | null }
+  function result(s) {
+    if (!legal(s).length) return inCheck(s) ? { r: 'mate', w: s.turn === 'w' ? 'b' : 'w' } : { r: 'afogado', w: null };
+    if (insufficient(s.b)) return { r: 'material', w: null };
+    if (s.half >= 100) return { r: '50', w: null };
+    if ((s.reps.get(key(s)) || 0) >= 3) return { r: 'repeticao', w: null };
+    return null;
+  }
+
+  /* --- the opponent: minimax with alpha-beta (negamax), a little search of captures at the end --- */
+  const VAL = { P: 100, N: 310, R: 500, Q: 900, K: 0 };
+  // where each piece likes to be (for the People, row 0 at the top; the Fascists read it upside down)
+  const PST = {
+    P: [0, 0, 0, 0, 0, 0, 60, 60, 60, 60, 60, 60, 25, 30, 40, 40, 30, 25, 8, 12, 25, 25, 12, 8, 0, 0, -5, -5, 0, 0, 0, 0, 0, 0, 0, 0],
+    N: [-30, -15, -10, -10, -15, -30, -15, 0, 10, 10, 0, -15, -10, 10, 20, 20, 10, -10, -10, 10, 20, 20, 10, -10, -15, 0, 5, 5, 0, -15, -30, -15, -10, -10, -15, -30],
+    R: [5, 10, 10, 10, 10, 5, 15, 20, 20, 20, 20, 15, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 5, 5, 0, 0],
+    Q: [-10, -5, 0, 0, -5, -10, -5, 0, 5, 5, 0, -5, 0, 5, 10, 10, 5, 0, 0, 5, 10, 10, 5, 0, -5, 0, 5, 5, 0, -5, -10, -5, 0, 0, -5, -10],
+    K: [-30, -30, -30, -30, -30, -30, -25, -25, -25, -25, -25, -25, -20, -20, -20, -20, -20, -20, -10, -15, -15, -15, -15, -10, 0, -5, -10, -10, -5, 0, 10, 15, 0, 0, 15, 10]
+  };
+  function evaluate(s) { // from the point of view of the side to move
+    let v = 0;
+    for (let i = 0; i < 36; i++) { const p = s.b[i]; if (!p) continue; const t = up(p), w = p === t, k = w ? i : 35 - i; const x = VAL[t] + PST[t][k]; v += w ? x : -x; }
+    return s.turn === 'w' ? v : -v;
+  }
+  const MATE = 100000;
+  function order(s, ms) { // captures first, the most valuable victim by the least valuable attacker; promotions too
+    for (const m of ms) { const c = s.b[m.t]; m.o = (c ? 10 * VAL[up(c)] - VAL[up(s.b[m.f])] + 1000 : 0) + (m.p ? 800 : 0) + (m.e ? 1000 : 0); }
+    return ms.sort((a, b) => b.o - a.o);
+  }
+  function search(s, depth, a, bt, ply, clock) {
+    if (clock.n++ % 1024 === 0 && Date.now() > clock.until) clock.out = true;
+    if (clock.out) return 0;
+    if (ply && (s.reps.get(key(s)) || 0) >= 2) return 0; // a position seen before: as good as a draw
+    const ms = legal(s);
+    if (!ms.length) return inCheck(s) ? -MATE + ply : 0;
+    if (s.half >= 100) return 0;
+    if (depth <= 0) return quiet(s, a, bt, 0, clock);
+    order(s, ms);
+    for (const m of ms) {
+      const u = make(s, m), k = key(s); s.reps.set(k, (s.reps.get(k) || 0) + 1);
+      const v = -search(s, depth - 1, -bt, -a, ply + 1, clock);
+      s.reps.set(k, s.reps.get(k) - 1); unmake(s, u);
+      if (clock.out) return 0;
+      if (v >= bt) return bt;
+      if (v > a) a = v;
+    }
+    return a;
+  }
+  function quiet(s, a, bt, qd, clock) { // only captures, so that a piece isn't left hanging at the end of the search
+    const stand = evaluate(s); if (stand >= bt) return bt; if (stand > a) a = stand; if (qd > 6) return a;
+    const ms = order(s, legal(s).filter(m => s.b[m.t] || m.e || m.p));
+    for (const m of ms) { const u = make(s, m); const v = -quiet(s, -bt, -a, qd + 1, clock); unmake(s, u); if (v >= bt) return bt; if (v > a) a = v; }
+    return a;
+  }
+  // the best move for the side to move, thinking for at most `ms` milliseconds (deeper and deeper until the time is up)
+  function best(s, ms = 600, maxDepth = 6) {
+    const moves = order(s, legal(s)); if (!moves.length) return null;
+    const clock = { until: Date.now() + ms, n: 0, out: false }; let pick = moves[0];
+    for (let d = 1; d <= maxDepth; d++) {
+      let a = -MATE * 2, cand = null; const scored = [];
+      for (const m of moves) {
+        const u = make(s, m), k = key(s); s.reps.set(k, (s.reps.get(k) || 0) + 1);
+        const v = -search(s, d - 1, -MATE * 2, -a + 15, 1, clock); // a window a little wider: a few near-equal moves to choose from
+        s.reps.set(k, s.reps.get(k) - 1); unmake(s, u);
+        if (clock.out) break;
+        scored.push([v, m]); if (v > a) { a = v; cand = m; }
+      }
+      if (clock.out) break;
+      // among the moves within 15 points of the best, one at random: not always the same game
+      const near = scored.filter(([v]) => v > a - 15 && a < MATE - 100).map(([, m]) => m);
+      pick = near.length ? near[Math.floor(Math.random() * near.length)] : cand || pick;
+      moves.sort((x, y) => (y === cand) - (x === cand)); // the best one first in the next, deeper round
+      if (a > MATE - 100) break; // a mate found
+    }
+    return pick;
+  }
+  return { start, legal, play, result, inCheck, best, side, kingAt, key };
+}
+const CHESS = chessEngine();
+// The computer thinks in a Worker (in the background), so the square does not stop while it thinks; without Workers, here
+let chWorker, chThinkN = 0;
+function chessThink(s, cb) {
+  if (chWorker === undefined) try { chWorker = new Worker(URL.createObjectURL(new Blob([`const CHESS = (${chessEngine})();\nonmessage = e => { const m = CHESS.best(e.data.s, e.data.ms); postMessage({ id: e.data.id, m: m ? [m.f, m.t] : null }); };`], { type: 'text/javascript' }))); } catch (e) { chWorker = null; }
+  const here = () => setTimeout(() => { const m = CHESS.best(s, 600); cb(m ? [m.f, m.t] : null); }, 60);
+  if (!chWorker) return here();
+  const id = ++chThinkN;
+  chWorker.onmessage = e => { if (e.data.id === id) cb(e.data.m); };
+  chWorker.onerror = e => { e.preventDefault(); chWorker = null; here(); };
+  chWorker.postMessage({ id, s, ms: 600 });
+}
+
+/* --- the pieces: 32 x 32 pixel art, drawn once. The People in green and pink, the Fascists in red and dark --- */
+// Each piece stands on a little round base (green for the People, dark red for the Fascists) and gets a dark outline.
+function chessSprites() {
+  const OUT = '#120e16';
+  const PV = { G: '#4ba36f', GD: '#2f7a4a', GL: '#86dba0', P: '#ff7ad9', PD: '#d94fb3', PL: '#ffc2ec', SK: '#e0b090', SKD: '#c48a63', HR: '#3a2416', W: '#f4f1ea', R: '#e2283b', RD: '#a81d2c', Y: '#ffd23a', J: '#3a4f8a', E: '#1a1420' };
+  const FA = { D: '#2c2933', DD: '#18161d', DL: '#4c4856', RR: '#b3121b', RL: '#e2283b', RD: '#6e0b12', ST: '#7b8190', SL: '#b3b8c3', SK: '#d9a37a', GO: '#d4a017', E: '#000000', C: '#3a3642' };
+  const make = draw => {
+    const c = document.createElement('canvas'); c.width = c.height = 32; const g = c.getContext('2d');
+    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    const line = (x0, y0, x1, y1, col, t = 1) => { const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) || 1; for (let i = 0; i <= n; i++) r(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), t, t, col); };
+    const ring = (cx, cy, rad, col) => { for (let a = 0; a < 64; a++) { const t = a / 64 * Math.PI * 2; r(Math.round(cx + Math.cos(t) * rad), Math.round(cy + Math.sin(t) * rad), 1, 1, col); } };
+    draw(r, line, ring);
+    // the outline: every empty pixel next to a filled one
+    const d = g.getImageData(0, 0, 32, 32), a = i => d.data[i * 4 + 3] > 0, edge = [];
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) { const i = y * 32 + x; if (a(i)) continue; if ((x > 0 && a(i - 1)) || (x < 31 && a(i + 1)) || (y > 0 && a(i - 32)) || (y < 31 && a(i + 32))) edge.push([x, y]); }
+    g.fillStyle = OUT; for (const [x, y] of edge) g.fillRect(x, y, 1, 1);
+    return c;
+  };
+  const base = (r, top, mid, low) => { r(9, 26, 14, 1, top); r(7, 27, 18, 2, mid); r(8, 29, 16, 1, low); r(10, 30, 12, 1, low); };
+  const pvBase = r => base(r, PV.GL, PV.G, PV.GD), faBase = r => base(r, FA.RL, FA.RR, FA.RD);
+  const S = {};
+  // O Povo — Rei: o cravo (Povo Unido), with a pink ribbon on the stem
+  S.K = make((r, line) => {
+    pvBase(r);
+    r(15, 13, 2, 13, PV.G); r(11, 18, 4, 2, PV.G); r(10, 17, 2, 1, PV.G); r(17, 21, 4, 2, PV.G); r(20, 20, 2, 1, PV.G); r(15, 15, 1, 9, PV.GL);
+    r(13, 22, 6, 2, PV.P); r(12, 24, 2, 2, PV.P); r(18, 24, 2, 2, PV.P); // the ribbon
+    r(13, 10, 6, 2, PV.GD); r(14, 12, 4, 1, PV.GD); // the calyx
+    r(9, 5, 14, 5, PV.R); r(10, 3, 12, 2, PV.R); r(10, 1, 2, 2, PV.R); r(14, 0, 2, 3, PV.R); r(18, 1, 2, 2, PV.R); r(21, 2, 2, 3, PV.R); r(8, 4, 2, 3, PV.R);
+    r(11, 4, 2, 2, PV.P); r(16, 3, 2, 2, PV.P); r(19, 5, 2, 2, PV.P); r(13, 7, 2, 1, PV.PL); r(10, 9, 12, 1, PV.RD); r(12, 6, 1, 3, PV.RD); r(18, 6, 1, 3, PV.RD);
+  });
+  // Dama: a Líder, with a megaphone
+  S.Q = make((r, line) => {
+    pvBase(r);
+    r(13, 21, 2, 5, PV.J); r(17, 21, 2, 5, PV.J); r(12, 25, 3, 1, PV.E); r(17, 25, 3, 1, PV.E);
+    r(11, 13, 10, 9, PV.G); r(11, 13, 10, 2, PV.P); r(18, 15, 2, 5, PV.P); r(12, 16, 1, 5, PV.GD); r(16, 15, 1, 7, PV.GD);
+    r(9, 14, 2, 6, PV.G); r(9, 20, 2, 2, PV.SK); // the arm down
+    r(21, 11, 2, 5, PV.G); r(21, 9, 2, 2, PV.SK); // the arm up
+    r(13, 6, 6, 6, PV.SK); r(12, 4, 8, 3, PV.HR); r(12, 7, 1, 4, PV.HR); r(19, 7, 1, 3, PV.HR); r(18, 2, 4, 3, PV.HR);
+    r(14, 8, 1, 1, PV.E); r(17, 8, 1, 1, PV.E); r(15, 10, 2, 1, PV.SKD);
+    r(22, 7, 2, 4, PV.W); r(24, 6, 2, 6, PV.W); r(26, 5, 2, 8, PV.PL); r(24, 9, 2, 1, PV.PD); // the megaphone
+    r(29, 5, 1, 2, PV.Y); r(30, 8, 1, 2, PV.Y); r(29, 11, 1, 2, PV.Y);
+  });
+  // Torre: a Rádio Livre
+  S.R = make((r, line) => {
+    pvBase(r);
+    r(6, 12, 20, 14, PV.G); r(6, 12, 20, 2, PV.GL); r(6, 24, 20, 2, PV.GD);
+    r(8, 15, 9, 8, PV.GD); for (let y = 16; y < 22; y += 2) for (let x = 9; x < 16; x += 2) r(x, y, 1, 1, PV.GL); // the speaker
+    r(19, 15, 5, 3, PV.PL); r(21, 15, 1, 3, PV.RD); // the dial
+    r(19, 20, 2, 2, PV.W); r(22, 20, 2, 2, PV.W);
+    r(9, 9, 1, 3, PV.GD); r(22, 9, 1, 3, PV.GD); r(9, 8, 14, 1, PV.GD); // the handle
+    line(21, 8, 25, 1, PV.GD); // the antenna
+    r(27, 2, 1, 3, PV.P); r(29, 1, 1, 5, PV.P); r(25, 0, 1, 1, PV.P);
+  });
+  // Cavalo: a Ciclista
+  S.N = make((r, line, ring) => {
+    pvBase(r);
+    ring(9, 21, 5, PV.E); ring(23, 21, 5, PV.E); r(9, 21, 1, 1, PV.SL || '#999'); r(23, 21, 1, 1, '#999');
+    line(9, 21, 15, 21, PV.P); line(15, 21, 12, 15, PV.P); line(12, 15, 20, 15, PV.P); line(20, 15, 23, 21, PV.P); line(15, 21, 20, 15, PV.P); // the frame
+    r(11, 13, 4, 1, PV.E); r(19, 12, 3, 1, PV.E); line(20, 13, 20, 15, PV.E); // saddle and handlebar
+    line(13, 13, 17, 6, PV.G, 2); r(17, 9, 3, 2, PV.G); line(19, 10, 21, 12, PV.SK); // body and arm
+    line(13, 14, 16, 19, PV.J); line(16, 19, 15, 22, PV.J); // the leg
+    r(16, 2, 5, 5, PV.SK); r(15, 1, 7, 2, PV.P); r(14, 2, 2, 1, PV.P); r(19, 4, 1, 1, PV.E); // head and helmet
+  });
+  // Peão: um Manifestante, with a sign
+  S.P = make((r) => {
+    pvBase(r);
+    r(13, 22, 2, 4, PV.J); r(17, 22, 2, 4, PV.J); r(12, 15, 8, 7, PV.G); r(12, 15, 8, 1, PV.GL);
+    r(13, 10, 6, 5, PV.SK); r(13, 9, 6, 2, PV.HR); r(14, 12, 1, 1, PV.E); r(17, 12, 1, 1, PV.E);
+    r(10, 9, 2, 7, PV.SK); r(20, 9, 2, 7, PV.SK); // arms up
+    r(15, 7, 2, 2, '#8a6234'); r(6, 1, 20, 7, PV.P); r(6, 1, 20, 1, PV.PL); r(8, 3, 16, 1, PV.W); r(10, 5, 12, 1, PV.W); // the sign
+  });
+  // Os Fascistas — Rei: o Ditador (peaked cap, sash, medals)
+  S.k = make((r, line) => {
+    faBase(r);
+    r(13, 21, 2, 5, FA.DD); r(17, 21, 2, 5, FA.DD); r(12, 25, 3, 1, FA.E); r(17, 25, 3, 1, FA.E);
+    r(11, 12, 10, 10, FA.D); r(10, 12, 2, 2, FA.GO); r(20, 12, 2, 2, FA.GO); line(11, 13, 20, 21, FA.RR, 2); r(13, 15, 1, 1, FA.GO); r(14, 16, 1, 1, FA.GO);
+    r(9, 14, 2, 7, FA.D); r(21, 14, 2, 7, FA.D); r(9, 21, 2, 1, FA.SK); r(21, 21, 2, 1, FA.SK);
+    r(13, 6, 6, 6, FA.SK); r(14, 8, 1, 1, FA.E); r(17, 8, 1, 1, FA.E); r(15, 10, 2, 1, FA.DD);
+    r(12, 2, 8, 3, FA.DD); r(11, 4, 10, 1, FA.RR); r(10, 5, 12, 1, FA.E); r(15, 2, 2, 2, FA.GO); // the cap
+  });
+  // Dama: a PIDE (hat, dark glasses, trench coat)
+  S.q = make((r) => {
+    faBase(r);
+    r(11, 12, 10, 14, FA.DL); r(11, 19, 10, 1, FA.DD); r(14, 12, 4, 3, FA.C); r(15, 12, 2, 6, FA.RR); r(15, 20, 2, 6, FA.C);
+    r(9, 13, 2, 9, FA.DL); r(21, 13, 2, 9, FA.DL); r(9, 22, 2, 1, FA.SK); r(21, 22, 2, 1, FA.SK);
+    r(13, 6, 6, 6, FA.SK); r(13, 8, 6, 2, FA.E); r(15, 11, 2, 1, FA.DD);
+    r(12, 1, 8, 4, FA.DD); r(12, 4, 8, 1, FA.RR); r(9, 5, 14, 1, FA.DD);
+  });
+  // Torre: o Carro Blindado
+  S.r = make((r, line, ring) => {
+    faBase(r);
+    r(4, 13, 24, 9, FA.D); r(4, 13, 24, 1, FA.DL); r(2, 16, 3, 6, FA.D); r(27, 15, 2, 7, FA.D); r(4, 17, 24, 2, FA.RR);
+    r(10, 8, 11, 5, FA.DL); r(10, 8, 11, 1, FA.SL); r(20, 9, 10, 2, FA.ST); r(13, 10, 3, 1, FA.E); // turret and barrel
+    r(7, 14, 4, 1, FA.E); r(22, 14, 3, 1, FA.E);
+    for (const x of [7, 15, 23]) { r(x - 2, 21, 6, 5, FA.DD); r(x, 23, 2, 1, FA.ST); }
+  });
+  // Cavalo: o Guarda a Cavalo (the horse's head)
+  S.n = make((r) => {
+    faBase(r);
+    r(13, 13, 11, 13, FA.D); r(9, 7, 12, 8, FA.D); r(5, 10, 6, 6, FA.D); r(15, 3, 2, 5, FA.D); r(19, 4, 2, 4, FA.D);
+    r(21, 7, 3, 16, FA.RR); r(20, 5, 2, 2, FA.RR); r(24, 10, 1, 10, FA.RD); // the mane
+    r(12, 9, 2, 1, FA.RL); r(6, 13, 1, 1, FA.E); r(7, 12, 10, 1, FA.RR); r(16, 8, 1, 6, FA.RR); // eye, nostril, bridle
+    r(14, 15, 9, 1, FA.DL); r(13, 25, 11, 1, FA.DD);
+  });
+  // Peão: um Guarda (helmet, shield, baton)
+  S.p = make((r) => {
+    faBase(r);
+    r(13, 22, 2, 4, FA.DD); r(17, 22, 2, 4, FA.DD); r(12, 14, 8, 8, FA.D);
+    r(13, 8, 6, 6, FA.SK); r(12, 5, 8, 4, FA.DD); r(12, 5, 8, 1, FA.DL); r(13, 9, 6, 2, FA.ST);
+    r(21, 11, 1, 9, FA.E); r(20, 14, 2, 2, FA.SK);
+    r(8, 13, 9, 12, FA.ST); r(9, 14, 1, 10, FA.SL); r(8, 18, 9, 2, FA.RR);
+  });
+  return S;
+}
+// the board on the Rossio's waves: little stones, light and dark, the waves running across the whole board
+function chessBoardBg() {
+  const c = document.createElement('canvas'); c.width = c.height = 192; const g = c.getContext('2d');
+  const C = { L: '#ebe5d6', LW: '#c3baa6', LG: '#d6cfbf', D: '#4b4654', DW: '#625c6d', DG: '#3b3743' };
+  for (let y = 0; y < 192; y++) for (let x = 0; x < 192; x++) {
+    const dark = ((x >> 5) + (y >> 5)) % 2 === 1, grout = x % 4 === 3 || y % 4 === 3;
+    const wave = (((y + Math.round(5 * Math.sin((x - x % 4) / 9))) % 16) + 16) % 16 < 5;
+    g.fillStyle = grout ? (dark ? C.DG : C.LG) : dark ? (wave ? C.DW : C.D) : (wave ? C.LW : C.L);
+    g.fillRect(x, y, 1, 1);
+  }
+  return c;
+}
+
+/* ================= Mini Xadrez: O Povo contra Os Fascistas ================= */
+// A table in a corner of the square. Alone: the People against the computer (always the Fascists). With someone in the
+// square: a challenge through the server (chess-invite), and the moves go from one to the other (chess-move); each
+// side checks every move against the rules. The game can be made small (a tab above Agenda and Parede) and picked up.
+const XADREZ = { gx: 17.6, gy: 19.8 }; // the table (servidor/src/personagens.js OBST: the characters walk round it)
+const CH_NAMES = { K: ['Cravo · Povo Unido', 'Carnation · People United'], Q: ['Líder', 'Leader'], R: ['Rádio Livre', 'Free Radio'], N: ['Ciclista', 'Cyclist'], P: ['Manifestante', 'Protester'],
+  k: ['Ditador', 'Dictator'], q: ['PIDE', 'Secret police'], r: ['Carro Blindado', 'Armoured car'], n: ['Guarda a Cavalo', 'Mounted guard'], p: ['Guarda', 'Guard'] };
+let chess = null, chSpr = null, chBg = null, chInvite = null; // chess: the game on this phone (or null)
+function chPeople(c) { return c === 'w' ? L('O Povo', 'The People') : L('Os Fascistas', 'The Fascists'); }
+function chessOpen() {
+  closeSheets(); chSpr ||= chessSprites(); chBg ||= chessBoardBg();
+  $('chess').hidden = false; chessTab(); chessGuide(); chessRender();
+}
+function chessMin() { $('chess').hidden = true; chessTab(); }
+function chessClose() { // closing a game that goes on only makes it small
+  if (chess && !chess.over) return chessMin();
+  $('chess').hidden = true; if (chess && chess.over) chess = null; chessTab();
+}
+function chessTab() { // the tab above Agenda and Parede, while a game goes on
+  const t = $('chessTab'), on = chess && !chess.over; if ((!on && !chInvite) || !$('chess').hidden) { t.hidden = true; $('stage').classList.remove('chtab'); return; }
+  const mine = on && chess.s.turn === chess.me && !chess.thinking;
+  t.textContent = chInvite ? L(`♟ ${chInvite.n} desafia-te`, `♟ ${chInvite.n} challenges you`) : mine && chess.mode === 'mp' ? L('♟ Retomar xadrez · é a tua vez', '♟ Back to chess · your move') : L('♟ Retomar xadrez', '♟ Back to chess');
+  t.classList.toggle('turn', !!chInvite || (mine && chess.mode === 'mp'));
+  const st = $('stage').getBoundingClientRect(), a = $('tAgenda').getBoundingClientRect(), w = $('tWall').getBoundingClientRect();
+  const wd = Math.max(175, w.right - a.left); t.style.width = wd + 'px'; t.style.left = Math.max(0, w.right - st.left - wd) + 'px'; // over Agenda and Parede (a little wider on small phones)
+  t.hidden = false; $('stage').classList.add('chtab');
+}
+function chessNew(mode, me, g, opp) {
+  chess = { mode, me, g, opp, s: CHESS.start(), sel: -1, last: null, over: null, thinking: false };
+  chessOpen(); if (mode === 'ai' && me !== 'w') chessAI();
+}
+// a move by this player
+function chessPlay(m) {
+  const c = chess; c.sel = -1; CHESS.play(c.s, m); c.last = [m.f, m.t];
+  if (c.mode === 'mp') send({ t: 'chess-move', g: c.g, m: [m.f, m.t] }); else send({ t: 'chess-act' }); // (playing alone is not "doing nothing" for the square)
+  chessAfter();
+  if (!c.over && c.mode === 'ai') chessAI();
+}
+function chessAfter() {
+  const c = chess, r = CHESS.result(c.s);
+  if (r) { c.over = r; if (c.mode === 'mp') send({ t: 'chess-end', g: c.g, why: 'fim' }); }
+  chessRender(); chessTab();
+}
+function chessAI() {
+  const c = chess; c.thinking = true; chessRender();
+  chessThink(c.s, fm => {
+    if (chess !== c || c.over) return; c.thinking = false;
+    const m = fm && CHESS.legal(c.s).find(x => x.f === fm[0] && x.t === fm[1]); if (m) { CHESS.play(c.s, m); c.last = [m.f, m.t]; }
+    chessAfter();
+  });
+}
+function chessStatus() {
+  const c = chess; if (!c) return L('Escolhe: contra o computador, ou desafia alguém da praça.', 'Choose: against the computer, or challenge someone in the square.');
+  if (c.over) {
+    const r = c.over, won = r.w === c.me;
+    if (c.overTxt) return c.overTxt; // resigned, left, out of time
+    if (r.w) return (r.r === 'mate' ? L('Xeque-mate! ', 'Checkmate! ') : '') + L(`Venceu ${chPeople(r.w)}!`, `${chPeople(r.w)} won!`) + (won ? L(' Ganhaste.', ' You won.') : L(' Perdeste.', ' You lost.'));
+    return { afogado: L('Empate: rei afogado (sem jogadas, sem xeque).', 'Draw: stalemate (no moves, not in check).'), material: L('Empate: não há peças para dar mate.', 'Draw: not enough pieces to mate.'), 50: L('Empate: 50 jogadas sem capturas nem peões.', 'Draw: 50 moves without a capture or a pawn move.'), repeticao: L('Empate: a mesma posição três vezes.', 'Draw: the same position three times.'), desistiu: c.overTxt, saiu: c.overTxt, tempo: c.overTxt }[r.r] || c.overTxt || '';
+  }
+  if (c.thinking) return L('Os Fascistas estão a pensar…', 'The Fascists are thinking…');
+  const check = CHESS.inCheck(c.s) ? L('Xeque! ', 'Check! ') : '', mine = c.s.turn === c.me;
+  if (c.mode === 'mp') return check + (mine ? L(`É a tua vez (${chPeople(c.me)}).`, `Your move (${chPeople(c.me)}).`) : L(`Vez de ${c.opp} (${chPeople(c.s.turn)}).`, `${c.opp}'s move (${chPeople(c.s.turn)}).`));
+  return check + (mine ? L('É a tua vez: O Povo.', 'Your move: The People.') : '');
+}
+function chessRender() {
+  if ($('chess').hidden) return;
+  const c = chess, cv = $('chessCv'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const flip = c && c.me === 'b', s = c ? c.s : CHESS.start();
+  const at = i => { const r = (i / 6) | 0, col = i % 6; return flip ? [(5 - col) * 32, (5 - r) * 32] : [col * 32, r * 32]; };
+  g.drawImage(chBg, 0, 0);
+  if (c && c.last) for (const i of c.last) { const [x, y] = at(i); g.fillStyle = 'rgba(255,210,58,.32)'; g.fillRect(x, y, 32, 32); }
+  if (c && !c.over && CHESS.inCheck(c.s)) { const [x, y] = at(CHESS.kingAt(s.b, s.turn)); g.fillStyle = 'rgba(226,40,59,.45)'; g.fillRect(x, y, 32, 32); }
+  const moves = c && c.sel >= 0 ? CHESS.legal(s).filter(m => m.f === c.sel) : [];
+  if (c && c.sel >= 0) { const [x, y] = at(c.sel); g.strokeStyle = '#ffd23a'; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, 30, 30); }
+  s.b.forEach((p, i) => { if (!p) return; const [x, y] = at(i); g.drawImage(chSpr[p], x, y); });
+  for (const m of moves) { const [x, y] = at(m.t); g.fillStyle = s.b[m.t] || m.e ? 'rgba(226,40,59,.9)' : 'rgba(182,255,59,.95)'; if (s.b[m.t] || m.e) { g.fillRect(x, y, 32, 3); g.fillRect(x, y + 29, 32, 3); g.fillRect(x, y, 3, 32); g.fillRect(x + 29, y, 3, 32); } else { g.fillRect(x + 13, y + 13, 6, 6); } }
+  $('chessSub').textContent = c && c.mode === 'mp' ? L(`O Povo contra Os Fascistas · com ${c.opp}`, `The People against The Fascists · with ${c.opp}`) : L('O Povo contra Os Fascistas', 'The People against The Fascists');
+  $('chessSt').textContent = chessStatus();
+  $('chessBar').innerHTML = '';
+  const btn = (t, f, cls = '') => { const b = document.createElement('button'); b.textContent = t; if (cls) b.className = cls; b.addEventListener('click', f); $('chessBar').append(b); };
+  const playing = c && !c.over;
+  if (!playing) { btn(L('Jogar vs IA', 'Play vs AI'), () => chessNew('ai', 'w'), 'go'); btn(L('Desafiar jogador', 'Challenge a player'), chessPick); }
+  if (playing) btn(L('Minimizar', 'Minimise'), chessMin);
+  if (playing) btn(L('Desistir', 'Resign'), chessResign, 'red');
+  $('chessPick').hidden = true;
+  const iv = $('chessInv'); iv.hidden = !chInvite; iv.innerHTML = '';
+  if (chInvite) { // someone challenges me: here, with the board in front
+    const p = document.createElement('p'); p.textContent = L(`${chInvite.n} desafia-te para uma partida. Tu jogas com Os Fascistas.`, `${chInvite.n} challenges you to a game. You play The Fascists.`) + (playing && c.mode === 'ai' ? L(' (A partida contra o computador acaba.)', ' (The game against the computer ends.)') : ''); iv.append(p);
+    const b = (t, ok, cls) => { const e = document.createElement('button'); e.textContent = t; if (cls) e.className = cls; e.addEventListener('click', () => chessAnswer(ok)); iv.append(e); };
+    b(L('Aceitar', 'Accept'), true); b(L('Recusar', 'Decline'), false, 'red');
+  }
+}
+function chessAnswer(ok) { const v = chInvite; if (!v) return; chInvite = null; send({ t: 'chess-answer', i: v.i, ok }); chessRender(); chessTab(); }
+function chessTap(ev) {
+  const c = chess; if (!c || c.over || c.thinking || c.s.turn !== c.me) return;
+  const r = $('chessCv').getBoundingClientRect(); let col = Math.floor((ev.clientX - r.left) / r.width * 6), row = Math.floor((ev.clientY - r.top) / r.height * 6);
+  if (col < 0 || col > 5 || row < 0 || row > 5) return; if (c.me === 'b') { col = 5 - col; row = 5 - row; }
+  const i = row * 6 + col, p = c.s.b[i];
+  if (c.sel >= 0) { const m = CHESS.legal(c.s).find(m => m.f === c.sel && m.t === i); if (m) return chessPlay(m); }
+  c.sel = p && CHESS.side(p) === c.me ? (c.sel === i ? -1 : i) : -1; chessRender();
+}
+function chessResign() {
+  const c = chess; if (!c || c.over) return;
+  c.over = { r: 'desistiu', w: c.me === 'w' ? 'b' : 'w' }; c.overTxt = L('Desististe.', 'You resigned.');
+  if (c.mode === 'mp') send({ t: 'chess-end', g: c.g, why: 'desistiu' });
+  chessRender(); chessTab();
+}
+function chessPick() { // who to challenge: the people in the square
+  const box = $('chessPick'); box.hidden = false; box.textContent = L('A ver quem está na praça…', 'Looking who is in the square…'); send({ t: 'chess-who' });
+}
+function chessWho(l) {
+  const box = $('chessPick'); if (box.hidden || !Array.isArray(l)) return; box.innerHTML = '';
+  const who = l.map(([id, n, c, busy]) => ({ id, n, c, busy })).filter(p => p.id !== myId && p.n);
+  if (!who.length) { box.textContent = L('Ainda não há mais ninguém na praça.', 'There is nobody else in the square yet.'); return; }
+  const h = document.createElement('p'); h.textContent = L('Quem queres desafiar? Tu jogas com O Povo.', 'Who do you want to challenge? You play The People.'); box.append(h);
+  for (const p of who.slice(0, 40)) { const b = document.createElement('button'); b.textContent = p.n + (p.c ? ' · ' + p.c : '') + (p.busy ? L(' · a jogar', ' · playing') : ''); b.disabled = !!p.busy; b.addEventListener('click', () => { send({ t: 'chess-invite', to: p.id }); box.hidden = true; $('chessSt').textContent = L(`Convite enviado a ${p.n}…`, `Challenge sent to ${p.n}…`); }); box.append(b); }
+}
+function chessMsg(m) {
+  if (m.t === 'chess-invite') { // someone challenges me
+    chInvite = { i: m.i, n: m.n }; chessRender(); chessTab();
+    if ($('chess').hidden) toast(L(`${m.n} desafia-te para uma partida de xadrez.`, `${m.n} challenges you to a game of chess.`), 4000);
+    return;
+  }
+  if (m.t === 'chess-gone') { if (chInvite && chInvite.i === m.i) { toast(L(`O desafio de ${chInvite.n} expirou.`, `${chInvite.n}'s challenge expired.`), 4000); chInvite = null; chessRender(); chessTab(); } return; }
+  if (m.t === 'chess-who') return chessWho(m.l);
+  if (m.t === 'chess-no') { const why = { recusou: L(`${m.n} recusou o desafio.`, `${m.n} declined.`), ocupado: L(`${m.n} já está a jogar ou tem outro desafio.`, `${m.n} is already playing or has another challenge.`), saiu: L('Essa pessoa já não está na praça.', 'That person has left the square.'), espera: L('Espera um pouco antes de desafiar outra vez.', 'Wait a little before challenging again.'), tempo: L('O convite expirou.', 'The challenge expired.') }[m.why] || ''; toast(why, 4000); if (!$('chess').hidden) $('chessSt').textContent = why; return; }
+  if (m.t === 'chess-start') { chInvite = null; if (chess && !chess.over && chess.mode === 'mp') return; chessNew('mp', m.w === myId ? 'w' : 'b', m.g, m.w === myId ? m.nb : m.nw); toast(L(`Partida com ${chess.opp}! Começa O Povo.`, `Game with ${chess.opp}! The People start.`), 4000); return; }
+  const c = chess; if (!c || c.mode !== 'mp' || m.g !== c.g) return;
+  if (m.t === 'chess-move' && !c.over && c.s.turn !== c.me) { // the other side's move, checked against the rules
+    const mv = Array.isArray(m.m) && CHESS.legal(c.s).find(x => x.f === m.m[0] && x.t === m.m[1]); if (!mv) return;
+    CHESS.play(c.s, mv); c.last = [mv.f, mv.t]; chessAfter(); if (!c.over && $('chess').hidden) toast(L(`${c.opp} jogou: é a tua vez no xadrez.`, `${c.opp} moved: your turn at chess.`), 3000); return;
+  }
+  if (m.t === 'chess-end' && !c.over) {
+    const txt = { desistiu: L(`${c.opp} desistiu. Ganhaste!`, `${c.opp} resigned. You won!`), saiu: L(`${c.opp} saiu da praça. A partida acabou.`, `${c.opp} left the square. The game is over.`), tempo: L('A partida acabou: 5 minutos sem jogadas.', 'The game is over: 5 minutes without a move.'), fim: L('A partida acabou.', 'The game is over.') }[m.why];
+    if (!txt) return; // (an end both phones saw arrives here already over)
+    c.over = { r: m.why, w: m.why === 'desistiu' ? c.me : null }; c.overTxt = txt; chessRender(); chessTab(); if ($('chess').hidden) toast(txt, 4000);
+  }
+}
+function chessGuide() { // the pieces' guide (closed at first)
+  const rows = [['K', 'k', L('Uma casa em qualquer direção. Se ficar sem saída em xeque, é xeque-mate.', 'One square in any direction. In check with no way out: checkmate.')],
+    ['Q', 'q', L('Quantas casas quiser, em linha reta ou na diagonal.', 'Any number of squares, straight or diagonally.')],
+    ['R', 'r', L('Quantas casas quiser, na horizontal ou na vertical.', 'Any number of squares, across or up and down.')],
+    ['N', 'n', L('Em L (duas casas e uma para o lado). Salta por cima das outras peças.', 'In an L (two squares and one to the side). Jumps over pieces.')],
+    ['P', 'p', L('Uma casa em frente (duas na primeira jogada). Come na diagonal. Ao chegar ao fim do tabuleiro passa a Dama.', 'One square forward (two on its first move). Takes diagonally. Reaching the far end it becomes a Queen.')]];
+  const d = $('chessGuide'); d.querySelector('summary').textContent = L('Guia das peças', 'Pieces guide');
+  const box = d.querySelector('div'); box.innerHTML = '';
+  for (const [a, b, t] of rows) {
+    const row = document.createElement('div'); row.className = 'chg';
+    for (const p of [a, b]) { const cv = document.createElement('canvas'); cv.width = cv.height = 32; cv.getContext('2d').drawImage(chSpr[p], 0, 0); row.append(cv); }
+    const tx = document.createElement('p'); tx.innerHTML = `<b>${esc(L(CH_NAMES[a][0], CH_NAMES[a][1]))} · ${esc(L(CH_NAMES[b][0], CH_NAMES[b][1]))}</b><br>${esc(t)}`; row.append(tx); box.append(row);
+  }
+  const n = document.createElement('p'); n.className = 'chn'; n.textContent = L('Tabuleiro 6x6, sem bispos. Começa O Povo. Também há empate por rei afogado, falta de peças, 50 jogadas sem capturas e posição repetida três vezes.', '6x6 board, no bishops. The People start. Draws: stalemate, not enough pieces, 50 moves without a capture, or the same position three times.'); box.append(n);
+}
+function drawXadrez(g, d) { // the table, a board on top, two stools
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+  for (const [sx, sy] of [[d.gx - .85, d.gy], [d.gx, d.gy - .85]]) box(g, sx - .18, sy - .18, sx + .18, sy + .18, 0, 4, '#b06a3a', '#8a4f2a', '#6b3c20');
+  box(g, d.gx - .45, d.gy - .45, d.gx + .45, d.gy + .45, 0, 7, '#a0703f', '#7a5230', '#5e3f24');
+  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) { const p = iso(d.gx - .38 + i * .127 + .06, d.gy - .38 + j * .127 + .06, 7); R(g, Math.round(p.x) - 1, Math.round(p.y), 2, 1, (i + j) % 2 ? '#2c2933' : '#ebe5d6'); }
+  const k = iso(d.gx - .15, d.gy + .2, 7); R(g, Math.round(k.x), Math.round(k.y) - 4, 2, 4, '#e2283b'); R(g, Math.round(k.x), Math.round(k.y) - 5, 2, 1, '#ff7ad9');
+  const f = iso(d.gx + .2, d.gy - .15, 7); R(g, Math.round(f.x), Math.round(f.y) - 4, 2, 4, '#18161d'); R(g, Math.round(f.x) - 1, Math.round(f.y) - 5, 4, 1, '#b3121b');
+}
+$('chessCv').addEventListener('click', chessTap);
+$('chessX').addEventListener('click', chessClose);
+$('chessTab').addEventListener('click', chessOpen);
+addEventListener('resize', () => chessTab());
 
 /* ================= start ================= */
 makeDecor(); makeBG(); applyTexts();
