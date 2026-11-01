@@ -87,7 +87,7 @@ body{ touch-action:manipulation; margin:0; min-height:100%; color:var(--ink); ba
 .wide .flt{ font-size:12px; padding:3px 6px 2px; } .wide .bub{ font-size:12px; padding:4px 8px 3px; } .wide #ban{ font-size:17px; }
 /* phones: the square fills the rest of the screen and a camera follows the player (see updCam) */
 .cam body{ overflow:hidden; }
-.cam .wrap{ position:fixed; inset:0; bottom:auto; height:var(--vvh, 100dvh); width:auto; margin:0; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); display:flex; flex-direction:column; gap:6px; }
+.cam .wrap{ position:fixed; inset:0; bottom:auto; height:max(var(--vvh, 100dvh), 100svh); /* never shorter than the screen with the browser's bars showing (iOS 26 sometimes reports a visible height that is too small: a gap at the bottom) */ width:auto; margin:0; padding:calc(env(safe-area-inset-top,0px) + 6px) 6px calc(env(safe-area-inset-bottom,0px) + 6px); display:flex; flex-direction:column; gap:6px; }
 .cam .stage{ flex:1; min-height:0; margin:0; overflow:hidden; }
 .cam canvas{ position:absolute; left:0; top:0; transform-origin:0 0; aspect-ratio:auto; }
 .cam .actions{ margin-top:0; } .cam #ctxBtn{ margin-top:6px; } .cam #ctxBtn[hidden]{ display:block; visibility:hidden; } .cam #help{ display:none; }
@@ -430,7 +430,8 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .calnp p{ font:15px/1.35 Georgia, serif; margin:8px 0 0; } .calstars{ font-size:34px; color:#ffd23a; margin:0; letter-spacing:6px; } .calnote{ font-size:12px; opacity:.8; max-width:440px; margin:0; }
 .calbtns{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 @media (orientation: landscape) and (max-height: 520px) and (pointer: coarse){ #cal{ padding-left:max(52px, calc(env(safe-area-inset-left,0px) + 8px)); padding-right:max(52px, calc(env(safe-area-inset-right,0px) + 8px)); } } /* clear of the iPhone's camera */
-.land #calC{ width:min(calc(100% - 150px), calc((100dvh - 100px) * 4 / 3)); }
+.cam #calC{ position:static; transform:none; aspect-ratio:4 / 3; } /* phones: the trip to Caldas is not the square's canvas (.cam canvas): it stays in its column */
+.land #calC{ width:min(calc(100% - 150px), calc((100dvh - 150px) * 4 / 3)); } .land .calbar, .land #calLyric{ width:min(calc(100% - 150px), max(320px, calc((100dvh - 150px) * 4 / 3))); } /* on its side: the bars, the lyric and the picture all fit in the height */
 #calLyric{ width:min(100%, calc((100dvh - 170px) * 4 / 3)); min-height:28px; text-align:center; font:800 22px/1.2 Jost, "Helvetica Neue", Arial, sans-serif; letter-spacing:.3px; color:#8f8aa8; } #calLyric b{ color:#ffd23a; } #calLyric i{ font-style:normal; color:#f4f1ea; } .land #calLyric{ font-size:18px; min-height:22px; }
 .calbar .who{ font-weight:700; color:#ffd23a; }
 </style>
