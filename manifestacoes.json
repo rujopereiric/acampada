@@ -197,6 +197,14 @@
  },
  {
   "date": "2026-11-02",
+  "at": "18:00",
+  "city": "Coimbra",
+  "title": "Oficina de cartazes",
+  "where": "Praça da República · Casa para Viver",
+  "horas": 3.5
+ },
+ {
+  "date": "2026-11-02",
   "at": "17:00",
   "city": "Lisboa",
   "title": "Acampada",
