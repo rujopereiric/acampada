@@ -4273,17 +4273,19 @@ const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas
 const ADS = [
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Domingo<br><b>1 nov. 2026</b>', 'Sunday<br><b>1 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Domingo<br><b>1 nov. 2026</b>', 'Sunday<br><b>1 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
+    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Coimbra · Praça da República', 'Coimbra · Praça da República')}</p><div class="rule"></div>
+    <p class="t">${L('Oficina de cartazes', 'Poster workshop')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>18:00</b></div><div><b>Praça da República</b><br>Coimbra</div></div>
+    <p class="src">${L('Oficina de materiais e colagem de cartazes para o 14 de novembro, com a Casa para Viver.', 'Materials workshop and poster pasting for 14 November, with Casa para Viver.')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Lisboa<small>${L('Rossio: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Rossio: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
-    <div><span class="when">${L('Dom 1', 'Sun 1')}</span><span class="what">Faro<small>${L('Praça da Liberdade: reunião de comissões, assembleia popular e muito mais', 'Praça da Liberdade: committee meetings, people’s assembly and much more')}</small></span></div>
-    <div><span class="when">${L('Seg 2', 'Mon 2')} · 18:00</span><span class="what">Coimbra<small>${L('Praça da República: oficina de faixas e cartazes da Casa para Viver', 'Praça da República: Casa para Viver banner and poster workshop')}</small></span></div>
     <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa e Porto', 'Lisboa and Porto')}<small>${L('Casa para viver. Alameda D. Afonso Henriques e Praça do Marquês. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques and Praça do Marquês. And dozens of other towns')}</small></span></div>
   </div>${CHECK()}</div>`],
   () => ['', `<div class="ad center"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="p-red rough">${L('14 de novembro', '14 November')}</h2><p class="p-big rough">${L('Casa para viver', 'Homes to live in')}</p>
@@ -4381,6 +4383,8 @@ const RALLIES = [
   { date: '2026-11-08', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-09', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-09', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-10', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-10', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Coimbra', title: 'Casa para viver', where: 'Ponte de Santa Clara' },
   { date: '2026-11-14', at: '15:00', city: 'Braga', title: 'Casa para viver', where: 'Arco da Porta Nova' },
