@@ -4,11 +4,22 @@
 // interview, a passer-by who joins, a group photo) goes through here.
 
 // the square's furniture that the characters walk around (multiplayer.html draws it in the same places)
-export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5], [17.6, 19.8, 1]]; // the carnation, the fountain, the canteen, the chess table (multiplayer.html XADREZ)
+export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5], [17.6, 19.8, 1], [19.6, 12.4, 1], [5.4, 19.6, 1]]; // the carnation, the fountain, the canteen, the chess, draughts and noughts-and-crosses tables (multiplayer.html MESAS)
 const SOPA = { x: 15.9, y: 1.85 }; // the canteen lady, behind her table
-export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada']; // the last two pass in the street: multiplayer.html times them from the clock
+export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada', 'bufos']; // the last two pass in the street: multiplayer.html times them from the clock
 const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready answers (multiplayer.html: INTERVIEW)
 const CONVINCE = [.7, .6, .85]; // how often each explanation (multiplayer.html: EXPLAIN) wins a passer-by over
+// «Há um bufo na praça»: a few campers walk about (they come and go). Now and then one of them is not who he says he is:
+// a plain-clothes police officer (an earpiece, asks names, films people from the edges) or an infiltrator (wants trouble
+// and gathers people round him). Anyone next to a camper can point at him and the square votes: right, he runs and the
+// square gains 3 supporters; wrong, an innocent camper leaves offended and nobody can point for 3 minutes. If nobody
+// finds him, the officer leaves with his photos, or the infiltrator gets the trouble he wanted and the passers-by he had
+// gathered run away. multiplayer.html: CAMPER_LINES (what each one says, in this order), the drawing of the clues.
+const CAMPERS = 3, BUFO_FIRST = [2, 4], BUFO_NEXT = [4, 7], BUFO_STAY = 6 * 60e3, CAMPER_STAY = [4, 9];
+const VOTE_MS = 20e3, LOCK_MS = 180e3, ACCUSE_EVERY = 60e3, STIR_NEED = 3, STIR_MS = 30e3, BUFO_PRIZE = 3, INF_PLAYERS = 4; // the infiltrator only comes when there are 4 or more people in the square (fewer: the officer comes instead)
+const BUFO_RESET = 5 * 60e3; // the square stood still this long (closed): the game starts again from nothing
+const LINES = [6, 5, 5]; // a camper, the officer, the infiltrator (multiplayer.html CAMPER_LINES)
+const EAR = 1, SNEAKERS = 2, SHADES = 4, CAP = 8; // what can be seen on them (the earpiece: only the officer)
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 // the DJ p.45's conga: three characters already in the square dance in line behind him while he walks his circle
@@ -22,6 +33,7 @@ export class Personagens {
     this.npcs = new Map(); this.ball = null; this.nextCur = 0; this.curId = 100;
     this.nextCaos = Date.now() + rnd(4, 7) * 60e3; this.nextAuto = 0; this.lastShot = 0;
     this.convinced = { day: '', n: 0 }; this.congaNpc = [];
+    this.bufo = null; this.nextBufo = 0; this.bufoRole = Math.random() < .5 ? 1 : 2; this.vote = null; this.lock = 0; this.camperId = 300; this.nextCamper = 0; this.lastTick = 0;
   }
   // where the DJ is on his painted circle at time t (null when he isn't walking it)
   djAt(t) {
@@ -58,10 +70,11 @@ export class Personagens {
     if (this.on('cao') && !this.ball) { const [x, y] = this.spot(); this.ball = { x, y, tx: x, ty: y, held: false, flying: false, dirty: true }; this.sq.broadcast({ t: 'ball', b: this.pubBall() }); }
     if (!this.on('cao') && this.ball) { this.ball = null; this.sq.broadcast({ t: 'ball', b: null }); }
     if (!this.on('curiosos')) for (const n of [...this.npcs.values()]) if (n.k === 'curioso') this.remove(n.id);
+    if (!this.on('bufos') || (this.lastTick && Date.now() - this.lastTick > BUFO_RESET)) this.bufoReset(); // switched off, or the square was closed: no campers, no vote, nothing from before
   }
   add(n) { Object.assign(n, { tx: n.x, ty: n.y, s: 0, g: 0, vr: n.vr || 0, pauseUntil: 0, dirty: true }); this.npcs.set(n.id, n); this.sq.broadcast({ t: 'npc+', n: this.pub(n) }); }
   remove(id) { if (this.npcs.delete(id)) this.sq.broadcast({ t: 'npc-', id }); }
-  pub(n) { return { id: n.id, k: n.k, x: +n.x.toFixed(2), y: +n.y.toFixed(2), s: n.s, g: n.g, vr: n.vr }; }
+  pub(n) { const o = { id: n.id, k: n.k, x: +n.x.toFixed(2), y: +n.y.toFixed(2), s: n.s, g: n.g, vr: n.vr }; if (n.k === 'acampado') o.t = n.t; return o; } // (a camper: the clues that can be seen on him, never who he is)
   pubBall() { const b = this.ball; return b && [+b.x.toFixed(2), +b.y.toFixed(2), b.held ? 1 : 0]; }
   all() { return [...this.npcs.values()].map(n => this.pub(n)); }
   convincedToday() { const d = new Date().toISOString().slice(0, 10); if (this.convinced.day !== d) this.convinced = { day: d, n: 0 }; return this.convinced.n; }
@@ -90,8 +103,14 @@ export class Personagens {
   setS(n, s) { if (n.s !== s) { n.s = s; n.dirty = true; } }
   near(p, x, y, r = 2.6) { return Math.hypot(p.x - x, p.y - y) <= r; }
 
+  bufoReset() {
+    for (const n of [...this.npcs.values()]) { if (n.k === 'acampado') this.remove(n.id); else if (n.mode === 'gang') n.mode = 'walk'; }
+    if (this.vote) this.sq.broadcast({ t: 'bufo-fim', r: 'cancel', id: this.vote.id }); // (the vote bar just closes)
+    this.bufo = null; this.vote = null; this.nextBufo = 0; this.lock = 0;
+  }
   /* four times a second */
   tick(now) {
+    this.lastTick = now;
     const inC = this.congaTick(now), free = id => !inC.includes(id); // the ones in the conga do nothing else
     const dt = .25, J = this.npcs.get(-1), O = this.npcs.get(-2), F = free(-3) ? this.npcs.get(-3) : null, S = this.npcs.get(-4), D = free(-5) ? this.npcs.get(-5) : null, B = this.ball;
     for (const id of [-3, -5, -6]) { const n = this.npcs.get(id); if (n && free(id) && n.v === 2.6) n.v = id === -3 ? 1.4 : id === -5 ? 1.9 : 1.1; } // back to their own pace
@@ -121,6 +140,7 @@ export class Personagens {
     const Z = free(-6) ? this.npcs.get(-6) : null; if (Z) { this.wander(Z, now, [3, 7]); this.setS(Z, Z.waiting ? 1 : 0); } // 1: stopped, the phone up
     // passers-by: up to three at a time, from the street in front
     if (this.on('curiosos')) this.curiosos(now, dt, byId);
+    if (this.on('bufos')) this.bufos(now, dt);
     // the moves, in one message
     const n = []; for (const x of this.npcs.values()) if (x.dirty) { n.push([x.id, +x.x.toFixed(2), +x.y.toFixed(2), x.s, x.g]); x.dirty = false; }
     const b = B && B.dirty ? this.pubBall() : null; if (B) B.dirty = false;
@@ -170,7 +190,86 @@ export class Personagens {
       if (n.mode === 'in') { this.setS(n, 0); if (this.step(n, dt, false)) n.mode = 'walk'; continue; }
       if (n.mode === 'follow') { const p = byId(n.with); this.setS(n, 7); if (!p || now > n.until) { n.mode = 'stand'; const a = rnd(0, Math.PI * 2); n.tx = 11 + Math.cos(a) * 2.7; n.ty = 11 + Math.sin(a) * 2.7; n.leaveAt = now + 240e3; } else { n.tx = p.x + .8; n.ty = p.y + .7; this.step(n, dt); } continue; }
       if (n.mode === 'stand') { this.setS(n, 7); this.step(n, dt); continue; }
+      if (n.mode === 'gang') { const b = this.bufo && this.npcs.get(this.bufo.id); if (!b || b.mode === 'out') { n.mode = 'walk'; continue; } this.setS(n, 0); n.tx = b.x + n.gx; n.ty = b.y + n.gy; n.v = 1.6; this.step(n, dt); continue; } // round the infiltrator
       this.setS(n, 0); this.wander(n, now, [3, 8]);
+    }
+  }
+  /* «Há um bufo na praça» */
+  camper(now, role) { // someone who comes in from the street, with his own look and maybe a clue or two
+    const front = Math.random() < .5, x = front ? rnd(2, this.W - 2) : this.W + 2.5, y = front ? this.H + 2.5 : rnd(2, this.H - 2);
+    const any = [0, 0, SNEAKERS, SHADES, CAP][Math.floor(Math.random() * 5)];
+    const n = { id: -(this.camperId++), k: 'acampado', x, y, v: rnd(1, 1.3), mode: 'in', vr: Math.floor(Math.random() * 270), role, t: role === 1 ? EAR | [SNEAKERS, SHADES, CAP][Math.floor(Math.random() * 3)] : any,
+      leaveAt: now + (role ? BUFO_STAY : rnd(...CAMPER_STAY) * 60e3), said: 0, seen: new Set(), stir: 0 };
+    if (this.camperId > 9e5) this.camperId = 300;
+    this.add(n); [n.tx, n.ty] = this.spot(); return n;
+  }
+  edge() { for (let i = 0; i < 20; i++) { const s = Math.floor(Math.random() * 4), a = rnd(1.2, this.W - 1.2), b = rnd(.9, 2.4), [x, y] = [[a, b], [a, this.H - b], [b, a], [this.W - b, a]][s]; if (this.free(x, y, .4)) return [x, y]; } return this.spot(); }
+  leave(n) { n.mode = 'out'; const front = Math.random() < .5; n.tx = front ? rnd(2, this.W - 2) : this.W + 2.5; n.ty = front ? this.H + 2.5 : rnd(2, this.H - 2); n.v = n.s === 9 ? 3.4 : n.v; }
+  bufoGone(now) { this.bufo = null; this.nextBufo = now + (+(this.sq.env && this.sq.env.BUFO_MS) || rnd(...BUFO_NEXT) * 60e3); }
+  bufos(now, dt) {
+    const all = [...this.npcs.values()].filter(n => n.k === 'acampado'), ps = this.players();
+    const soon = +(this.sq.env && this.sq.env.BUFO_MS) || 0; // (tests only: the next one sooner)
+    if (!this.nextBufo) this.nextBufo = now + (soon || rnd(...BUFO_FIRST) * 60e3);
+    // the campers: always a few, a new one now and then
+    if (all.filter(n => !n.role && n.mode !== 'out').length < CAMPERS && now > this.nextCamper) { this.camper(now, 0); this.nextCamper = now + rnd(20, 50) * 1000; }
+    if (!this.bufo && now > this.nextBufo && ps.length) {
+      // (the infiltrator waits for a fuller square)
+      const role = this.bufoRole === 2 && ps.length < INF_PLAYERS ? 1 : this.bufoRole; if (role === this.bufoRole) this.bufoRole = 3 - role; const n = this.camper(now, role); this.bufo = { id: n.id, role, rumorAt: now + rnd(25, 60) * 1000 };
+    }
+    if (this.bufo && this.bufo.rumorAt && now > this.bufo.rumorAt) { this.bufo.rumorAt = 0; this.sq.broadcast({ t: 'bufo-rumor' }); } // word gets round once he is one among the others (not the newest one)
+    if (this.vote && (now > this.vote.until || this.vote.yes.size + this.vote.no.size >= ps.length)) this.voteEnd(now);
+    for (const n of all) {
+      if (n.mode === 'out') { if (this.step(n, dt, false)) { this.remove(n.id); if (this.bufo && this.bufo.id === n.id) this.bufoGone(now); } continue; }
+      if (n.mode === 'in') { this.setS(n, 0); if (this.step(n, dt, false)) n.mode = 'walk'; continue; }
+      if (this.vote && this.vote.id === n.id) { this.setS(n, 0); continue; } // everyone looks at him: he stands still
+      if (n.talkUntil && now < n.talkUntil) { this.setS(n, 1); continue; }
+      if (now > n.leaveAt) { // time to go: the officer with his photos, a camper home
+        if (n.role === 1) { this.sq.broadcast({ t: 'bufo-fim', r: 'fugiu', role: 1, id: n.id, fotos: n.seen.size }); }
+        else if (n.role === 2) { this.sq.broadcast({ t: 'bufo-fim', r: 'fugiu', role: 2, id: n.id }); }
+        this.setS(n, 0); this.leave(n); continue;
+      }
+      if (n.role === 1) { // the officer: round the edges; stops near people with his phone up
+        if (n.mode === 'film') { this.setS(n, 2); for (const p of ps) if (this.near(p, n.x, n.y, 3.2)) n.seen.add(p.id); if (now > n.until) { n.mode = 'walk'; n.pauseUntil = 0; [n.tx, n.ty] = this.edge(); } continue; }
+        this.setS(n, 0);
+        if (this.step(n, dt)) {
+          const g = ps.find(p => ps.filter(q => this.near(q, p.x, p.y, 2.5)).length >= 2) || (Math.random() < .5 && ps[Math.floor(Math.random() * ps.length)]);
+          if (n.next === 'film') { n.next = ''; n.mode = 'film'; n.until = now + rnd(5, 9) * 1000; n.tx = n.x; n.ty = n.y; } // there: the phone up
+          else if (g && Math.random() < .6) { const a = rnd(0, Math.PI * 2); n.tx = Math.max(.6, Math.min(this.W - .6, g.x + Math.cos(a) * 2.2)); n.ty = Math.max(.6, Math.min(this.H - .6, g.y + Math.sin(a) * 2.2)); n.next = 'film'; }
+          else [n.tx, n.ty] = this.edge();
+        }
+        continue;
+      }
+      if (n.role === 2) { // the infiltrator: goes where people are, calls them round, says the wrong things
+        const crowd = ps.filter(p => this.near(p, n.x, n.y, 2.5)), gang = [...this.npcs.values()].filter(c => c.k === 'curioso' && c.mode === 'gang');
+        if (now > (n.sayAt || 0)) { n.sayAt = now + rnd(18, 28) * 1000; n.shout = now + 3e3; this.sq.broadcast({ t: 'acampado-diz', id: n.id, k: LINES[0] + LINES[1] + Math.floor(Math.random() * LINES[2]), alto: 1 }); }
+        this.setS(n, now < (n.shout || 0) ? 3 : 0);
+        if (gang.length < 3) for (const c of this.npcs.values()) if (c.k === 'curioso' && !c.g && (c.mode === 'walk') && this.near(c, n.x, n.y, 6) && Math.random() < .02) { const a = rnd(0, Math.PI * 2); c.mode = 'gang'; c.gx = Math.cos(a) * 1.1; c.gy = Math.sin(a) * 1.1; }
+        if (crowd.length + gang.length >= STIR_NEED) n.stir += dt * 1000;
+        if (n.stir >= STIR_MS) { // the trouble he wanted: the people he gathered run away, and so does he
+          for (const c of gang) { c.mode = 'out'; const front = Math.random() < .5; c.tx = front ? rnd(2, this.W - 2) : this.W + 2.5; c.ty = front ? this.H + 2.5 : rnd(2, this.H - 2); c.v = 2.6; }
+          this.sq.broadcast({ t: 'bufo-fim', r: 'provocou', role: 2, id: n.id, fugiram: gang.length }); this.setS(n, 0); this.leave(n); continue;
+        }
+        if (this.step(n, dt) && now > n.pauseUntil) {
+          const p = ps.length ? ps.reduce((b, q) => (dist(q, n) < dist(b, n) ? q : b)) : null;
+          if (p && dist(p, n) > 1.6) { const a = rnd(0, Math.PI * 2); n.tx = Math.max(.6, Math.min(this.W - .6, p.x + Math.cos(a) * 1.2)); n.ty = Math.max(.6, Math.min(this.H - .6, p.y + Math.sin(a) * 1.2)); }
+          else { n.pauseUntil = now + rnd(3, 6) * 1000; n.tx = n.x; n.ty = n.y; }
+        }
+        continue;
+      }
+      this.setS(n, 0); this.wander(n, now, [3, 8]);
+    }
+  }
+  voteEnd(now) {
+    const V = this.vote; this.vote = null; const n = this.npcs.get(V.id);
+    if (!n || V.yes.size <= V.no.size) { this.sq.broadcast({ t: 'bufo-fim', r: 'nao', id: V.id, sim: V.yes.size, nao: V.no.size }); return; }
+    n.talkUntil = 0;
+    if (n.role) { // found: the disguise comes off (the vest underneath) and he runs
+      this.convincedToday(); this.convinced.n += BUFO_PRIZE;
+      n.s = 9; n.dirty = true; n.leaveAt = Infinity; this.leave(n); for (const c of this.npcs.values()) if (c.mode === 'gang') c.mode = 'walk';
+      this.sq.broadcast({ t: 'bufo-fim', r: 'apanhado', role: n.role, id: n.id, by: V.n, total: this.convinced.n });
+    } else { // an innocent camper: offended, he goes home; nobody can point for a while
+      this.lock = now + LOCK_MS; n.s = 8; n.dirty = true; this.leave(n);
+      this.sq.broadcast({ t: 'bufo-fim', r: 'inocente', id: n.id, by: V.n, lock: LOCK_MS / 1000 });
     }
   }
   shoot(F, by, now) {
@@ -203,6 +302,29 @@ export class Personagens {
       this.sq.diretos.push(d); if (this.sq.diretos.length > 30) this.sq.diretos.shift();
       this.sq.broadcast({ t: 'direto', d });
       J.mode = 'after'; J.until = now + 4e3; return true;
+    }
+    if (m.t === 'falar') { // a camper says something (it may give him away)
+      const n = this.npcs.get(m.id | 0); if (!n || n.k !== 'acampado' || n.mode === 'out') return no('acampado', 'ausente'); if (n.mode === 'in') return true;
+      if (!this.near(p, n.x, n.y, 3)) return no('acampado', 'longe');
+      if (now - (p.lastFalar || 0) < 1500) return true; p.lastFalar = now;
+      const base = [0, LINES[0], LINES[0] + LINES[1]][n.role], k = base + (n.said++ + (n.id & 7)) % LINES[n.role];
+      if (!this.vote || this.vote.id !== n.id) { n.talkUntil = now + 3e3; n.tx = n.x; n.ty = n.y; }
+      this.sq.send(p, { t: 'acampado-diz', id: n.id, k }); return true;
+    }
+    if (m.t === 'bufo-acusar') { // «this one is a bufo»: the square votes
+      const n = this.npcs.get(m.id | 0); if (!n || n.k !== 'acampado' || n.mode === 'out') return no('acampado', 'ausente'); if (n.mode === 'in') return true;
+      if (!this.near(p, n.x, n.y, 3)) return no('acampado', 'longe');
+      if (now < this.lock) return no('acampado', 'desconfianca', Math.ceil((this.lock - now) / 1000));
+      if (this.vote) return no('acampado', 'votacao');
+      const wait = ACCUSE_EVERY - (now - (p.lastAcusar || 0)); if (wait > 0) return no('acampado', 'espera', Math.ceil(wait / 1000));
+      p.lastAcusar = now; n.tx = n.x; n.ty = n.y;
+      this.vote = { id: n.id, by: p.id, n: p.name, yes: new Set([p.id]), no: new Set(), until: now + VOTE_MS };
+      this.sq.broadcast({ t: 'bufo-voto', id: n.id, by: p.id, n: p.name, ms: VOTE_MS, sim: 1, nao: 0 }); return true;
+    }
+    if (m.t === 'bufo-votar') {
+      const V = this.vote; if (!V || V.yes.has(p.id) || V.no.has(p.id)) return true;
+      (m.ok ? V.yes : V.no).add(p.id);
+      this.sq.broadcast({ t: 'bufo-conta', id: V.id, sim: V.yes.size, nao: V.no.size }); return true;
     }
     if (m.t === 'explicar') {
       const n = this.npcs.get(m.id | 0); if (!n || n.k !== 'curioso') return true;

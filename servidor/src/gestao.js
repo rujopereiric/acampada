@@ -112,6 +112,7 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <div class="sw"><span>Bicicletada<small>Um grupo de ciclistas passa na rua com o megafone.</small></span><button data-npc="bicicletada" class="sm"></button></div>
       <div class="sw"><span>Zezinho Bailarino<small>Um manifestante como outro qualquer: anda pela praça a filmar com o telemóvel.</small></span><button data-npc="zezinho" class="sm"></button></div>
       <div class="sw"><span>Labrador<small>Brinca com a bola, aceita festas e de vez em quando rouba o microfone à jornalista.</small></span><button data-npc="cao" class="sm"></button></div>
+      <div class="sw"><span>Há um bufo na praça<small>Acampados que vêm e vão; de vez em quando um deles é um polícia à paizana ou um infiltrado, e a praça vota para o desmascarar.</small></span><button data-npc="bufos" class="sm"></button></div>
       <p class="muted" style="margin:8px 0 0" id="convencidos"></p>
     </section>
 

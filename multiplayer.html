@@ -51,6 +51,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 .agev small{ grid-column:1; font:500 12px/1.3 "Helvetica Neue", Arial, sans-serif; color:#3a3a44; } .agev .now{ background:#b6ff3b; padding:1px 5px; margin-left:4px; color:#0b0a0a; }
 .agev button{ grid-column:2; grid-row:1 / span 3; border:2px solid #0b0a0a; background:#fff; color:#0b0a0a !important; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 8px 6px; }
 #tour{ position:absolute; left:8px; right:8px; top:54px; z-index:4; display:flex; align-items:center; gap:10px; background:var(--lime); color:var(--ink); border:2px solid var(--ink); font:800 14px/1.25 Jost, sans-serif; padding:8px 10px; }
+#voto{ position:absolute; left:8px; right:8px; top:54px; z-index:5; display:flex; align-items:center; gap:10px; background:#d8261c; color:#fff; border:2px solid var(--ink); font:800 14px/1.25 Jost, sans-serif; padding:8px 10px; } #voto[hidden]{ display:none; } #voto .tb2{ display:flex; gap:6px; margin-left:auto; } #voto button{ border:2px solid var(--ink); background:#fff; color:var(--ink); font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:8px 10px 6px; white-space:nowrap; } #voto button:disabled{ opacity:.45; } #voto small{ display:block; font-weight:600; font-size:12px; }
 #tour[hidden]{ display:none; } #tour .tb2{ display:flex; gap:6px; margin-left:auto; } #tour button{ border:2px solid var(--ink); background:var(--ink); color:var(--lime); font:800 12px/1 Jost, sans-serif; text-transform:uppercase; padding:6px 8px 5px; white-space:nowrap; } #tour #tourSkip{ background:transparent; color:var(--ink); }
 .tb.new{ position:relative; } .tb.new::after{ content:''; position:absolute; top:6px; right:8px; width:10px; height:10px; border-radius:50%; background:var(--lime); border:2px solid var(--ink); }
 .tb.open{ outline:3px solid var(--lime); outline-offset:-3px; }
@@ -249,10 +250,11 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div class="sheet" id="fotoSheet" hidden><h3><span data-t="photo"></span><button class="x" data-close>✕</button></h3><img id="fotoImg" alt=""><div class="row2"><button class="redbtn" id="fotoShare" data-t="share"></button><button class="ghost" id="fotoSave" data-t="save"></button></div></div>
     <div class="sheet" id="phraseSheet" hidden><h3><span data-t="phrases"></span><button class="x" data-close>✕</button></h3><div class="grid" id="phraseGrid"></div></div>
     <div class="sheet" id="agendaSheet" hidden><h3><span data-t="agendaT"></span><button class="x" data-close>✕</button></h3><div id="agendaList"></div></div>
+    <div id="voto" hidden><span id="votoTxt"></span><span class="tb2"><button id="votoSim">Sim</button><button id="votoNao">Não</button></span></div>
     <div id="tour" hidden><span id="tourTxt"></span><span class="tb2"><button id="tourOk">OK</button><button id="tourSkip"></button></span></div>
     <div class="sheet" id="gestSheet" hidden><h3><span data-t="gestures"></span><button class="x" data-close>✕</button></h3><div class="grid gest" id="gestGrid"></div></div>
     <div id="chess" hidden><div class="chp" role="dialog" aria-label="Mini Xadrez">
-      <h3><span>Mini Xadrez<small id="chessSub"></small></span><button class="x" id="chessX" aria-label="Fechar">✕</button></h3>
+      <h3><span><span id="chessName">Mini Xadrez</span><small id="chessSub"></small></span><button class="x" id="chessX" aria-label="Fechar">✕</button></h3>
       <canvas id="chessCv" width="192" height="192"></canvas>
       <p id="chessSt"></p><div id="chessInv" hidden></div><div id="chessBar"></div><div id="chessPick" hidden></div>
       <details id="chessGuide"><summary></summary><div></div></details>
@@ -454,19 +456,19 @@ function makeDecor() {
   DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' }); // the giant carnation of the 25th of April, in the middle
   DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' }); // the fountain (the characters walk round it: personagens.js OBST)
   DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' }); // the canteen's table
-  DECOR.push({ gx: XADREZ.gx, gy: XADREZ.gy, k: 'xadrez' }); // the chess table
+  for (const [j, M] of Object.entries(MESAS)) DECOR.push({ gx: M.gx, gy: M.gy, k: 'mesa', j }); // the game tables
 }
 function drawDecor(g, d) {
   const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
   if (d.k === 'cravo') return drawCravo(g, d);
   if (d.k === 'fonte') return drawFonte(g, d);
   if (d.k === 'cantina') return drawCantina(g, d);
-  if (d.k === 'xadrez') return drawXadrez(g, d);
+  if (d.k === 'mesa') return drawMesa(g, d);
   if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
   else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
   else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
 }
-const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, xadrez: .8 }[d.k]));
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, mesa: .8 }[d.k]));
 // the statue: a granite plinth, a bronze-green stem with two leaves and a huge red carnation on top
 function drawCravo(g, d) {
   const c = d.gx, r = d.gy;
@@ -869,7 +871,7 @@ let jogos = { tent: null, built: [], banner: null }; // the two-person games (se
 const npcSay = new Map(); // id -> { text, at }: what a character just said
 function addNpc(o) {
   const n = npcs.get(o.id) || { id: o.id, step: 0, flip: false, back: false, moving: false };
-  n.k = o.k; n.s = o.s; n.g = o.g; n.vr = o.vr || 0; if (n.x === undefined) { n.x = o.x; n.y = o.y; } n.tx = o.x; n.ty = o.y;
+  n.k = o.k; n.s = o.s; n.g = o.g; n.vr = o.vr || 0; n.t = o.t || 0; if (n.x === undefined) { n.x = o.x; n.y = o.y; } n.tx = o.x; n.ty = o.y;
   npcs.set(o.id, n);
 }
 const LOOK_OPERADOR = { skin: '#d9a37a', hair: '#1a1a24', shirt: '#2a2a33', pants: '#3a3a44' };
@@ -928,6 +930,17 @@ function drawNpc(g, n, now) {
     if (n.g) { const px = x + 4; vl(g, px, y - 26, y - 9, '#6b4a2b'); R(g, px - 6, y - 32, 13, 8, '#0b0a0a'); R(g, px - 6, y - 32, 12, 7, '#f2efe6'); R(g, px - 4, y - 30, 8, 1, '#b3121b'); R(g, px - 4, y - 28, 6, 1, '#1b1464'); }
     return;
   }
+  if (n.k === 'acampado') { // a camper (or not): what can be seen on him is the clue (servidor/src/personagens.js: EAR, SNEAKERS, SHADES, CAP)
+    const lk = lookOf(n.vr), s = n.flip ? -1 : 1, shout = n.s === 3, w = Math.floor(t * 6) % 2;
+    guy(g, x, y, { ...lk, moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp2: shout, wob2: shout ? w : 0 });
+    if (n.t & 2) { R(g, x - 3, y - 2, 3, 1, '#ffffff'); R(g, x + 1, y - 2, 3, 1, '#ffffff'); } // brand-new white trainers
+    if ((n.t & 4) && !n.back) R(g, x - 2, y - 12, 5, 1, '#0b0a0a'); // dark glasses
+    if (n.t & 8) { R(g, x - 2, y - 16, 5, 2, '#2a2a33'); if (!n.back) R(g, n.flip ? x - 4 : x + 2, y - 15, 3, 1, '#1b1b22'); } // a plain dark cap
+    if (n.t & 1) { const ex = n.flip ? x - 3 : x + 3; R(g, ex, y - 12, 1, 1, '#f4f4f8'); R(g, ex, y - 11, 1, 2, '#3a3a44'); } // the earpiece and its wire
+    if (n.s === 2) { R(g, x + s * 4 - 1, y - 15, 3, 4, '#16121a'); R(g, x + s * 4, y - 14, 1, 2, '#6fb7ff'); } // the phone up, at people's faces
+    if (n.s === 9) { R(g, x - 3, y - 10, 7, 5, '#1b2656'); R(g, x - 3, y - 8, 7, 1, '#ffd23a'); R(g, x - 1, y - 10, 3, 1, '#ffd23a'); } // found: the police vest under the jacket
+    return;
+  }
   if (n.k === 'cao') {
     R(g, x - 6, y - 1, 13, 2, 'rgba(30,10,70,.28)');
     if (n.s === 2) { bmp(g, DOG_SIT, DOG_PAL, x - 7, y - 10, n.flip); for (let i = 0; i < 2; i++) { const k = (t * .9 + i / 2) % 1; heart(g, x - 2 + i * 5, y - 14 - k * 10, k); } }
@@ -950,7 +963,18 @@ const INTERVIEW = [
 ];
 const CURIOUS_Q = [['O que se passa aqui? É algum festival?', 'What’s going on here? Is it a festival?'], ['Isto é por causa das rendas?', 'Is this about the rents?'], ['Posso perguntar o que estão a fazer?', 'May I ask what you’re doing?'], ['No meu tempo também se acampava... porquê?', 'We camped too in my day... why now?']];
 const EXPLAIN = [['As rendas estão impossíveis e estamos a lutar por casa.', 'Rents are impossible and we’re fighting for homes.'], ['É uma acampada pela habitação. Junta-te a nós!', 'It’s a camp for housing. Join us!'], ['Ninguém devia ter de escolher entre comer e pagar a renda.', 'Nobody should have to choose between eating and paying rent.']];
-const NPC_NAME = { jornalista: ['Jornalista Laranja', 'Orange Journalist'], operador: ['Jornalista Laranja', 'Orange Journalist'], fotografa: ['Fotógrafa', 'Photographer'], cantina: ['Cantina', 'Canteen'], curioso: ['Curioso', 'Passer-by'], cao: ['Labrador', 'Labrador'] };
+// what the campers say (servidor/src/personagens.js LINES: 6 campers', 5 the officer's, 5 the infiltrator's, in this order)
+const CAMPER_LINES = [
+  ['Estou aqui desde o primeiro dia. A minha tenda é a amarela.', 'I’ve been here since day one. The yellow tent is mine.'], ['A minha renda subiu 40% este ano. Não dá mais.', 'My rent went up 40% this year. I can’t go on like this.'],
+  ['Às 19h há assembleia popular. Aparece!', 'There’s a people’s assembly at 7 pm. Come along!'], ['Trouxe sopa para a cantina. Já provaste?', 'I brought soup for the canteen. Have you tried it?'],
+  ['Isto só acaba quando houver casa para todos.', 'This only ends when there are homes for everyone.'], ['Sou estudante e não encontro quarto em lado nenhum.', 'I’m a student and I can’t find a room anywhere.'],
+  ['Como é que te chamas mesmo? E os teus amigos?', 'What’s your name again? And your friends’?'], ['Quem é que organiza isto? Quem é que manda aqui?', 'Who organises this? Who’s in charge here?'],
+  ['A que horas é que vocês dormem cá? Ficam todos?', 'What time do you sleep here? Do you all stay?'], ['Dás-me o teu número? É só para… o grupo.', 'Can I have your number? It’s just for… the group.'],
+  ['Essa música? Não conheço… sou novo nisto.', 'That song? Don’t know it… I’m new to this.'],
+  ['Bora mandar um cocktail molotov?', 'Shall we throw a Molotov cocktail?'], ['Bora mandar um petardo naquele caixote?', 'Shall we throw a banger in that bin?'], ['Bora partir uma montra?', 'Shall we smash a shop window?'],
+  ['Com cartazes não vamos lá. Bora fazer barulho a sério?', 'Posters won’t get us anywhere. Shall we make some real noise?'], ['Juntem-se aqui, malta! Tenho uma ideia…', 'Gather round, everyone! I’ve got an idea…']
+];
+const NPC_NAME = { jornalista: ['Jornalista Laranja', 'Orange Journalist'], operador: ['Jornalista Laranja', 'Orange Journalist'], fotografa: ['Fotógrafa', 'Photographer'], cantina: ['Cantina', 'Canteen'], curioso: ['Curioso', 'Passer-by'], acampado: ['Acampado', 'Camper'], cao: ['Labrador', 'Labrador'] };
 
 /* ================= the connection ================= */
 let ws = null, myId = 0, myMode = 'praca', me = null, clockOff = 0, closeAt = 0, live = [], wantOpen = false, retry = 0, closedByServer = false;
@@ -1030,6 +1054,7 @@ function onMsg(m) {
   if (m.t === 'congaNpc') { congaNpc = m.ids || []; return; }
   if (m.t === 'congano') { toast(L('O DJ p.45 não está na praça agora.', 'DJ p.45 isn’t in the square right now.'), 3000); return; }
   if (m.t === 'npc+') { addNpc(m.n); return; }
+  if (bufoMsg(m)) return;
   if (m.t === 'clima') { setClima(m.c); return; }
   if (m.t === 'jogos') { jogos = m.j || jogos; return; }
   if (m.t === 'jogo-ok') { if (m.k === 'tenda') toast(L(`⛺ ${m.n.join(' e ')} montaram uma tenda!`, `⛺ ${m.n.join(' and ')} pitched a tent!`), 4000); else { const ph = PHRASES[m.f]; toast(L(`🏳️ ${m.n.join(' e ')} abriram uma faixa: «${ph ? ph[0] : ''}»`, `🏳️ ${m.n.join(' and ')} opened a banner: “${ph ? ph[1] : ''}”`), 4500); } sparkle(); return; }
@@ -1043,7 +1068,7 @@ function onMsg(m) {
   if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
   if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && (m.d.by != null ? m.d.by === myId : m.d.n === (me && me.n))) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
   if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
-  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
+  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'desconfianca' ? L(`Depois do engano, ninguém confia em ninguém: espera ${m.wait} s para apontar outra vez.`, `After the mistake nobody trusts anybody: wait ${m.wait} s to point again.`) : m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
   if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
   if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
   if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
@@ -1191,11 +1216,12 @@ function draw(now) {
       if (me && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '16px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText('🤳', q.x + 46, head + 2); } continue; } // small name: a protester like any other
     if (lab) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(lab, q.x, head - 2); ctx.fillStyle = '#ff9a2e'; ctx.fillText(lab, q.x, head - 2); }
     if (me && n.k !== 'operador' && Math.hypot(me.x - n.x, me.y - n.y) <= REACH && $('npcSheet').hidden) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText(n.k === 'cao' ? '🐾' : '💬', q.x + 18 + (lab ? ctx.measureText(lab).width / 2 : 0), head - 2); }
+    if (bufoVote && bufoVote.id === n.id) { ctx.font = '18px system-ui, "Apple Color Emoji", sans-serif'; ctx.fillText('🚨', q.x - 22, head - 2 - Math.abs(Math.sin(now / 200)) * 4); } // the one being voted on
     const sd = npcSay.get(n.id); if (sd && now - sd.at < 4000 && sd.text) bubble(sd.text, q.x, head - (lab ? 16 : 4), now - sd.at);
   }
   { // the games: what to do, who is holding an end, and the banner's slogan
     const T = jogos.tent, B = jogos.banner, lab = (text, gx, gy, z, col) => { const q = S(gx, gy, z); if (q.x < -80 || q.x > cssW + 80 || q.y < -20 || q.y > cssH + 40) return; ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.85)'; ctx.strokeText(text, q.x, q.y); ctx.fillStyle = col; ctx.fillText(text, q.x, q.y); };
-    lab(L('♟ Jogar Xadrez', '♟ Play chess'), XADREZ.gx, XADREZ.gy, 20, '#ffffff');
+    for (const M of Object.values(MESAS)) lab(L(M.lab[0], M.lab[1]), M.gx, M.gy, 20, '#ffffff');
     if (T) { lab(L('⛺ Montar tenda · 2 pessoas', '⛺ Pitch a tent · 2 people'), T.x, T.y, 14, '#ffd23a'); gameEnds(T).forEach(([ex, ey], k) => { if (T.p && T.p[k]) lab(T.p[k], ex, ey, 10, '#b6ff3b'); }); }
     if (B && !B.open) { lab(L('🏳️ Abrir faixa · 2 pessoas', '🏳️ Open a banner · 2 people'), B.x, B.y, 14, '#ffd23a'); gameEnds(B).forEach(([ex, ey], k) => { if (B.e && B.e[k]) lab(B.e[k], ex, ey, 12, '#b6ff3b'); }); }
     if (B && B.open && PHRASES[B.f]) { // the slogan on the cloth (bannerGeom: its lines and size, in the square's pixels)
@@ -1313,21 +1339,21 @@ function targets() {
   for (const t of J.built || []) out.push({ kind: 'tenda', id: t.id, x: t.x, y: t.y, z: 6, t });
   if (J.banner && J.banner.open) out.push({ kind: 'faixaab', id: J.banner.id, x: J.banner.x, y: J.banner.y, z: 21 });
   for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: s.z, c }); }
-  out.push({ kind: 'xadrez', id: 0, x: XADREZ.gx, y: XADREZ.gy, z: 12 });
+  Object.entries(MESAS).forEach(([j, M], k) => out.push({ kind: 'mesa', id: k, j, x: M.gx, y: M.gy, z: 12 }));
   return out;
 }
 function hitTest(sx, sy) {
   const { ox, oy } = lastView; let best = null, bd = 1e9;
   for (const t of targets()) {
     const q = iso(t.x, t.y, t.z), px = (q.x - ox) * scale, py = (q.y - oy) * scale, d = Math.hypot(px - sx, py - sy);
-    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : t.kind === 'xadrez' ? 16 : 11) * scale + 6;
+    const r = (t.kind === 'cartaz' ? 6 : t.kind === 'bola' ? 7 : t.kind === 'mesa' ? 16 : 11) * scale + 6;
     if (d < r && d < bd) { bd = d; best = t; }
   }
   return best;
 }
 const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
 function approach(t) {
-  if (t.kind === 'xadrez') return chessOpen(); // the chess table: from anywhere in the square
+  if (t.kind === 'mesa') return chessOpen(t.j); // a game table: from anywhere in the square
   if (t.kind === 'cartaz') return showCartaz(t.c);
   if (t.kind === 'bicicletada') return bikeRideInfo();
   if (t.kind === 'tenda') return toast(L(`⛺ Montada por ${t.t.n.join(' e ')}`, `⛺ Pitched by ${t.t.n.join(' and ')}`), 3000);
@@ -1349,6 +1375,7 @@ function interact(t) {
   audioInit(); tourDone(2);
   if (t.kind === 'jornalista') { send({ t: 'entrevista' }); return; }
   if (t.kind === 'curioso') { const n = npcs.get(t.id); if (n && n.g) return say(t.id, L('Já estou convosco! ✊', 'I’m with you already! ✊')); return curiousDialog(t.id); }
+  if (t.kind === 'acampado') { send({ t: 'falar', id: t.id }); return; }
   if (t.kind === 'fotografa') return photoDialog();
   if (t.kind === 'cantina') return canteenDialog();
   if (t.kind === 'dj') return dialog('DJ p.45', inConga() >= 0 ? L('Estás na conga! 💃 Para sair, anda para outro lado.', 'You’re in the conga! 💃 To leave, walk somewhere else.') : L('Bora fazer uma conga? Põe-te na fila atrás de mim!', 'Shall we do a conga? Get in line behind me!'), b => { const g = optGrid(b); if (inConga() >= 0) g.append(optBtn(L('Sair da conga', 'Leave the conga'), () => { congaLeave(); closeSheets(); })); else g.append(optBtn(L('💃 Entrar na conga', '💃 Join the conga'), () => { send({ t: 'conga' }); closeSheets(); })); });
@@ -1401,6 +1428,47 @@ function curiousDialog(id) {
   const n = npcs.get(id); if (!n) return;
   const Q = CURIOUS_Q[n.vr % 4];
   dialog(L('Curioso', 'Passer-by'), L(Q[0], Q[1]), b => { const g = optGrid(b); EXPLAIN.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'explicar', id, a: i }); closeSheets(); }))); });
+}
+/* ---------- «Há um bufo na praça» (servidor/src/personagens.js) ---------- */
+let bufoVote = null, bufoTimer = 0; // { id, n, until, sim, nao, mine }
+function camperDialog(id, k) {
+  const ln = CAMPER_LINES[k]; if (!ln || !npcs.get(id)) return;
+  dialog(L('Acampado', 'Camper'), L(ln[0], ln[1]), b => {
+    const g = optGrid(b);
+    g.append(optBtn(L('Ok, até já', 'OK, see you'), () => closeSheets()));
+    const a = optBtn(L('🚨 Acho que é bufo!', '🚨 I think he’s a snitch!'), () => { closeSheets(); send({ t: 'bufo-acusar', id }); }); a.className = 'redbtn'; g.append(a);
+    const h = document.createElement('p'); h.className = 'note'; h.textContent = L('Bufo: um polícia à paizana ou um infiltrado. A praça vota. Se acertarem, ele foge; se for um acampado, fica ofendido e ninguém pode apontar durante 3 minutos.', 'A snitch: a plain-clothes police officer or an infiltrator. The square votes. Right: he runs; an innocent camper: he’s offended and nobody can point for 3 minutes.'); b.append(h);
+  });
+}
+function votoShow() {
+  if (bufoVote && performance.now() > bufoVote.until + 3000) bufoVote = null; // (its end never arrived: the connection dropped)
+  const v = bufoVote, el = $('voto'); if (!v) { el.hidden = true; clearInterval(bufoTimer); bufoTimer = 0; return; }
+  const s = Math.max(0, Math.ceil((v.until - performance.now()) / 1000));
+  $('votoTxt').innerHTML = `${esc(L(`🚨 ${v.n} acha que aquele acampado é bufo. Concordas?`, `🚨 ${v.n} thinks that camper is a snitch. Do you agree?`))}<small>${esc(L(`${v.sim} sim · ${v.nao} não · ${s} s`, `${v.sim} yes · ${v.nao} no · ${s} s`))}</small>`;
+  $('votoSim').disabled = $('votoNao').disabled = !!v.mine || !me; el.hidden = false;
+  if (!bufoTimer) bufoTimer = setInterval(votoShow, 500);
+}
+$('votoSim').addEventListener('click', () => { if (!bufoVote) return; bufoVote.mine = 1; send({ t: 'bufo-votar', ok: true }); votoShow(); });
+$('votoNao').addEventListener('click', () => { if (!bufoVote) return; bufoVote.mine = 1; send({ t: 'bufo-votar', ok: false }); votoShow(); });
+function bufoMsg(m) {
+  if (m.t === 'acampado-diz') { const ln = CAMPER_LINES[m.k]; if (!ln) return true; if (m.alto) say(m.id, L(ln[0], ln[1])); else camperDialog(m.id, m.k); return true; } // (alto: the infiltrator, out loud for everyone)
+  if (m.t === 'bufo-rumor') { toast(L('👀 Corre o rumor de que há um bufo na praça… Fala com os acampados.', '👀 Word is there’s a snitch in the square… Talk to the campers.'), 6000); return true; }
+  if (m.t === 'bufo-voto') { bufoVote = { id: m.id, n: m.n, until: performance.now() + m.ms, sim: m.sim, nao: m.nao, mine: m.by === myId ? 1 : 0 }; votoShow(); return true; }
+  if (m.t === 'bufo-conta') { if (bufoVote && bufoVote.id === m.id) { bufoVote.sim = m.sim; bufoVote.nao = m.nao; votoShow(); } return true; }
+  if (m.t === 'bufo-fim') {
+    if (bufoVote && bufoVote.id === m.id) { bufoVote = null; votoShow(); }
+    const T = {
+      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um infiltrado da polícia. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a police infiltrator. Well spotted, ${m.by}! +3 supporters`),
+      inocente: L(`😟 Era só um acampado. Ficou ofendido e foi-se embora. Ninguém pode apontar durante ${Math.round((m.lock || 180) / 60)} minutos.`, `😟 He was just a camper. He’s offended and left. Nobody can point for ${Math.round((m.lock || 180) / 60)} minutes.`),
+      nao: L(`A praça não concordou (${m.sim || 0} sim, ${m.nao || 0} não).`, `The square didn’t agree (${m.sim || 0} yes, ${m.nao || 0} no).`),
+      fugiu: m.role === 1 ? (m.fotos ? L(`📸 Ninguém deu por ele: um polícia à paizana saiu da praça com fotografias de ${m.fotos} ${m.fotos === 1 ? 'pessoa' : 'pessoas'}.`, `📸 Nobody noticed: a plain-clothes officer left the square with photos of ${m.fotos} ${m.fotos === 1 ? 'person' : 'people'}.`) : L('Um polícia à paizana andou pela praça e foi-se embora sem ninguém dar por ele.', 'A plain-clothes officer walked round the square and left without anyone noticing.')) : L('O infiltrado não conseguiu juntar ninguém e foi-se embora.', 'The infiltrator couldn’t gather anyone and left.'),
+      provocou: L(`💥 O infiltrado conseguiu a confusão que queria${m.fugiram ? `: ${m.fugiram} ${m.fugiram === 1 ? 'curioso assustou-se e foi-se' : 'curiosos assustaram-se e foram-se'} embora` : ''}. Não lhe deem ouvidos!`, `💥 The infiltrator got the trouble he wanted${m.fugiram ? `: ${m.fugiram} scared passer${m.fugiram === 1 ? '-by' : 's-by'} left` : ''}. Don’t listen to him!`)
+    }[m.r];
+    if (m.r === 'apanhado') { say(m.id, m.role === 1 ? L('Ups… fui apanhado.', 'Oops… caught.') : L('Era só… brincadeira!', 'It was just… a joke!')); if (m.total != null) { convencidos = m.total; renderCounts(); } }
+    if (m.r === 'inocente') say(m.id, L('Eu?! Estou aqui desde o primeiro dia!', 'Me?! I’ve been here since day one!'));
+    if (T) toast(T, 6000); return true;
+  }
+  return false;
 }
 function photoDialog() {
   dialog(L('Fotógrafa', 'Photographer'), L('Querem uma foto de grupo? Juntem-se perto de mim e sorriam!', 'Want a group photo? Gather round me and smile!'), b => {
@@ -1554,7 +1622,7 @@ function savePhoto() { if (!lastPhoto) return; const a = document.createElement(
 const NPC_NO = {
   longe: ['Chega-te mais perto.', 'Get a bit closer.'], ocupada: ['Está ocupada agora. Tenta daqui a pouco.', 'Busy right now. Try again in a moment.'],
   ausente: ['Não está na praça agora.', 'Not in the square right now.'], ja: ['Já está convencido!', 'Already convinced!'],
-  pensar: ['Ainda está a pensar no que lhe disseste.', 'Still thinking about what you said.'], palavras: ['Essa resposta não passa no filtro da praça.', 'That answer doesn’t pass the square’s filter.'],
+  pensar: ['Ainda está a pensar no que lhe disseste.', 'Still thinking about what you said.'], votacao: ['Já há uma votação a decorrer.', 'There’s already a vote going on.'], palavras: ['Essa resposta não passa no filtro da praça.', 'That answer doesn’t pass the square’s filter.'],
   links: ['Sem links nem endereços, por favor.', 'No links or addresses, please.'], vazio: ['Escreve alguma coisa.', 'Write something.'],
   off: ['As bicicletas estão desligadas pela organização.', 'Bicycles are switched off by the organisers.'], cheio: ['O cravo está cheio de cartazes.', 'The carnation is full of posters.']
 };
@@ -2054,16 +2122,127 @@ function chessEngine() {
   return { start, legal, play, result, inCheck, best, side, kingAt, key };
 }
 const CHESS = chessEngine();
-// The computer thinks in a Worker (in the background), so the square does not stop while it thinks; without Workers, here
-let chWorker, chThinkN = 0;
-function chessThink(s, cb) {
-  if (chWorker === undefined) try { chWorker = new Worker(URL.createObjectURL(new Blob([`const CHESS = (${chessEngine})();\nonmessage = e => { const m = CHESS.best(e.data.s, e.data.ms); postMessage({ id: e.data.id, m: m ? [m.f, m.t] : null }); };`], { type: 'text/javascript' }))); } catch (e) { chWorker = null; }
-  const here = () => setTimeout(() => { const m = CHESS.best(s, 600); cb(m ? [m.f, m.t] : null); }, 60);
-  if (!chWorker) return here();
-  const id = ++chThinkN;
-  chWorker.onmessage = e => { if (e.data.id === id) cb(e.data.m); };
-  chWorker.onerror = e => { e.preventDefault(); chWorker = null; here(); };
-  chWorker.postMessage({ id, s, ms: 600 });
+/* ================= Damas (regras portuguesas): the rules and the opponent ================= */
+// 8x8, squares r*8+c, row 0 at the top; the dark squares are the ones with (r + c) even (a dark square in each player's
+// right-hand corner). The People (P, kings Q) start on the bottom three rows and move first, the Fascists (p, q) on the
+// top three. A man moves one square diagonally forward and captures only forward, several in a row; a king (dama) moves
+// and captures any distance along a diagonal, forwards and backwards. Capturing is compulsory, and the sequence that
+// takes the most pieces must be played (equal: the one that takes the most kings). Captured pieces come off at the end
+// of the move and cannot be jumped twice. A man that ends its move on the far row becomes a king. No moves: lost.
+// Draw: 20 moves each with kings only, without a capture or a man moving.
+function damasEngine() {
+  const side = p => p ? (p < 'a' ? 'w' : 'b') : null, isK = p => p === 'Q' || p === 'q';
+  const DIRS = [[-1, -1], [-1, 1], [1, -1], [1, 1]], on = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+  function start() {
+    const b = Array(64).fill(null);
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if ((r + c) % 2 === 0) { if (r < 3) b[r * 8 + c] = 'p'; else if (r > 4) b[r * 8 + c] = 'P'; }
+    return { b, turn: 'w', kq: 0, n: 0 };
+  }
+  // every capture sequence of the piece on square f (the piece is lifted: its square counts as empty)
+  function caps(b, f, me) {
+    const out = [], p = b[f], king = isK(p), fwd = me === 'w' ? -1 : 1;
+    const go = (at, path, taken, nk) => {
+      const r0 = (at / 8) | 0, c0 = at % 8; let more = false;
+      for (const [dr, dc] of DIRS) {
+        if (!king && dr !== fwd) continue; // men take only forwards
+        let r = r0 + dr, c = c0 + dc;
+        if (king) while (on(r, c) && (b[r * 8 + c] === null || r * 8 + c === f)) { r += dr; c += dc; }
+        if (!on(r, c)) continue;
+        const v = r * 8 + c, q = b[v]; if (!q || v === f || side(q) === me || taken.includes(v)) continue;
+        let lr = r + dr, lc = c + dc;
+        while (on(lr, lc) && (b[lr * 8 + lc] === null || lr * 8 + lc === f) && !taken.includes(lr * 8 + lc)) {
+          const l = lr * 8 + lc; more = true; go(l, path.concat(l), taken.concat(v), nk + (isK(q) ? 1 : 0));
+          if (!king) break; lr += dr; lc += dc;
+        }
+      }
+      if (!more && taken.length) out.push({ f, t: at, p: path, cap: taken, k: nk });
+    };
+    go(f, [f], [], 0); return out;
+  }
+  function legal(s) {
+    const b = s.b, me = s.turn; let all = [];
+    for (let i = 0; i < 64; i++) if (side(b[i]) === me) all = all.concat(caps(b, i, me));
+    if (all.length) { // the most pieces, then the most kings
+      const most = Math.max(...all.map(m => m.cap.length)); all = all.filter(m => m.cap.length === most);
+      const mk = Math.max(...all.map(m => m.k)); return all.filter(m => m.k === mk);
+    }
+    const fwd = me === 'w' ? -1 : 1;
+    for (let i = 0; i < 64; i++) {
+      const p = b[i]; if (side(p) !== me) continue; const r0 = (i / 8) | 0, c0 = i % 8;
+      for (const [dr, dc] of DIRS) {
+        if (!isK(p) && dr !== fwd) continue;
+        let r = r0 + dr, c = c0 + dc;
+        while (on(r, c) && b[r * 8 + c] === null) { all.push({ f: i, t: r * 8 + c, p: [i, r * 8 + c], cap: [], k: 0 }); if (!isK(p)) break; r += dr; c += dc; }
+      }
+    }
+    return all;
+  }
+  function play(s, m) {
+    const b = s.b, p = b[m.f]; b[m.f] = null; for (const v of m.cap) b[v] = null;
+    const last = ((m.t / 8) | 0) === (side(p) === 'w' ? 0 : 7);
+    b[m.t] = !isK(p) && last ? (p === 'P' ? 'Q' : 'q') : p;
+    s.kq = isK(p) && !m.cap.length ? s.kq + 1 : 0; s.n++;
+    s.turn = s.turn === 'w' ? 'b' : 'w';
+  }
+  function result(s) {
+    if (!legal(s).length) return { r: 'sem', w: s.turn === 'w' ? 'b' : 'w' }; // no pieces or no moves: lost
+    if (s.kq >= 40) return { r: '20', w: null };
+    return null;
+  }
+  const copy = s => ({ b: s.b.slice(), turn: s.turn, kq: s.kq, n: s.n });
+  function evalFor(s, me) {
+    let v = 0;
+    for (let i = 0; i < 64; i++) { const p = s.b[i]; if (!p) continue; const r = (i / 8) | 0, k = isK(p), adv = side(p) === 'w' ? 7 - r : r, c = i % 8;
+      const w = k ? 320 : 100 + adv * 6 + (c > 1 && c < 6 ? 4 : 0); v += side(p) === me ? w : -w; }
+    return v;
+  }
+  function best(s, ms = 500, maxDepth = 9) {
+    const moves = legal(s); if (!moves.length) return null; if (moves.length === 1) return moves[0];
+    const clock = { until: Date.now() + ms, n: 0, out: false };
+    function neg(st, d, a, bt) {
+      if ((clock.n++ & 1023) === 0 && Date.now() > clock.until) clock.out = true; if (clock.out) return 0;
+      const ms2 = legal(st); if (!ms2.length) return -100000 + st.n;
+      if (st.kq >= 40) return 0;
+      if (d <= 0 && !ms2[0].cap.length) return evalFor(st, st.turn);
+      let bestV = -1e9;
+      for (const m of ms2) { const t = copy(st); play(t, m); const v = -neg(t, d - 1, -bt, -a); if (v > bestV) bestV = v; if (v > a) a = v; if (a >= bt) break; }
+      return bestV;
+    }
+    let pick = moves[Math.floor(Math.random() * moves.length)];
+    for (let d = 1; d <= maxDepth; d++) {
+      const scored = [];
+      for (const m of moves) { const t = copy(s); play(t, m); const v = -neg(t, d - 1, -1e9, 1e9); if (clock.out) break; scored.push([v, m]); }
+      if (clock.out) break;
+      const top = Math.max(...scored.map(x => x[0])), good = scored.filter(x => x[0] >= top - 8); pick = good[Math.floor(Math.random() * good.length)][1];
+    }
+    return pick;
+  }
+  return { start, legal, play, result, best, side, isK, enc: m => m.p, N: 8 };
+}
+
+/* ================= Jogo do Galo: the rules and the opponent ================= */
+// 3x3: the People put carnations (K), the Fascists dictators (k); the People start. Three in a row wins; a full board
+// with no row is a draw. The computer plays perfectly, but now and then gets distracted (so it can be beaten).
+function galoEngine() {
+  const LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  const side = p => p ? (p === 'K' ? 'w' : 'b') : null;
+  const start = () => ({ b: Array(9).fill(null), turn: 'w' });
+  const legal = s => winner(s.b) ? [] : s.b.map((p, i) => p ? null : { f: i, t: i, p: [i] }).filter(Boolean);
+  function play(s, m) { s.b[m.t] = s.turn === 'w' ? 'K' : 'k'; s.turn = s.turn === 'w' ? 'b' : 'w'; }
+  function winner(b) { for (const [a, c, d] of LINES) if (b[a] && b[a] === b[c] && b[a] === b[d]) return { w: side(b[a]), line: [a, c, d] }; return null; }
+  function result(s) { const w = winner(s.b); if (w) return { r: 'linha', w: w.w, line: w.line }; if (s.b.every(Boolean)) return { r: 'cheio', w: null }; return null; }
+  function score(s, me) { // perfect play: +1 me wins, 0 draw, -1 I lose (sooner wins count more)
+    const r = result(s); if (r) { const k = 10 - s.b.filter(Boolean).length; return r.w ? (r.w === me ? k : -k) : 0; }
+    const vals = legal(s).map(m => { const t = { b: s.b.slice(), turn: s.turn }; play(t, m); return score(t, me); });
+    return s.turn === me ? Math.max(...vals) : Math.min(...vals);
+  }
+  function best(s) {
+    const moves = legal(s); if (!moves.length) return null;
+    if (Math.random() < .2) return moves[Math.floor(Math.random() * moves.length)]; // distracted
+    const me = s.turn, scored = moves.map(m => { const t = { b: s.b.slice(), turn: s.turn }; play(t, m); return [score(t, me), m]; });
+    const top = Math.max(...scored.map(x => x[0])), good = scored.filter(x => x[0] >= top - .01); return good[Math.floor(Math.random() * good.length)][1];
+  }
+  return { start, legal, play, result, best, side, winner, enc: m => m.p, N: 3 };
 }
 
 /* --- the pieces: 32 x 32 pixel art, drawn once. The People in green and pink, the Fascists in red and dark --- */
@@ -2193,17 +2372,29 @@ function chessBoardBg() {
   return c;
 }
 
-/* ================= Mini Xadrez: O Povo contra Os Fascistas ================= */
-// A table in a corner of the square. Alone: the People against the computer (always the Fascists). With someone in the
-// square: a challenge through the server (chess-invite), and the moves go from one to the other (chess-move); each
-// side checks every move against the rules. The game can be made small (a tab above Agenda and Parede) and picked up.
-const XADREZ = { gx: 17.6, gy: 19.8 }; // the table (servidor/src/personagens.js OBST: the characters walk round it)
+/* ================= As mesas: Mini Xadrez, Damas e Jogo do Galo · O Povo contra Os Fascistas ================= */
+// Three tables round the square. Alone: the People against the computer (always the Fascists). With someone in the
+// square: a challenge through the server (chess-invite, with the game), and the moves go from one to the other
+// (chess-move: the squares of the move); each side checks every move against the rules. One game at a time; it can be
+// made small (a tab above Agenda and Parede) and picked up.
+const MESAS = { // where they stand (servidor/src/personagens.js OBST: the characters walk round them)
+  xadrez: { gx: 17.6, gy: 19.8, ic: '♟', name: ['Mini Xadrez', 'Mini chess'], de: ['de xadrez', 'of chess'], tab: ['xadrez', 'chess'], lab: ['♟ Jogar Xadrez', '♟ Play chess'] },
+  damas: { gx: 19.6, gy: 12.4, ic: '◉', name: ['Damas', 'Draughts'], de: ['de damas', 'of draughts'], tab: ['damas', 'draughts'], lab: ['◉ Jogar Damas', '◉ Play draughts'] },
+  galo: { gx: 5.4, gy: 19.6, ic: '#', name: ['Jogo do Galo', 'Noughts and crosses'], de: ['de jogo do galo', 'of noughts and crosses'], tab: ['jogo do galo', 'noughts and crosses'], lab: ['# Jogo do Galo', '# Noughts and crosses'] }
+};
+const ENG = { xadrez: { ...CHESS, enc: m => [m.f, m.t], N: 6 }, damas: damasEngine(), galo: galoEngine() };
+const encEq = (E, m, a) => { const e = E.enc(m); return Array.isArray(a) && e.length === a.length && e.every((v, i) => v === a[i]); };
 const CH_NAMES = { K: ['Cravo · Povo Unido', 'Carnation · People United'], Q: ['Líder', 'Leader'], R: ['Rádio Livre', 'Free Radio'], N: ['Ciclista', 'Cyclist'], P: ['Manifestante', 'Protester'],
   k: ['Ditador', 'Dictator'], q: ['PIDE', 'Secret police'], r: ['Carro Blindado', 'Armoured car'], n: ['Guarda a Cavalo', 'Mounted guard'], p: ['Guarda', 'Guard'] };
-let chess = null, chSpr = null, chBg = null, chInvite = null; // chess: the game on this phone (or null)
+let chess = null, chView = 'xadrez', chSpr = null, chInvite = null; // chess: the game on this phone, at any table (or null); chView: the table shown
+const chBgs = {};
 function chPeople(c) { return c === 'w' ? L('O Povo', 'The People') : L('Os Fascistas', 'The Fascists'); }
-function chessOpen() {
-  closeSheets(); chSpr ||= chessSprites(); chBg ||= chessBoardBg();
+const chHere = () => chess && chess.j === chView ? chess : null; // the game at the table shown
+function chessOpen(j) {
+  closeSheets(); chSpr ||= chessSprites();
+  if (typeof j !== 'string') j = chInvite && !(chess && !chess.over) ? chInvite.j : null; // (the tab: the game going on, or the challenge)
+  if (chess && !chess.over) { if (j && j !== chess.j) toast(L(`Primeiro acaba a partida ${MESAS[chess.j].de[0]}.`, `Finish your game ${MESAS[chess.j].de[1]} first.`), 3500); chView = chess.j; }
+  else { chView = j || chView; if (chess && chess.j !== chView) chess = null; }
   $('chess').hidden = false; chessTab(); chessGuide(); chessRender();
 }
 function chessMin() { $('chess').hidden = true; chessTab(); }
@@ -2213,86 +2404,126 @@ function chessClose() { // closing a game that goes on only makes it small
 }
 function chessTab() { // the tab above Agenda and Parede, while a game goes on
   const t = $('chessTab'), on = chess && !chess.over; if ((!on && !chInvite) || !$('chess').hidden) { t.hidden = true; $('stage').classList.remove('chtab'); return; }
-  const mine = on && chess.s.turn === chess.me && !chess.thinking;
-  t.textContent = chInvite ? L(`♟ ${chInvite.n} desafia-te`, `♟ ${chInvite.n} challenges you`) : mine && chess.mode === 'mp' ? L('♟ Retomar xadrez · é a tua vez', '♟ Back to chess · your move') : L('♟ Retomar xadrez', '♟ Back to chess');
+  const mine = on && chess.s.turn === chess.me && !chess.thinking, M = on ? MESAS[chess.j] : null;
+  t.textContent = chInvite ? L(`${MESAS[chInvite.j].ic} ${chInvite.n} desafia-te`, `${MESAS[chInvite.j].ic} ${chInvite.n} challenges you`) : mine && chess.mode === 'mp' ? L(`${M.ic} Retomar ${M.tab[0]} · é a tua vez`, `${M.ic} Back to ${M.tab[1]} · your move`) : L(`${M.ic} Retomar ${M.tab[0]}`, `${M.ic} Back to ${M.tab[1]}`);
   t.classList.toggle('turn', !!chInvite || (mine && chess.mode === 'mp'));
   const st = $('stage').getBoundingClientRect(), a = $('tAgenda').getBoundingClientRect(), w = $('tWall').getBoundingClientRect();
   const wd = Math.max(175, w.right - a.left); t.style.width = wd + 'px'; t.style.left = Math.max(0, w.right - st.left - wd) + 'px'; // over Agenda and Parede (a little wider on small phones)
   t.hidden = false; $('stage').classList.add('chtab');
 }
-function chessNew(mode, me, g, opp) {
-  chess = { mode, me, g, opp, s: CHESS.start(), sel: -1, last: null, over: null, thinking: false };
-  chessOpen(); if (mode === 'ai' && me !== 'w') chessAI();
+function chessNew(mode, me, g, opp, j = chView) {
+  chess = { j, mode, me, g, opp, s: ENG[j].start(), sel: -1, last: null, over: null, thinking: false }; chView = j;
+  chessOpen(j); if (mode === 'ai' && me !== 'w') chessAI();
 }
 // a move by this player
 function chessPlay(m) {
-  const c = chess; c.sel = -1; CHESS.play(c.s, m); c.last = [m.f, m.t];
-  if (c.mode === 'mp') send({ t: 'chess-move', g: c.g, m: [m.f, m.t] }); else send({ t: 'chess-act' }); // (playing alone is not "doing nothing" for the square)
+  const c = chess, E = ENG[c.j]; c.sel = -1; E.play(c.s, m); c.last = E.enc(m);
+  if (c.mode === 'mp') send({ t: 'chess-move', g: c.g, m: E.enc(m) }); else send({ t: 'chess-act' }); // (playing alone is not "doing nothing" for the square)
   chessAfter();
   if (!c.over && c.mode === 'ai') chessAI();
 }
 function chessAfter() {
-  const c = chess, r = CHESS.result(c.s);
+  const c = chess, r = ENG[c.j].result(c.s);
   if (r) { c.over = r; if (c.mode === 'mp') send({ t: 'chess-end', g: c.g, why: 'fim' }); }
   chessRender(); chessTab();
 }
+// The computer thinks in a Worker (in the background), so the square does not stop while it thinks; without Workers, here
+let chWorker, chThinkN = 0;
+function chessThink(j, s, cb) {
+  if (chWorker === undefined) try { chWorker = new Worker(URL.createObjectURL(new Blob([`const E = { xadrez: (${chessEngine})(), damas: (${damasEngine})(), galo: (${galoEngine})() };\nonmessage = e => { const j = e.data.j, m = E[j].best(e.data.s, e.data.ms); postMessage({ id: e.data.id, m: m ? (j === 'xadrez' ? [m.f, m.t] : m.p) : null }); };`], { type: 'text/javascript' }))); } catch (e) { chWorker = null; }
+  const here = () => setTimeout(() => { const m = ENG[j].best(s, 600); cb(m ? ENG[j].enc(m) : null); }, 60);
+  if (!chWorker) return here();
+  const id = ++chThinkN;
+  chWorker.onmessage = e => { if (e.data.id === id) cb(e.data.m); };
+  chWorker.onerror = e => { e.preventDefault(); chWorker = null; here(); };
+  chWorker.postMessage({ id, j, s, ms: j === 'damas' ? 500 : 600 });
+}
 function chessAI() {
   const c = chess; c.thinking = true; chessRender();
-  chessThink(c.s, fm => {
-    if (chess !== c || c.over) return; c.thinking = false;
-    const m = fm && CHESS.legal(c.s).find(x => x.f === fm[0] && x.t === fm[1]); if (m) { CHESS.play(c.s, m); c.last = [m.f, m.t]; }
+  chessThink(c.j, c.s, fm => {
+    if (chess !== c || c.over) return; c.thinking = false; const E = ENG[c.j];
+    const m = fm && E.legal(c.s).find(x => encEq(E, x, fm)); if (m) { E.play(c.s, m); c.last = E.enc(m); }
     chessAfter();
   });
 }
 function chessStatus() {
-  const c = chess; if (!c) return L('Escolhe: contra o computador, ou desafia alguém da praça.', 'Choose: against the computer, or challenge someone in the square.');
+  const c = chHere(), j = chView; if (!c) return L('Escolhe: contra o computador, ou desafia alguém da praça.', 'Choose: against the computer, or challenge someone in the square.');
   if (c.over) {
     const r = c.over, won = r.w === c.me;
     if (c.overTxt) return c.overTxt; // resigned, left, out of time
-    if (r.w) return (r.r === 'mate' ? L('Xeque-mate! ', 'Checkmate! ') : '') + L(`Venceu ${chPeople(r.w)}!`, `${chPeople(r.w)} won!`) + (won ? L(' Ganhaste.', ' You won.') : L(' Perdeste.', ' You lost.'));
-    return { afogado: L('Empate: rei afogado (sem jogadas, sem xeque).', 'Draw: stalemate (no moves, not in check).'), material: L('Empate: não há peças para dar mate.', 'Draw: not enough pieces to mate.'), 50: L('Empate: 50 jogadas sem capturas nem peões.', 'Draw: 50 moves without a capture or a pawn move.'), repeticao: L('Empate: a mesma posição três vezes.', 'Draw: the same position three times.'), desistiu: c.overTxt, saiu: c.overTxt, tempo: c.overTxt }[r.r] || c.overTxt || '';
+    if (r.w) return ({ mate: L('Xeque-mate! ', 'Checkmate! '), sem: r.w === 'w' ? L('Os Fascistas ficaram sem jogadas. ', 'The Fascists have no moves left. ') : L('O Povo ficou sem jogadas. ', 'The People have no moves left. '), linha: L('Três em linha! ', 'Three in a row! ') }[r.r] || '') + (r.w === 'w' ? L('Venceu O Povo!', 'The People won!') : L('Venceram Os Fascistas!', 'The Fascists won!')) + (won ? L(' Ganhaste.', ' You won.') : L(' Perdeste.', ' You lost.'));
+    return { afogado: L('Empate: rei afogado (sem jogadas, sem xeque).', 'Draw: stalemate (no moves, not in check).'), material: L('Empate: não há peças para dar mate.', 'Draw: not enough pieces to mate.'), 50: L('Empate: 50 jogadas sem capturas nem peões.', 'Draw: 50 moves without a capture or a pawn move.'), repeticao: L('Empate: a mesma posição três vezes.', 'Draw: the same position three times.'),
+      20: L('Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões.', 'Draw: 20 king moves each without a capture or a man moving.'), cheio: L('Empate: o tabuleiro encheu sem três em linha.', 'Draw: the board filled up with no three in a row.') }[r.r] || c.overTxt || '';
   }
   if (c.thinking) return L('Os Fascistas estão a pensar…', 'The Fascists are thinking…');
-  const check = CHESS.inCheck(c.s) ? L('Xeque! ', 'Check! ') : '', mine = c.s.turn === c.me;
-  if (c.mode === 'mp') return check + (mine ? L(`É a tua vez (${chPeople(c.me)}).`, `Your move (${chPeople(c.me)}).`) : L(`Vez de ${c.opp} (${chPeople(c.s.turn)}).`, `${c.opp}'s move (${chPeople(c.s.turn)}).`));
-  return check + (mine ? L('É a tua vez: O Povo.', 'Your move: The People.') : '');
+  const mine = c.s.turn === c.me, E = ENG[j];
+  const pre = j === 'xadrez' && CHESS.inCheck(c.s) ? L('Xeque! ', 'Check! ') : j === 'damas' && mine && (E.legal(c.s)[0] || {}).cap && E.legal(c.s)[0].cap.length ? L('Comer é obrigatório! ', 'You must take! ') : '';
+  if (c.mode === 'mp') return pre + (mine ? L(`É a tua vez (${chPeople(c.me)}).`, `Your move (${chPeople(c.me)}).`) : L(`Vez de ${c.opp} (${chPeople(c.s.turn)}).`, `${c.opp}'s move (${chPeople(c.s.turn)}).`));
+  return pre + (mine ? L('É a tua vez: O Povo.', 'Your move: The People.') : '');
 }
+// the boards: calçada stones (the squares of the chess and draughts boards; a chalk grid for the Jogo do Galo)
+function chessCalcada(dark) {
+  const c = document.createElement('canvas'); c.width = c.height = 192; const g = c.getContext('2d');
+  const C = { L: '#ebe5d6', LW: '#c3baa6', LG: '#d6cfbf', D: '#4b4654', DW: '#625c6d', DG: '#3b3743' };
+  for (let y = 0; y < 192; y++) for (let x = 0; x < 192; x++) {
+    const dk = dark(x, y), grout = x % 4 === 3 || y % 4 === 3, wave = (((y + Math.round(5 * Math.sin((x - x % 4) / 9))) % 16) + 16) % 16 < 5;
+    g.fillStyle = grout ? (dk ? C.DG : C.LG) : dk ? (wave ? C.DW : C.D) : (wave ? C.LW : C.L); g.fillRect(x, y, 1, 1);
+  }
+  return c;
+}
+const BOARD_BG = {
+  xadrez: () => chBgs.xadrez ||= chessBoardBg(),
+  damas: () => chBgs.damas ||= chessCalcada((x, y) => ((x / 24 | 0) + (y / 24 | 0)) % 2 === 0), // the dark squares: (row + column) even, as damas.js
+  galo: () => chBgs.galo ||= (() => { const c = chessCalcada(() => false), g = c.getContext('2d'); g.fillStyle = '#fffdf6'; // the chalk lines, a little wobbly
+    for (const k of [64, 128]) for (let i = 6; i < 186; i++) { const w = Math.round(Math.sin(i / 11 + k) * 1.2); g.fillRect(k - 2 + w, i, 3, 1); g.fillRect(i, k - 2 + w, 1, 3); } return c; })()
+};
 function chessRender() {
   if ($('chess').hidden) return;
-  const c = chess, cv = $('chessCv'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
-  const flip = c && c.me === 'b', s = c ? c.s : CHESS.start();
-  const at = i => { const r = (i / 6) | 0, col = i % 6; return flip ? [(5 - col) * 32, (5 - r) * 32] : [col * 32, r * 32]; };
-  g.drawImage(chBg, 0, 0);
-  if (c && c.last) for (const i of c.last) { const [x, y] = at(i); g.fillStyle = 'rgba(255,210,58,.32)'; g.fillRect(x, y, 32, 32); }
-  if (c && !c.over && CHESS.inCheck(c.s)) { const [x, y] = at(CHESS.kingAt(s.b, s.turn)); g.fillStyle = 'rgba(226,40,59,.45)'; g.fillRect(x, y, 32, 32); }
-  const moves = c && c.sel >= 0 ? CHESS.legal(s).filter(m => m.f === c.sel) : [];
-  if (c && c.sel >= 0) { const [x, y] = at(c.sel); g.strokeStyle = '#ffd23a'; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, 30, 30); }
-  s.b.forEach((p, i) => { if (!p) return; const [x, y] = at(i); g.drawImage(chSpr[p], x, y); });
-  for (const m of moves) { const [x, y] = at(m.t); g.fillStyle = s.b[m.t] || m.e ? 'rgba(226,40,59,.9)' : 'rgba(182,255,59,.95)'; if (s.b[m.t] || m.e) { g.fillRect(x, y, 32, 3); g.fillRect(x, y + 29, 32, 3); g.fillRect(x, y, 3, 32); g.fillRect(x + 29, y, 3, 32); } else { g.fillRect(x + 13, y + 13, 6, 6); } }
+  const c = chHere(), j = chView, E = ENG[j], N = E.N, Z = 192 / N, M = MESAS[j];
+  const cv = $('chessCv'), g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const flip = c && c.me === 'b' && j !== 'galo', s = c ? c.s : E.start();
+  const at = i => { const r = (i / N) | 0, col = i % N; return flip ? [(N - 1 - col) * Z, (N - 1 - r) * Z] : [col * Z, r * Z]; };
+  const fill = (i, col) => { const [x, y] = at(i); g.fillStyle = col; g.fillRect(x, y, Z, Z); }, frame = (i, col, w = 2) => { const [x, y] = at(i); g.strokeStyle = col; g.lineWidth = w; g.strokeRect(x + w / 2, y + w / 2, Z - w, Z - w); };
+  g.drawImage(BOARD_BG[j](), 0, 0);
+  if (c && c.last) for (const i of c.last) fill(i, 'rgba(255,210,58,.32)');
+  if (j === 'xadrez' && c && !c.over && CHESS.inCheck(s)) fill(CHESS.kingAt(s.b, s.turn), 'rgba(226,40,59,.45)');
+  if (c && c.over && c.over.line) for (const i of c.over.line) fill(i, 'rgba(182,255,59,.45)');
+  const mineNow = c && !c.over && !c.thinking && s.turn === c.me, legal = mineNow ? E.legal(s) : [];
+  if (j === 'damas' && mineNow && c.sel < 0 && legal.length && legal[0].cap.length) for (const f of new Set(legal.map(m => m.f))) frame(f, '#ff3b4e'); // must take: with these
+  const moves = c && c.sel >= 0 ? legal.filter(m => m.f === c.sel) : [];
+  if (c && c.sel >= 0) frame(c.sel, '#ffd23a');
+  s.b.forEach((p, i) => { if (!p) return; const [x, y] = at(i); g.drawImage(chSpr[p], x, y, Z, Z); });
+  for (const m of moves) {
+    const [x, y] = at(m.t), take = (m.cap && m.cap.length) || (j === 'xadrez' && (s.b[m.t] || m.e)), d = Math.max(3, Z / 10);
+    if (take) { g.fillStyle = 'rgba(226,40,59,.9)'; g.fillRect(x, y, Z, d); g.fillRect(x, y + Z - d, Z, d); g.fillRect(x, y, d, Z); g.fillRect(x + Z - d, y, d, Z); for (const v of m.cap || []) { const [a, b] = at(v); g.fillRect(a + Z / 2 - 2, b + Z / 2 - 2, 4, 4); } }
+    else { g.fillStyle = 'rgba(182,255,59,.95)'; g.fillRect(x + Z / 2 - 3, y + Z / 2 - 3, 6, 6); }
+  }
+  $('chessName').textContent = L(M.name[0], M.name[1]); $('chess').querySelector('.chp').setAttribute('aria-label', L(M.name[0], M.name[1]));
   $('chessSub').textContent = c && c.mode === 'mp' ? L(`O Povo contra Os Fascistas · com ${c.opp}`, `The People against The Fascists · with ${c.opp}`) : L('O Povo contra Os Fascistas', 'The People against The Fascists');
   $('chessSt').textContent = chessStatus();
   $('chessBar').innerHTML = '';
   const btn = (t, f, cls = '') => { const b = document.createElement('button'); b.textContent = t; if (cls) b.className = cls; b.addEventListener('click', f); $('chessBar').append(b); };
   const playing = c && !c.over;
-  if (!playing) { btn(L('Jogar vs IA', 'Play vs AI'), () => chessNew('ai', 'w'), 'go'); btn(L('Desafiar jogador', 'Challenge a player'), chessPick); }
+  if (!playing) { btn(L('Jogar vs IA', 'Play vs AI'), () => chessNew('ai', 'w', 0, '', chView), 'go'); btn(L('Desafiar jogador', 'Challenge a player'), chessPick); }
   if (playing) btn(L('Minimizar', 'Minimise'), chessMin);
   if (playing) btn(L('Desistir', 'Resign'), chessResign, 'red');
   $('chessPick').hidden = true;
   const iv = $('chessInv'); iv.hidden = !chInvite; iv.innerHTML = '';
   if (chInvite) { // someone challenges me: here, with the board in front
-    const p = document.createElement('p'); p.textContent = L(`${chInvite.n} desafia-te para uma partida. Tu jogas com Os Fascistas.`, `${chInvite.n} challenges you to a game. You play The Fascists.`) + (playing && c.mode === 'ai' ? L(' (A partida contra o computador acaba.)', ' (The game against the computer ends.)') : ''); iv.append(p);
+    const p = document.createElement('p'); p.textContent = L(`${chInvite.n} desafia-te para uma partida ${MESAS[chInvite.j].de[0]}. Tu jogas com Os Fascistas.`, `${chInvite.n} challenges you to a game ${MESAS[chInvite.j].de[1]}. You play The Fascists.`) + (chess && !chess.over && chess.mode === 'ai' ? L(' (A partida contra o computador acaba.)', ' (The game against the computer ends.)') : ''); iv.append(p);
     const b = (t, ok, cls) => { const e = document.createElement('button'); e.textContent = t; if (cls) e.className = cls; e.addEventListener('click', () => chessAnswer(ok)); iv.append(e); };
     b(L('Aceitar', 'Accept'), true); b(L('Recusar', 'Decline'), false, 'red');
   }
 }
 function chessAnswer(ok) { const v = chInvite; if (!v) return; chInvite = null; send({ t: 'chess-answer', i: v.i, ok }); chessRender(); chessTab(); }
 function chessTap(ev) {
-  const c = chess; if (!c || c.over || c.thinking || c.s.turn !== c.me) return;
-  const r = $('chessCv').getBoundingClientRect(); let col = Math.floor((ev.clientX - r.left) / r.width * 6), row = Math.floor((ev.clientY - r.top) / r.height * 6);
-  if (col < 0 || col > 5 || row < 0 || row > 5) return; if (c.me === 'b') { col = 5 - col; row = 5 - row; }
-  const i = row * 6 + col, p = c.s.b[i];
-  if (c.sel >= 0) { const m = CHESS.legal(c.s).find(m => m.f === c.sel && m.t === i); if (m) return chessPlay(m); }
-  c.sel = p && CHESS.side(p) === c.me ? (c.sel === i ? -1 : i) : -1; chessRender();
+  const c = chHere(); if (!c || c.over || c.thinking || c.s.turn !== c.me) return;
+  const E = ENG[c.j], N = E.N, r = $('chessCv').getBoundingClientRect(); let col = Math.floor((ev.clientX - r.left) / r.width * N), row = Math.floor((ev.clientY - r.top) / r.height * N);
+  if (col < 0 || col >= N || row < 0 || row >= N) return; if (c.me === 'b' && c.j !== 'galo') { col = N - 1 - col; row = N - 1 - row; }
+  const i = row * N + col, p = c.s.b[i], legal = E.legal(c.s);
+  if (c.j === 'galo') { const m = legal.find(m => m.t === i); if (m) chessPlay(m); return; }
+  if (c.sel >= 0) { const m = legal.find(m => m.f === c.sel && m.t === i); if (m) return chessPlay(m); }
+  c.sel = p && E.side(p) === c.me && legal.some(m => m.f === i) ? (c.sel === i ? -1 : i) : -1; chessRender();
 }
 function chessResign() {
   const c = chess; if (!c || c.over) return;
@@ -2307,23 +2538,24 @@ function chessWho(l) {
   const box = $('chessPick'); if (box.hidden || !Array.isArray(l)) return; box.innerHTML = '';
   const who = l.map(([id, n, c, busy]) => ({ id, n, c, busy })).filter(p => p.id !== myId && p.n);
   if (!who.length) { box.textContent = L('Ainda não há mais ninguém na praça.', 'There is nobody else in the square yet.'); return; }
-  const h = document.createElement('p'); h.textContent = L('Quem queres desafiar? Tu jogas com O Povo.', 'Who do you want to challenge? You play The People.'); box.append(h);
-  for (const p of who.slice(0, 40)) { const b = document.createElement('button'); b.textContent = p.n + (p.c ? ' · ' + p.c : '') + (p.busy ? L(' · a jogar', ' · playing') : ''); b.disabled = !!p.busy; b.addEventListener('click', () => { send({ t: 'chess-invite', to: p.id }); box.hidden = true; $('chessSt').textContent = L(`Convite enviado a ${p.n}…`, `Challenge sent to ${p.n}…`); }); box.append(b); }
+  const h = document.createElement('p'); h.textContent = L(`Quem queres desafiar para uma partida ${MESAS[chView].de[0]}? Tu jogas com O Povo.`, `Who do you want to challenge to a game ${MESAS[chView].de[1]}? You play The People.`); box.append(h);
+  for (const p of who.slice(0, 40)) { const b = document.createElement('button'); b.textContent = p.n + (p.c ? ' · ' + p.c : '') + (p.busy ? L(' · a jogar', ' · playing') : ''); b.disabled = !!p.busy; b.addEventListener('click', () => { send({ t: 'chess-invite', to: p.id, j: chView }); box.hidden = true; $('chessSt').textContent = L(`Convite enviado a ${p.n}…`, `Challenge sent to ${p.n}…`); }); box.append(b); }
 }
 function chessMsg(m) {
+  const jOf = j => MESAS[j] ? j : 'xadrez';
   if (m.t === 'chess-invite') { // someone challenges me
-    chInvite = { i: m.i, n: m.n }; chessRender(); chessTab();
-    if ($('chess').hidden) toast(L(`${m.n} desafia-te para uma partida de xadrez.`, `${m.n} challenges you to a game of chess.`), 4000);
+    chInvite = { i: m.i, n: m.n, j: jOf(m.j) }; chessRender(); chessTab();
+    if ($('chess').hidden) toast(L(`${m.n} desafia-te para uma partida ${MESAS[chInvite.j].de[0]}.`, `${m.n} challenges you to a game ${MESAS[chInvite.j].de[1]}.`), 4000);
     return;
   }
   if (m.t === 'chess-gone') { if (chInvite && chInvite.i === m.i) { toast(L(`O desafio de ${chInvite.n} expirou.`, `${chInvite.n}'s challenge expired.`), 4000); chInvite = null; chessRender(); chessTab(); } return; }
   if (m.t === 'chess-who') return chessWho(m.l);
   if (m.t === 'chess-no') { const why = { recusou: L(`${m.n} recusou o desafio.`, `${m.n} declined.`), ocupado: L(`${m.n} já está a jogar ou tem outro desafio.`, `${m.n} is already playing or has another challenge.`), saiu: L('Essa pessoa já não está na praça.', 'That person has left the square.'), espera: L('Espera um pouco antes de desafiar outra vez.', 'Wait a little before challenging again.'), tempo: L('O convite expirou.', 'The challenge expired.') }[m.why] || ''; toast(why, 4000); if (!$('chess').hidden) $('chessSt').textContent = why; return; }
-  if (m.t === 'chess-start') { chInvite = null; if (chess && !chess.over && chess.mode === 'mp') return; chessNew('mp', m.w === myId ? 'w' : 'b', m.g, m.w === myId ? m.nb : m.nw); toast(L(`Partida com ${chess.opp}! Começa O Povo.`, `Game with ${chess.opp}! The People start.`), 4000); return; }
+  if (m.t === 'chess-start') { chInvite = null; if (chess && !chess.over && chess.mode === 'mp') return; chessNew('mp', m.w === myId ? 'w' : 'b', m.g, m.w === myId ? m.nb : m.nw, jOf(m.j)); toast(L(`Partida ${MESAS[chess.j].de[0]} com ${chess.opp}! Começa O Povo.`, `Game ${MESAS[chess.j].de[1]} with ${chess.opp}! The People start.`), 4000); return; }
   const c = chess; if (!c || c.mode !== 'mp' || m.g !== c.g) return;
   if (m.t === 'chess-move' && !c.over && c.s.turn !== c.me) { // the other side's move, checked against the rules
-    const mv = Array.isArray(m.m) && CHESS.legal(c.s).find(x => x.f === m.m[0] && x.t === m.m[1]); if (!mv) return;
-    CHESS.play(c.s, mv); c.last = [mv.f, mv.t]; chessAfter(); if (!c.over && $('chess').hidden) toast(L(`${c.opp} jogou: é a tua vez no xadrez.`, `${c.opp} moved: your turn at chess.`), 3000); return;
+    const E = ENG[c.j], mv = E.legal(c.s).find(x => encEq(E, x, m.m)); if (!mv) return;
+    E.play(c.s, mv); c.last = E.enc(mv); chessAfter(); if (!c.over && $('chess').hidden) toast(L(`${c.opp} jogou: é a tua vez (${MESAS[c.j].tab[0]}).`, `${c.opp} moved: your turn (${MESAS[c.j].tab[1]}).`), 3000); return;
   }
   if (m.t === 'chess-end' && !c.over) {
     const txt = { desistiu: L(`${c.opp} desistiu. Ganhaste!`, `${c.opp} resigned. You won!`), saiu: L(`${c.opp} saiu da praça. A partida acabou.`, `${c.opp} left the square. The game is over.`), tempo: L('A partida acabou: 5 minutos sem jogadas.', 'The game is over: 5 minutes without a move.'), fim: L('A partida acabou.', 'The game is over.') }[m.why];
@@ -2331,26 +2563,42 @@ function chessMsg(m) {
     c.over = { r: m.why, w: m.why === 'desistiu' ? c.me : null }; c.overTxt = txt; chessRender(); chessTab(); if ($('chess').hidden) toast(txt, 4000);
   }
 }
-function chessGuide() { // the pieces' guide (closed at first)
-  const rows = [['K', 'k', L('Uma casa em qualquer direção. Se ficar sem saída em xeque, é xeque-mate.', 'One square in any direction. In check with no way out: checkmate.')],
-    ['Q', 'q', L('Quantas casas quiser, em linha reta ou na diagonal.', 'Any number of squares, straight or diagonally.')],
-    ['R', 'r', L('Quantas casas quiser, na horizontal ou na vertical.', 'Any number of squares, across or up and down.')],
-    ['N', 'n', L('Em L (duas casas e uma para o lado). Salta por cima das outras peças.', 'In an L (two squares and one to the side). Jumps over pieces.')],
-    ['P', 'p', L('Uma casa em frente (duas na primeira jogada). Come na diagonal. Ao chegar ao fim do tabuleiro passa a Dama.', 'One square forward (two on its first move). Takes diagonally. Reaching the far end it becomes a Queen.')]];
-  const d = $('chessGuide'); d.querySelector('summary').textContent = L('Guia das peças', 'Pieces guide');
+function chessGuide() { // how the pieces move (closed at first)
+  const G = {
+    xadrez: [[['K', 'k'], L('Uma casa em qualquer direção. Se ficar sem saída em xeque, é xeque-mate.', 'One square in any direction. In check with no way out: checkmate.')],
+      [['Q', 'q'], L('Quantas casas quiser, em linha reta ou na diagonal.', 'Any number of squares, straight or diagonally.')],
+      [['R', 'r'], L('Quantas casas quiser, na horizontal ou na vertical.', 'Any number of squares, across or up and down.')],
+      [['N', 'n'], L('Em L (duas casas e uma para o lado). Salta por cima das outras peças.', 'In an L (two squares and one to the side). Jumps over pieces.')],
+      [['P', 'p'], L('Uma casa em frente (duas na primeira jogada). Come na diagonal. Ao chegar ao fim do tabuleiro passa a Dama.', 'One square forward (two on its first move). Takes diagonally. Reaching the far end it becomes a Queen.')]],
+    damas: [[['P', 'p'], L('Peão: uma casa na diagonal, sempre para a frente. Come saltando por cima de uma peça adversária, só para a frente, e pode comer várias seguidas.', 'Man: one square diagonally, always forwards. Takes by jumping over an opposing piece, only forwards, and can take several in a row.')],
+      [['Q', 'q'], L('Dama (o peão que acaba a jogada na última fila): anda e come na diagonal quantas casas quiser, para a frente e para trás.', 'King (a man that ends its move on the far row): moves and takes any number of squares diagonally, forwards and backwards.')]],
+    galo: [[['K', 'k'], L('O Povo põe cravos, Os Fascistas põem ditadores, à vez. Ganha quem fizer três em linha: na horizontal, na vertical ou na diagonal.', 'The People put carnations, The Fascists dictators, in turn. Three in a row wins: across, up and down or diagonally.')]]
+  }[chView];
+  const NOTE = {
+    xadrez: L('Tabuleiro 6x6, sem bispos. Começa O Povo. Também há empate por rei afogado, falta de peças, 50 jogadas sem capturas e posição repetida três vezes.', '6x6 board, no bishops. The People start. Draws: stalemate, not enough pieces, 50 moves without a capture, or the same position three times.'),
+    damas: L('Regras portuguesas, tabuleiro 8x8. Começa O Povo. Comer é obrigatório, e tem de se fazer a jogada que come mais peças (se empatar, a que come mais damas). As peças comidas saem no fim da jogada. Perde quem ficar sem peças ou sem jogadas. Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões.', 'Portuguese rules, 8x8 board. The People start. Taking is compulsory, and the move that takes the most pieces must be played (equal: the one that takes the most kings). Taken pieces come off at the end of the move. No pieces or no moves: you lose. Draw: 20 king moves each without a capture or a man moving.'),
+    galo: L('Começa O Povo. Se o tabuleiro encher sem três em linha, é empate. O computador às vezes distrai-se: aproveita!', 'The People start. A full board with no three in a row is a draw. The computer sometimes gets distracted: make the most of it!')
+  }[chView];
+  const d = $('chessGuide'); d.querySelector('summary').textContent = chView === 'galo' ? L('Como se joga', 'How to play') : L('Guia das peças', 'Pieces guide');
   const box = d.querySelector('div'); box.innerHTML = '';
-  for (const [a, b, t] of rows) {
+  for (const [ps, t] of G) {
     const row = document.createElement('div'); row.className = 'chg';
-    for (const p of [a, b]) { const cv = document.createElement('canvas'); cv.width = cv.height = 32; cv.getContext('2d').drawImage(chSpr[p], 0, 0); row.append(cv); }
-    const tx = document.createElement('p'); tx.innerHTML = `<b>${esc(L(CH_NAMES[a][0], CH_NAMES[a][1]))} · ${esc(L(CH_NAMES[b][0], CH_NAMES[b][1]))}</b><br>${esc(t)}`; row.append(tx); box.append(row);
+    for (const p of ps) { const cv = document.createElement('canvas'); cv.width = cv.height = 32; cv.getContext('2d').drawImage(chSpr[p], 0, 0); row.append(cv); }
+    const tx = document.createElement('p'); tx.innerHTML = `<b>${esc(L(CH_NAMES[ps[0]][0], CH_NAMES[ps[0]][1]))} · ${esc(L(CH_NAMES[ps[1]][0], CH_NAMES[ps[1]][1]))}</b><br>${esc(t)}`; row.append(tx); box.append(row);
   }
-  const n = document.createElement('p'); n.className = 'chn'; n.textContent = L('Tabuleiro 6x6, sem bispos. Começa O Povo. Também há empate por rei afogado, falta de peças, 50 jogadas sem capturas e posição repetida três vezes.', '6x6 board, no bishops. The People start. Draws: stalemate, not enough pieces, 50 moves without a capture, or the same position three times.'); box.append(n);
+  const n = document.createElement('p'); n.className = 'chn'; n.textContent = NOTE; box.append(n);
 }
-function drawXadrez(g, d) { // the table, a board on top, two stools
-  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+function drawMesa(g, d) { // a table with its board on top and two stools
+  const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), j = d.j;
   for (const [sx, sy] of [[d.gx - .85, d.gy], [d.gx, d.gy - .85]]) box(g, sx - .18, sy - .18, sx + .18, sy + .18, 0, 4, '#b06a3a', '#8a4f2a', '#6b3c20');
   box(g, d.gx - .45, d.gy - .45, d.gx + .45, d.gy + .45, 0, 7, '#a0703f', '#7a5230', '#5e3f24');
-  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) { const p = iso(d.gx - .38 + i * .127 + .06, d.gy - .38 + j * .127 + .06, 7); R(g, Math.round(p.x) - 1, Math.round(p.y), 2, 1, (i + j) % 2 ? '#2c2933' : '#ebe5d6'); }
+  if (j === 'galo') { // a chalk grid and a carnation and a dictator's cap on it
+    for (const k of [-.13, .13]) for (let t = -.38; t <= .38; t += .04) { const a = iso(d.gx + k, d.gy + t, 7), b = iso(d.gx + t, d.gy + k, 7); R(g, Math.round(a.x), Math.round(a.y), 1, 1, '#f4f1ea'); R(g, Math.round(b.x), Math.round(b.y), 1, 1, '#f4f1ea'); }
+    const k = iso(d.gx - .26, d.gy - .26, 7); R(g, Math.round(k.x), Math.round(k.y) - 2, 2, 2, '#e2283b'); const f = iso(d.gx + .26, d.gy, 7); R(g, Math.round(f.x) - 1, Math.round(f.y) - 2, 3, 2, '#18161d'); return;
+  }
+  const n = j === 'damas' ? 8 : 6, st = .76 / n;
+  for (let i = 0; i < n; i++) for (let k = 0; k < n; k++) { const p = iso(d.gx - .38 + i * st + st / 2, d.gy - .38 + k * st + st / 2, 7); R(g, Math.round(p.x) - 1, Math.round(p.y), j === 'damas' ? 1 : 2, 1, (i + k) % 2 ? (j === 'damas' ? '#ebe5d6' : '#2c2933') : (j === 'damas' ? '#2c2933' : '#ebe5d6')); }
+  if (j === 'damas') { for (const [a, b, col] of [[-.2, .25, '#3ec46d'], [.05, .25, '#3ec46d'], [-.05, -.25, '#b3121b'], [.2, -.25, '#b3121b']]) { const p = iso(d.gx + a, d.gy + b, 7); R(g, Math.round(p.x) - 1, Math.round(p.y) - 1, 3, 2, col); } return; }
   const k = iso(d.gx - .15, d.gy + .2, 7); R(g, Math.round(k.x), Math.round(k.y) - 4, 2, 4, '#e2283b'); R(g, Math.round(k.x), Math.round(k.y) - 5, 2, 1, '#ff7ad9');
   const f = iso(d.gx + .2, d.gy - .15, 7); R(g, Math.round(f.x), Math.round(f.y) - 4, 2, 4, '#18161d'); R(g, Math.round(f.x) - 1, Math.round(f.y) - 5, 4, 1, '#b3121b');
 }

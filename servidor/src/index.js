@@ -43,6 +43,7 @@ const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes']);
 const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1', 'hb', 'chess-invite', 'chess-answer', 'chess-move', 'chess-end', 'chess-act', 'chess-who']);
 // Mini Xadrez (multiplayer.html): a challenge waits a minute for an answer; a game with no move for 5 minutes ends;
 // one challenge every 5 seconds per person. The square only passes the moves on: each phone checks them against the rules
+const MESAS = ['xadrez', 'damas', 'galo']; // the game tables (multiplayer.html MESAS)
 const CHESS_INVITE_MS = 60e3, CHESS_IDLE_MS = 5 * 60e3, CHESS_INVITE_EVERY = 5e3;
 // IDLE_MS: someone who does nothing for 5 minutes leaves the square (their place goes to others). GONE_MS: a phone that
 // stopped answering (no sign of life, not even the page's heartbeat every 25 s) is taken out, instead of standing still
@@ -518,22 +519,23 @@ export class Praca {
       if (now - (p.chessInvAt || 0) < CHESS_INVITE_EVERY) return this.send(p, { t: 'chess-no', why: 'espera' });
       const q = this.byId(m.to | 0); if (!q || q === p) return this.send(p, { t: 'chess-no', why: 'saiu' });
       if (p.chessG || q.chessG || [...this.chessInv.values()].some(v => v.to === q.id)) return this.send(p, { t: 'chess-no', why: 'ocupado', n: q.name }); // (one challenge at a time for each person)
-      p.chessInvAt = now; const i = this.chessN++; this.chessInv.set(i, { from: p.id, to: q.id, at: now });
-      return this.send(q, { t: 'chess-invite', i, from: p.id, n: p.name });
+      const j = MESAS.includes(m.j) ? m.j : 'xadrez'; // which table: chess, draughts or noughts and crosses
+      p.chessInvAt = now; const i = this.chessN++; this.chessInv.set(i, { from: p.id, to: q.id, at: now, j });
+      return this.send(q, { t: 'chess-invite', i, from: p.id, n: p.name, j });
     }
     if (m.t === 'chess-answer') {
       const v = this.chessInv.get(m.i | 0); if (!v) return m.ok ? this.send(p, { t: 'chess-no', why: 'tempo' }) : undefined; if (v.to !== p.id) return; this.chessInv.delete(m.i | 0);
       const f = this.byId(v.from); if (!f) return this.send(p, { t: 'chess-no', why: 'saiu' });
       if (!m.ok) return this.send(f, { t: 'chess-no', why: 'recusou', n: p.name });
       if (f.chessG || p.chessG) return this.send(p, { t: 'chess-no', why: 'ocupado', n: f.name });
-      const g = this.chessN++; this.chess.set(g, { w: f.id, b: p.id, last: now }); f.chessG = g; p.chessG = g; // who challenges plays the People
-      const start = { t: 'chess-start', g, w: f.id, b: p.id, nw: f.name, nb: p.name }; this.send(f, start); this.send(p, start); return;
+      const g = this.chessN++; this.chess.set(g, { w: f.id, b: p.id, last: now, j: v.j }); f.chessG = g; p.chessG = g; // who challenges plays the People
+      const start = { t: 'chess-start', g, w: f.id, b: p.id, nw: f.name, nb: p.name, j: v.j }; this.send(f, start); this.send(p, start); return;
     }
     const G = this.chess.get(m.g | 0); if (!G || p.chessG !== (m.g | 0)) return;
     const other = this.byId(G.w === p.id ? G.b : G.w);
     if (m.t === 'chess-move') {
       if (now - (p.chessMvWin || 0) > 1e3) { p.chessMvWin = now; p.chessMv = 0; } if (++p.chessMv > 4) return; // no more than 4 a second
-      if (!Array.isArray(m.m) || m.m.length !== 2 || !m.m.every(v => Number.isInteger(v) && v >= 0 && v < 36)) return;
+      if (!Array.isArray(m.m) || m.m.length < 1 || m.m.length > 13 || !m.m.every(v => Number.isInteger(v) && v >= 0 && v < 64)) return; // the squares of the move (draughts: every square of a capture run)
       G.last = now; if (other) this.send(other, { t: 'chess-move', g: m.g | 0, m: m.m }); return;
     }
     if (m.t === 'chess-end') return this.chessEnd(m.g | 0, m.why === 'desistiu' ? 'desistiu' : 'fim', p.id);
