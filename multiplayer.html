@@ -210,6 +210,7 @@ button{ cursor:pointer; touch-action:manipulation; }
 #chess h3{ margin:0; display:flex; justify-content:space-between; align-items:flex-start; gap:8px; font:800 18px/1.1 Jost, sans-serif; text-transform:uppercase; }
 #chess h3 small{ display:block; font-weight:600; font-size:12px; color:var(--muted); text-transform:none; margin-top:2px; }
 #chessCv{ width:min(100%, 384px, 56vh); aspect-ratio:1; image-rendering:pixelated; margin:0 auto; display:block; border:3px solid var(--ink); touch-action:manipulation; cursor:pointer; }
+#chessCount{ margin:0; display:flex; justify-content:center; flex-wrap:wrap; gap:4px 14px; font:700 13px/1.2 Jost, sans-serif; } #chessCount[hidden]{ display:none; } #chessCount .w{ color:#7be29a; } #chessCount .b{ color:#ff7a86; } #chessCount b{ font-size:15px; } #chessCount .lead{ text-decoration:underline; text-underline-offset:3px; }
 #chessSt{ margin:0; min-height:1.3em; text-align:center; font-weight:700; }
 #chessBar{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
 #chessBar button, #chessPick button{ font:800 14px/1 Jost, sans-serif; text-transform:uppercase; border:none; padding:10px 12px 8px; background:#fff; color:var(--ink); }
@@ -256,6 +257,7 @@ button{ cursor:pointer; touch-action:manipulation; }
     <div id="chess" hidden><div class="chp" role="dialog" aria-label="Mini Xadrez">
       <h3><span><span id="chessName">Mini Xadrez</span><small id="chessSub"></small></span><button class="x" id="chessX" aria-label="Fechar">✕</button></h3>
       <canvas id="chessCv" width="192" height="192"></canvas>
+      <p id="chessCount" hidden></p>
       <p id="chessSt"></p><div id="chessInv" hidden></div><div id="chessBar"></div><div id="chessPick" hidden></div>
       <details id="chessGuide"><summary></summary><div></div></details>
     </div></div>
@@ -992,7 +994,7 @@ function connect() {
   wantOpen = true; closedByServer = false;
   try { ws = new WebSocket(WS_URL); } catch (e) { ws = null; return fail(); }
   toast(L('A ligar à praça…', 'Connecting to the square…'), 0);
-  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike, won: wonMask() })); };
+  ws.onopen = () => { retry = 0; const city = profile.city === '_' ? (profile.other || '') : profile.city; ws.send(JSON.stringify({ t: 'hello', name: profile.name, city, mode: profile.mode, look: profile.look, dev: DEV, bike: !!profile.bike, won: wonMask(), mesas: 2 })); }; // mesas 2: this page knows the draughts and noughts-and-crosses tables
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = ev => { ws = null; if (closedByServer || ev.code === 4000 || ev.code === 4001 || ev.code === 4002 || ev.code === 4005 || ev.code === 4006 || ev.code === 4007 || ev.code === 4008) return; if (wantOpen) fail(); };
   ws.onerror = () => {};
@@ -2129,14 +2131,15 @@ const CHESS = chessEngine();
 // and captures any distance along a diagonal, forwards and backwards. Capturing is compulsory, and the sequence that
 // takes the most pieces must be played (equal: the one that takes the most kings). Captured pieces come off at the end
 // of the move and cannot be jumped twice. A man that ends its move on the far row becomes a king. No moves: lost.
-// Draw: 20 moves each with kings only, without a capture or a man moving.
+// Draw: 20 moves each with kings only, without a capture or a man moving; or 3 kings (at least one on the long dark
+// diagonal, corner to corner) against a lone king and no win within 12 moves (counted from the first such position).
 function damasEngine() {
   const side = p => p ? (p < 'a' ? 'w' : 'b') : null, isK = p => p === 'Q' || p === 'q';
   const DIRS = [[-1, -1], [-1, 1], [1, -1], [1, 1]], on = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
   function start() {
     const b = Array(64).fill(null);
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if ((r + c) % 2 === 0) { if (r < 3) b[r * 8 + c] = 'p'; else if (r > 4) b[r * 8 + c] = 'P'; }
-    return { b, turn: 'w', kq: 0, n: 0 };
+    return { b, turn: 'w', kq: 0, n: 0, tri: 0 };
   }
   // every capture sequence of the piece on square f (the piece is lifted: its square counts as empty)
   function caps(b, f, me) {
@@ -2182,14 +2185,18 @@ function damasEngine() {
     const last = ((m.t / 8) | 0) === (side(p) === 'w' ? 0 : 7);
     b[m.t] = !isK(p) && last ? (p === 'P' ? 'Q' : 'q') : p;
     s.kq = isK(p) && !m.cap.length ? s.kq + 1 : 0; s.n++;
+    const cnt = sd => { const o = { k: 0, m: 0, diag: 0 }; for (let i = 0; i < 64; i++) { const q = b[i]; if (side(q) !== sd) continue; if (isK(q)) { o.k++; if (((i / 8) | 0) === i % 8) o.diag++; } else o.m++; } return o; };
+    const W = cnt('w'), B = cnt('b'), tri = (a, o) => a.k === 3 && !a.m && o.k === 1 && !o.m; // 3 kings against 1
+    s.tri = tri(W, B) || tri(B, W) ? (s.tri || (tri(W, B) ? W.diag : B.diag) ? (s.tri || 0) + 1 : 0) : 0;
     s.turn = s.turn === 'w' ? 'b' : 'w';
   }
   function result(s) {
     if (!legal(s).length) return { r: 'sem', w: s.turn === 'w' ? 'b' : 'w' }; // no pieces or no moves: lost
     if (s.kq >= 40) return { r: '20', w: null };
+    if (s.tri >= 24) return { r: '3x1', w: null }; // 12 moves each
     return null;
   }
-  const copy = s => ({ b: s.b.slice(), turn: s.turn, kq: s.kq, n: s.n });
+  const copy = s => ({ b: s.b.slice(), turn: s.turn, kq: s.kq, n: s.n, tri: s.tri });
   function evalFor(s, me) {
     let v = 0;
     for (let i = 0; i < 64; i++) { const p = s.b[i]; if (!p) continue; const r = (i / 8) | 0, k = isK(p), adv = side(p) === 'w' ? 7 - r : r, c = i % 8;
@@ -2202,7 +2209,7 @@ function damasEngine() {
     function neg(st, d, a, bt) {
       if ((clock.n++ & 1023) === 0 && Date.now() > clock.until) clock.out = true; if (clock.out) return 0;
       const ms2 = legal(st); if (!ms2.length) return -100000 + st.n;
-      if (st.kq >= 40) return 0;
+      if (st.kq >= 40 || st.tri >= 24) return 0;
       if (d <= 0 && !ms2[0].cap.length) return evalFor(st, st.turn);
       let bestV = -1e9;
       for (const m of ms2) { const t = copy(st); play(t, m); const v = -neg(t, d - 1, -bt, -a); if (v > bestV) bestV = v; if (v > a) a = v; if (a >= bt) break; }
@@ -2380,7 +2387,7 @@ function chessBoardBg() {
 const MESAS = { // where they stand (servidor/src/personagens.js OBST: the characters walk round them)
   xadrez: { gx: 17.6, gy: 19.8, ic: '♟', name: ['Mini Xadrez', 'Mini chess'], de: ['de xadrez', 'of chess'], tab: ['xadrez', 'chess'], lab: ['♟ Jogar Xadrez', '♟ Play chess'] },
   damas: { gx: 19.6, gy: 12.4, ic: '◉', name: ['Damas', 'Draughts'], de: ['de damas', 'of draughts'], tab: ['damas', 'draughts'], lab: ['◉ Jogar Damas', '◉ Play draughts'] },
-  galo: { gx: 5.4, gy: 19.6, ic: '#', name: ['Jogo do Galo', 'Noughts and crosses'], de: ['de jogo do galo', 'of noughts and crosses'], tab: ['jogo do galo', 'noughts and crosses'], lab: ['# Jogo do Galo', '# Noughts and crosses'] }
+  galo: { gx: 5.4, gy: 19.6, ic: '#', name: ['Jogo do Galo', 'Noughts and crosses'], de: ['do Jogo do Galo', 'of noughts and crosses'], tab: ['Jogo do Galo', 'noughts and crosses'], lab: ['# Jogo do Galo', '# Noughts and crosses'] }
 };
 const ENG = { xadrez: { ...CHESS, enc: m => [m.f, m.t], N: 6 }, damas: damasEngine(), galo: galoEngine() };
 const encEq = (E, m, a) => { const e = E.enc(m); return Array.isArray(a) && e.length === a.length && e.every((v, i) => v === a[i]); };
@@ -2453,7 +2460,7 @@ function chessStatus() {
     if (c.overTxt) return c.overTxt; // resigned, left, out of time
     if (r.w) return ({ mate: L('Xeque-mate! ', 'Checkmate! '), sem: r.w === 'w' ? L('Os Fascistas ficaram sem jogadas. ', 'The Fascists have no moves left. ') : L('O Povo ficou sem jogadas. ', 'The People have no moves left. '), linha: L('Três em linha! ', 'Three in a row! ') }[r.r] || '') + (r.w === 'w' ? L('Venceu O Povo!', 'The People won!') : L('Venceram Os Fascistas!', 'The Fascists won!')) + (won ? L(' Ganhaste.', ' You won.') : L(' Perdeste.', ' You lost.'));
     return { afogado: L('Empate: rei afogado (sem jogadas, sem xeque).', 'Draw: stalemate (no moves, not in check).'), material: L('Empate: não há peças para dar mate.', 'Draw: not enough pieces to mate.'), 50: L('Empate: 50 jogadas sem capturas nem peões.', 'Draw: 50 moves without a capture or a pawn move.'), repeticao: L('Empate: a mesma posição três vezes.', 'Draw: the same position three times.'),
-      20: L('Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões.', 'Draw: 20 king moves each without a capture or a man moving.'), cheio: L('Empate: o tabuleiro encheu sem três em linha.', 'Draw: the board filled up with no three in a row.') }[r.r] || c.overTxt || '';
+      20: L('Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões.', 'Draw: 20 king moves each without a capture or a man moving.'), cheio: L('Empate: o tabuleiro encheu sem três em linha.', 'Draw: the board filled up with no three in a row.'), '3x1': L('Empate: 3 damas contra 1 e não houve vitória em 12 jogadas.', 'Draw: 3 kings against 1 and no win within 12 moves.') }[r.r] || c.overTxt || '';
   }
   if (c.thinking) return L('Os Fascistas estão a pensar…', 'The Fascists are thinking…');
   const mine = c.s.turn === c.me, E = ENG[j];
@@ -2500,6 +2507,12 @@ function chessRender() {
   }
   $('chessName').textContent = L(M.name[0], M.name[1]); $('chess').querySelector('.chp').setAttribute('aria-label', L(M.name[0], M.name[1]));
   $('chessSub').textContent = c && c.mode === 'mp' ? L(`O Povo contra Os Fascistas · com ${c.opp}`, `The People against The Fascists · with ${c.opp}`) : L('O Povo contra Os Fascistas', 'The People against The Fascists');
+  { // the pieces each side still has (who is ahead)
+    const ct = $('chessCount'), n = side => s.b.filter(p => p && E.side(p) === side).length, k = side => j === 'damas' ? s.b.filter(p => p && E.isK(p) && E.side(p) === side).length : 0;
+    ct.hidden = j === 'galo' || !c;
+    if (!ct.hidden) { const nw = n('w'), nb = n('b'), one = (side, x, kk) => `<span class="${side}${x > (side === 'w' ? nb : nw) ? ' lead' : ''}">${esc(chPeople(side))}: <b>${x}</b> ${x === 1 ? L('peça', 'piece') : L('peças', 'pieces')}${kk ? ` (${kk} ${kk === 1 ? L('dama', 'king') : L('damas', 'kings')})` : ''}</span>`;
+      ct.innerHTML = one('w', nw, k('w')) + one('b', nb, k('b')); }
+  }
   $('chessSt').textContent = chessStatus();
   $('chessBar').innerHTML = '';
   const btn = (t, f, cls = '') => { const b = document.createElement('button'); b.textContent = t; if (cls) b.className = cls; b.addEventListener('click', f); $('chessBar').append(b); };
@@ -2550,7 +2563,7 @@ function chessMsg(m) {
   }
   if (m.t === 'chess-gone') { if (chInvite && chInvite.i === m.i) { toast(L(`O desafio de ${chInvite.n} expirou.`, `${chInvite.n}'s challenge expired.`), 4000); chInvite = null; chessRender(); chessTab(); } return; }
   if (m.t === 'chess-who') return chessWho(m.l);
-  if (m.t === 'chess-no') { const why = { recusou: L(`${m.n} recusou o desafio.`, `${m.n} declined.`), ocupado: L(`${m.n} já está a jogar ou tem outro desafio.`, `${m.n} is already playing or has another challenge.`), saiu: L('Essa pessoa já não está na praça.', 'That person has left the square.'), espera: L('Espera um pouco antes de desafiar outra vez.', 'Wait a little before challenging again.'), tempo: L('O convite expirou.', 'The challenge expired.') }[m.why] || ''; toast(why, 4000); if (!$('chess').hidden) $('chessSt').textContent = why; return; }
+  if (m.t === 'chess-no') { const why = { recusou: L(`${m.n} recusou o desafio.`, `${m.n} declined.`), ocupado: L(`${m.n} já está a jogar ou tem outro desafio.`, `${m.n} is already playing or has another challenge.`), saiu: L('Essa pessoa já não está na praça.', 'That person has left the square.'), espera: L('Espera um pouco antes de desafiar outra vez.', 'Wait a little before challenging again.'), tempo: L('O convite expirou.', 'The challenge expired.'), versao: L(`${m.n} tem uma versão antiga da praça: tem de recarregar a página para jogar ${MESAS[m.j] ? MESAS[m.j].tab[0] : 'isto'}.`, `${m.n} has an old version of the square: they need to reload the page to play ${MESAS[m.j] ? MESAS[m.j].tab[1] : 'this'}.`) }[m.why] || ''; toast(why, 5000); if (!$('chess').hidden) $('chessSt').textContent = why; return; }
   if (m.t === 'chess-start') { chInvite = null; if (chess && !chess.over && chess.mode === 'mp') return; chessNew('mp', m.w === myId ? 'w' : 'b', m.g, m.w === myId ? m.nb : m.nw, jOf(m.j)); toast(L(`Partida ${MESAS[chess.j].de[0]} com ${chess.opp}! Começa O Povo.`, `Game ${MESAS[chess.j].de[1]} with ${chess.opp}! The People start.`), 4000); return; }
   const c = chess; if (!c || c.mode !== 'mp' || m.g !== c.g) return;
   if (m.t === 'chess-move' && !c.over && c.s.turn !== c.me) { // the other side's move, checked against the rules
@@ -2576,7 +2589,7 @@ function chessGuide() { // how the pieces move (closed at first)
   }[chView];
   const NOTE = {
     xadrez: L('Tabuleiro 6x6, sem bispos. Começa O Povo. Também há empate por rei afogado, falta de peças, 50 jogadas sem capturas e posição repetida três vezes.', '6x6 board, no bishops. The People start. Draws: stalemate, not enough pieces, 50 moves without a capture, or the same position three times.'),
-    damas: L('Regras portuguesas, tabuleiro 8x8. Começa O Povo. Comer é obrigatório, e tem de se fazer a jogada que come mais peças (se empatar, a que come mais damas). As peças comidas saem no fim da jogada. Perde quem ficar sem peças ou sem jogadas. Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões.', 'Portuguese rules, 8x8 board. The People start. Taking is compulsory, and the move that takes the most pieces must be played (equal: the one that takes the most kings). Taken pieces come off at the end of the move. No pieces or no moves: you lose. Draw: 20 king moves each without a capture or a man moving.'),
+    damas: L('Regras portuguesas, tabuleiro 8x8. Começa O Povo. Comer é obrigatório, e tem de se fazer a jogada que come mais peças (se empatar, a que come mais damas). As peças comidas saem no fim da jogada. Perde quem ficar sem peças ou sem jogadas. Empate: 20 jogadas de damas de cada lado sem comer nem mexer peões; ou 3 damas (uma delas na diagonal grande) contra 1 dama sem vitória em 12 jogadas.', 'Portuguese rules, 8x8 board. The People start. Taking is compulsory, and the move that takes the most pieces must be played (equal: the one that takes the most kings). Taken pieces come off at the end of the move. No pieces or no moves: you lose. Draw: 20 king moves each without a capture or a man moving; or 3 kings (one on the long diagonal) against 1 king with no win within 12 moves.'),
     galo: L('Começa O Povo. Se o tabuleiro encher sem três em linha, é empate. O computador às vezes distrai-se: aproveita!', 'The People start. A full board with no three in a row is a draw. The computer sometimes gets distracted: make the most of it!')
   }[chView];
   const d = $('chessGuide'); d.querySelector('summary').textContent = chView === 'galo' ? L('Como se joga', 'How to play') : L('Guia das peças', 'Pieces guide');

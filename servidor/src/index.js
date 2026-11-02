@@ -384,7 +384,7 @@ export class Praca {
     }
     if (now - p.winStart > 10e3) { p.winStart = now; p.msgs = 0; } if (++p.msgs > 60) { if (p.msgs === 61) this.strike(p.key, 'mensagens'); return; } // flood guard
     if (m.t === 'hello' && !p.name) {
-      p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : '';
+      p.dev = /^[a-z0-9]{8,40}$/.test(m.dev || '') ? m.dev : ''; p.mesas = m.mesas | 0; // (2: the page knows the draughts and noughts-and-crosses tables)
       if (this.banned(p.dev)) { this.send(p, { t: 'banned' }); try { p.ws.close(4002, 'banido'); } catch (e) {} return; }
       const n = clean(m.name, 16); let name = n.ok ? n.text : 'Anónimo';
       // the same browser coming back (a phone that changed network, a second tab): the old connection goes, so the
@@ -520,6 +520,7 @@ export class Praca {
       const q = this.byId(m.to | 0); if (!q || q === p) return this.send(p, { t: 'chess-no', why: 'saiu' });
       if (p.chessG || q.chessG || [...this.chessInv.values()].some(v => v.to === q.id)) return this.send(p, { t: 'chess-no', why: 'ocupado', n: q.name }); // (one challenge at a time for each person)
       const j = MESAS.includes(m.j) ? m.j : 'xadrez'; // which table: chess, draughts or noughts and crosses
+      if (j !== 'xadrez' && (q.mesas | 0) < 2) return this.send(p, { t: 'chess-no', why: 'versao', n: q.name, j }); // an old page would start chess instead
       p.chessInvAt = now; const i = this.chessN++; this.chessInv.set(i, { from: p.id, to: q.id, at: now, j });
       return this.send(q, { t: 'chess-invite', i, from: p.id, n: p.name, j });
     }
