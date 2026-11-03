@@ -934,6 +934,7 @@ function drawNpc(g, n, now) {
   }
   if (n.k === 'acampado') { // a camper (or not): what can be seen on him is the clue (servidor/src/personagens.js: EAR, SNEAKERS, SHADES, CAP)
     const lk = lookOf(n.vr), s = n.flip ? -1 : 1, shout = n.s === 3, w = Math.floor(t * 6) % 2;
+    if (n.s === 9 && n.pig) return pigMan((a, b, c, e, h) => R(g, a, b, c, e, h), x, y, { shirt: lk.shirt, pants: lk.pants, moving: n.moving, step: n.step, flip: n.flip, back: n.back }); // the infiltrator, unmasked: a pig
     guy(g, x, y, { ...lk, moving: n.moving, step: n.step, flip: n.flip, back: n.back, armUp2: shout, wob2: shout ? w : 0 });
     if (n.t & 2) { R(g, x - 3, y - 2, 3, 1, '#ffffff'); R(g, x + 1, y - 2, 3, 1, '#ffffff'); } // brand-new white trainers
     if ((n.t & 4) && !n.back) R(g, x - 2, y - 12, 5, 1, '#0b0a0a'); // dark glasses
@@ -1431,6 +1432,51 @@ function curiousDialog(id) {
   const Q = CURIOUS_Q[n.vr % 4];
   dialog(L('Curioso', 'Passer-by'), L(Q[0], Q[1]), b => { const g = optGrid(b); EXPLAIN.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'explicar', id, a: i }); closeSheets(); }))); });
 }
+/* ================= the pig (the infiltrator): his look and his sounds ================= */
+// The infiltrator is a pig dressed as a camper: drawn bigger and fatter than the people, with a pig's head (snout,
+// nostrils, ears) and his belly showing under a shirt that is too small. P(x, y, w, h, colour) draws one rectangle.
+function pigMan(P, x, y, o) {
+  const PK = '#f39bb0', PD = '#d5728d', PL = '#ffd0dc', SN = '#e8708f', NO = '#6e1f33', EY = '#1b1464', f = o.moving ? Math.floor(o.step || 0) % 3 : 0, s = o.flip ? -1 : 1;
+  P(x - 6, y - 1, 13, 2, 'rgba(30,10,70,.3)'); // the shadow
+  const l1 = f === 1 ? 1 : 0, l2 = f === 2 ? 1 : 0; // short legs, dark trotters
+  P(x - 3, y - 5 + l1, 2, 4 - l1, o.pants); P(x + 2, y - 5 + l2, 2, 4 - l2, o.pants); P(x - 3, y - 1, 2, 1, '#3a2a2e'); P(x + 2, y - 1, 2, 1, '#3a2a2e');
+  P(x - 5, y - 13, 11, 8, o.shirt); P(x - 6, y - 12, 13, 6, o.shirt); P(x + 3, y - 13, 3, 8, 'rgba(0,0,0,.16)'); // the fat body
+  if (!o.back) { P(x - 2, y - 9, 5, 3, PL); P(x, y - 8, 1, 1, PD); } // the belly out of the shirt, the navel
+  else { P(x - 1, y - 9, 1, 1, PD); P(x, y - 10, 1, 1, PD); P(x + 1, y - 9, 1, 1, PD); P(x, y - 8, 1, 1, PD); } // the curly tail
+  P(x - 7, y - 11, 1, 4, PK); if (o.arm) { const u = o.wob || 0; P(x + 6, y - 12, 1, 2, PK); P(x + 7, y - 19 - u, 1, 8, PK); P(x + 8, y - 18 - u, 1, 6, PD); P(x + 7, y - 20 - u, 2, 1, '#3a2a2e'); } else P(x + 6, y - 11, 1, 4, PK); // the arms (one up when he shouts, away from the head, with a dark trotter)
+  P(x - 4, y - 22, 9, 9, PK); P(x - 5, y - 21, 11, 7, PK); P(x - 3, y - 23, 7, 1, PK); P(x + 3, y - 21, 2, 7, PD); // the big pink head
+  P(x - 5, y - 25, 2, 3, PD); P(x + 4, y - 25, 2, 3, PD); P(x - 4, y - 24, 1, 1, PK); P(x + 4, y - 24, 1, 1, PK); // the ears
+  if (!o.back) {
+    P(x - 2, y - 20, 1, 2, EY); P(x + 2, y - 20, 1, 2, EY); // the eyes
+    P(x - 2 + s, y - 17, 5, 3, SN); P(x - 2 + s, y - 17, 5, 1, PL); P(x - 1 + s, y - 16, 1, 1, NO); P(x + 1 + s, y - 16, 1, 1, NO); // the snout and its nostrils
+  }
+}
+function pigGrunt(a, out, t0, k = 1) { // «oinc»: low, nasal and rough, a quick dip in pitch
+  const o = a.createOscillator(), n = a.createBufferSource(), g = a.createGain(), am = a.createOscillator(), amg = a.createGain(), f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), mix = a.createGain();
+  const len = .2 * k; o.type = 'sawtooth'; o.frequency.setValueAtTime(150, t0); o.frequency.linearRampToValueAtTime(205, t0 + len * .25); o.frequency.exponentialRampToValueAtTime(95, t0 + len);
+  const nb = a.createBuffer(1, Math.ceil(a.sampleRate * len), a.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; n.buffer = nb;
+  const ng = a.createGain(); ng.gain.value = .35;
+  f1.type = 'bandpass'; f1.frequency.value = 520; f1.Q.value = 3; f2.type = 'bandpass'; f2.frequency.value = 1250; f2.Q.value = 5;
+  am.type = 'square'; am.frequency.value = 38; amg.gain.value = .45; am.connect(amg).connect(mix.gain); mix.gain.value = .55; // the rasp
+  o.connect(mix); n.connect(ng).connect(mix); mix.connect(f1); mix.connect(f2); f1.connect(g); f2.connect(g);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.9, t0 + .02); g.gain.setValueAtTime(.9, t0 + len * .6); g.gain.exponentialRampToValueAtTime(.001, t0 + len);
+  g.connect(out); for (const s of [o, n, am]) { s.start(t0); s.stop(t0 + len + .02); }
+}
+function pigSqueal(a, out, t0) { // the squeal when he is caught: high, shaky, up and then down
+  const o = a.createOscillator(), o2 = a.createOscillator(), v = a.createOscillator(), vg = a.createGain(), g = a.createGain(), f = a.createBiquadFilter(), f2 = a.createBiquadFilter();
+  o.type = 'sawtooth'; o2.type = 'square'; const len = .95;
+  for (const x of [o, o2]) { x.frequency.setValueAtTime(700, t0); x.frequency.exponentialRampToValueAtTime(1700, t0 + .18); x.frequency.setValueAtTime(1700, t0 + .45); x.frequency.exponentialRampToValueAtTime(900, t0 + len); }
+  o2.detune.value = 25; v.frequency.value = 17; vg.gain.value = 60; v.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency); // the shake
+  f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 2.5; f2.type = 'peaking'; f2.frequency.value = 3400; f2.gain.value = 8;
+  const m = a.createGain(); m.gain.value = .5; o.connect(m); o2.connect(m); m.connect(f).connect(f2).connect(g);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.75, t0 + .05); g.gain.setValueAtTime(.75, t0 + .7); g.gain.exponentialRampToValueAtTime(.001, t0 + len);
+  g.connect(out); for (const s of [o, o2, v]) { s.start(t0); s.stop(t0 + len + .02); }
+}
+function pigSound(kind) { // a grunt (two «oincs») or the squeal; quieter than the synth's full level, like the game's other sounds
+  if (muted || !actx) return; const out = actx.createGain(), t = actx.currentTime; out.gain.value = (kind === 'grunt' ? .3 : .22) * (typeof duck === 'number' ? duck : 1); out.connect(actx.destination);
+  if (kind === 'grunt') { pigGrunt(actx, out, t); pigGrunt(actx, out, t + .27, .8); } else pigSqueal(actx, out, t);
+}
+
 /* ---------- «Há um bufo na praça» (servidor/src/personagens.js) ---------- */
 let bufoVote = null, bufoTimer = 0; // { id, n, until, sim, nao, mine }
 function camperDialog(id, k) {
@@ -1460,13 +1506,14 @@ function bufoMsg(m) {
   if (m.t === 'bufo-fim') {
     if (bufoVote && bufoVote.id === m.id) { bufoVote = null; votoShow(); }
     const T = {
-      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um infiltrado da polícia. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a police infiltrator. Well spotted, ${m.by}! +3 supporters`),
+      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um infiltrado: um porco disfarçado de acampado. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was an infiltrator: a pig dressed as a camper. Well spotted, ${m.by}! +3 supporters`),
       inocente: L(`😟 Era só um acampado. Ficou ofendido e foi-se embora. Ninguém pode apontar durante ${Math.round((m.lock || 180) / 60)} minutos.`, `😟 He was just a camper. He’s offended and left. Nobody can point for ${Math.round((m.lock || 180) / 60)} minutes.`),
       nao: L(`A praça não concordou (${m.sim || 0} sim, ${m.nao || 0} não).`, `The square didn’t agree (${m.sim || 0} yes, ${m.nao || 0} no).`),
       fugiu: m.role === 1 ? (m.fotos ? L(`📸 Ninguém deu por ele: um polícia à paizana saiu da praça com fotografias de ${m.fotos} ${m.fotos === 1 ? 'pessoa' : 'pessoas'}.`, `📸 Nobody noticed: a plain-clothes officer left the square with photos of ${m.fotos} ${m.fotos === 1 ? 'person' : 'people'}.`) : L('Um polícia à paizana andou pela praça e foi-se embora sem ninguém dar por ele.', 'A plain-clothes officer walked round the square and left without anyone noticing.')) : L('O infiltrado não conseguiu juntar ninguém e foi-se embora.', 'The infiltrator couldn’t gather anyone and left.'),
       provocou: L(`💥 O infiltrado conseguiu a confusão que queria${m.fugiram ? `: ${m.fugiram} ${m.fugiram === 1 ? 'curioso assustou-se e foi-se' : 'curiosos assustaram-se e foram-se'} embora` : ''}. Não lhe deem ouvidos!`, `💥 The infiltrator got the trouble he wanted${m.fugiram ? `: ${m.fugiram} scared passer${m.fugiram === 1 ? '-by' : 's-by'} left` : ''}. Don’t listen to him!`)
     }[m.r];
-    if (m.r === 'apanhado') { say(m.id, m.role === 1 ? L('Ups… fui apanhado.', 'Oops… caught.') : L('Era só… brincadeira!', 'It was just… a joke!')); if (m.total != null) { convencidos = m.total; renderCounts(); } }
+    if (m.r === 'apanhado' && m.role === 2) { const n = npcs.get(m.id); if (n) n.pig = true; pigSound('squeal'); } // the infiltrator turns out to be a pig
+    if (m.r === 'apanhado') { say(m.id, m.role === 1 ? L('Ups… fui apanhado.', 'Oops… caught.') : L('Oinc! Era só… brincadeira!', 'Oink! It was just… a joke!')); if (m.total != null) { convencidos = m.total; renderCounts(); } }
     if (m.r === 'inocente') say(m.id, L('Eu?! Estou aqui desde o primeiro dia!', 'Me?! I’ve been here since day one!'));
     if (T) toast(T, 6000); return true;
   }

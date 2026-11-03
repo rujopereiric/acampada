@@ -1128,11 +1128,11 @@ const PLAZA = {
     // towards the Avenida Central: lawns along the west side and at the far end, with flower beds (big yellow flowers)
     if ((gx < 3.7 && gy > 5.4) || (gy > 9.9 && gx < 8.9)) {
       for (const [x0, x1, y0, y1] of [[.5, 3, 6.1, 9.2], [.5, 3, 10.4, 13.4], [3.9, 6.9, 10.5, 13.4]]) if (gx > x0 && gx < x1 && gy > y0 && gy < y1) {
-        if (gx < x0 + .12 || gx > x1 - .12 || gy < y0 + .12 || gy > y1 - .12) return [214, 208, 196];
+        if (gx < x0 + .16 || gx > x1 - .16 || gy < y0 + .16 || gy > y1 - .16) return [198, 192, 182]; // the granite kerb
         const cx = Math.floor((gx - x0) / .8), cy = Math.floor((gy - y0) / .8), fx = x0 + cx * .8 + .4, fy = y0 + cy * .8 + .4, dd = Math.hypot(gx - fx, gy - fy), k = hash(cx * 3 + Math.round(x0 * 7), cy * 5 + Math.round(y0 * 3));
         if (k < .55 && dd < .3) return dd < .1 ? [232, 140, 40] : [248, 206, 58]; // flowers
         if (k > .8 && dd < .25) return [190, 196, 200]; // grey stones
-        return hash(Math.floor(gx * 7), Math.floor(gy * 7)) < .12 ? [236, 230, 214] : [124, 78, 56]; }
+        return hash(Math.floor(gx * 7), Math.floor(gy * 7)) < .5 ? [78, 142, 62] : [90, 156, 70]; } // grass between the flowers
       if ((gx > 3.3 && gx < 3.7) || (gy > 9.9 && gy < 10.25) || (gx > 7.1 && gx < 7.45)) return [206, 200, 192]; // paths
       return (hash(Math.floor(gx * 6), Math.floor(gy * 6)) < .5) ? [104, 164, 74] : [116, 174, 84];
     }
@@ -1478,7 +1478,7 @@ try { cleared = new Set(JSON.parse(localStorage.getItem('acampada3-cleared') || 
 function saveCleared() { try { localStorage.setItem('acampada3-cleared', JSON.stringify([...cleared])); } catch (e) {} }
 
 function look(student) {
-  return student && Math.random() < .55
+  return student && Math.random() < .25 // (the black academic cape: a quarter of the students)
     ? { skin: pick(SKIN), hair: pick(HAIR), shirt: '#15151c', pants: '#15151c', cape: true }
     : { skin: pick(SKIN), hair: pick(HAIR), shirt: pick(SHIRTS), pants: pick(['#2b2d55', '#3a3a44', '#4a6fa5', '#5a3a6b']) };
 }
@@ -1974,9 +1974,54 @@ function updZez(dt) {
   if (z.wait > 0) { z.wait -= dt; z.moving = false; return; }
   if (moveEnt(z, z.tx, z.ty, 1.1, dt)) { z.wait = rnd(3, 7); const sp = spot(); if (sp) [z.tx, z.ty] = sp; }
 }
-// The infiltrator (every square, from the second day, on some days): someone dressed like a camper who wants trouble.
+/* ================= the pig (the infiltrator): his look and his sounds ================= */
+// The infiltrator is a pig dressed as a camper: drawn bigger and fatter than the people, with a pig's head (snout,
+// nostrils, ears) and his belly showing under a shirt that is too small. P(x, y, w, h, colour) draws one rectangle.
+function pigMan(P, x, y, o) {
+  const PK = '#f39bb0', PD = '#d5728d', PL = '#ffd0dc', SN = '#e8708f', NO = '#6e1f33', EY = '#1b1464', f = o.moving ? Math.floor(o.step || 0) % 3 : 0, s = o.flip ? -1 : 1;
+  P(x - 6, y - 1, 13, 2, 'rgba(30,10,70,.3)'); // the shadow
+  const l1 = f === 1 ? 1 : 0, l2 = f === 2 ? 1 : 0; // short legs, dark trotters
+  P(x - 3, y - 5 + l1, 2, 4 - l1, o.pants); P(x + 2, y - 5 + l2, 2, 4 - l2, o.pants); P(x - 3, y - 1, 2, 1, '#3a2a2e'); P(x + 2, y - 1, 2, 1, '#3a2a2e');
+  P(x - 5, y - 13, 11, 8, o.shirt); P(x - 6, y - 12, 13, 6, o.shirt); P(x + 3, y - 13, 3, 8, 'rgba(0,0,0,.16)'); // the fat body
+  if (!o.back) { P(x - 2, y - 9, 5, 3, PL); P(x, y - 8, 1, 1, PD); } // the belly out of the shirt, the navel
+  else { P(x - 1, y - 9, 1, 1, PD); P(x, y - 10, 1, 1, PD); P(x + 1, y - 9, 1, 1, PD); P(x, y - 8, 1, 1, PD); } // the curly tail
+  P(x - 7, y - 11, 1, 4, PK); if (o.arm) { const u = o.wob || 0; P(x + 6, y - 12, 1, 2, PK); P(x + 7, y - 19 - u, 1, 8, PK); P(x + 8, y - 18 - u, 1, 6, PD); P(x + 7, y - 20 - u, 2, 1, '#3a2a2e'); } else P(x + 6, y - 11, 1, 4, PK); // the arms (one up when he shouts, away from the head, with a dark trotter)
+  P(x - 4, y - 22, 9, 9, PK); P(x - 5, y - 21, 11, 7, PK); P(x - 3, y - 23, 7, 1, PK); P(x + 3, y - 21, 2, 7, PD); // the big pink head
+  P(x - 5, y - 25, 2, 3, PD); P(x + 4, y - 25, 2, 3, PD); P(x - 4, y - 24, 1, 1, PK); P(x + 4, y - 24, 1, 1, PK); // the ears
+  if (!o.back) {
+    P(x - 2, y - 20, 1, 2, EY); P(x + 2, y - 20, 1, 2, EY); // the eyes
+    P(x - 2 + s, y - 17, 5, 3, SN); P(x - 2 + s, y - 17, 5, 1, PL); P(x - 1 + s, y - 16, 1, 1, NO); P(x + 1 + s, y - 16, 1, 1, NO); // the snout and its nostrils
+  }
+}
+function pigGrunt(a, out, t0, k = 1) { // «oinc»: low, nasal and rough, a quick dip in pitch
+  const o = a.createOscillator(), n = a.createBufferSource(), g = a.createGain(), am = a.createOscillator(), amg = a.createGain(), f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), mix = a.createGain();
+  const len = .2 * k; o.type = 'sawtooth'; o.frequency.setValueAtTime(150, t0); o.frequency.linearRampToValueAtTime(205, t0 + len * .25); o.frequency.exponentialRampToValueAtTime(95, t0 + len);
+  const nb = a.createBuffer(1, Math.ceil(a.sampleRate * len), a.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; n.buffer = nb;
+  const ng = a.createGain(); ng.gain.value = .35;
+  f1.type = 'bandpass'; f1.frequency.value = 520; f1.Q.value = 3; f2.type = 'bandpass'; f2.frequency.value = 1250; f2.Q.value = 5;
+  am.type = 'square'; am.frequency.value = 38; amg.gain.value = .45; am.connect(amg).connect(mix.gain); mix.gain.value = .55; // the rasp
+  o.connect(mix); n.connect(ng).connect(mix); mix.connect(f1); mix.connect(f2); f1.connect(g); f2.connect(g);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.9, t0 + .02); g.gain.setValueAtTime(.9, t0 + len * .6); g.gain.exponentialRampToValueAtTime(.001, t0 + len);
+  g.connect(out); for (const s of [o, n, am]) { s.start(t0); s.stop(t0 + len + .02); }
+}
+function pigSqueal(a, out, t0) { // the squeal when he is caught: high, shaky, up and then down
+  const o = a.createOscillator(), o2 = a.createOscillator(), v = a.createOscillator(), vg = a.createGain(), g = a.createGain(), f = a.createBiquadFilter(), f2 = a.createBiquadFilter();
+  o.type = 'sawtooth'; o2.type = 'square'; const len = .95;
+  for (const x of [o, o2]) { x.frequency.setValueAtTime(700, t0); x.frequency.exponentialRampToValueAtTime(1700, t0 + .18); x.frequency.setValueAtTime(1700, t0 + .45); x.frequency.exponentialRampToValueAtTime(900, t0 + len); }
+  o2.detune.value = 25; v.frequency.value = 17; vg.gain.value = 60; v.connect(vg); vg.connect(o.frequency); vg.connect(o2.frequency); // the shake
+  f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 2.5; f2.type = 'peaking'; f2.frequency.value = 3400; f2.gain.value = 8;
+  const m = a.createGain(); m.gain.value = .5; o.connect(m); o2.connect(m); m.connect(f).connect(f2).connect(g);
+  g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.75, t0 + .05); g.gain.setValueAtTime(.75, t0 + .7); g.gain.exponentialRampToValueAtTime(.001, t0 + len);
+  g.connect(out); for (const s of [o, o2, v]) { s.start(t0); s.stop(t0 + len + .02); }
+}
+function pigSound(kind) { // a grunt (two «oincs») or the squeal; quieter than the synth's full level, like the game's other sounds
+  if (muted || !actx) return; const out = actx.createGain(), t = actx.currentTime; out.gain.value = (kind === 'grunt' ? .3 : .22) * (typeof duck === 'number' ? duck : 1); out.connect(actx.destination);
+  if (kind === 'grunt') { pigGrunt(actx, out, t); pigGrunt(actx, out, t + .27, .8); } else pigSqueal(actx, out, t);
+}
+
+// The infiltrator (every square, from the second day, on some days): a pig dressed as a camper who wants trouble.
 // He walks in, stands in the middle of the camp and calls people round him with the wrong ideas. A Cordão round him,
-// or throwing him out at the Assembleia, unmasks him (the police vest under the jacket) and he runs: +support, +morale.
+// or throwing him out at the Assembleia, unmasks him and he runs off squealing: +support, +morale.
 // Left alone for INF_LEN seconds, he gets the trouble he wanted: the police have their excuse and charge the camp
 // (calm mode: no charge, the camp only loses heart and support).
 const INF_DAY = 2, INF_CHANCE = .6, INF_LEN = 20, INF_SAY = 4, INF_QUIET = 6; // INF_LEN and INF_QUIET: seconds of real time (a game hour is 3 s)
@@ -1989,8 +2034,8 @@ function infCaught(how) {
   const i = S.inf; if (!infOn()) return;
   S.support = Math.min(100, S.support + 6); S.morale = Math.min(100, S.morale + 8);
   float(i.gx, i.gy, how === 'assembleia' ? L('A assembleia expulsou o infiltrado!', 'The assembly threw the infiltrator out!') : L('Infiltrado desmascarado!', 'Infiltrator unmasked!'), '#b6ff3b', 30);
-  floatXY(0, 0, L('Era polícia à paizana. Foi-se embora a correr.', 'He was a plain-clothes cop. He ran off.'), '#b6ff3b', i);
-  sparkle(i.gx, i.gy, 10, 10); sfx('win'); i.state = 'caught'; infOut(i);
+  floatXY(0, 0, L('Era um porco disfarçado de acampado. Fugiu aos guinchos!', 'He was a pig dressed as a camper. He ran off squealing!'), '#b6ff3b', i);
+  sparkle(i.gx, i.gy, 10, 10); sfx('win'); pigSound('squeal'); i.state = 'caught'; infOut(i);
 }
 function updInf(dt) {
   const day = 1 + Math.floor((S.clock - 6) / 24), hr = S.clock % 24;
@@ -2010,7 +2055,7 @@ function updInf(dt) {
   if (i.state === 'in') { if (moveEnt(i, i.tx, i.ty, 1.2, dt)) { i.state = 'stir'; i.moving = false; } return; }
   // stirring: shouts the wrong ideas, calls the people nearby round him
   i.t += dt; i.sayT -= dt; i.pullT -= dt; if (i.shout > 0) i.shout -= dt; i.moving = false; i.back = false;
-  if (i.sayT <= 0) { i.sayT = INF_SAY; i.shout = 1.6; const ln = INF_LINES[(i.n = (i.n ?? Math.floor(rnd(0, 5))) + 1) % INF_LINES.length]; float(i.gx, i.gy, L(ln[0], ln[1]), '#ffd36b', 30); }
+  if (i.sayT <= 0) { i.sayT = INF_SAY; i.shout = 1.6; const ln = INF_LINES[(i.n = (i.n ?? Math.floor(rnd(0, 5))) + 1) % INF_LINES.length]; float(i.gx, i.gy, L(ln[0], ln[1]), '#ffd36b', 38); pigSound('grunt'); }
   if (i.pullT <= 0) { i.pullT = 3; const r = S.residents.filter(r => !r.infK && r.chainK == null && !r.up && !(r.stun > 0)).sort((a, b) => gd(a, i) - gd(b, i))[0]; if (r) { r.infK = true; r.wait = 0; r.path = null; const a = rnd(0, Math.PI * 2); r.tx = clamp(i.gx + Math.cos(a) * .9, .3, NX - .3); r.ty = clamp(i.gy + Math.sin(a) * .9, .3, NY - .3); } }
   if (i.t >= INF_LEN) { // the trouble he wanted
     S.morale = Math.max(0, S.morale - 10);
@@ -2021,10 +2066,8 @@ function updInf(dt) {
 }
 function drawInf(i) {
   const q = iso(i.gx, i.gy), x = Math.round(q.x), y = Math.round(q.y), w = Math.floor(S.t * 6) % 2;
-  guy(x, y, { ...i.look, moving: i.moving, step: i.step, flip: i.flip, back: i.back });
-  if (i.shout > 0) R(x + 4, y - 15 - w, 1, 6, i.look.skin); // the fist up
-  if (i.state === 'caught') { R(x - 3, y - 10, 7, 5, '#1b2656'); R(x - 3, y - 8, 7, 1, '#ffd23a'); R(x - 1, y - 10, 3, 1, '#ffd23a'); } // the police vest under the jacket
-  else if (i.state === 'stir') { const n = S.residents.filter(r => r.infK && gd(r, i) < 1.6).length; drawFloat({ x: q.x, y: q.y - 19, text: `⚠ ${L('Infiltrado', 'Infiltrator')} · ${n} · ${Math.max(0, Math.ceil(INF_LEN - i.t))}s`, color: '#ff3b4e', t: 1 }); } // how many he has round him, and the time left
+  pigMan(R, x, y, { shirt: i.look.shirt, pants: i.look.pants, moving: i.moving, step: i.step, flip: i.flip, back: i.back, arm: i.shout > 0, wob: w });
+  if (i.state === 'stir') { const n = S.residents.filter(r => r.infK && gd(r, i) < 1.6).length; drawFloat({ x: q.x, y: q.y - 30, text: `⚠ ${L('Infiltrado', 'Infiltrator')} · ${n} · ${Math.max(0, Math.ceil(INF_LEN - i.t))}s`, color: '#ff3b4e', t: 1 }); } // how many he has round him, and the time left
 }
 function drawZez(z) {
   const q = iso(z.gx, z.gy), x = Math.round(q.x), y = Math.round(q.y), s = z.flip ? -1 : 1;
@@ -2422,7 +2465,11 @@ function drawNeg(m) {
     else if (blink && !m.moving) { const px = f > 0 ? x + 3 : x - 4; R(px, y - 18, 2, 3, '#16121a'); R(px, y - 18, 1, 1, '#9fd0ff'); } // a phone up, filming
   }
 }
-// the win: a newspaper front page with a photo of the party
+// the win: a newspaper front page with a photo of the party; the box lists 3 of these measures, different each time
+const WIN_MEASURES = [['Tetos às rendas', 'Rent caps'], ['Zonas de pressão residencial', 'Residential pressure zones'], ['Habitação pública', 'Public housing'],
+  ['Imposto sobre casas vazias', 'Tax on empty homes'], ['Restrição à compra por não residentes', 'Limits on buying by non-residents'],
+  ['Arrendamento de curta duração: proibição parcial e quotas severas', 'Short-term rentals: partial ban and strict quotas'], ['Limite de preço por m²', 'Price cap per m²'],
+  ['Controlo de rendas', 'Rent control'], ['Cooperativas de habitação', 'Housing cooperatives'], ['Cumprir o artigo 65.º', 'Uphold Article 65 (the right to housing)']];
 function newsSync() {
   const el = $('news'), on = !!(S && S.winning && S.winT > .6 && (mode === 'play' || mode === 'paused'));
   if (!on) { if (!el.hidden) el.hidden = true; return; }
@@ -2439,7 +2486,7 @@ function newsSync() {
     q('.lead').textContent = L(`Ao fim de ${day} ${day === 1 ? 'dia' : 'dias'} de acampada ${at}, o governo recuou e aprovou um pacote de emergência para a habitação. As medidas entram em vigor de imediato. Na praça, ninguém arruma as tendas: a festa já começou.`,
       `After ${day} ${day === 1 ? 'day' : 'days'} of camping in ${S.city.place || S.city.name}, the government backed down and passed an emergency housing package. The measures take effect at once. In the square nobody is packing up: the party has already started.`);
     q('.box b').textContent = L('As medidas', 'The measures');
-    q('.box ul').innerHTML = ''; for (const m of [L('Limite de preço por m²', 'Price cap per m²'), L('Controlo de rendas', 'Rent control'), L('Cooperativas de habitação', 'Housing cooperatives')]) { const li = document.createElement('li'); li.textContent = m; q('.box ul').appendChild(li); }
+    q('.box ul').innerHTML = ''; for (const [pt, en] of WIN_MEASURES.slice().sort(() => Math.random() - .5).slice(0, 3)) { const m = L(pt, en); const li = document.createElement('li'); li.textContent = m; q('.box ul').appendChild(li); }
     q('.more').textContent = L('Continua na página 3 →', 'Continued on page 3 →');
   }
   { const el2 = $('news'), wr = el2.querySelector('.npw'), np = el2.querySelector('.np'), k = Math.min(1.2, (el2.clientWidth - 36) / np.offsetWidth, (el2.clientHeight - (CAM.on && !CAM.land ? 110 : 30)) / np.offsetHeight), up = CAM.on && !CAM.land ? 30 : 0; wr.style.transform = `translate(-50%, calc(-50% - ${up}px)) scale(${k.toFixed(3)})`; }
@@ -2920,9 +2967,14 @@ function drawDrummer(m, kind) {
   ell(ctx, x, y - 6, 4, '#e2283b', 3); ell(ctx, x, y - 8, 3.5, '#f4f1ea', 1.4);
   R(x - 4, y - 12 - up, 1, 4, '#d9b46a'); R(x + 3, y - 12 - (2 - up), 1, 4, '#d9b46a');
 }
+// Braga, with no tents: each group sits on its own picnic blanket (a colour, a pattern, an outline), so the groups read
+// one by one and not as one brown patch. The blanket follows the group's tent colour (so it stays the same all game).
+const MATS = [['#d8343f', '#f4f1ea', 'x'], ['#2f6bff', '#a9d4ff', '-'], ['#f2b632', '#fff1b8', '-'], ['#2e9c5a', '#b9efc8', 'x'], ['#8a5cf0', '#ddd0ff', '-'], ['#ef5a9a', '#ffd9e8', 'x']];
 function drawGroup(t) {
   const q = iso(t.gx, t.gy), x = Math.round(q.x) + (t.hit ? ((Math.floor(S.t * 20) % 2) ? 1 : -1) : 0), y = Math.round(q.y);
-  ell(ctx, x, y, 9, '#b8895a', 4); ell(ctx, x - 1, y - 1, 8, '#c99a5e', 3.5);
+  const [base, line, pat] = MATS[Math.max(0, TENT_COLORS.indexOf(t.color)) % MATS.length];
+  ell(ctx, x, y, 8, '#2a2233', 3.6); ell(ctx, x, y, 7, base, 3); // the outline, the blanket
+  for (const dy of [-2, 0, 2]) { const w = Math.round(7 * Math.sqrt(Math.max(0, 1 - (dy / 3.2) ** 2))); if (pat === '-') R(x - w + 1, y + dy, 2 * w - 2, 1, line); else for (let dx = -w + 1 + ((dy / 2) & 1); dx < w - 1; dx += 2) R(x + dx, y + dy, 1, 1, line); } // stripes or checks
   const seat = (sx, L) => { R(sx - 2, y - 2, 6, 2, L.pants); R(sx - 2, y - 7, 5, 5, L.cape ? '#121218' : L.shirt); R(sx - 2, y - 11, 4, 4, L.skin); R(sx - 2, y - 11, 4, 1, L.hair); };
   seat(x - 3, t.l1); if (t.occ === 2) seat(x + 3, t.l2);
   if (S.dark > .5) { R(x, y - 3, 1, 2, '#fff3b0'); R(x, y - 4, 1, 1, '#ffcf6b'); }
@@ -3686,10 +3738,13 @@ function drawCop(o) {
   if (o.state === 'back' && o.carry) guy(x + (o.flip ? 6 : -6), y, { skin: '#d9a37a', hair: '#3a2a1a', shirt: '#9a9fb0', pants: '#55596b', moving: true, step: o.step });
   if (o.state === 'dismantle') { R(x - 6, y - 21, 12, 3, '#1b1464'); R(x - 5, y - 20, Math.round(10 * o.prog / 2.2), 1, '#ff5fc8'); }
 }
+// the people waiting to be welcomed: only the three nearest you hold up their sign (more would fill the screen)
+let signsAt = -1, signs = new Set();
 function drawArrival(a) {
   const q = iso(a.gx, a.gy);
   guy(q.x, q.y, { ...a.look, moving: a.moving, step: a.step, flip: a.flip, back: a.back });
-  if (a.state === 'wait' && (a.wait > 3 || Math.floor(S.t * 6) % 2)) {
+  if (signsAt !== S.t) { signsAt = S.t; const p = S.player; signs = new Set(S.arrivals.filter(o => o.state === 'wait').sort((m, n) => Math.hypot(m.gx - p.gx, m.gy - p.gy) - Math.hypot(n.gx - p.gx, n.gy - p.gy)).slice(0, 3)); }
+  if (a.state === 'wait' && signs.has(a) && (a.wait > 3 || Math.floor(S.t * 6) % 2)) {
     const x = Math.round(q.x), y = Math.round(q.y);
     R(x - 4, y - 25, 9, 8, '#1b1464'); R(x - 3, y - 24, 7, 6, '#ffffff'); R(x - 3, y - 24, 7, 2, '#c9f6ff');
     R(x, y - 23, 1, 3, '#ff3b8b'); R(x, y - 19, 1, 1, '#ff3b8b'); R(x - 1, y - 17, 2, 1, '#1b1464');
