@@ -45,6 +45,15 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
 .sw span small{ display:block; color:var(--muted); font-size:12px; }
 .toast{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 14px); transform:translateX(-50%); background:var(--lime); color:var(--ink); font:800 13px/1.2 Jost, sans-serif; padding:8px 12px 7px; text-transform:uppercase; max-width:92vw; text-align:center; }
 .toast.err{ background:#ff9d8f; }
+.tabs{ position:sticky; top:0; z-index:5; display:flex; gap:0; margin:12px -14px 0; padding:8px 14px; background:var(--ink); overflow-x:auto; scrollbar-width:none; border-bottom:2px solid var(--paper); }
+.tabs::-webkit-scrollbar{ display:none; }
+.tabs button{ flex:none; background:transparent; color:var(--paper); border-color:transparent; padding:9px 11px 8px; white-space:nowrap; }
+.tabs button.on{ background:var(--paper); color:var(--ink); border-color:var(--paper); }
+.tabs i{ font-style:normal; display:inline-block; min-width:18px; padding:2px 4px 1px; margin-left:3px; background:var(--redbox); color:#fff; font-size:11px; line-height:1.1; } .tabs i:empty{ display:none; }
+section[hidden]{ display:none; }
+h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); } h3.sub:first-of-type{ margin-top:0; }
+.kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; }
+.kpi{ background:var(--paper); color:var(--ink); padding:8px 9px 7px; } .kpi b{ display:block; font:800 24px/1 Jost, sans-serif; } .kpi small{ display:block; font-size:12px; color:#5b554f; margin-top:3px; }
 .toast[hidden]{ display:none; }
 #login{ max-width:380px; margin:12vh auto 0; text-align:center; }
 #login p{ color:#c9c4c4; }
@@ -62,8 +71,9 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
   </div>
   <div id="app" hidden>
     <div class="row" style="justify-content:space-between"><h1>A Praça<small>Gestão</small></h1><button class="ghost sm" id="sair">Sair</button></div>
+    <nav class="tabs" id="tabs" role="tablist"><button data-t="praca" role="tab">Praça</button><button data-t="numeros" role="tab">Números</button><button data-t="conteudo" role="tab">Mural e cartazes</button><button data-t="animacao" role="tab">Animação</button><button data-t="protecao" role="tab">Proteção <i id="tabProt"></i></button></nav>
 
-    <section><h2>Estado <span id="badge" class="badge"></span></h2>
+    <section data-tab="praca"><h2>Estado <span id="badge" class="badge"></span></h2>
       <div id="estadoTxt"></div>
       <label for="tituloAbrir">Título (opcional)</label><input id="tituloAbrir" maxlength="60" placeholder="Praça aberta">
       <div class="row" style="margin-top:8px"><span class="muted" style="margin-right:4px">Abrir agora:</span><button class="green" data-abrir="1">1 h</button><button class="green" data-abrir="2">2 h</button><button class="green" data-abrir="3">3 h</button><button class="green" data-abrir="0">Até fechar</button></div>
@@ -71,39 +81,49 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <p class="muted" style="margin:8px 0 0">«Fechar agora» fecha até ao fim do que estiver marcado; a próxima abertura do horário acontece normalmente. Quem for banido só volta quando a praça fechar.</p>
     </section>
 
-    <section><h2>Aviso para todos</h2>
+    <section data-tab="numeros"><h2>Números</h2>
+      <h3 class="sub">O site · acampadapixel.pt</h3>
+      <div class="kpis" id="siteKpis"></div>
+      <p class="muted" id="siteNota" style="margin:6px 0 0"></p>
+      <h3 class="sub">A praça</h3>
+      <div class="kpis" id="pracaKpis"></div>
+      <div class="list" id="dias" style="margin-top:8px"></div>
+      <p class="muted" style="margin:8px 0 0">Entradas: quem pôs o nome e entrou (a mesma pessoa a voltar em menos de 15 minutos conta uma vez). Pessoas: aparelhos diferentes, contados por um código do navegador; nada de nomes nem endereços. Pico: o máximo ao mesmo tempo, na praça e de longe. Só conta desde que esta versão do servidor foi publicada.</p>
+    </section>
+
+    <section data-tab="praca"><h2>Aviso para todos</h2>
       <textarea id="aviso" maxlength="160" placeholder="Ex.: A assembleia começa agora!"></textarea>
       <div class="row" style="margin-top:8px"><button class="red" id="avisoEnviar">Mostrar aviso</button><button class="ghost" id="avisoTirar">Tirar aviso</button><span class="muted" id="avisoAgora"></span></div>
     </section>
 
-    <section><h2>Pessoas na praça <span class="muted" id="nPessoas"></span></h2>
+    <section data-tab="praca"><h2>Pessoas na praça <span class="muted" id="nPessoas"></span></h2>
       <div class="list" id="pessoas"></div>
       <div id="bansBox" hidden><label>Banidos até a praça fechar</label><div class="list" id="bans"></div></div>
     </section>
 
-    <section><h2>Proteção <span class="muted" id="nCastigos"></span></h2>
+    <section data-tab="protecao"><h2>Proteção <span class="muted" id="nCastigos"></span></h2>
       <p class="muted" style="margin:0 0 8px">Redes castigadas por 10 minutos: mandaram pedidos ou mensagens a mais, ou pintaram mais depressa do que uma mão consegue. Ninguém é identificado: cada rede é só um código que muda todos os dias. Perdoar aqui pode demorar uns minutos a chegar a todos os servidores da Cloudflare.</p>
       <div class="list" id="castigos"></div>
       <div class="row" style="margin-top:8px"><button class="ghost" id="perdoarTodos">Perdoar todos</button></div>
     </section>
 
-    <section><h2>Recordes do jogo</h2>
+    <section data-tab="protecao"><h2>Recordes do jogo</h2>
       <p class="muted" style="margin:0 0 8px">Os melhores de todos os jogadores, praça a praça. Se um recorde for impossível (alguém a fazer batota), apaga-o: o próximo jogo a sério volta a pô-lo.</p>
       <div class="list" id="recordes"></div>
     </section>
 
-    <section><h2>Mural</h2>
+    <section data-tab="conteudo"><h2>Mural</h2>
       <div class="sw"><span>Mural só para leitura<small>Ninguém escreve; o que lá está continua visível.</small></span><button id="muralRO" class="sm"></button></div>
       <div class="list" id="mural" style="margin-top:8px"></div>
       <div id="muralAll" style="margin-top:10px"></div>
     </section>
 
-    <section><h2>DJ p.45</h2>
+    <section data-tab="animacao"><h2>DJ p.45</h2>
       <div class="seg" id="djSeg"><button data-dj="auto">Automático</button><button data-dj="sempre">Sempre</button><button data-dj="off">Desligado</button></div>
       <p class="muted" style="margin:8px 0 0" id="djTxt"></p>
     </section>
 
-    <section><h2>Personagens</h2>
+    <section data-tab="animacao"><h2>Personagens</h2>
       <div class="sw"><span>Jornalista Laranja<small>Entrevista quem lhe tocar; a resposta passa em direto para toda a praça.</small></span><button data-npc="jornalista" class="sm"></button></div>
       <div class="sw"><span>Curiosos<small>Perguntam o que se passa; quem for convencido junta-se com um cartaz.</small></span><button data-npc="curiosos" class="sm"></button></div>
       <div class="sw"><span>Fotógrafa<small>Tira fotos de grupo para partilhar.</small></span><button data-npc="fotografa" class="sm"></button></div>
@@ -116,20 +136,20 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <p class="muted" style="margin:8px 0 0" id="convencidos"></p>
     </section>
 
-    <section><h2>Clima</h2>
+    <section data-tab="animacao"><h2>Clima</h2>
       <div class="sw"><span>Chuva de bananas automática<small>De vez em quando (25 a 50 minutos) chovem bananas na praça, com o alerta «O Sr. Banana, Ministro da Administração Interna, ordenou uma chuva de bananas!».</small></span><button id="climaAuto" class="sm"></button></div>
       <div class="row" style="margin-top:8px"><button class="red" id="bananas">🍌 Chuva de bananas agora</button><span class="muted" id="climaTxt"></span></div>
     </section>
 
-    <section><h2>Em direto <span class="muted">últimas respostas</span></h2>
+    <section data-tab="conteudo"><h2>Em direto <span class="muted">últimas respostas</span></h2>
       <div class="list" id="diretos"></div>
     </section>
 
-    <section><h2>Cartazes no cravo <span class="muted" id="nCartazes"></span></h2>
+    <section data-tab="conteudo"><h2>Cartazes no cravo <span class="muted" id="nCartazes"></span></h2>
       <div class="list" id="cartazes"></div>
     </section>
 
-    <section><h2>Parede do prédio abandonado <span class="muted" id="nParede"></span></h2>
+    <section data-tab="conteudo"><h2>Parede do prédio abandonado <span class="muted" id="nParede"></span></h2>
       <p class="muted" style="margin:0 0 8px">Toda a gente pinta ao mesmo tempo. A parede fica de uma abertura para a seguinte; quando a praça fecha, guarda-se uma cópia na galeria. Toca num quadrado da imagem para apagar esse bloco (8 x 8).</p>
  <div class="sw" style="margin-bottom:8px"><span>Parede só de leitura<small>Ninguém pinta; a parede continua à vista.</small></span><button id="paredeRO" class="sm"></button></div>
       <canvas id="paredeCv" width="384" height="256" style="width:100%;max-width:480px;image-rendering:pixelated;border:2px solid #5a5650;cursor:pointer;display:block"></canvas>
@@ -138,12 +158,12 @@ label{ display:block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase
       <h3 style="margin:14px 0 6px;font-size:14px">Galeria</h3><div class="list" id="paredeGal"></div>
     </section>
 
-    <section><h2>Na praça</h2>
+    <section data-tab="animacao"><h2>Na praça</h2>
       <div class="sw"><span>Bicicletas<small>Quem entra pode andar de bicicleta (25% mais rápido). Desligar põe toda a gente a pé.</small></span><button id="ciclistas" class="sm"></button></div>
       <div class="sw"><span>Polícia (em breve)<small>Ainda não existe na praça: o interruptor fica guardado para quando existir.</small></span><button id="policia" class="sm"></button></div>
     </section>
 
-    <section><h2>Próximas aberturas</h2>
+    <section data-tab="praca"><h2>Próximas aberturas</h2>
       <div class="list" id="agenda"></div>
       <label>Agendar uma abertura</label>
       <input id="agTitulo" maxlength="60" placeholder="Título (ex.: Concentração)">
@@ -179,6 +199,12 @@ $('loginForm').addEventListener('submit', async e => {
   if (await api('estado')) { if ($('lembrar').checked) store.set('praca-gestao', frase); else sessionStorage.setItem('praca-gestao', frase); $('frase').value = ''; start(); }
 });
 $('sair').addEventListener('click', () => { frase = ''; store.set('praca-gestao', null); sessionStorage.removeItem('praca-gestao'); showLogin(); });
+let tab = store.get('praca-gestao-tab') || 'praca';
+function showTab(t) { tab = t; store.set('praca-gestao-tab', t);
+  for (const b of document.querySelectorAll('#tabs button')) { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); }
+  for (const s of document.querySelectorAll('section[data-tab]')) s.hidden = s.dataset.tab !== t; scrollTo(0, 0); }
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) showTab(b.dataset.t); });
+if (!document.querySelector('#tabs [data-t="' + tab + '"]')) tab = 'praca'; showTab(tab);
 function start() { $('login').hidden = true; $('app').hidden = false; clearInterval(timer); timer = setInterval(() => { if (!document.hidden) api('estado', {}, true); }, 10000); }
 
 const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
@@ -202,6 +228,27 @@ var PIX = ['#0b0a0a', '#f4f1ea', '#e2283b', '#ff7a80', '#ff8a2a', '#ffd23a', '#c
 var GRID = { p: [12, 12], m: [16, 12], g: [16, 14], f: [24, 8] };
 function paintPx(cv, d, w, h, bg) { var g = cv.getContext('2d'), s = cv.width / w; for (var i = 0; i < w * h; i++) { var x = i % w, y = Math.floor(i / w), ch = d[i]; g.fillStyle = ch && ch !== '-' ? PIX[parseInt(ch, 16)] : (bg || ((x + y) % 2 ? '#7f7a74' : '#89847d')); g.fillRect(x * s, y * s, s, s); } }
 function blocoTxt(b) { var bx = b % (PW / PB), by = Math.floor(b / (PW / PB)); return 'Bloco ' + (bx + 1) + ',' + (by + 1); }
+const num = n => new Intl.NumberFormat('pt-PT').format(n || 0);
+function kpi(v, t) { const d = el('div', 'kpi'); d.append(el('b', '', v), el('small', '', t)); return d; }
+function renderNumeros() {
+  const si = S.site || {}, sk = $('siteKpis'), sn = $('siteNota'); sk.innerHTML = '';
+  if (si.falta) sn.textContent = 'Para ver os visitantes do site, falta pôr na Cloudflare o CF_TOKEN e o CF_ZONE do servidor da praça.';
+  else if (si.aCarregar) sn.textContent = 'A perguntar à Cloudflare…';
+  else if (si.erro) sn.textContent = 'A Cloudflare não respondeu: ' + si.erro;
+  else {
+    sk.append(kpi(num(si.u24), 'visitantes únicos · 24 h'), kpi(num(si.u30), 'visitantes únicos · 30 dias'), kpi(num(si.pv24), 'páginas vistas · 24 h'), kpi(num(si.pv30), 'páginas vistas · 30 dias'));
+    sn.textContent = 'Números da Cloudflare para todo o domínio (inclui robôs e o servidor da praça), atualizados às ' + hm(si.at) + '.';
+  }
+  const st = S.stats || { dias: [] }, pk = $('pracaKpis'), dl = $('dias'); pk.innerHTML = ''; dl.innerHTML = '';
+  const hoje = st.dias[0] && st.dias[0].day === fmt(S.now, { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-') ? st.dias[0] : null;
+  pk.append(kpi(num(hoje ? hoje.entradas : 0), 'entradas hoje'), kpi(num(hoje ? hoje.pessoas : 0), 'pessoas hoje'), kpi(num(hoje ? hoje.pico : 0), 'pico hoje' + (hoje && hoje.pico ? ' · ' + hm(hoje.pico_at) : '')),
+    kpi(num(st.p7), 'pessoas · 7 dias'), kpi(num(st.p30), 'pessoas · 30 dias'), kpi(num(st.e30), 'entradas · 30 dias'));
+  if (!st.dias.length) dl.append(el('div', 'muted', 'Ainda não há números: começam na próxima entrada.'));
+  for (const d of st.dias) {
+    const [y, mo, da] = d.day.split('-').map(Number), t = Date.UTC(y, mo - 1, da, 12);
+    dl.append(item(dia(t), d.entradas + ' entradas (' + d.praca + ' na praça, ' + d.apoio + ' de longe) · ' + d.pessoas + ' pessoas · pico ' + d.pico + (d.pico ? ' às ' + hm(d.pico_at) : ''), []));
+  }
+}
 function render() {
   if (!S) return;
   const st = S.estado, c = S.cfg, f = c.force;
@@ -229,10 +276,11 @@ function render() {
     if (p.px) pb.unshift(btn('Apagar o que pintou (' + p.px + ')', 'ghost', () => api('apagar-pintor', { id: p.id }).then(r => r && toast('Apagado da parede')), 'Confirmar'));
     pl.append(item(t, p.city + ' · ' + (p.mode === 'praca' ? 'na praça' : 'fantasma, de longe') + (p.dev ? '' : ' · (só sai, pode voltar)'), pb));
   }
-  const cs = S.castigos || [], csl = $('castigos'); csl.innerHTML = ''; $('nCastigos').textContent = cs.length ? cs.length : ''; $('perdoarTodos').disabled = !cs.length;
+  const cs = S.castigos || [], csl = $('castigos'); csl.innerHTML = ''; $('tabProt').textContent = cs.length ? cs.length : ''; $('nCastigos').textContent = cs.length ? cs.length : ''; $('perdoarTodos').disabled = !cs.length;
   if (!cs.length) csl.append(el('div', 'muted', 'Nenhuma rede castigada.'));
   const MOTIVO = { pedidos: 'pedidos a mais', mensagens: 'mensagens a mais', grandes: 'mensagens gigantes', parede: 'pintura a mais' };
   for (const x of cs) csl.append(item('Rede ' + x.k.slice(0, 6), (MOTIVO[x.why] || x.why) + ' · até às ' + hm(x.until), [btn('Perdoar', 'ghost', () => api('perdoar', { k: x.k }))]));
+  renderNumeros();
   const REC = { tents: 'Tendas (máx.)', welcomed: 'Pessoas acolhidas', days: 'Dias até ganhar' }, rl0 = $('recordes'); rl0.innerHTML = '';
   const recs = S.recordes || {}; let nrec = 0;
   for (const city of ['Porto', 'Lisboa', 'Coimbra', 'Braga', 'Faro']) for (const k of ['tents', 'welcomed', 'days']) {

@@ -92,6 +92,7 @@ function lisbon(date, at) {
   const [ah, am] = at.split(':').map(Number);
   return guess.getTime() - ((h * 60 + m) - (ah * 60 + am)) * 60e3;
 }
+const fnv = s => { let h = 0x811c9dc5; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); }; // a short code of a random id
 const lisbonDate = (t = Date.now()) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Lisbon', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
 const addDays = (date, n) => { const d = new Date(date + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const HHMM = /^\d{1,2}:\d{2}$/, DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -240,6 +241,11 @@ export class Praca {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS recordes (city TEXT, k TEXT, v INTEGER, PRIMARY KEY (city, k))`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS parede (i INTEGER PRIMARY KEY, c INTEGER, name TEXT, city TEXT, dev TEXT, key TEXT, at INTEGER)`);
     this.sql.exec(`CREATE TABLE IF NOT EXISTS paredes (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, data TEXT)`);
+    // the numbers for the management page, day by day (Lisbon days): entries, the most people at once, and who came
+    // (a short code of the browser's random id, never a name or an address), to count different people
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS stats (day TEXT PRIMARY KEY, entradas INTEGER DEFAULT 0, praca INTEGER DEFAULT 0, apoio INTEGER DEFAULT 0, pico INTEGER DEFAULT 0, pico_at INTEGER DEFAULT 0)`);
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS stats_quem (day TEXT, who TEXT, PRIMARY KEY (day, who))`);
+    this.lastEntry = new Map(); // who -> when they last came in: a phone that loses the network and comes back isn't a new entry
     this.sql.exec(`CREATE TABLE IF NOT EXISTS parede_rep (b INTEGER, who TEXT, at INTEGER, PRIMARY KEY (b, who))`);
     this.wallPend = new Map(); this.wallFlushAt = 0; // strokes waiting to be written: the wall is written every few seconds, not pixel by pixel
     this.wall = new Array(PN).fill('-'); for (const r of this.sql.exec('SELECT i, c FROM parede').toArray()) if (r.i >= 0 && r.i < PN) this.wall[r.i] = r.c.toString(16);
@@ -405,6 +411,7 @@ export class Praca {
       this.send(p, { t: 'welcome', id: p.id, mode: p.mode, av: p.av, full: !p.av, me: this.pub(p), parede: this.wallStr(), galeria: this.sql.exec('SELECT COUNT(*) AS n FROM paredes').one().n, people: others, mural: this.mural(), counts: this.counts(), dj: this.djInfo(), cfg: this.pubCfg(), aviso: this.cfg.aviso, close: this.state.close, live: this.state.live, by: this.state.by, now: Date.now(), size: [W, H], npcs: this.pers.all(), ball: this.pers.pubBall(), convencidos: this.pers.convincedToday(), jogos: this.jogos.pub(), cartazes: this.cartazes(), meus: p.dev ? this.sql.exec('SELECT id FROM cartazes WHERE hidden = 0 AND expires > ? AND dev = ?', now, p.dev).toArray().map(r => r.id) : [], clima: this.climaNow(), conga: this.conga, congaNpc: this.pers.congaNpc });
       if (p.av) this.broadcast({ t: 'join', p: this.pub(p) }, p);
       this.broadcast({ t: 'counts', c: this.counts() });
+      try { this.statJoin(p, now); } catch (e) { console.log('stats', e); }
       return;
     }
     if (!p.name) return;
@@ -600,6 +607,48 @@ export class Praca {
     const next = this.sql.exec('SELECT MIN(expires) AS e FROM mural').one().e; if (next) this.alarmAt(next); // alarmAt keeps an earlier one (a closing time)
   }
 
+  /* ---------- numbers for /gestao ---------- */
+  statJoin(p, now) {
+    const day = lisbonDate(now), who = p.dev ? 'd' + fnv(p.dev) : 'k' + p.key;
+    this.sql.exec('INSERT OR IGNORE INTO stats (day) VALUES (?)', day);
+    this.sql.exec('INSERT OR IGNORE INTO stats_quem (day, who) VALUES (?, ?)', day, who);
+    const last = this.lastEntry.get(who) || 0; this.lastEntry.set(who, now);
+    if (now - last > 15 * 60e3) this.sql.exec(`UPDATE stats SET entradas = entradas + 1, ${p.mode === 'praca' ? 'praca = praca + 1' : 'apoio = apoio + 1'} WHERE day = ?`, day);
+    const n = [...this.people.values()].filter(q => q.name).length;
+    this.sql.exec('UPDATE stats SET pico = ?, pico_at = ? WHERE day = ? AND pico < ?', n, now, day, n);
+    if (this.lastEntry.size > 5000) for (const [k, t] of this.lastEntry) if (now - t > 15 * 60e3) this.lastEntry.delete(k);
+    if (this.statPruned !== day) { this.statPruned = day; const old = lisbonDate(now - 400 * 864e5); this.sql.exec('DELETE FROM stats_quem WHERE day < ?', lisbonDate(now - 40 * 864e5)); this.sql.exec('DELETE FROM stats WHERE day < ?', old); } // who came: 40 days; the daily numbers: about a year
+  }
+  statDump(now) {
+    const dias = this.sql.exec('SELECT s.day, s.entradas, s.praca, s.apoio, s.pico, s.pico_at, (SELECT COUNT(*) FROM stats_quem q WHERE q.day = s.day) AS pessoas FROM stats s ORDER BY s.day DESC LIMIT 14').toArray();
+    const since = d => this.sql.exec('SELECT COUNT(DISTINCT who) AS n FROM stats_quem WHERE day >= ?', lisbonDate(now - (d - 1) * 864e5)).one().n;
+    const tot = this.sql.exec('SELECT COALESCE(SUM(entradas), 0) AS e, COALESCE(MAX(pico), 0) AS p FROM stats WHERE day >= ?', lisbonDate(now - 29 * 864e5)).one();
+    return { dias, p7: since(7), p30: since(30), e30: tot.e, pico30: tot.p };
+  }
+  // the site's visitors (acampadapixel.pt, the whole domain), from Cloudflare's own analytics: needs CF_TOKEN (a token
+  // that can only read this domain's analytics) and CF_ZONE (the domain's Zone ID), both kept in Cloudflare.
+  // Asked at most every 10 minutes; the page shows the last answer meanwhile.
+  site(now) {
+    if (!this.env.CF_TOKEN || !this.env.CF_ZONE) return { falta: true };
+    const c = this.siteC;
+    if ((!c || now - c.at > 10 * 60e3) && !this.siteBusy) { this.siteBusy = true; this.ctx.waitUntil(this.siteFetch(now).finally(() => { this.siteBusy = false; })); }
+    return c ? c.data : { aCarregar: true };
+  }
+  async siteFetch(now) {
+    const day = t => new Date(t).toISOString().slice(0, 10), hour = t => new Date(Math.floor(t / 3600e3) * 3600e3).toISOString();
+    const query = `query ($z: String!, $d0: Date!, $d1: Date!, $h0: Time!, $h1: Time!) { viewer { zones(filter: { zoneTag: $z }) {
+      dias: httpRequests1dGroups(limit: 1, filter: { date_geq: $d0, date_leq: $d1 }) { uniq { uniques } sum { pageViews } }
+      horas: httpRequests1hGroups(limit: 1, filter: { datetime_geq: $h0, datetime_lt: $h1 }) { uniq { uniques } sum { pageViews } } } } }`;
+    const variables = { z: this.env.CF_ZONE, d0: day(now - 29 * 864e5), d1: day(now), h0: hour(now - 24 * 3600e3), h1: hour(now + 3600e3) };
+    try {
+      const r = await fetch('https://api.cloudflare.com/client/v4/graphql', { method: 'POST', headers: { 'Authorization': 'Bearer ' + this.env.CF_TOKEN, 'Content-Type': 'application/json' }, body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(8000) });
+      const j = await r.json(), z = j && j.data && j.data.viewer && j.data.viewer.zones && j.data.viewer.zones[0];
+      if (!r.ok || !z || (j.errors && j.errors.length)) throw new Error((j && j.errors && j.errors[0] && j.errors[0].message) || 'HTTP ' + r.status);
+      const g = a => (a && a[0]) || { uniq: { uniques: 0 }, sum: { pageViews: 0 } };
+      this.siteC = { at: now, data: { at: now, u30: g(z.dias).uniq.uniques, pv30: g(z.dias).sum.pageViews, u24: g(z.horas).uniq.uniques, pv24: g(z.horas).sum.pageViews } };
+    } catch (e) { this.siteC = { at: now - 8 * 60e3, data: { at: now, erro: String(e.message || e).slice(0, 160) } }; } // an error: try again in 2 minutes
+  }
+
   /* ---------- /gestao: the organisers ---------- */
   async admin(req) {
     const key = await addrKey(req), now = Date.now();
@@ -675,6 +724,6 @@ export class Praca {
     const ws = windows(await schedule(this.env), now).filter(w => w.close > now).sort((a, b) => a.open - b.open).slice(0, 8).map(pick);
     const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev, px: p.dev ? this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE dev = ?', p.dev).one().n : this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE key = ? AND name = ?', p.key, p.name).one().n }));
     const mural = this.sql.exec('SELECT id, name, city, text, at, hidden FROM mural WHERE expires > ? ORDER BY id DESC LIMIT 200', now).toArray();
-    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })), castigos: [...this.castigo].filter(([, x]) => x.until > now).map(([k, x]) => ({ k, why: x.why, at: x.at, until: x.until })), recordes: this.recDump() });
+    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })), castigos: [...this.castigo].filter(([, x]) => x.until > now).map(([k, x]) => ({ k, why: x.why, at: x.at, until: x.until })), recordes: this.recDump(), stats: this.statDump(now), site: this.site(now) });
   }
 }
