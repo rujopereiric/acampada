@@ -1282,7 +1282,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = 0; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = 0; });
 let drag = null;
-const JOY = { id: null, x0: 0, y0: 0, x: 0, y: 0 }, JOY_R = 48, coarse = matchMedia('(pointer: coarse)');
+const JOY = { id: null, x0: 0, y0: 0, x: 0, y: 0, tap: null }, JOY_R = 48, JOY_DEAD = 10, coarse = matchMedia('(pointer: coarse)');
 let joyPref = null; try { const v = localStorage.getItem('acampada-joy'); joyPref = v === null ? null : v === '1'; } catch (e) {}
 const joyOn = () => !!me && coarse.matches && (joyPref ?? innerWidth > innerHeight);
 function padShow() { const b = $('bPad'); b.hidden = !me || !coarse.matches; b.setAttribute('aria-pressed', String(joyOn())); b.setAttribute('aria-label', L('Bola para andar', 'Walking ball')); if (!joyOn()) joyEnd(); }
@@ -1291,17 +1291,18 @@ addEventListener('resize', () => padShow());
 function joyStart(e) {
   const r = $('stage').getBoundingClientRect();
   if (!joyOn() || JOY.id !== null || e.clientX - r.left > r.width * .5) return false;
-  JOY.id = e.pointerId; JOY.x0 = e.clientX - r.left; JOY.y0 = e.clientY - r.top; JOY.x = JOY.y = 0;
+  JOY.id = e.pointerId; JOY.x0 = e.clientX - r.left; JOY.y0 = e.clientY - r.top; JOY.x = JOY.y = 0; JOY.tap = { x: e.clientX, y: e.clientY, at: performance.now() }; // (a tap until the finger moves)
   const el = $('joy'); el.style.left = JOY.x0 + 'px'; el.style.top = JOY.y0 + 'px'; el.hidden = false; el.firstChild.style.transform = '';
   try { cv.setPointerCapture(e.pointerId); } catch (_) {} if (me) { me.goal = null; camFree = 0; } return true;
 }
 function joyMove(e) {
   if (e.pointerId !== JOY.id) return false;
   const r = $('stage').getBoundingClientRect(); let dx = e.clientX - r.left - JOY.x0, dy = e.clientY - r.top - JOY.y0; const d = Math.hypot(dx, dy);
+  if (JOY.tap && d < JOY_DEAD) return true; JOY.tap = null; // a little wobble is still a tap
   if (d > JOY_R) { dx *= JOY_R / d; dy *= JOY_R / d; }
   JOY.x = dx / JOY_R; JOY.y = dy / JOY_R; $('joy').firstChild.style.transform = `translate(${dx}px, ${dy}px)`; return true;
 }
-function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; JOY.id = null; JOY.x = JOY.y = 0; $('joy').hidden = true; return true; }
+function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; const tap = e && e.type === 'pointerup' && JOY.tap && performance.now() - JOY.tap.at < 450 ? JOY.tap : null; JOY.id = null; JOY.x = JOY.y = 0; JOY.tap = null; $('joy').hidden = true; if (tap) tapAt(tap.x, tap.y, false); return true; }
 function keysOff() { for (const k in keys) keys[k] = 0; joyEnd(); }
 cv.addEventListener('pointerdown', e => { if (joyStart(e)) { audioInit(); return; } if (camX === null) return; drag = { x: e.clientX, y: e.clientY, cx: camX, cy: camY, moved: false, id: e.pointerId }; cv.setPointerCapture(e.pointerId); audioInit(); });
 cv.addEventListener('pointermove', e => {
@@ -1315,16 +1316,21 @@ cv.addEventListener('pointerup', e => {
   if (joyEnd(e)) return;
   if (!drag || drag.id !== e.pointerId) return;
   const moved = drag.moved; drag = null; if (moved) return;
+  tapAt(e.clientX, e.clientY, true);
+});
+// a tap on the square: whatever is there (a character, a table, a peg, the wall...), or else walk there (not with the joystick)
+function tapAt(cx, cy, walk) {
   const r = cv.getBoundingClientRect(), { ox, oy } = lastView;
-  const hit = hitTest(e.clientX - r.left, e.clientY - r.top); if (hit) { approach(hit); return; }
-  if (onWall((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy)) { openWall(); return; }
+  const hit = hitTest(cx - r.left, cy - r.top); if (hit) { approach(hit); return; }
+  if (onWall((cx - r.left) / scale + ox, (cy - r.top) / scale + oy)) { openWall(); return; }
+  if (!walk) return;
   congaLeave(); // walking off: out of the conga
   closeSheets(); pending = null;
   if (!me) return;
-  const w = toWorld((e.clientX - r.left) / scale + ox, (e.clientY - r.top) / scale + oy + 3);
+  const w = toWorld((cx - r.left) / scale + ox, (cy - r.top) / scale + oy + 3);
   me.goal = { gx: clamp(w.gx, .3, W - .3), gy: clamp(w.gy, .3, H - .3) }; camFree = 0;
   sendPos(performance.now());
-});
+}
 cv.addEventListener('pointercancel', e => { joyEnd(e); drag = null; });
 
 /* ================= talking to the characters, posters, the live interview, the group photo ================= */
@@ -1381,7 +1387,8 @@ function interact(t) {
   if (t.kind === 'acampado') { send({ t: 'falar', id: t.id }); return; }
   if (t.kind === 'fotografa') return photoDialog();
   if (t.kind === 'cantina') return canteenDialog();
-  if (t.kind === 'dj') return dialog('DJ p.45', inConga() >= 0 ? L('Estás na conga! 💃 Para sair, anda para outro lado.', 'You’re in the conga! 💃 To leave, walk somewhere else.') : L('Bora fazer uma conga? Põe-te na fila atrás de mim!', 'Shall we do a conga? Get in line behind me!'), b => { const g = optGrid(b); if (inConga() >= 0) g.append(optBtn(L('Sair da conga', 'Leave the conga'), () => { congaLeave(); closeSheets(); })); else g.append(optBtn(L('💃 Entrar na conga', '💃 Join the conga'), () => { send({ t: 'conga' }); closeSheets(); })); });
+  if (t.kind === 'dj') return dialog('DJ p.45', inConga() >= 0 ? L('Estás na conga! 💃 Para sair, anda para outro lado.', 'You’re in the conga! 💃 To leave, walk somewhere else.') : L('Bora fazer uma conga? Põe-te na fila atrás de mim!', 'Shall we do a conga? Get in line behind me!'), b => { const g = optGrid(b); if (inConga() >= 0) g.append(optBtn(L('Sair da conga', 'Leave the conga'), () => { congaLeave(); closeSheets(); })); else g.append(optBtn(L('💃 Entrar na conga', '💃 Join the conga'), () => { send({ t: 'conga' }); closeSheets(); }));
+    g.append(optBtn(L('📻 Ouvir o DJ p.45 na Pelican Pirate Radio', '📻 Listen to DJ p.45 on Pelican Pirate Radio'), () => { window.open('https://pelicanpiraterad.io/', '_blank', 'noopener'); })); }); // the DJ's radio, in a new tab: the square stays open
   if (t.kind === 'zezinho') return dialog('Zezinho Bailarino', L('Uma selfie? Bora! 📱', 'A selfie? Let’s go! 📱'), b => { const g = optGrid(b); g.append(optBtn(L('🤳 Tirar uma selfie', '🤳 Take a selfie'), () => { const z = npcs.get(t.id); if (!z || !me) return; closeSheets(); flashAt = performance.now(); flashPos = { x: (me.x + z.x) / 2, y: (me.y + z.y) / 2 }; shutter(); say(t.id, '✌️'); setTimeout(() => makePhoto([myId], 0, 0, L('Selfie na praça', 'Selfie in the square'), { x: z.x, y: z.y, who: 'Zezinho Bailarino', t1: L('SELFIE COM O', 'SELFIE WITH'), t2: 'ZEZINHO BAILARINO' }), 350); })); });
   if (t.kind === 'cao') { send({ t: 'festas' }); say(t.id, '❤'); return; }
   if (t.kind === 'bola') { send({ t: 'bola' }); return; }
@@ -1506,7 +1513,7 @@ function bufoMsg(m) {
   if (m.t === 'bufo-fim') {
     if (bufoVote && bufoVote.id === m.id) { bufoVote = null; votoShow(); }
     const T = {
-      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um infiltrado: um porco disfarçado de acampado. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was an infiltrator: a pig dressed as a camper. Well spotted, ${m.by}! +3 supporters`),
+      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um porco fascista disfarçado de manifestante! Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a fascist pig dressed as a protester! Well spotted, ${m.by}! +3 supporters`),
       inocente: L(`😟 Era só um acampado. Ficou ofendido e foi-se embora. Ninguém pode apontar durante ${Math.round((m.lock || 180) / 60)} minutos.`, `😟 He was just a camper. He’s offended and left. Nobody can point for ${Math.round((m.lock || 180) / 60)} minutes.`),
       nao: L(`A praça não concordou (${m.sim || 0} sim, ${m.nao || 0} não).`, `The square didn’t agree (${m.sim || 0} yes, ${m.nao || 0} no).`),
       fugiu: m.role === 1 ? (m.fotos ? L(`📸 Ninguém deu por ele: um polícia à paizana saiu da praça com fotografias de ${m.fotos} ${m.fotos === 1 ? 'pessoa' : 'pessoas'}.`, `📸 Nobody noticed: a plain-clothes officer left the square with photos of ${m.fotos} ${m.fotos === 1 ? 'person' : 'people'}.`) : L('Um polícia à paizana andou pela praça e foi-se embora sem ninguém dar por ele.', 'A plain-clothes officer walked round the square and left without anyone noticing.')) : L('O infiltrado não conseguiu juntar ninguém e foi-se embora.', 'The infiltrator couldn’t gather anyone and left.'),
@@ -1587,15 +1594,29 @@ function makeCartazDialog() {
   });
 }
 // the button that shows up next to the carnation
-let ctxWas = '', cartazWait = 0;
+let ctxWas = '', cartazWait = 0, ctxTarget = null, ctxAt = 0;
+function ctxLabel(t) { // what the button says for each thing (null: nothing to do there)
+  if (t.kind === 'mesa') { const M = MESAS[t.j]; return L(M.lab[0], M.lab[1]); }
+  if (t.kind === 'curioso') { const n = npcs.get(t.id); return n && n.g ? null : L('💬 Explicar a acampada', '💬 Explain the camp'); }
+  if (t.kind === 'dj') return inConga() >= 0 ? null : L('💃 Entrar na conga', '💃 Join the conga');
+  return { jornalista: L('🎤 Dar entrevista', '🎤 Give an interview'), acampado: L('💬 Falar com o acampado', '💬 Talk to the camper'), fotografa: L('📸 Foto de grupo', '📸 Group photo'), cantina: L('🍲 Cantina', '🍲 Canteen'),
+    cao: L('🐾 Fazer festas', '🐾 Pet her'), bola: L('⚽ Chutar a bola', '⚽ Kick the ball'), zezinho: L('🤳 Selfie com o Zezinho', '🤳 Selfie with Zezinho'), bicicletada: L('🚲 Bicicletada', '🚲 Bike ride'),
+    estaca: L('⛺ Pegar na estaca', '⛺ Take the peg'), faixa: L('🏳️ Pegar na faixa', '🏳️ Take the banner') }[t.kind] || null;
+}
 function ctxSync() {
   const el = $('ctxBtn'); let t = '', dis = false;
-  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet', 'agendaSheet'].every(id => $(id).hidden)) {
+  const free = ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet', 'agendaSheet'].every(id => $(id).hidden) && $('chess').hidden;
+  const now = performance.now();
+  if (now - ctxAt > 150) { ctxAt = now; ctxTarget = null; // the closest thing within reach (a few times a second)
+    if (me && free) { let bd = 1e9; for (const x of targets()) { if (x.kind === 'cartaz' || x.kind === 'tenda' || x.kind === 'faixaab') continue; const dd = distTo(x); if (dd > REACH || dd >= bd) continue; const lab = ctxLabel(x); if (lab) { bd = dd; ctxTarget = { t: x, lab }; } } } }
+  if (nearCravo() && ['npcSheet', 'fotoSheet', 'phraseSheet', 'gestSheet', 'agendaSheet'].every(id => $(id).hidden)) { // by the carnation the poster comes first (the characters there can still be tapped)
     const mineNow = cartazes.filter(c => myCartazes.has(c.id)).length;
     if (mineNow >= CARTAZ_POR_PESSOA) t = '';
     else if (cartazSpot(cartazes, CARTAZ_FMT.p) < 0) { t = L('O cravo está cheio de cartazes', 'The carnation is full of posters'); dis = true; }
     else t = L('🪧 Fazer um cartaz', '🪧 Make a poster');
+    if (t) ctxTarget = null;
   }
+  if (!t && ctxTarget && free) t = ctxTarget.lab;
   const k = t + dis; if (k === ctxWas) return; ctxWas = k;
   el.hidden = !t; el.textContent = t; el.disabled = dis;
 }
@@ -1861,7 +1882,7 @@ function renderWhere() {
 function renderAll() { applyTexts(); $('tPhrase').hidden = $('tGest').hidden = !me; bikeSync(); padShow(); }
 function bikeSync() { const b = $('bBike'); b.hidden = !me || cfg.ciclistas === false; b.classList.toggle('on', !!(me && me.b)); b.title = me && me.b ? L('Sair da bicicleta', 'Get off the bike') : L('Andar de bicicleta', 'Ride a bike'); }
 $('bBike').addEventListener('click', () => { if (!me) return; me.b = !me.b; profile.bike = me.b; store.set('acampada-praca', JSON.stringify(profile)); send({ t: 'bike', on: me.b }); bikeSync(); });
-$('ctxBtn').addEventListener('click', () => { if (!$('ctxBtn').disabled) makeCartazDialog(); });
+$('ctxBtn').addEventListener('click', () => { if ($('ctxBtn').disabled) return; if (ctxTarget) { const t = ctxTarget.t; ctxTarget = null; ctxAt = 0; approach(t); return; } makeCartazDialog(); });
 for (const id of ['npcSheet', 'muralSheet']) { const el = $(id); el.addEventListener('focusin', e => { if (e.target.matches('textarea, input') && matchMedia('(pointer: coarse)').matches && innerWidth < 900) el.classList.add('typing'); }); el.addEventListener('focusout', () => setTimeout(() => { if (!el.contains(document.activeElement)) el.classList.remove('typing'); }, 100)); }
 $('fotoShare').addEventListener('click', sharePhoto); $('fotoSave').addEventListener('click', savePhoto);
 let toastT = 0;

@@ -1,7 +1,9 @@
 // Acampada Pixel: installable and playable offline.
-// The game page: from the internet whenever possible (at most 3 s, then the copy on the phone), so a new version
-// shows up straight away; if the copy was used and a newer page arrives, the game offers to reload.
-// The list of protests (manifestacoes.json) is treated like a page. Music, icons and the rest: from the phone first, refreshed in the background (they rarely change).
+// The game page: the copy on the phone straight away (opening the app, or coming back to it after the phone closed
+// it, shows no white screen while the internet answers); the internet is asked at the same time, and if a newer page
+// arrives the game offers to reload. With no copy yet: the internet.
+// The shared square (multiplayer.html) and the list of protests (manifestacoes.json): from the internet whenever
+// possible (at most 3 s, then the copy on the phone). Music, icons and the rest: from the phone first, refreshed in the background (they rarely change).
 const CACHE = 'acampada-pixel-v2';
 const CORE = ['./', 'index.html', 'manifest.json', 'saxofone.m4a', 'vitoria.m4a', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'favicon-32.png'];
 
@@ -32,6 +34,7 @@ self.addEventListener('fetch', e => {
         }
         return res;
       });
+      if (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) { const copy = await c.match(r, { ignoreSearch: true }); if (copy) { usedCopy = true; e.waitUntil(net.catch(() => {})); return copy; } } // the game: the copy first
       const first = await Promise.race([net.catch(() => null), new Promise(ok => setTimeout(() => ok(null), 3000))]);
       if (first) return first;
       usedCopy = true;
