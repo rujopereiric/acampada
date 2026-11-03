@@ -238,6 +238,14 @@
  {
   "date": "2026-11-04",
   "at": "17:00",
+  "city": "Faro",
+  "title": "Acampada",
+  "where": "Jardim da Alameda João de Deus · 17h assembleia popular · 19h manifestação na PSP",
+  "horas": 4
+ },
+ {
+  "date": "2026-11-04",
+  "at": "17:00",
   "city": "Lisboa",
   "title": "Acampada",
   "where": "Rossio · a partir das 17h · 19h assembleia popular",
