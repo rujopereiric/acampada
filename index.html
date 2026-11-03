@@ -705,7 +705,8 @@ function shade(hex, f) {
 function mix(a, b, t) { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); const m = s => Math.round((A >> s & 255) * (1 - t) + (B >> s & 255) * t); return `rgb(${m(16)},${m(8)},${m(0)})`; }
 
 /* ================= drawing primitives ================= */
-function R(x, y, w, h, c, g = ctx) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
+let OUTL = null; // drawing the player's outline: every pixel in this colour, no shadows
+function R(x, y, w, h, c, g = ctx) { if (OUTL) { if (c.startsWith('rgba')) return; c = OUTL; } g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
 function vl(g, x, y0, y1, c) { const a = Math.round(y0), b = Math.round(y1); if (b < a) return; g.fillStyle = c; g.fillRect(x, a, 1, b - a + 1); }
 function box(g, x0, y0, x1, y1, z0, h, cT, cL, cR) {
   if (ELEV_ON) { const e = elevAt((x0 + x1) / 2, (y0 + y1) / 2); if (e) { ELEV_ON = false; try { box(g, x0, y0, x1, y1, z0 + e, h, cT, cL, cR); } finally { ELEV_ON = true; } return; } }
@@ -3709,8 +3710,20 @@ function drawPlayer() {
     const k = Math.floor(S.t * 4) % 3; for (let i = 0; i < 3; i++) R(x + 2 + Math.round(Math.cos(S.t * 4 + i * 2.1) * 4), y - 10 + Math.round(Math.sin(S.t * 4 + i * 2.1) * 1.5), 1, 1, i === k ? '#ffffff' : '#ffd36b');
     return;
   }
-  // holographic ring
-  for (let a = 0; a < 36; a++) { const t = a / 36 * Math.PI * 2; ctx.fillStyle = `hsl(${(a * 10 + S.t * 140) % 360} 100% 66%)`; ctx.fillRect(Math.round(q.x + Math.cos(t) * 7), Math.round(q.y + Math.sin(t) * 3.5), 1, 1); }
+  // the holographic ring under the feet: thicker, on a dark edge, breathing in and out
+  const rr = 7 + (Math.sin(S.t * 5) + 1) * .6;
+  for (let a = 0; a < 44; a++) { const t = a / 44 * Math.PI * 2, rx = Math.round(q.x + Math.cos(t) * rr), ry = Math.round(q.y + Math.sin(t) * rr / 2);
+    ctx.fillStyle = 'rgba(11,10,10,.5)'; ctx.fillRect(rx, ry + 1, 2, 1); ctx.fillStyle = `hsl(${(a * 8 + S.t * 140) % 360} 100% 66%)`; ctx.fillRect(rx, ry, 2, 1); }
+  // a 1-pixel white outline all round, so the player never melts into the crowd or the paving
+  OUTL = '#ffffff'; try { for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) playerBody(p, q.x + dx, q.y + dy); } finally { OUTL = null; }
+  playerBody(p, q.x, q.y);
+  const x = Math.round(q.x), y = Math.round(q.y), b = Math.floor(S.t * 3) % 2;
+  // the arrow over the head, bigger, with a dark edge
+  R(x - 4, y - 26 - b, 9, 1, '#0b0a0a'); R(x - 4, y - 25 - b, 1, 1, '#0b0a0a'); R(x + 4, y - 25 - b, 1, 1, '#0b0a0a'); R(x - 3, y - 24 - b, 1, 1, '#0b0a0a'); R(x + 3, y - 24 - b, 1, 1, '#0b0a0a'); R(x - 2, y - 23 - b, 1, 1, '#0b0a0a'); R(x + 2, y - 23 - b, 1, 1, '#0b0a0a'); R(x - 1, y - 22 - b, 1, 1, '#0b0a0a'); R(x + 1, y - 22 - b, 1, 1, '#0b0a0a'); R(x, y - 21 - b, 1, 1, '#0b0a0a');
+  R(x - 3, y - 25 - b, 7, 1, '#ff5fc8'); R(x - 2, y - 24 - b, 5, 1, '#ff5fc8'); R(x - 1, y - 23 - b, 3, 1, '#ff5fc8'); R(x, y - 22 - b, 1, 1, '#ff5fc8'); R(x - 2, y - 25 - b, 3, 1, '#ffb3e6');
+}
+function playerBody(p, qx, qy) { // the player's figure (drawn again in white, a pixel out each way, for the outline)
+  const q = { x: qx, y: qy };
   const bald = S.city.playerLook === 'bald'; // Braga: bald, clear round glasses, a light goatee, dark red jacket open over a black T-shirt, a silver chain
   guy(q.x, q.y, bald ? { skin: '#efc9ab', hair: '#e6b896', shirt: '#8e1f24', pants: '#26252e', moving: p.moving, step: p.step, flip: p.flip, back: p.back }
     : { skin: '#e0b090', hair: '#2b1a10', shirt: '#b6ff3b', pants: '#3a2f6b', moving: p.moving, step: p.step, flip: p.flip, back: p.back });
@@ -3722,8 +3735,6 @@ function drawPlayer() {
   const x = Math.round(q.x), y = Math.round(q.y);
   R(p.flip ? x - 6 : x + 3, y - 9, 3, 2, '#ff5fc8'); R(p.flip ? x - 7 : x + 6, y - 10, 1, 4, '#ff5fc8');
   if (S.live > 0) { R(p.flip ? x + 3 : x - 5, y - 11, 2, 3, '#1b1464'); R(p.flip ? x + 3 : x - 5, y - 11, 1, 1, '#ff3b3b'); }
-  const b = Math.floor(S.t * 3) % 2;
-  R(x - 2, y - 22 - b, 5, 1, '#ff5fc8'); R(x - 1, y - 21 - b, 3, 1, '#ff5fc8'); R(x, y - 20 - b, 1, 1, '#ff5fc8');
 }
 // a police dog on a lead, beside its handler (side view, facing the way the officer faces); it barks now and then
 const DOG = [
@@ -4462,16 +4473,12 @@ const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas
 const ADS = [
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <div class="cols"><div>${L('Terça-feira<br><b>3 nov. 2026</b>', 'Tuesday<br><b>3 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
+    <div class="cols"><div>${L('Terça-feira<br><b>3 nov. 2026</b>', 'Tuesday<br><b>3 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
-  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Coimbra · Praça da República', 'Coimbra · Praça da República')}</p><div class="rule"></div>
-    <p class="t">${L('Oficina de cartazes', 'Poster workshop')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Segunda-feira<br><b>2 nov. 2026</b>', 'Monday<br><b>2 Nov 2026</b>')}<br><b>18:00</b></div><div><b>Praça da República</b><br>Coimbra</div></div>
-    <p class="src">${L('Oficina de materiais e colagem de cartazes para o 14 de novembro, com a Casa para Viver.', 'Materials workshop and poster pasting for 14 November, with Casa para Viver.')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Lisboa<small>${L('Rossio: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Rossio: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
@@ -4574,6 +4581,8 @@ const RALLIES = [
   { date: '2026-11-09', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-10', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-10', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-11', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-11', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Coimbra', title: 'Casa para viver', where: 'Ponte de Santa Clara' },
   { date: '2026-11-14', at: '15:00', city: 'Braga', title: 'Casa para viver', where: 'Arco da Porta Nova' },
