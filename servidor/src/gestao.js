@@ -130,6 +130,7 @@ h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppe
       <div class="sw"><span>Cantina<small>Sopa, café e pão.</small></span><button data-npc="cantina" class="sm"></button></div>
       <div class="sw"><span>Carro da tenda<small>Passa de vez em quando na rua, a buzinar, com uma tenda no tejadilho.</small></span><button data-npc="carro" class="sm"></button></div>
       <div class="sw"><span>Bicicletada<small>Um grupo de ciclistas passa na rua com o megafone.</small></span><button data-npc="bicicletada" class="sm"></button></div>
+      <div class="sw"><span>Homem-tenda<small>De vez em quando passa a correr na rua alguém vestido com uma tenda montada.</small></span><button data-npc="homemtenda" class="sm"></button></div>
       <div class="sw"><span>Zezinho Bailarino<small>Um manifestante como outro qualquer: anda pela praça a filmar com o telemóvel.</small></span><button data-npc="zezinho" class="sm"></button></div>
       <div class="sw"><span>Labrador<small>Brinca com a bola, aceita festas e de vez em quando rouba o microfone à jornalista.</small></span><button data-npc="cao" class="sm"></button></div>
       <div class="sw"><span>Há um bufo na praça<small>Acampados que vêm e vão; de vez em quando um deles é um polícia à paizana ou um infiltrado, e a praça vota para o desmascarar.</small></span><button data-npc="bufos" class="sm"></button></div>

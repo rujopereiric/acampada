@@ -755,17 +755,44 @@ const STREETS = [{ axis: 'x', c: 24.6, dir: 1 }, { axis: 'x', c: 23.4, dir: -1 }
 const BICI_N = 12; // riders in the bike ride (at least 10)
 const BICI_COLS = ['#ffd23a', '#3ec46d', '#2f8fff', '#ff7ad9', '#2ad1c9', '#ff8a2a', '#9a6bff', '#e2283b', '#c6ff4a', '#f2efe6'];
 const BICI_SHOUTS = [['Bicicletada pela habitação!', 'Bike ride for housing!'], ['Casa para viver!', 'Homes to live in!'], ['Pedala, pedala, a renda não se cala!', 'Pedal on, the rent won’t stop!'], ['Junta-te à pedalada!', 'Join the ride!']];
+// when each passes: period, offset, how long it takes, where it starts and ends, and the seeds (often / when / which street)
+const PASS = {
+  carro: { P: 170e3, off: 0, dur: 11e3, a: -7, b: 29, h: [11, 5, 7] },
+  bicicletada: { P: 260e3, off: 97e3, dur: 34e3, a: -21, b: 43, h: [23, 6, 8] }, // the bike ride is long: from well before the first rider to well after the last
+  homemtenda: { P: 200e3, off: 53e3, dur: 12e3, a: -7, b: 29, h: [31, 9, 13] }, // the tent man, running
+};
 function passing(kind, now = serverNow()) {
   if (cfg.npcs && cfg.npcs[kind] === false) return null;
-  const car = kind === 'carro', P = car ? 170e3 : 260e3, off = car ? 0 : 97e3, slot = Math.floor((now + off) / P);
-  if (hash(slot, car ? 11 : 23) > .75) return null; // not every time
-  const dur = car ? 11e3 : 34e3, start = slot * P - off + 15e3 + hash(slot, car ? 5 : 6) * (P - dur - 30e3), k = (now - start) / dur;
+  const C = PASS[kind], slot = Math.floor((now + C.off) / C.P);
+  if (hash(slot, C.h[0]) > .75) return null; // not every time
+  const start = slot * C.P - C.off + 15e3 + hash(slot, C.h[1]) * (C.P - C.dur - 30e3), k = (now - start) / C.dur;
   if (k < 0 || k > 1) return null;
-  const st = STREETS[Math.floor(hash(slot, car ? 7 : 8) * 4)], a = car ? -7 : -21, b = car ? 29 : 43, // the bike ride is long: from well before the first rider to well after the last
-    pos = st.dir > 0 ? a + (b - a) * k : b - (b - a) * k;
+  const st = STREETS[Math.floor(hash(slot, C.h[2]) * 4)], pos = st.dir > 0 ? C.a + (C.b - C.a) * k : C.b - (C.b - C.a) * k;
   const at = d => st.axis === 'x' ? { gx: pos - d * st.dir, gy: st.c } : { gx: st.c, gy: pos - d * st.dir };
   const flip = st.axis === 'x' ? st.dir < 0 : st.dir > 0; // which way they face on the screen
   return { k, st, slot, at, flip, ...at(0) };
+}
+// a dome tent (grey, a blue seam, the vent window) worn over the body, leaning into the run, and two legs in trainers below it.
+// P(x, y, w, h, colour) is the page's own pixel; the same as in index.html
+function drawTentManAt(P, x, y, flip, step) {
+  const d = flip ? -1 : 1, f = Math.floor(step) % 4, bob = f % 2, s1 = [-3, 0, 3, 0][f] * d;
+  P(x - 10, y - 1, 21, 2, 'rgba(30,10,70,.3)');
+  for (const [lx, up] of [[x - 2 + s1, f === 3 ? 2 : 0], [x + 1 - s1, f === 1 ? 2 : 0]]) { // two legs in light trousers, a long stride, white trainers
+    P(lx - 1, y - 11, 4, 10 - up, '#16121a'); P(lx, y - 11, 2, 9 - up, '#b3ad92'); P(lx + (d > 0 ? 1 : 0), y - 11, 1, 9 - up, '#8f8a72');
+    const sx = d > 0 ? lx : lx - 2; P(sx - 1, y - 3 - up, 6, 4, '#16121a'); P(sx, y - 2 - up, 4, 2, '#ffffff'); P(sx, y - 1 - up, 4, 1, '#c9c4b8');
+  }
+  const y0 = y - 10 - bob, Hd = 17, Wd = 13, row = i => { const hw = Math.round(Wd * Math.sqrt(1 - (i / Hd) ** 2)), lean = Math.round(i * .14) * d; return [x - hw + lean, x + hw + lean]; };
+  for (let i = 0; i < Hd; i++) { const [a, b] = row(i); P(a - 1, y0 - i - 1, b - a + 3, 3, '#16121a'); } // the outline first, so it reads on any ground
+  for (let i = 0; i < Hd; i++) {
+    const [a, b] = row(i), w = b - a + 1, back = Math.ceil(w * .42);
+    P(a, y0 - i, w, 1, '#a7aab2');
+    if (d > 0) P(a, y0 - i, back, 1, '#868a96'); else P(b - back + 1, y0 - i, back, 1, '#868a96'); // the side away from the run in shade
+    if (i > 3 && i < Hd - 2) P(d > 0 ? b - 3 : a + 2, y0 - i, 2, 1, '#cfd2d8'); // light on the leading curve
+    const sx = Math.round(x + Math.round(i * .14) * d + d * (Math.round((b - a) * .18) - Math.round(i * .25))); P(sx, y0 - i, 1, 1, '#2f5f9a'); // the blue seam, from the hem up over the top
+  }
+  P(x - 13 + (d < 0 ? 0 : 0), y0, 27, 1, '#5d616c'); // the hem, dragging
+  if (bob) P(d > 0 ? x - 15 : x + 13, y0 - 1, 3, 1, '#868a96'); // a loose corner flapping behind
+  const wx = x - 6 * d + Math.round(11 * .14) * d; P(wx - 2, y0 - 12, 5, 2, '#2a2a36'); P(wx - 1, y0 - 13, 3, 1, '#2a2a36'); P(wx - 2, y0 - 10, 5, 1, '#d8dbe0'); // the vent window
 }
 /* ---------- the two-person games: a tent to pitch, a banner to open ---------- */
 const GAME_TENT = ['#ff8a2a', '#3ec46d', '#2f8fff', '#ffd23a', '#ff4f8b', '#9a6bff', '#2ad1c9', '#c6ff4a'];
@@ -1236,6 +1263,7 @@ function draw(now) {
   const onScreen = q => q.x > -20 && q.x < cssW + 20 && q.y > 0 && q.y < cssH + 40;
   if (car && car.k > .3 && car.k < .62) { const q = S(car.gx, car.gy, 0); if (onScreen(q)) bubble(L('Piii! Piii! 🏕️', 'Beep! Beep! 🏕️'), q.x, q.y - 26 * scale, 0); }
   const bici = passing('bicicletada'); if (bici) { const q = S(bici.gx, bici.gy, 0), sh = BICI_SHOUTS[Math.floor(bici.k * 8) % BICI_SHOUTS.length]; if (onScreen(q)) bubble('📣 ' + L(sh[0], sh[1]), q.x, q.y - 28 * scale, 0); }
+  const tm = passing('homemtenda'); if (tm) { const q = S(tm.gx, tm.gy, 0), t = L('⛺ Homem-tenda', '⛺ Tent man'); if (onScreen(q)) { ctx.font = '800 11px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText(t, q.x, q.y - 34 * scale); ctx.fillStyle = '#ffd23a'; ctx.fillText(t, q.x, q.y - 34 * scale); } }
   if (now - flashAt < 260 && flashPos) { ctx.fillStyle = `rgba(255,255,255,${.75 * (1 - (now - flashAt) / 260)})`; ctx.fillRect(0, 0, cssW, cssH); }
   const d = djPos();
   if (d) { const q = S(d.gx, d.gy, 0); ctx.font = '800 12px Jost, sans-serif'; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText('DJ p.45', q.x, q.y - 26 * scale); ctx.fillStyle = '#b6ff3b'; ctx.fillText('DJ p.45', q.x, q.y - 26 * scale); }
@@ -1650,6 +1678,7 @@ function renderScene(g, ox, oy, vw, vh, now) {
   if (jogos.banner) list.push([jogos.banner.x + jogos.banner.y + .5, () => drawBanner(g, jogos.banner, now)]);
   const car = passing('carro'); if (car) list.push([car.gx + car.gy, () => drawTentCar(g, car, now)]);
   const bici = passing('bicicletada'); if (bici) list.push([bici.gx + bici.gy, () => drawBicicletada(g, bici, now)]);
+  const tm = passing('homemtenda'); if (tm) list.push([tm.gx + tm.gy, () => { const q = iso(tm.gx, tm.gy); drawTentManAt((x, y, w, h, c) => R(g, x, y, w, h, c), Math.round(q.x), Math.round(q.y), tm.flip, now / 110); }]);
   list.sort((a, b) => a[0] - b[0]); for (const [, f] of list) f();
   g.setTransform(1, 0, 0, 1, 0, 0);
 }

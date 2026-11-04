@@ -6,7 +6,7 @@
 // the square's furniture that the characters walk around (multiplayer.html draws it in the same places)
 export const OBST = [[11, 11, 2.2], [16.5, 16.5, 1.8], [16.3, 2.5, 1.5], [17.6, 19.8, 1], [19.6, 12.4, 1], [5.4, 19.6, 1]]; // the carnation, the fountain, the canteen, the chess, draughts and noughts-and-crosses tables (multiplayer.html MESAS)
 const SOPA = { x: 15.9, y: 1.85 }; // the canteen lady, behind her table
-export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada', 'bufos']; // the last two pass in the street: multiplayer.html times them from the clock
+export const NPC_KINDS = ['jornalista', 'curiosos', 'fotografa', 'cantina', 'cao', 'zezinho', 'carro', 'bicicletada', 'bufos', 'homemtenda']; // carro, bicicletada and homemtenda pass in the street: multiplayer.html times them from the clock
 const QUESTIONS = 3, ANSWERS = 3; // the journalist's questions and the ready answers (multiplayer.html: INTERVIEW)
 const CONVINCE = [.7, .6, .85]; // how often each explanation (multiplayer.html: EXPLAIN) wins a passer-by over
 // «Há um bufo na praça»: a few campers walk about (they come and go). Now and then one of them is not who he says he is:
