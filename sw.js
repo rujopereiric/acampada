@@ -28,9 +28,14 @@ self.addEventListener('fetch', e => {
       let usedCopy = false;
       const net = fetch(r.url, { cache: 'no-store', credentials: 'same-origin' }).then(async res => { // (a navigation request can't be refetched with options)
         if (res && res.ok) {
-          const old = usedCopy ? await c.match(r, { ignoreSearch: true }) : null;
+          // for a few minutes after a change, GitHub's servers can still hand out the old page now and then: only a page
+          // newer than the copy (by its Last-Modified date) replaces it and offers the update; an older one is ignored
+          const old = await c.match(r, { ignoreSearch: true }), when = x => Date.parse(x.headers.get('last-modified') || '') || 0;
+          const tNew = when(res), tOld = old ? when(old) : 0;
+          if (old && tNew && tOld && tNew <= tOld) return res; // the same page, or an older one: keep the copy, say nothing
           await c.put(r, res.clone());
-          if (old && !url.pathname.endsWith('.json') && (await old.text()) !== (await res.clone().text())) await tellPages(); // a newer game arrived
+          const newer = tNew && tOld ? true : !!old && (await old.text()) !== (await res.clone().text()); // no dates to compare: by the text
+          if (usedCopy && old && newer && !url.pathname.endsWith('.json')) await tellPages(); // a newer game arrived
         }
         return res;
       });

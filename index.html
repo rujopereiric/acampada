@@ -630,6 +630,7 @@ const EN_RX = [
   [/^Levaram tudo: ([\d\s.,  ]+) detidas\. A praça ficou vazia$/, 'They took everything: $1 arrested. The square is empty'],
   [/^Reconstruir: (\d+) de (\d+) tendas · moral acima de (\d+)$/, 'Rebuild: $1 of $2 tents · morale above $3'],
   [/^Pressão no máximo: sobe a moral acima de (\d+) para ganhar$/, 'Pressure at the top: get morale above $1 to win'],
+  [/^A praça volta a encher no dia (\d+) às 17:00: aguenta até lá$/, 'The square fills again on day $1 at 5 pm: hold on until then'],
   [/^Concerto a decorrer$/, 'Concert on'], [/^(.+) a tocar$/, '$1 playing'], [/^Concerto (.+)$/, 'Concert: $1']
 ];
 const CITY_EN = {"10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e sempre que a polícia sai a equipa de limpeza lava a praça.": "10 October. The first camp goes up between the Rivoli and the Palácio Atlântico. The blue helmets go to whoever holds the front of the human chain, and after each raid the cleaning crew washes the square.", "O Porto aguentou as noites, debaixo da polícia mais violenta.": "Porto held out through the nights, under the most violent police.", "Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.": "Saturday, 17:00. Keys jingle in the air and the tents surround the column of D. Pedro IV. Someone hangs a small donkey head under the plaque, and somewhere in the crowd DJ p.45 is warming up.", "O Rossio tornou-se uma pequena aldeia, com cozinha, assembleia e música.": "Rossio became a small village, with a kitchen, an assembly and music.", "Entre a Câmara e Santa Cruz, estudantes que pagam 600 ou 700 euros por um quarto descem da universidade com as tendas. Atenção aos bombos.": "Between the City Hall and Santa Cruz, students paying 600 or 700 euros for a room come down from the university with their tents. Listen out for the drums.", "Coimbra aguentou. A Praça 8 de Maio encheu-se de estudantes e de vizinhos.": "Coimbra held out. Praça 8 de Maio filled with students and neighbours.", "Na Praça da República, junto ao chafariz e em frente à Arcada, estudantes da Universidade do Minho fazem uma assembleia popular sem tendas. Faz crescer a multidão e, quando for grande que chegue, junta toda a gente junto ao chafariz para cantar.": "In Praça da República, by the fountain and opposite the Arcada, students from the University of Minho hold a people’s assembly without tents. Grow the crowd and, when it is big enough, bring everyone to the fountain to sing.", "Braga aguentou sem uma única tenda: a assembleia no chafariz nunca parou.": "Braga held out without a single tent: the assembly at the fountain never stopped.", "Na Praça da Liberdade, junto à CCDR, o arranque é lento. Meia hora depois, a praça já está mais cheia. Faz crescer a multidão até o Algarve resistir.": "In Praça da Liberdade, by the CCDR, the start is slow. Half an hour later the square is fuller. Grow the crowd until the Algarve resists.", "Viva o Algarve a resistir! A Praça da Liberdade fez jus ao nome.": "Long live the Algarve resisting! Praça da Liberdade lived up to its name."};
@@ -1715,7 +1716,9 @@ function storyMaybe() {
   const x = pool[Math.floor(Math.random() * pool.length)]; used.push(x[0]); S.storyAt = S.t + 45;
   floatXY(0, 0, `«${L(x[0], x[1])}»`, '#f4f1ea');
 }
+const rebuilding = () => S.finalK === 'done' && !S.winning; // after the final kettle, until the win
 function spawnArrival(opts = {}) {
+  if (rebuilding()) opts = { ...opts, auto: false }; // the rebuild is the player's: everyone who comes waits to be welcomed
   const side = Math.random() < .5;
   const gx = side ? rnd(.5, NX - .5) : NX + 1.6, gy = side ? NY + 1.6 : rnd(.5, NY - .5);
   const [tx, ty] = opts.target || randomSpot();
@@ -2359,8 +2362,10 @@ function kettleLeave(wipe) {
   let det = 0; for (const t of S.tents) { det += t.occ; S.occ[t.ty * NX + t.tx] = null; } S.tents = [];
   for (const st of S.stations) S.occ[st.ty * NX + st.tx] = null; S.stations = []; S.perks.delete('cartazes');
   S.detained += det; S.raidDetained += det; S.chain = null; for (const r of S.residents) r.chainK = null;
-  // ...but the country saw it: morale to the top, support +20, the pressure stays; the people left outside start again
-  S.morale = 100; S.support = Math.min(100, S.support + (S.city.violent && K.final ? 12 : 20)); // Porto: the rebuild after the last kettle is slower
+  // ...but the country saw it: support up, the pressure stays; the people left outside start again. After the final kettle
+  // morale falls instead (they took everything): it has to be raised again above 80 to win, with support only a little up
+  if (K.final) { S.morale = 45; S.support = Math.min(100, S.support + 8); }
+  else { S.morale = 100; S.support = Math.min(100, S.support + 20); }
   // after the final kettle the square is left empty: the rebuild starts from nothing
   // the square is left empty, only the wounded on the ground; the people outside come back once the police have gone
   S.emptyK = true; S.freshK = !K.final; S.residents = []; S.arrivals = [];
@@ -2593,8 +2598,8 @@ function tvNow() {
   const cops = S.police.some(o => o.gx > -.5 && o.gx < NX + .5 && o.gy > -.5 && o.gy < NY + .5);
   if (K && K.phase !== 'leave' && (cops || K.tvOn)) return 'alerta';
   if (S.raid && cops && (!S.patrolRaid || S.tents.length < (S.raidTents0 || 0))) return 'rusga'; // a patrol that does nothing is no news
+  if (S.live > 0) return 'direto'; // the player's own broadcast: on the TV at once, before the news
   if (ev) return ev.kind;
-  if (S.live > 0) return 'direto';
   return tvBlock();
 }
 // the regular programmes: the hour picks the next one, but each stays on for TV_PROG seconds; between the horoscope
@@ -2714,7 +2719,7 @@ function tellySync(dt) {
   if (!TELLY.on) { if (!el.hidden) el.hidden = true; if (tvOff) TELLY.prog = ''; return; }
   if (el.hidden) { el.hidden = false; TELLY.acc = 1; }
   $('tvOff').setAttribute('aria-label', tvOff ? L('Ligar a televisão', 'Turn the TV on') : L('Desligar a televisão', 'Turn the TV off'));
-  if (p !== TELLY.prog) { if (TV_CUTS.includes(p) && TELLY.prog && !TV_CUTS.includes(TELLY.prog)) TELLY.cut = S.t + 1.3; if (!TV_CUTS.includes(p)) TELLY.n = Math.floor(Math.random() * 6); TELLY.prog = p; }
+  if (p !== TELLY.prog) { if (TV_CUTS.includes(p) && p !== 'direto' && TELLY.prog && !TV_CUTS.includes(TELLY.prog)) TELLY.cut = S.t + 1.3; /* no static before our own broadcast: it starts with the LIVE counter */ if (!TV_CUTS.includes(p)) TELLY.n = Math.floor(Math.random() * 6); TELLY.prog = p; }
   TELLY.acc += dt; if (TELLY.acc < 1 / 12) return; TELLY.acc = 0;
   const cut = S.t < TELLY.cut, w = cut ? [L('Interrompemos a emissão', 'We interrupt this programme'), '', ''] : tvWords(p), live = TV_CUTS.includes(p);
   const key = (cut ? 'cut' : p) + '|' + w.join('|');
@@ -2844,16 +2849,16 @@ function winSongStop() {
 }
 // her music: a recording (saxofone.m4a), through Web Audio when it can be fetched, an <audio> element otherwise.
 // It fades in over 1 s, out over 2 s, stops at once on pause, and pushes the game's own sounds down.
-const SAX_SRC = 'saxofone.m4a', SAX_GAIN = .9;
+const SAX_SRC = 'saxofone.m4a', SAX_GAIN = .9, SAX_LOOP = 35.3; // after 35 s the recording goes quiet (the shields would drown it): only the first 35 s, over and over, cut at a breath
 let saxBuf = null, saxTried = false, saxEl = null, saxOut = null, saxVol = 0, saxPos = 0, saxAt = 0;
 function saxLoad() {
   if (saxTried) return; saxTried = true; audioOn(); // the player has already clicked by now, so the audio context can run
-  const el = () => { try { saxEl = new Audio(SAX_SRC); saxEl.preload = 'auto'; saxEl.loop = true; } catch (e) {} };
+  const el = () => { try { saxEl = new Audio(SAX_SRC); saxEl.preload = 'auto'; saxEl.loop = true; saxEl.addEventListener('timeupdate', () => { if (saxEl.currentTime > SAX_LOOP) saxEl.currentTime = 0; }); } catch (e) {} };
   if (!actx || !window.fetch) return el();
   fetch(SAX_SRC).then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(b => new Promise((ok, no) => actx.decodeAudioData(b, ok, no))).then(b => { saxBuf = b; }).catch(el);
 }
 function saxStart() {
-  if (saxBuf && actx) { const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = saxBuf; src.loop = true; g.gain.value = 0; src.connect(g).connect(actx.destination); const off = saxPos % saxBuf.duration; src.start(0, off); saxAt = actx.currentTime - off; saxOut = { src, g }; }
+  if (saxBuf && actx) { const src = actx.createBufferSource(), g = actx.createGain(); src.buffer = saxBuf; src.loop = true; src.loopStart = 0; src.loopEnd = Math.min(SAX_LOOP, saxBuf.duration); g.gain.value = 0; src.connect(g).connect(actx.destination); const off = saxPos % src.loopEnd; src.start(0, off); saxAt = actx.currentTime - off; saxOut = { src, g }; }
   else if (saxEl && !saxEl._busy) { saxEl._busy = true; saxEl.volume = 0; const pr = saxEl.play(); if (pr && pr.then) pr.then(() => { saxEl._busy = false; }, () => { saxEl._busy = false; }); else saxEl._busy = false; }
 }
 function saxHalt() {
@@ -2875,6 +2880,10 @@ function saxTick(dt) {
 // squares already won, in any order: each one makes the police a little stronger
 const wins = () => cleared.size - (cleared.has(cityIdx) ? 1 : 0);
 const WIN_MORALE = 80; // the Moral bar has a mark here
+// after the final kettle the win can only come at 17:00 the day after the next dawn (the square fills again in the
+// afternoon), so the rebuild lasts at least one night and its dawn raid
+const winFrom = () => (Math.floor(((S.rebuildFrom || 0) - 6) / 24) + 1) * 24 + 6 + 11;
+const winDay = () => 1 + Math.floor((winFrom() - 6) / 24);
 // big events (raids, fascists, graffiti, the evening bicicletada, the kettle) need 25 s of quiet after the last one ended,
 // and none starts in the hour before the dawn raid (the raid itself is never held back)
 const BIG_GAP = 25; // seconds of real time (a game day is 72 s): 40 left almost no nights for the fascists
@@ -3219,7 +3228,7 @@ function updChoir(dt, hr) {
     for (const m of c.members) { if (moveEnt(m, c.cx + Math.cos(m.a) * CHOIR_R, c.cy + Math.sin(m.a) * CHOIR_R, 1.4, dt)) { m.moving = false; face(m, c.cx - m.gx, c.cy - m.gy); } }
     if (Math.random() < dt * 5) { const m = pick(c.members), q = iso(m.gx, m.gy, 17); S.parts.push({ x: q.x, y: q.y, vx: rnd(-4, 4), vy: -13, life: 1.1, type: 'note', col: pick(['#ffffff', '#ffd36b', '#ff8aa8']) }); }
     // an open choir: whoever passes by joins the rehearsal, and the camp
-    for (const a of S.arrivals) if (a.state !== 'leave' && Math.hypot(a.gx - c.cx, a.gy - c.cy) < 1.9) { a.gone = true; joinOne(a.gx, a.gy); }
+    if (!rebuilding()) for (const a of S.arrivals) if (a.state !== 'leave' && Math.hypot(a.gx - c.cx, a.gy - c.cy) < 1.9) { a.gone = true; joinOne(a.gx, a.gy); } // rebuilding: they wait for the player
     c.spawn -= dt; if (c.spawn <= 0 && c.t < c.until - 3) { c.spawn = 2.6; spawnArrival({ auto: true, target: [clamp(c.cx + rnd(-1.6, 1.6), .4, NX - .4), clamp(c.cy + rnd(-1.6, 1.6), .4, NY - .4)] }); }
     S.morale = Math.min(100, S.morale + dt * 1.1); S.support = Math.min(100, S.support + dt * .3);
     if (c.t >= c.until) { c.state = 'go'; c.grandola = false; }
@@ -3475,11 +3484,12 @@ function update(dt) {
   if (people() === 0 && S.riot && !S.riotAct && !S.wiped && !S.kettle && !emptyNow) { S.wiped = true; for (const st of [...S.stations]) removeStation(st); S.perks.delete('cartazes'); for (const o of S.police) o.state = 'back'; for (let i = 0; i < 2; i++) { const t = addTent(); if (t) { t.occ = 1; t.pop = 0; } } S.pressure = 0; S.morale = Math.max(20, Math.min(S.morale, 25)); S.supplies = 0; floatXY(0, 0, 'A polícia de choque levou tudo. Recomeçamos quase do zero', '#ff8aa8'); }
   // the square is won with the Pressão bar full AND morale above 80 (the camp still standing, not just the government
   // pushed). Porto and Lisboa: at 100 the government's last answer is a kettle; then the camp has to rebuild to a
-  // third of the tents it had, and the win needs morale above 80 as well
+  // third of the tents it had (only people the player welcomes), the win needs morale above 80 as well, and not before 17:00
+  // the day after the next dawn (winFrom)
   const finale = S.city.violent || S.city.rough;
   if (S.pressure >= 100 && !S.winning && finale && !S.finalK) {
     if (!S.raid && !S.van && !S.police.length && S.clock >= (S.calmUntil || 0)) { S.finalK = 'on'; if (S.fasc) fascLeave(false); sfx('siren'); startRaid(false, false, true); }
-  } else if (S.pressure >= 100 && !S.winning && S.morale > WIN_MORALE && !policeHere() && (!finale || (S.finalK === 'done' && S.tents.length >= (S.rebuild || 0)))) {
+  } else if (S.pressure >= 100 && !S.winning && S.morale > WIN_MORALE && !policeHere() && (!finale || (S.finalK === 'done' && S.tents.length >= (S.rebuild || 0) && S.clock >= winFrom()))) {
     S.winning = true; S.winT = 0; winSongPlay(); if (S.city.violent) partyIn(); // Porto, the last square: a crowd comes to sing and dance
     if (S.raid || S.van || S.police.length || S.fasc) { const q = iso(CX, CY, 30); floatXY(q.x, q.y, 'A polícia recua!', '#b6ff3b'); }
   }
@@ -4244,7 +4254,7 @@ function draw() {
   drawBanner(); syncMsgs();
 
   if (mode === 'play') {
-    if (S.pressure >= 100 && !S.winning && !S.kettle) { const fin = S.city.violent || S.city.rough, txt = fin && S.finalK !== 'done' ? '' : fin && S.tents.length < (S.rebuild || 0) ? `Reconstruir: ${S.tents.length} de ${S.rebuild} tendas · moral acima de ${WIN_MORALE}` : S.morale <= WIN_MORALE ? `Pressão no máximo: sobe a moral acima de ${WIN_MORALE} para ganhar` : policeHere() ? 'Pressão no máximo: aguenta até a polícia sair' : '';
+    if (S.pressure >= 100 && !S.winning && !S.kettle) { const fin = S.city.violent || S.city.rough, txt = fin && S.finalK !== 'done' ? '' : fin && S.tents.length < (S.rebuild || 0) ? `Reconstruir: ${S.tents.length} de ${S.rebuild} tendas · moral acima de ${WIN_MORALE}` : S.morale <= WIN_MORALE ? `Pressão no máximo: sobe a moral acima de ${WIN_MORALE} para ganhar` : fin && S.clock < winFrom() ? `A praça volta a encher no dia ${winDay()} às 17:00: aguenta até lá` : policeHere() ? 'Pressão no máximo: aguenta até a polícia sair' : '';
       if (txt) drawFloat({ x: (VIEW.x0 + VIEW.x1) / 2, y: VIEW.y1 - 24, text: txt, color: '#b6ff3b', t: 1 }); }
     if (S.warned && !S.raid && Math.floor(S.t * 4) % 2) drawFloat({ x: (VIEW.x0 + VIEW.x1) / 2, y: VIEW.y1 - 10, text: 'Sirenes antes do amanhecer', color: '#ff8aa8', t: 1 });
     if (S.live > 0) { ctx.save(); ctx.translate(Math.round(VIEW.x0), Math.round(VIEW.y0)); R(4, 4, 46, 12, '#1b1464'); R(5, 5, 44, 10, '#2a1f7a'); R(8, 7, 5, 5, Math.floor(S.t * 3) % 2 ? '#ff3b3b' : '#7a1c1c'); ctx.font = '8px Silkscreen, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff'; ctx.fillText('LIVE ' + Math.ceil(S.live), 16, 10); ctx.restore(); }
@@ -4792,7 +4802,7 @@ function rulesHTML(n) {
        <div class="cj-card">${I('fasc')}<b>Fascists</b><span>pick 4 activists${pcMQ.matches ? ' (arrows and Enter)' : ' (tap them)'} and go</span></div>
        <div class="cj-card">${I('wounded')}<b>Wounded</b><span>treat them at the post within 60 s</span></div>
        <div class="cj-card">${I('tania')}<b>Orange Journalist</b><span>run from her! she costs support</span></div></div></div>
-     <p class="cj-small"><b>Porto and Lisboa:</b> with Pressure full, the police kettle the square and take everything. Set up a third of the tents again, with Morale above 80, to win.</p>`
+     <p class="cj-small"><b>Porto and Lisboa:</b> with Pressure full, the police kettle the square and take everything. Welcome newcomers to set up a third of the tents again, get Morale above 80 and hold on until 5 pm the next day to win.</p>`
   ] : [
     `<h2 class="p-red rough cj-h">Segura a praça</h2><p class="cj-sub">em 3 passos</p>
      <div class="cj-step"><span class="cj-n">1</span>${I('arrival')}<div><b>Acolhe quem chega</b><span>Quem tem <span class="bang">!</span> está à espera de lugar. Passa ao lado e monta tenda.</span></div></div>
@@ -4822,7 +4832,7 @@ function rulesHTML(n) {
        <div class="cj-card">${I('fasc')}<b>Fascistas</b><span>escolhe 4 ativistas${pcMQ.matches ? ' (setas e Enter)' : ' (toca neles)'} e vai lá</span></div>
        <div class="cj-card">${I('wounded')}<b>Feridos</b><span>cura-os no posto em 60 s</span></div>
        <div class="cj-card">${I('tania')}<b>Jornalista Laranja</b><span>foge dela! tira apoio</span></div></div></div>
-     <p class="cj-small"><b>Porto e Lisboa:</b> com a Pressão cheia, a polícia cerca a praça e leva tudo. Volta a montar um terço das tendas, com a Moral acima de 80, para ganhar.</p>`
+     <p class="cj-small"><b>Porto e Lisboa:</b> com a Pressão cheia, a polícia cerca a praça e leva tudo. Acolhe quem chega para voltar a montar um terço das tendas, sobe a Moral acima de 80 e aguenta até às 17h do dia seguinte para ganhar.</p>`
   ];
   [pages[2], pages[3]] = [pages[3], pages[2]]; // order: the square, your buttons, friends and dangers, a day in the square
   const last = n === pages.length - 1, dots = pages.map((_, i) => `<i class="${i === n ? 'on' : ''}"></i>`).join('');
