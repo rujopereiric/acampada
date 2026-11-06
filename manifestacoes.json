@@ -373,6 +373,14 @@
  },
  {
   "date": "2026-11-14",
+  "at": "16:00",
+  "city": "Faro",
+  "title": "Casa para viver",
+  "where": "Liceu João de Deus",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-14",
   "at": "15:00",
   "city": null,
   "title": "Casa para viver",
