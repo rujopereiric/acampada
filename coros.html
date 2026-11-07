@@ -107,6 +107,14 @@ function build(song) { // notes with times in seconds; strong notes count double
 let actx = null, an = null, buf = null, stream = null, guideVol = 1;
 const GUIDE = [['Coro: alto', 1], ['Coro: baixo', .4], ['Sem coro', 0]];
 function audio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+let bus = null; // the choir's way out: turned up, then a compressor so the loud notes don't distort on a phone speaker
+function choirBus(a) {
+  if (bus && bus.context === a) return bus;
+  const g = a.createGain(), c = a.createDynamicsCompressor(); g.gain.value = BOOST;
+  c.threshold.value = -20; c.knee.value = 12; c.ratio.value = 4; c.attack.value = .005; c.release.value = .2;
+  g.connect(c).connect(a.destination); return bus = g;
+}
+const BOOST = 4.5;
 async function micOn() {
   const a = audio();
   stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
@@ -135,7 +143,7 @@ function choir(m, d, t0, vol) {
   if (!guideVol || !actx) return; const a = actx, f = hz(m), g = a.createGain(), f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), mix = a.createGain();
   f1.type = 'bandpass'; f1.frequency.value = 760; f1.Q.value = 5; f2.type = 'bandpass'; f2.frequency.value = 1180; f2.Q.value = 6;
   const v = .06 * vol * guideVol; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + .06); g.gain.setValueAtTime(v, t0 + Math.max(.07, d - .05)); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + .25);
-  g.connect(f1).connect(mix); g.connect(f2).connect(mix); mix.gain.value = 1.2; mix.connect(a.destination);
+  g.connect(f1).connect(mix); g.connect(f2).connect(mix); mix.gain.value = 1.2; mix.connect(choirBus(a));
   for (const det of [-9, -3, 4, 10]) { const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(g); o.start(t0); o.stop(t0 + d + .3); }
 }
 // ---------- the game ----------
