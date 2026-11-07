@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Natal na Praça · Acampada Pixel</title>
+<meta name="description" content="Mini-jogo de plataformas da Acampada Pixel: o mercado de Natal no Rossio e a pista de gelo na Praça D. João I querem o lugar das tendas.">
+<meta name="theme-color" content="#0b0a0a">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="Natal na Praça · Acampada Pixel">
+<meta property="og:description" content="O mercado de Natal e a pista de gelo querem o lugar das tendas. Salta, escorrega e fica.">
+<meta property="og:image" content="https://acampadapixel.pt/og.jpg?v=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;700;800&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+:root{ --bg:#0b0a0a; --red:#d22a2a; --lime:#b6ff3b; --yel:#ffd23a; --ink:#f4f1ea; --dim:#a9a39a; }
+html,body{ margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:Jost, 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; overflow:hidden;
+  touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+#stage{ position:fixed; left:50%; top:0; transform:translateX(-50%); background:#000; }
+canvas{ display:block; width:100%; height:100%; image-rendering:pixelated; }
+#ov{ position:fixed; inset:0; z-index:5; display:flex; align-items:center; justify-content:center; background:rgba(11,10,10,.86);
+  padding:14px; box-sizing:border-box; overflow:auto; }
+#ov[hidden]{ display:none; }
+.card{ max-width:600px; text-align:center; margin:auto; }
+.kick{ font:400 clamp(10px,2.2vw,14px)/1.2 Silkscreen, monospace; color:var(--yel); letter-spacing:1px; margin:0 0 8px; }
+h1{ font:800 clamp(30px,7.4vw,64px)/.88 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; color:var(--red); text-transform:uppercase; margin:0 0 10px; letter-spacing:-1px; }
+h2{ font:800 clamp(22px,4.6vw,38px)/.95 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; text-transform:uppercase; margin:0 0 10px; }
+p{ font:500 clamp(14px,2.4vw,18px)/1.35 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; color:#e8e2d6; margin:0 0 10px; }
+p b{ color:var(--yel); }
+.small{ font-size:clamp(12px,2vw,15px); color:var(--dim); }
+.stats{ font:400 clamp(12px,2.4vw,16px)/1.6 Silkscreen, monospace; color:var(--lime); margin:6px 0 12px; }
+.btns{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+button.big, a.big{ font:800 clamp(16px,3vw,22px)/1 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; text-transform:uppercase; background:var(--ink); color:var(--bg); border:0;
+  padding:12px 26px; cursor:pointer; outline:3px solid var(--yel); outline-offset:3px; text-decoration:none; display:inline-block; }
+a.big.alt, button.big.alt{ background:transparent; color:var(--ink); outline-color:var(--dim); }
+#top{ position:absolute; right:8px; top:8px; display:flex; gap:8px; z-index:2; }
+#top button{ font:700 16px/1 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; min-width:42px; height:42px; background:rgba(11,10,10,.6); color:var(--ink); border:1px solid rgba(244,241,234,.5); cursor:pointer; touch-action:manipulation; }
+body.touch #top button{ min-width:48px; height:48px; font-size:18px; }
+#pad{ position:fixed; left:0; right:0; bottom:0; display:none; justify-content:space-between; align-items:flex-end;
+  padding:10px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); pointer-events:none; box-sizing:border-box; }
+body.touch #pad{ display:flex; }
+#pad .grp{ display:flex; gap:12px; }
+#pad button{ pointer-events:auto; width:78px; height:78px; border-radius:50%; border:3px solid rgba(244,241,234,.75); background:rgba(11,10,10,.45);
+  color:var(--ink); font:800 26px/1 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; touch-action:none; }
+#pad button.jump{ width:96px; height:96px; font-size:15px; text-transform:uppercase; border-color:var(--yel); color:var(--yel); }
+#pad button.on{ background:rgba(244,241,234,.35); }
+body.portrait #pad{ background:var(--bg); padding-top:14px; }
+/* phone on its side: the buttons go in the black bars beside the picture when there's room, otherwise smaller and see-through */
+body.bars #pad .grp{ flex-direction:column; align-items:center; }
+body.touch:not(.portrait):not(.bars) #pad button{ width:60px; height:60px; font-size:20px; opacity:.6; }
+body.touch:not(.portrait):not(.bars) #pad button.jump{ width:72px; height:72px; font-size:12px; }
+body.bars #pad{ padding-left:calc((var(--bar) - 78px) / 2); padding-right:calc((var(--bar) - 96px) / 2); align-items:center; top:0; }
+#turn{ position:fixed; left:0; right:0; text-align:center; font:400 12px/1.3 Silkscreen, monospace; color:var(--dim); display:none; }
+body.portrait #turn{ display:block; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c" width="1152" height="648"></canvas>
+  <div id="top"><button id="bMute" aria-label="Som">♪︎</button><button id="bPause" aria-label="Pausa">II</button></div>
+</div>
+<div id="ov"></div>
+<div id="turn"></div>
+<div id="pad">
+  <div class="grp"><button data-k="left" aria-label="Esquerda">◀︎</button><button data-k="right" aria-label="Direita">▶︎</button></div>
+  <div class="grp"><button data-k="jump" class="jump" aria-label="Saltar">Saltar</button></div>
+</div>
+<script>
+(() => {
+'use strict';
+/* Natal na Praça: a small platform game for Acampada Pixel (acampadapixel.pt), in two levels.
+   1. Rossio, Lisboa: the Christmas market (13 Nov – 21 Dec) is put up where the camp stands. Price tags grow in your
+      way, the mayor's order (the "despacho") flies about, the Polícia Municipal patrols. Carry your tent to the middle.
+   2. Praça D. João I, Porto: the ice rink goes up from 13 Nov. The floor is slippery, a crane drops pieces of the rink,
+      the rink's ice spreads across the square and the town hall's e-mails fly in. Peg the tents down before the ice gets them:
+      a pegged tent stays, and the rink goes round it.
+   The end: 24 November, the day the court gave the camp in Lisbon. The camp goes on, on its own terms.
+   Everything is drawn here, on a 384x216 canvas (3x for crisp text); no images, no libraries. */
+let LANG = 'pt';
+try { LANG = localStorage.getItem('acampada-lang') || 'pt'; } catch (e) {} // the same choice as the main game
+const L = (pt, en) => LANG === 'en' ? en : pt;
+
+const W = 384, H = 216, SC = 3, GY = 184; // GY: the top of the ground
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const ov = document.getElementById('ov'), stage = document.getElementById('stage');
+const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+if (isTouch) document.body.classList.add('touch');
+
+// ---------- layout: the 16:9 stage as big as fits; on a phone held upright the buttons go below it
+function fit() {
+  const vw = innerWidth, vh = innerHeight, portrait = isTouch && vh > vw;
+  document.body.classList.toggle('portrait', portrait);
+  const room = portrait ? vh - 150 : vh;
+  let w = Math.min(vw, room * 16 / 9), h = w * 9 / 16;
+  stage.style.width = w + 'px'; stage.style.height = h + 'px';
+  stage.style.top = portrait ? Math.max(0, (room - h) / 2) + 'px' : (vh - h) / 2 + 'px';
+  const bar = (vw - w) / 2; document.body.classList.toggle('bars', isTouch && !portrait && bar >= 100); document.body.style.setProperty('--bar', bar + 'px');
+  const turn = document.getElementById('turn'); if (turn) { turn.textContent = L('↻ Melhor com o telemóvel deitado', '↻ Better with the phone on its side'); turn.style.top = Math.max(8, (room - h) / 2 - 30) + 'px'; }
+}
+addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 200)); fit();
+
+// ---------- input
+const keys = { left: false, right: false, jump: false };
+let jumpPressed = false; // a jump asked for since the last step (kept a moment: jump buffer)
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'jump', KeyW: 'jump', Space: 'jump', KeyZ: 'jump' };
+addEventListener('keydown', e => {
+  const k = KEYMAP[e.code];
+  if (k) { if (k === 'jump' && !keys.jump) jumpPressed = true; keys[k] = true; e.preventDefault(); audioOn(); }
+  if (e.code === 'KeyP' || e.code === 'Escape') togglePause();
+  if (e.code === 'KeyM') toggleMute();
+  if (e.code === 'Enter' && !ov.hidden) { e.preventDefault(); const b = ov.querySelector('button.big'); if (b) b.click(); }
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+for (const b of document.querySelectorAll('#pad button')) {
+  const k = b.dataset.k;
+  const on = e => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (x) {} if (k === 'jump' && !keys.jump) jumpPressed = true; keys[k] = true; b.classList.add('on'); audioOn(); };
+  const off = e => { e.preventDefault(); keys[k] = false; b.classList.remove('on'); };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+// ---------- sound: a few effects and "Jingle Bells" (Pierpont, 1857, public domain) on a little square wave
+let actx = null, muted = false, master = null, musicOn = false, musicNext = 0, musicI = 0;
+try { muted = localStorage.getItem('natal-mute') === '1'; } catch (e) {}
+function audioOn() {
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(actx.destination); } catch (e) { actx = null; } }
+  if (actx && actx.state === 'suspended') actx.resume();
+}
+function tone(f, t0, dur, type = 'square', vol = .06, slide = 0) {
+  if (!actx) return;
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t0 + dur);
+  g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.0005, t0 + dur);
+  o.connect(g).connect(master); o.start(t0); o.stop(t0 + dur + .02);
+}
+function sfx(k) {
+  if (!actx || muted) return; const t = actx.currentTime;
+  if (k === 'jump') tone(330, t, .14, 'square', .05, 2);
+  else if (k === 'cravo') { tone(880, t, .07, 'square', .05); tone(1320, t + .07, .1, 'square', .05); }
+  else if (k === 'hit') { tone(220, t, .25, 'sawtooth', .07, .4); }
+  else if (k === 'save') { [523, 659, 784].forEach((f, i) => tone(f, t + i * .07, .12, 'triangle', .08)); }
+  else if (k === 'grow') tone(140, t, .3, 'triangle', .06, 2.2);
+  else if (k === 'thud') tone(90, t, .2, 'square', .07, .5);
+  else if (k === 'boing') tone(180, t, .22, 'triangle', .09, 3);
+  else if (k === 'win') { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, t + i * .11, .2, 'square', .06)); }
+  else if (k === 'check') { tone(660, t, .1, 'triangle', .07); tone(990, t + .1, .15, 'triangle', .07); }
+  else if (k === 'freeze') tone(1600, t, .4, 'sine', .04, .5);
+}
+const NF = n => 440 * Math.pow(2, (n - 69) / 12); // MIDI note to Hz
+const C5 = 72, D5 = 74, E5 = 76, F5 = 77, G5 = 79;
+const SONG = [[E5,1],[E5,1],[E5,2],[E5,1],[E5,1],[E5,2],[E5,1],[G5,1],[C5,1.5],[D5,.5],[E5,4],[F5,1],[F5,1],[F5,1.5],[F5,.5],[F5,1],[E5,1],[E5,1],[E5,.5],[E5,.5],
+  [E5,1],[D5,1],[D5,1],[E5,1],[D5,2],[G5,2],[E5,1],[E5,1],[E5,2],[E5,1],[E5,1],[E5,2],[E5,1],[G5,1],[C5,1.5],[D5,.5],[E5,4],[F5,1],[F5,1],[F5,1.5],[F5,.5],
+  [F5,1],[E5,1],[E5,1],[E5,.5],[E5,.5],[G5,1],[G5,1],[F5,1],[D5,1],[C5,4],[0,4]];
+function musicTick() {
+  if (!actx || !musicOn || muted) return;
+  const beat = .26; // seconds a quarter note
+  while (musicNext < actx.currentTime + .25) {
+    if (musicNext < actx.currentTime - .1) musicNext = actx.currentTime + .05;
+    const [n, d] = SONG[musicI % SONG.length];
+    if (n) { tone(NF(n), musicNext, d * beat * .9, 'square', .022); }
+    if (musicI % 2 === 0) tone(NF((musicI % 8 < 4) ? 48 : 43), musicNext, beat * .8, 'triangle', .035); // a bass under it
+    musicNext += d * beat; musicI++;
+  }
+}
+function toggleMute() {
+  muted = !muted; try { localStorage.setItem('natal-mute', muted ? '1' : '0'); } catch (e) {}
+  if (master) master.gain.value = muted ? 0 : 1; document.getElementById('bMute').textContent = muted ? '♪︎̸' : '♪︎';
+  if (!muted && actx) musicNext = actx.currentTime + .05;
+}
+document.getElementById('bMute').addEventListener('click', e => { audioOn(); toggleMute(); e.currentTarget.blur(); }); // blur: Space is for jumping
+document.getElementById('bMute').textContent = muted ? '♪︎̸' : '♪︎';
+document.getElementById('bPause').addEventListener('click', e => { togglePause(); e.currentTarget.blur(); });
+
+// ---------- drawing helpers (world coordinates once the camera is applied)
+const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const hash = (i, s = 1) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+const FF = f => f === 'Jost' ? "Jost, 'Avenir Next', 'Helvetica Neue', sans-serif" : 'Silkscreen, monospace'; // with a fallback if the fonts don't load
+function text(t, x, y, size, color, align = 'center', font = 'Silkscreen', weight = '') {
+  ctx.font = `${weight} ${size}px ${FF(font)}`.trim(); ctx.textAlign = align; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+function outlined(t, x, y, size, color, align = 'center', font = 'Silkscreen', weight = '') {
+  ctx.font = `${weight} ${size}px ${FF(font)}`.trim(); ctx.textAlign = align; ctx.textBaseline = 'alphabetic';
+  ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.strokeStyle = 'rgba(11,10,10,.9)'; ctx.strokeText(t, x, y); ctx.fillStyle = color; ctx.fillText(t, x, y);
+}
+function bubble(t, x, y) { // a speech bubble pointing down at (x, y)
+  ctx.font = '700 7px ' + FF('Jost'); const w = Math.ceil(ctx.measureText(t).width) + 8, bx = Math.round(x - w / 2), by = Math.round(y - 14);
+  R(bx, by, w, 11, '#f4f1ea'); R(bx - 1, by + 1, 1, 9, '#f4f1ea'); R(bx + w, by + 1, 1, 9, '#f4f1ea'); R(x - 1, by + 11, 3, 2, '#f4f1ea');
+  text(t, x, by + 8, 7, '#0b0a0a', 'center', 'Jost', '700');
+}
+
+// ---------- the levels
+// solids: { x, y, w, h, one } (one: only from above, the roofs of the stalls)
+const PRICES = () => [
+  { name: [L('PINA COLADA', 'PINA COLADA'), L('SEXY', 'SEXY')], price: '10€', max: 40, w: 60 },
+  { name: [L('VINHO QUENTE', 'MULLED WINE'), 'VERY TYPICAL'], price: '6€', max: 30, w: 58 },
+  { name: [L('CASTANHAS', 'CHESTNUTS')], price: '6€', max: 30, w: 46 },
+];
+function makeLevel(n) {
+  const lv = { n, len: 4700, goal: 4540, stalls: [], tags: [], cops: [], cravos: [], checks: [], tents: [], camp: [], pushT: [], panels: [], flyers: [], floats: [], snow: [], skaters: [], need: 0 };
+  if (n === 1) {
+    lv.name = L('Rossio · Lisboa', 'Rossio · Lisbon'); lv.ice = false;
+    const signs = ['PINA COLADA SEXY', L('VINHO QUENTE', 'MULLED WINE'), L('CASTANHAS', 'CHESTNUTS'), 'GINJINHA', L('BOLO-REI', 'KING CAKE'), L('FARTURAS', 'CHURROS'), L('ÍMANES', 'MAGNETS'), L('GORROS', 'BEANIES')];
+    // each stretch: a stall, a camp tent to bounce on (a carnation high above it), a price tag (the tall ones, 10€, can
+    // also be taken from the roof or the tent), then the open square: the Polícia Municipal, or a stall on wheels
+    // pushing a tent out of the square (get there and stop by it to peg it down)
+    const P = PRICES(), order = [2, 1, 0, 2, 0, 1, 0, 2, 1, 0, 1, 2], cols = ['#3a8fd8', '#55b05a', '#9b59d0', '#2bb3a8', '#f0b429'];
+    let x = 250, i = 0;
+    while (x < lv.goal - 300) {
+      const w = 70 + (i % 3) * 6, tx = x + w + 95 + (i % 2) * 15, push = i % 2 === 1, next = x + (push ? 470 : 380) + (i % 3) * 20;
+      lv.stalls.push({ x, w, sign: signs[i % signs.length] });
+      lv.camp.push({ x: x + w + 30, col: cols[i % cols.length], sq: 0 });
+      lv.tags.push({ x: tx, ...P[order[i % order.length]], g: 0, h: 10, cw: 18, grown: false });
+      if (next < lv.goal - 200) {
+        if (push) { // the cart stands by the next stall with a tent in front of it; it pushes the tent left, toward the tag
+          const cw = 56, cx = next - 40 - cw, t0 = cx - 16, room = Math.min(140, t0 - (tx + 30 + 18));
+          lv.pushT.push({ x: t0, x0: t0, room, cart: { x: cx, w: cw }, state: 'idle', fix: 0, col: cols[(i + 2) % cols.length], sq: 0, lostT: 0 });
+        } else if (i > 0) lv.cops.push({ a: tx + 55, b: next - 45, x: tx + 80, y: GY - 19, dir: i % 2 ? 1 : -1, say: 0, sayT: rnd(1, 4), fall: 0, vx: 0 });
+      }
+      x = next; i++;
+    }
+    lv.camara = { x: Math.round(lv.goal * .52), say: L('Ai que horror!', 'Oh, how horrid!') };
+    lv.flyEvery = [4, 6.5];
+  } else {
+    lv.name = L('Praça D. João I · Porto', 'Praça D. João I · Porto'); lv.ice = true;
+    const cols = ['#e2533c', '#3a8fd8', '#f0b429', '#55b05a', '#9b59d0', '#2bb3a8', '#f08a24'];
+    // the tents to save; some are being pushed toward the ice by a skater or by riot police with a baton
+    for (let x = 380, i = 0; x < lv.goal - 200; x += 380 + (i % 2) * 40, i++) {
+      const kind = i % 3 === 1 ? 'skate' : i % 3 === 2 ? 'choque' : null;
+      lv.tents.push({ x, x0: x, saved: false, frozen: false, fold: 0, sq: 0, col: cols[i % cols.length], ppl: 1 + (i % 2),
+        pusher: kind ? { kind, x: x + 16, state: 'idle', a: 0, b: 0, dir: -1, vx: 0 } : null });
+    }
+    lv.camara = { x: Math.round(lv.goal * .55), say: L('Absolutamente implacável!', 'Absolutely relentless!') };
+    lv.need = 6; // tents to save to win
+    // skaters going full speed up and down a stretch of the square: jump them
+    lv.skaters = [[620, 900], [1500, 1820], [2280, 2600], [3080, 3420], [3800, 4150]].map(([a, b], i) => ({ a, b, x: a + (b - a) * hash(i, 5), dir: i % 2 ? 1 : -1, vx: 0, col: ['#e2533c', '#2bb3a8', '#f0b429', '#9b59d0', '#55b05a'][i] }));
+    [[1000, 1120], [2700, 2840]].forEach(([a, b]) => lv.cops.push({ a, b, x: a + 30, y: GY - 19, dir: 1, say: 0, sayT: rnd(1, 4), fall: 0, vx: 0 }));
+    lv.flyEvery = [5, 7.5]; lv.mail = 3; // the town hall's e-mail, sent for the third time (and counting)
+    lv.frost = { x: -170, v: 36, wait: 2.5 };
+    lv.crane = { x: 200, tx: 200, state: 'wait', t: 2.5 };
+  }
+  lv.checks = [{ x: Math.round(lv.goal / 3), on: false }, { x: Math.round(lv.goal * 2 / 3), on: false }];
+  // carnations to pick up: some on the ground, some on the roofs
+  for (let x = 120; x < lv.goal - 60; x += 95) {
+    // (a cart covers everything from where it stands to as far as it can push)
+    const roof = lv.stalls.find(s => x > s.x + 8 && x < s.x + s.w - 8) || lv.pushT.find(p => x > p.cart.x - p.room - 4 && x < p.cart.x + p.cart.w + 4);
+    const tag = lv.tags.find(tg => Math.abs(x - tg.x) < tg.w / 2 + 8);
+    // one that falls where a price tag will grow goes on top of it (otherwise the tag swallows it); the same on a cart
+    lv.cravos.push({ x: tag ? tag.x : x, y: tag ? GY - tag.max - 12 : roof ? GY - 52 : GY - 14 - (hash(x, 2) > .6 ? 26 : 0), got: false });
+  }
+  // and one high above the tents you can bounce on
+  for (const c of lv.camp) lv.cravos.push({ x: c.x, y: GY - 96, got: false });
+  lv.tents.forEach((tn, i) => { if (i % 2 === 0) lv.cravos.push({ x: tn.x, y: GY - 96, got: false }); });
+  lv.flyT = 3;
+  return lv;
+}
+
+// ---------- the game state
+let lvl = null, P = null, camX = 0, mode = 'title', paused = false, t = 0, stats = { cravos: 0, cravosAll: 0, tents: 0, tentsAll: 0, fixed: 0, fixedAll: 0 }, endT = 0;
+const START = 110; // clear of the arrow buttons on a phone on its side
+function newPlayer(x) { return { x, y: GY - 18, w: 10, h: 18, vx: 0, vy: 0, face: 1, ground: true, coyote: 0, buf: 0, hearts: 3, inv: 0, anim: 0, check: x, dead: 0 }; }
+function startLevel(n) {
+  const c0 = stats.cravos; // carnations had before this level (a restart puts the count back)
+  lvl = makeLevel(n); lvl.c0 = c0; P = newPlayer(START); camX = 0; endT = 0; mode = 'play'; paused = false; ov.hidden = true;
+  jumpPressed = false; keys.left = keys.right = keys.jump = false; document.getElementById('bPause').style.visibility = '';
+  for (let i = 0; i < 40; i++) lvl.snow.push({ x: rnd(0, W), y: rnd(0, H), v: rnd(8, 18), s: hash(i, 9) > .7 ? 2 : 1 });
+  musicOn = true; if (actx) { musicNext = actx.currentTime + .1; musicI = 0; }
+}
+function solids() {
+  const s = [{ x: -3000, y: GY, w: lvl.len + 6000, h: 40 }];
+  for (const st of lvl.stalls) s.push({ x: st.x - 2, y: GY - 40, w: st.w + 4, h: 3, one: true });
+  for (const tg of lvl.tags) s.push({ x: tg.x - tg.cw / 2, y: GY - tg.h, w: tg.cw, h: tg.h });
+  for (const p of lvl.panels) if (p.landed) s.push({ x: p.x, y: p.y, w: p.w, h: p.h });
+  for (const pt of lvl.pushT) s.push({ x: pt.cart.x, y: GY - 40, w: pt.cart.w, h: 40 });
+  // the tents bounce you up (the top of the tent only, from above)
+  const tramp = tn => s.push({ x: tn.x - 9, y: GY - 15, w: 18, h: 3, one: true, bounce: tn });
+  for (const c of lvl.camp) tramp(c);
+  for (const pt of lvl.pushT) if (pt.state !== 'lost') tramp(pt);
+  for (const tn of lvl.tents) if (!tn.frozen) tramp(tn);
+  s.push({ x: -40, y: -200, w: 30, h: 600 }); // the left edge
+  return s;
+}
+const hits = (a, b, m = 0) => a.x + m < b.x + b.w && a.x + a.w - m > b.x && a.y + m < b.y + b.h && a.y + a.h - m > b.y;
+function floatText(x, y, s, c = '#ffd23a', life = 1.6) { lvl.floats.push({ x, y, s, c, t: life, life }); }
+
+function hurt(from) {
+  if (P.inv > 0 || mode !== 'play') return;
+  P.hearts--; P.inv = 1.5; sfx('hit');
+  const d = from != null ? (P.x + P.w / 2 < from ? -1 : 1) : -1;
+  P.vx = d * 150; P.vy = -170; P.ground = false;
+  if (P.hearts <= 0) {
+    floatText(P.x, P.y - 10, L('De volta à assembleia', 'Back to the assembly'), '#ff8aa8', 2);
+    P.dead = .8; // back at the last assembly in a moment (game time, so a pause holds it too)
+  }
+}
+function respawn() {
+  if (!lvl) return;
+  const c = P.check; P.x = c; P.y = GY - 40; P.vx = 0; P.vy = 0; P.hearts = 3; P.inv = 2;
+  lvl.flyers = []; for (const c2 of lvl.cops) { c2.x = c2.a + 10; c2.fall = 0; }
+  if (lvl.frost) { lvl.frost.x = Math.min(lvl.frost.x, c - 230); lvl.frost.wait = 1.5; }
+}
+
+// ---------- the step
+function step(dt) {
+  t += dt;
+  const ice = lvl.ice;
+  // the player
+  const acc = ice ? 300 : 900, fric = ice ? 70 : 1300, maxv = ice ? 132 : 105;
+  let dir = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  if (mode !== 'play' || P.hearts <= 0) dir = 0;
+  if (dir) { P.vx += dir * acc * dt * (P.ground ? 1 : .8); P.face = dir; if (Math.sign(P.vx) !== dir && P.ground) P.vx += dir * (ice ? 120 : 600) * dt; }
+  else if (P.ground) { const s = Math.sign(P.vx); P.vx -= s * fric * dt; if (Math.sign(P.vx) !== s) P.vx = 0; }
+  P.vx = clamp(P.vx, -maxv - (P.inv > 1.2 ? 60 : 0), maxv + (P.inv > 1.2 ? 60 : 0));
+  if (jumpPressed) { P.buf = .14; jumpPressed = false; }
+  P.buf -= dt; P.coyote -= dt;
+  if (P.buf > 0 && (P.ground || P.coyote > 0) && mode === 'play' && P.hearts > 0) { P.vy = -305; P.ground = false; P.coyote = 0; P.buf = 0; sfx('jump'); }
+  if (!keys.jump && P.vy < -120) P.vy += 1400 * dt; // a short tap, a short jump
+  P.vy = Math.min(P.vy + 900 * dt, 420);
+  const S = solids();
+  // move x
+  P.x += P.vx * dt;
+  for (const s of S) if (!s.one && hits(P, s)) { if (P.vx > 0) P.x = s.x - P.w; else if (P.vx < 0) P.x = s.x + s.w; else P.x = (P.x + P.w / 2 < s.x + s.w / 2) ? s.x - P.w : s.x + s.w; P.vx = 0; }
+  // move y
+  const prevBottom = P.y + P.h; P.y += P.vy * dt; const wasGround = P.ground; P.ground = false;
+  for (const s of S) {
+    if (!hits(P, s)) continue;
+    if (s.one) {
+      if (P.vy >= 0 && prevBottom <= s.y + 1) {
+        P.y = s.y - P.h;
+        if (s.bounce) { P.vy = keys.jump ? -470 : -390; s.bounce.sq = .25; sfx('boing'); } // a tent: up you go (higher holding jump)
+        else { P.vy = 0; P.ground = true; }
+      }
+      continue;
+    }
+    if (P.vy > 0) { P.y = s.y - P.h; P.vy = 0; P.ground = true; } else if (P.vy < 0) { P.y = s.y + s.h; P.vy = 0; }
+  }
+  if (wasGround && !P.ground) P.coyote = .1;
+  // a solid that grew into the player pushes them out sideways (or on top)
+  for (const s of S) if (!s.one && hits(P, s, 1)) { if (P.y + P.h - s.y < 8) { P.y = s.y - P.h; P.ground = true; P.vy = 0; } else P.x = (P.x + P.w / 2 < s.x + s.w / 2) ? s.x - P.w : s.x + s.w; }
+  P.inv = Math.max(0, P.inv - dt); P.anim += dt * (Math.abs(P.vx) / 60 + .5);
+  if (P.dead > 0) { P.dead -= dt; if (P.dead <= 0) respawn(); }
+  if (P.y > 400) respawn();
+
+  // the price tags grow when you come close
+  for (const tg of lvl.tags) {
+    if (!tg.grown && P.x + 120 > tg.x && P.x < tg.x) { tg.grown = true; sfx('grow'); floatText(tg.x, GY - tg.max - 10, L('Sobe o preço!', 'Price goes up!'), '#ff8aa8', 1.2); }
+    if (tg.grown && tg.g < 1) { tg.g = Math.min(1, tg.g + dt * 1.6); const e = 1 - Math.pow(1 - tg.g, 3); tg.h = 10 + (tg.max - 10) * e; tg.cw = 18 + (tg.w - 18) * e; }
+  }
+  // carnations
+  for (const c of lvl.cravos) if (!c.got && Math.abs(P.x + 5 - c.x) < 9 && Math.abs(P.y + 9 - c.y) < 14) { c.got = true; stats.cravos++; sfx('cravo'); }
+  // checkpoints: the assembly banners
+  for (const c of lvl.checks) if (!c.on && P.x > c.x) { c.on = true; P.check = c.x; P.hearts = 3; sfx('check'); floatText(c.x, GY - 50, L('Assembleia: força renovada', 'Assembly: strength renewed'), '#b6ff3b', 2); }
+
+  // the Polícia Municipal: walks up and down; in Porto they slide on the ice and now and then go down
+  for (const c of lvl.cops) {
+    if (c.fall > 0) { c.fall -= dt; c.x += c.vx * dt; c.vx *= Math.pow(.2, dt); continue; }
+    if (ice) { c.vx += c.dir * 90 * dt; c.vx = clamp(c.vx, -50, 50); if (Math.random() < dt * .25 && Math.abs(c.vx) > 25) { c.fall = 1.6; floatText(c.x + 5, c.y - 6, L('Ups!', 'Whoops!'), '#cfe8f5', 1); } }
+    else c.vx = c.dir * 32;
+    c.x += c.vx * dt;
+    if (c.x < c.a) { c.x = c.a; c.dir = 1; if (!ice) c.vx = 32; } if (c.x > c.b) { c.x = c.b; c.dir = -1; if (!ice) c.vx = -32; }
+    c.sayT -= dt; if (c.sayT < 0) { c.say = c.say ? 0 : 1 + Math.floor(Math.random() * 4); c.sayT = c.say ? 2.2 : rnd(2, 4); }
+    if (hits(P, { x: c.x, y: c.y, w: 10, h: 19 }, 2)) hurt(c.x + 5);
+  }
+
+  // the flying papers: the order (Lisboa) or the e-mails (Porto), from the right of the screen
+  lvl.flyT -= dt;
+  if (lvl.flyT < 0 && P.x < lvl.goal - 160 && mode === 'play') {
+    lvl.flyT = rnd(...lvl.flyEvery);
+    const low = Math.random() < .5;
+    lvl.flyers.push({ x: camX + W + 30, by: low ? GY - 15 : GY - 40, ph: rnd(0, 6), v: rnd(62, 84), w: lvl.n === 1 ? 40 : 36, h: lvl.n === 1 ? 26 : 22, mail: lvl.n === 2 ? lvl.mail++ : 0, low });
+  }
+  for (const f of lvl.flyers) {
+    f.x -= f.v * dt; f.ph += dt * 3; f.y = f.by - f.h / 2 + Math.sin(f.ph) * (f.low ? 3 : 5);
+    if (hits(P, { x: f.x - f.w / 2, y: f.y - f.h / 2, w: f.w, h: f.h }, 4)) { hurt(f.x); f.gone = true; }
+    if (f.x < camX - 60) f.gone = true;
+  }
+  lvl.flyers = lvl.flyers.filter(f => !f.gone);
+
+  for (const c of [...lvl.camp, ...lvl.pushT, ...lvl.tents]) c.sq = Math.max(0, (c.sq || 0) - dt);
+  for (const pt of lvl.pushT) stepPushed(pt, dt);
+  if (lvl.n === 2) stepPorto(dt);
+
+  // the goal
+  const short = lvl.need ? lvl.need - lvl.tents.filter(tn => tn.saved).length : 0;
+  if (mode === 'play' && P.x + P.w > lvl.goal && short > 0) { // not yet: the camp needs more tents
+    P.x = lvl.goal - P.w - 1; P.vx = -60;
+    if (!lvl.shortT || t - lvl.shortT > 2) { lvl.shortT = t; floatText(lvl.goal - 20, GY - 44, L(`Faltam ${short} tendas fincadas: volta atrás!`, `${short} more tents to peg: go back!`), '#ff8aa8', 2); }
+  } else if (mode === 'play' && P.x + P.w > lvl.goal) { mode = 'done'; endT = 0; sfx('win'); musicOn = false; P.vx = 0; }
+  if (mode === 'done') { endT += dt; if (endT > 2.6 && ov.hidden) levelEnd(); }
+
+  for (const f of lvl.floats) { f.t -= dt; f.y -= dt * 10; } lvl.floats = lvl.floats.filter(f => f.t > 0);
+  for (const s of lvl.snow) { s.y += s.v * dt; s.x += Math.sin(t + s.y * .05) * dt * 6; if (s.y > H) { s.y = -2; s.x = rnd(0, W); } }
+  // camera: a little ahead of where you're going
+  const want = clamp(P.x - W * .38 + P.face * 20, 0, lvl.len - W);
+  camX += (want - camX) * Math.min(1, dt * 5);
+}
+
+function stepPushed(pt, dt) {
+  if (pt.state === 'idle' && P.x > pt.x - 250 && mode === 'play') { pt.state = 'push'; floatText(pt.cart.x + pt.cart.w / 2, GY - 50, L('A barraca empurra a tenda!', 'The stall is pushing the tent!'), '#ff8aa8', 1.6); }
+  if (pt.state === 'push') {
+    pt.cart.x -= 42 * dt; pt.x = pt.cart.x - 16;
+    if (pt.x0 - pt.x > pt.room) { pt.state = 'lost'; pt.lostT = 1; sfx('hit'); floatText(pt.x, GY - 30, L('Tenda despejada', 'Tent evicted'), '#ff8aa8', 1.8); }
+  }
+  if (pt.state === 'push' || pt.state === 'idle') { // stand by it to peg it down: the stall stops there
+    const by = Math.abs(P.x + 5 - pt.x) < 26 && P.ground && Math.abs(P.vx) < 60;
+    if (by) { pt.fix += dt / .6; if (pt.fix >= 1) { pt.state = 'fixed'; sfx('save'); floatText(pt.x, GY - 30, L('Tenda fincada! A barraca parou', 'Tent pegged down! The stall stopped'), '#b6ff3b', 1.8); } }
+    else pt.fix = Math.max(0, pt.fix - dt);
+  }
+  if (pt.state === 'lost') pt.lostT = Math.max(0, pt.lostT - dt);
+  // the cart pushes you too
+  const cart = { x: pt.cart.x, y: GY - 40, w: pt.cart.w, h: 40 };
+  if (hits(P, cart, 1) && P.y + P.h > GY - 36 && P.x + P.w / 2 < cart.x + cart.w / 2) P.x = cart.x - P.w;
+}
+function stepPorto(dt) {
+  const F = lvl.frost;
+  // the rink's ice spreads from the left, and never falls far behind: it stays at the edge of the screen
+  if (F.wait > 0) F.wait -= dt; else if (mode === 'play') F.x += (F.v + Math.min(16, P.x / 280) + Math.max(0, P.x - F.x - 130) * .6) * dt;
+  if (mode === 'play' && P.x < F.x - 2) { hurt(F.x - 60); P.x = Math.max(P.x, F.x + 4); F.x = Math.max(F.x - 90, -170); } // pushed forward, out of the ice
+  for (const tn of lvl.tents) {
+    const pu = tn.pusher;
+    if (pu) { // a skater or riot police push the tent toward the ice, until it's pegged down, frozen or 150 px on
+      if (pu.state === 'idle' && P.x > tn.x - 240 && mode === 'play') { pu.state = 'push'; floatText(tn.x + 20, GY - 40, pu.kind === 'skate' ? L('Com licença, vai para a pista!', 'Excuse me, it’s for the rink!') : L('Desocupem!', 'Clear out!'), '#ff8aa8', 1.6); }
+      if (pu.state === 'push') {
+        const blocked = lvl.panels.some(p => p.landed && tn.x - 18 < p.x + p.w && tn.x > p.x);
+        if (tn.saved || tn.frozen || blocked || tn.x0 - tn.x > 150) { pu.state = pu.kind === 'skate' ? 'leave' : 'patrol'; pu.a = pu.x - 50; pu.b = pu.x + 40; pu.dir = 1; }
+        else if (tn.fold <= 0) { tn.x -= (pu.kind === 'skate' ? 46 : 36) * dt; pu.x = tn.x + 16; } // while you hold the tent (pegging it down) they can't push it
+      }
+      if (pu.state === 'leave') { pu.vx = Math.min(110, pu.vx + 120 * dt); pu.x += pu.vx * dt; }
+      if (pu.state === 'patrol') { pu.x += pu.dir * 30 * dt; if (pu.x < pu.a) pu.dir = 1; if (pu.x > pu.b) pu.dir = -1; }
+      // the riot police hurt you, pushing or not (come at the tent from this side); the skaters pushing are busy
+      if (pu.kind === 'choque' && (pu.state === 'patrol' || pu.state === 'push') && hits(P, { x: pu.x, y: GY - 19, w: 10, h: 19 }, 2)) hurt(pu.x + 5);
+      if (pu.state === 'leave' && pu.x > camX + W + 60) pu.state = 'gone';
+    }
+    // stand by a tent (on the ground, nearly still) to peg it down: then it stays, and the rink has to go round it
+    const by = !tn.saved && !tn.frozen && Math.abs(P.x + 5 - tn.x) < 26 && P.ground && Math.abs(P.vx) < 60;
+    if (by) { tn.fold += dt / 1.3; if (tn.fold >= 1) { tn.saved = true; sfx('save'); floatText(tn.x, GY - 30, L('Tenda fincada! Fica!', 'Tent pegged down! It stays!'), '#b6ff3b', 1.6); } }
+    else if (!tn.saved) tn.fold = Math.max(0, tn.fold - dt);
+    if (tn.saved && !tn.held && F.x > tn.x + 10) { tn.held = true; sfx('check'); floatText(tn.x, GY - 34, L('A tenda fica! A pista que se desvie', 'The tent stays! The rink can go round'), '#b6ff3b', 2.2); }
+    if (!tn.saved && !tn.frozen && F.x > tn.x + 10) { tn.frozen = true; sfx('freeze'); floatText(tn.x, GY - 30, L('Apanhada pelo gelo', 'Caught by the ice'), '#cfe8f5', 1.8); }
+  }
+  for (const k of lvl.skaters) { // glide fast, turn round at the ends of their stretch
+    k.vx += k.dir * 160 * dt; k.vx = clamp(k.vx, -100, 100); k.x += k.vx * dt;
+    if (k.x < k.a) k.dir = 1; if (k.x > k.b) k.dir = -1;
+    if (hits(P, { x: k.x, y: GY - 19, w: 10, h: 19 }, 2)) hurt(k.x + 5);
+  }
+  // not enough tents left to win: the ice took too many
+  const savable = lvl.tents.filter(tn => !tn.frozen).length;
+  if (mode === 'play' && savable < lvl.need) { mode = 'lost'; sfx('hit'); musicOn = false; setTimeout(lostPorto, 900); }
+  // the crane: goes ahead of you and drops a piece of the rink (its shadow warns you first)
+  const C = lvl.crane;
+  C.t -= dt;
+  if (C.state === 'wait' && C.t < 0 && P.x > 250 && P.x < lvl.goal - 220 && mode === 'play') {
+    let tx = P.x + rnd(70, 150);
+    if (lvl.tents.some(tn => !tn.frozen && Math.abs(tn.x - tx) < 26)) tx += 40;
+    if (lvl.panels.some(p => Math.abs(p.x - tx) < 40)) tx += 50;
+    C.tx = Math.min(tx, lvl.goal - 120); C.state = 'move';
+  }
+  if (C.state === 'move') { const d = C.tx - C.x; C.x += Math.sign(d) * Math.min(Math.abs(d), 220 * dt); if (Math.abs(d) < 1) { C.state = 'hold'; C.t = .9; } }
+  if (C.state === 'hold' && C.t < 0) { lvl.panels.push({ x: C.x - 14, y: 46, w: 28, h: 12, vy: 0, landed: false }); C.state = 'wait'; C.t = rnd(2.4, 3.6); }
+  for (const p of lvl.panels) {
+    if (p.landed) continue;
+    p.vy += 600 * dt; p.y += p.vy * dt;
+    if (hits(P, p, 1)) hurt(p.x + p.w / 2);
+    if (p.y + p.h >= GY) { p.y = GY - p.h; p.landed = true; p.vx = -rnd(55, 85); sfx('thud'); if (hits(P, p)) { P.y = p.y - P.h; } }
+  }
+  for (const p of lvl.panels) { // landed, it slides on the ice toward you for a moment
+    if (!p.landed || !p.vx) continue;
+    p.x += p.vx * dt; p.vx += 45 * dt; if (p.vx > -4) p.vx = 0;
+    if (lvl.panels.some(o => o !== p && o.landed && Math.abs(o.x - p.x) < p.w && o.y === p.y) || lvl.tents.some(tn => !tn.frozen && Math.abs(tn.x - (p.x + p.w / 2)) < 26)) p.vx = 0;
+    if (p.vx < -25 && hits(P, p, 1) && P.y + P.h > p.y + 3) hurt(p.x + p.w);
+  }
+  lvl.panels = lvl.panels.filter(p => p.x + p.w > F.x - 10);
+}
+
+// ---------- drawing
+function drawPerson(x, y, face, frame, look) {
+  // look: { coat, scarf, hair, skin, legs, hat, back }
+  x = Math.round(x); y = Math.round(y);
+  if (look.back) { const bx = face > 0 ? x - 3 : x + 9; R(bx, y + 6, 4, 9, look.back); R(bx, y + 6, 4, 1, '#ffd23a'); R(bx, y + 14, 4, 1, '#b85d10'); }
+  const a = frame === 1 ? 1 : 0, b = frame === 2 ? 1 : 0;
+  R(x + 2, y + 13, 2, 5 - a, look.legs); R(x + 6, y + 13, 2, 5 - b, look.legs);
+  R(x + 1 + (face > 0 ? 1 : 0), y + 17 - a, 3, 1, '#f4f1ea'); R(x + 5 + (face > 0 ? 1 : 0), y + 17 - b, 3, 1, '#f4f1ea');
+  R(x + 1, y + 7, 8, 7, look.coat);
+  R(x + (face > 0 ? 8 : 0), y + 8 + (frame ? 1 : 0), 2, 4, look.coat); // the arm in front
+  if (look.scarf) { R(x + 1, y + 7, 8, 2, look.scarf); R(x + (face > 0 ? 2 : 6), y + 9, 2, 3, look.scarf); }
+  if (look.vest) { R(x + 1, y + 10, 8, 1, look.vest); R(x + 1, y + 12, 8, 1, look.vest); }
+  R(x + 2, y + 1, 6, 6, look.skin);
+  R(x + (face > 0 ? 6 : 3), y + 3, 1, 1, '#1a1010');
+  if (look.hat === 'helmet') { R(x + 1, y - 2, 8, 5, '#2a2f3a'); R(face > 0 ? x + 5 : x + 1, y + 1, 4, 3, '#7fa7c9'); }
+  else if (look.hat === 'cap') { R(x + 1, y - 1, 8, 3, '#16213e'); R(x + 1, y + 1, 8, 1, '#f4f1ea'); R(face > 0 ? x + 6 : x, y + 2, 4, 1, '#0b0b14'); }
+  else if (look.hat) { R(x + 2, y - 1, 6, 3, look.hat); R(x + 4, y - 2, 2, 1, '#f4f1ea'); }
+  else { R(x + 2, y, 6, 2, look.hair); R(face > 0 ? x + 2 : x + 7, y + 1, 1, 3, look.hair); }
+}
+const ME = { coat: '#2f8f5a', scarf: '#d22a2a', hair: '#3a2416', skin: '#e3a878', legs: '#2a3550', hat: '#d22a2a', back: '#f08a24' };
+const COP = { coat: '#1f2d55', skin: '#d9a07a', legs: '#16213e', hat: 'cap', vest: '#d8f03a' };
+const COP_SAY = () => ['', L('Despacho do presidente!', 'Mayor’s orders!'), L('Isto é para o mercado!', 'This is for the market!'), L('Desmonte a tenda!', 'Take the tent down!'), L('Circule, circule!', 'Move along!')];
+const COP_SAY_PORTO = () => ['', L('Vem aí a pista!', 'The rink is coming!'), L('Já mandámos três e-mails!', 'We sent three e-mails!'), L('Circule, circule!', 'Move along!'), L('Isto escorrega!', 'It’s slippery!')];
+
+function drawSkyAndBack() {
+  const g = ctx.createLinearGradient(0, 0, 0, GY);
+  if (lvl.n === 1) { g.addColorStop(0, '#0f1438'); g.addColorStop(1, '#3a3168'); } else { g.addColorStop(0, '#132036'); g.addColorStop(1, '#4a5a78'); }
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, GY);
+  for (let i = 0; i < 30; i++) { const sx = (hash(i, 3) * W * 2 - camX * .05) % W, sy = hash(i, 5) * 70; if (Math.sin(t * 2 + i) > -.3) R((sx + W) % W, sy, 1, 1, '#c9d2ff'); }
+  if (lvl.n === 1) drawRossioBack(); else drawPortoBack();
+}
+// ---- the backgrounds, after photos of the two squares (drawn far behind: they move at 0.35 of the camera)
+const GLASS = (i, k) => hash(i * 53 + k, 7) > .52 ? '#ffd98a' : '#2a3442'; // a window lit or not, always the same one
+function winBox(x, y, w, h, i, k, frame, bars) { R(x - 1, y - 1, w + 2, h + 2, frame); R(x, y, w, h, GLASS(i, k)); if (bars) { R(x + Math.floor(w / 2) - 1, y, 1, h, bars); R(x, y + Math.floor(h * .45), w, 1, bars); } }
+function arch(x, y, w, h, c) { R(x, y + 2, w, h - 2, c); R(x + 1, y + 1, w - 2, 1, c); R(x + 2, y, w - 4, 1, c); }
+function tri(x1, y1, x2, y2, x3, y3, c) { ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.fill(); }
+
+// Lisbon: the Baixa's Pombaline blocks, cream, with red roofs and dormers, green window frames and iron balconies
+function pombaline(x, w, i) {
+  const fl = 4, fh = 22, h = fl * fh + 14, top = GY - h, wall = '#ebe2cf', stone = '#d2c6ab';
+  R(x + 2, top - 9, w - 4, 9, '#a9472f'); for (let k = x + 3; k < x + w - 3; k += 3) R(k, top - 9, 1, 9, '#8f3a26');
+  for (let d = x + 10; d < x + w - 18; d += 26) { R(d, top - 17, 12, 9, '#e6dcc6'); R(d - 1, top - 19, 14, 2, '#a9472f'); R(d + 1, top - 21, 10, 2, '#a9472f'); R(d + 3, top - 23, 6, 2, '#a9472f'); R(d + 3, top - 15, 6, 6, GLASS(i, d)); }
+  R(x - 1, top - 2, w + 2, 3, stone); R(x, top + 1, w, h - 1, wall); R(x, top + 1, 4, h, stone); R(x + w - 4, top + 1, 4, h, stone);
+  const cols = Math.max(2, Math.floor((w - 12) / 18)), gap = (w - 8) / cols;
+  for (let r = 0; r < fl - 1; r++) for (let k = 0; k < cols; k++) {
+    const wx = Math.round(x + 4 + gap * k + gap / 2 - 4), wy = top + 8 + r * fh;
+    winBox(wx, wy, 8, 12, i, r * 10 + k, stone, '#2f5a3a');
+    if (r === fl - 2) { R(wx - 2, wy + 12, 12, 1, '#2b2b2b'); for (let b = 0; b < 6; b++) R(wx - 2 + b * 2, wy + 9, 1, 3, '#2b2b2b'); }
+  }
+  R(x, GY - fh - 1, w, 2, stone);
+  for (let k = 0; k < cols; k++) { const sx = Math.round(x + 4 + gap * k + gap / 2 - 5); arch(sx, GY - fh + 4, 10, fh - 4, '#2a2420'); if (hash(i * 7 + k, 3) > .4) R(sx + 2, GY - fh + 8, 6, 8, '#e9b860'); }
+  R(x + w - 10, GY - fh - 6, 3, 5, '#2f4a3a'); R(x + w - 11, GY - fh - 8, 5, 2, '#2f4a3a'); // a green wall lantern
+}
+function arco(x) { // the block with the arch through it: a yellow panel, a pediment, a balcony
+  pombaline(x, 72, 31); pombaline(x + 136, 80, 32);
+  const b = x + 72, top = GY - 128, stone = '#d8cfbd';
+  R(b, top, 64, 128, '#e9e4d8'); tri(b - 2, top, b + 32, top - 16, b + 66, top, '#d8cfbd'); tri(b + 10, top - 2, b + 32, top - 11, b + 54, top - 2, '#e2a93a'); R(b + 30, top - 21, 4, 5, '#cfc6b2');
+  R(b + 6, top + 14, 52, 58, '#e2ae3a'); R(b + 24, top + 26, 16, 26, stone); R(b + 26, top + 28, 12, 24, GLASS(33, 1)); R(b + 31, top + 28, 1, 24, '#2f5a3a'); tri(b + 20, top + 26, b + 32, top + 18, b + 44, top + 26, stone);
+  R(b + 16, top + 70, 32, 2, '#cfc6b2'); for (let k = 0; k < 8; k++) R(b + 17 + k * 4, top + 64, 2, 6, '#cfc6b2');
+  R(b + 4, top + 74, 56, 54, '#ded7c8'); arch(b + 18, GY - 38, 28, 38, '#1c1916'); R(b + 22, GY - 26, 20, 26, '#4a4038'); // the arch, and the street through it
+}
+function streetGap(x, w) { // between two blocks, a street of the Baixa going away into the distance (a crane far off)
+  const l = x + w * .38, r = x + w * .62, top = GY - 112, far = GY - 92;
+  ctx.fillStyle = '#ddd3bd'; ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(l, far); ctx.lineTo(l, GY - 8); ctx.lineTo(x, GY); ctx.fill();
+  ctx.fillStyle = '#c9bea6'; ctx.beginPath(); ctx.moveTo(x + w, top); ctx.lineTo(r, far); ctx.lineTo(r, GY - 8); ctx.lineTo(x + w, GY); ctx.fill();
+  for (let k = 0; k < 4; k++) for (let j = 0; j < 4; j++) { const u = .15 + k * .2; R(x + (l - x) * u, top + (far - top) * u + 8 + j * 22, 2, 6, GLASS(40, k * 4 + j)); R(x + w - (x + w - r) * u - 2, top + (far - top) * u + 8 + j * 22, 2, 6, GLASS(41, k * 4 + j)); }
+  R(l, far, r - l, GY - 8 - far, '#b9ad94'); for (let j = 0; j < 5; j++) R(l + 2, far + 4 + j * 15, r - l - 4, 3, GLASS(42, j));
+  R(l, GY - 8, r - l, 8, '#8a8070'); R(l - 1, far - 6, r - l + 2, 6, '#a9472f');
+  R(x + w * .5, far - 24, 1, 18, '#c9a43a'); R(x + w * .5 - 7, far - 24, 14, 1, '#c9a43a');
+}
+function teatroDMaria(x) { // the national theatre: wings with arched windows, a portico of six columns, a pediment with statues
+  const c = '#efece4', sh = '#d9d5ca', g = '#2a3442';
+  R(x, GY - 100, 240, 100, c); R(x + 4, GY - 112, 232, 12, '#e6e2d6'); R(x + 4, GY - 114, 232, 1, '#8f8c84');
+  for (const wx0 of [x + 8, x + 168]) for (let k = 0; k < 5; k++) for (const wy of [GY - 74, GY - 40]) { const wx = wx0 + k * 13; arch(wx, wy, 8, 14, g); R(wx - 1, wy + 14, 10, 1, '#2b2b2b'); }
+  for (const wx0 of [x + 8, x + 168]) for (let k = 0; k < 5; k++) R(wx0 + k * 13 + 1, GY - 108, 6, 4, '#b9b5aa');
+  R(x + 76, GY - 98, 88, 8, sh); tri(x + 72, GY - 98, x + 120, GY - 122, x + 168, GY - 98, sh); tri(x + 84, GY - 100, x + 120, GY - 117, x + 156, GY - 100, '#e4e0d4');
+  for (let k = 0; k < 9; k++) R(x + 98 + k * 5, GY - 107 + (k % 2), 3, 5, '#c7c2b4');
+  for (const [sx, sy] of [[x + 118, GY - 132], [x + 74, GY - 108], [x + 164, GY - 108]]) { R(sx, sy, 4, 9, '#e8e5dc'); R(sx + 1, sy - 3, 2, 3, '#e8e5dc'); }
+  for (let k = 0; k < 6; k++) { const cx = x + 82 + k * 15; R(cx, GY - 88, 6, 80, '#f6f4ee'); R(cx + 4, GY - 88, 2, 80, sh); R(cx - 1, GY - 90, 8, 3, sh); }
+  for (let k = 0; k < 5; k++) arch(x + 89 + k * 15, GY - 30, 8, 22, '#2f3a32');
+  R(x + 70, GY - 8, 100, 8, '#d8d4ca'); R(x + 64, GY - 4, 112, 4, '#cdc8bc');
+  text(L('TEATRO NACIONAL D. MARIA II', 'TEATRO NACIONAL D. MARIA II'), x + 40, GY - 3, 3, '#8f8c84');
+}
+function drawRossioBack() {
+  const p = .35, ox = -camX * p;
+  const L1 = [['p', -40, 110], ['p', 74, 100], ['p', 178, 110], ['arco', 292], ['p', 506, 104], ['gap', 612, 48], ['p', 662, 112], ['p', 778, 96], ['p', 878, 110],
+    ['p', 992, 100], ['p', 1096, 110], ['p', 1210, 96], ['p', 1310, 110], ['p', 1424, 104], ['gap', 1530, 30], ['teatro', 1562], ['p', 1806, 110], ['p', 1920, 100]];
+  for (const [k, x0, w] of L1) {
+    const x = ox + x0, wd = k === 'arco' ? 216 : k === 'teatro' ? 240 : w;
+    if (x > W + 4 || x + wd < -4) continue;
+    if (k === 'p') pombaline(x, w, x0); else if (k === 'arco') arco(x); else if (k === 'gap') streetGap(x, w); else teatroDMaria(x);
+  }
+  // the column of D. Pedro IV, in the middle of the square (nearer, so it moves faster)
+  const cx = -camX * .5 + 1000;
+  if (cx > -20 && cx < W + 20) { R(cx - 9, GY - 34, 18, 34, '#b9b2a2'); R(cx - 7, GY - 38, 14, 4, '#cfc8b8'); R(cx - 3, 30, 6, GY - 68, '#e2dccd'); R(cx - 1, 30, 1, GY - 68, '#f2eee4'); R(cx - 6, 25, 12, 5, '#cfc8b8'); R(cx - 2, 13, 4, 12, '#4e5a4a'); R(cx - 1, 9, 2, 4, '#4e5a4a'); R(cx + 2, 15, 3, 1, '#4e5a4a'); }
+  // the Christmas tree of the market
+  const gx = -camX * .6 + 1150; tri(gx, GY - 150, gx - 48, GY - 20, gx + 48, GY - 20, '#1f6b3a');
+  R(gx - 5, GY - 20, 10, 20, '#5a3418');
+  for (let k = 0; k < 26; k++) { const yy = GY - 140 + hash(k, 8) * 115, sp = (yy - (GY - 150)) / 130 * 46, xx = gx + (hash(k, 2) * 2 - 1) * sp * .9; R(xx, yy, 2, 2, ['#ffd23a', '#ff5a5a', '#8fd0ff', '#b6ff3b'][k % 4]); }
+  R(gx - 3, GY - 156, 6, 6, '#ffd23a');
+}
+
+// Porto, Praça D. João I: the Rivoli, the tall grey block with its balconies, the white bank building between two
+// horse statues, the red grid, the domed corner, granite houses with tiles and iron balconies, plane trees
+function portoOld(x, w, i) {
+  const fl = 5, fh = 19, h = fl * fh + 8, top = GY - h, cols = ['#c9c4b8', '#b8c2b0', '#d8c8a8', '#c4c9cc'], wall = cols[((i % 4) + 4) % 4];
+  R(x + 1, top - 6, w - 2, 6, '#5a5c63'); R(x - 1, top - 1, w + 2, 2, '#9a958a'); R(x, top + 1, w, h - 1, wall);
+  if (hash(i, 7) > .55) for (let yy = top + 4; yy < GY - 20; yy += 4) for (let xx = x + 2; xx < x + w - 2; xx += 4) if ((xx + yy) % 8 === 0) R(xx, yy, 2, 2, '#4f7fb8');
+  const n = Math.max(2, Math.floor(w / 15)), gap = w / n;
+  for (let r = 0; r < fl - 1; r++) for (let k = 0; k < n; k++) { const wx = Math.round(x + gap * k + gap / 2 - 3), wy = top + 5 + r * fh; winBox(wx, wy, 6, 13, i, r * 10 + k, '#e8e4da', null); R(wx - 2, wy + 13, 10, 1, '#2b2b2b'); R(wx - 2, wy + 10, 1, 3, '#2b2b2b'); R(wx + 7, wy + 10, 1, 3, '#2b2b2b'); }
+  R(x, GY - 16, w, 16, '#3b3a3f'); for (let k = 0; k < n; k++) R(Math.round(x + gap * k + gap / 2 - 4), GY - 13, 8, 10, hash(i * 9 + k, 2) > .4 ? '#e9b860' : '#2a2a30');
+}
+function rivoli(x) {
+  const c = '#f1eee6', sh = '#d9d4c6';
+  R(x + 76, GY - 136, 30, 36, '#cfccc4'); R(x + 106, GY - 146, 14, 46, '#8d8f93'); // the tower behind
+  R(x + 22, GY - 104, 128, 104, c); R(x + 22, GY - 106, 128, 3, sh);
+  R(x, GY - 110, 40, 110, c); ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(x + 20, GY - 110, 20, 5, 0, Math.PI, 0); ctx.fill(); // the round corner
+  R(x + 2, GY - 108, 36, 14, '#e2ddd0'); for (let k = 0; k < 11; k++) R(x + 4 + k * 3, GY - 106 + (k % 3), 2, 9, '#c4bfb1'); // the frieze of figures
+  for (const wy of [GY - 86, GY - 56]) { R(x + 6, wy, 28, 22, '#e4dfd2'); for (let k = 0; k < 3; k++) R(x + 8 + k * 9, wy + 2, 7, 18, GLASS(60, wy + k)); }
+  for (const wy of [GY - 84, GY - 56]) for (let k = 0; k < 4; k++) { const wx = x + 50 + k * 24; R(wx - 1, wy - 1, 18, 22, sh); for (let a = 0; a < 2; a++) for (let b = 0; b < 3; b++) R(wx + a * 8, wy + b * 7, 7, 6, GLASS(61, wy + k * 7 + a + b * 2)); }
+  text(L('TEATRO MUNICIPAL DO PORTO · RIVOLI', 'TEATRO MUNICIPAL DO PORTO · RIVOLI'), x + 92, GY - 94, 3, '#55524a');
+  R(x + 41, GY - 92, 4, 56, '#6a4a9a'); R(x + 130, GY - 92, 4, 56, '#6a4a9a'); R(x + 136, GY - 62, 12, 30, '#1d1d1d'); R(x + 139, GY - 56, 6, 6, '#e8c73a');
+  R(x, GY - 26, 150, 26, '#2c3038'); R(x, GY - 28, 150, 2, sh); for (let k = 0; k < 9; k++) R(x + 4 + k * 16, GY - 22, 10, 18, hash(k, 21) > .4 ? '#e9b860' : '#3a404a');
+}
+function greyTower(x) { // the tall grey block: balconies stacked in bands on both sides
+  const w = 110, top = GY - 150; R(x, top, w, 150, '#a9aba6'); R(x + 40, top - 6, 2, 6, '#6a6c70'); R(x + 46, top - 4, 6, 4, '#6a6c70');
+  for (let y = top + 6; y < GY - 30; y += 13) {
+    for (const bx of [x - 4, x + w - 28]) { R(bx, y + 6, 32, 3, '#c3c5c0'); R(bx, y + 9, 32, 1, '#76787b'); R(bx + 8, y, 7, 6, GLASS(70, y + bx)); R(bx + 18, y, 7, 6, GLASS(71, y + bx)); }
+    for (let k = 0; k < 6; k++) R(x + 32 + k * 8, y + 1, 4, 6, GLASS(72, y * 3 + k));
+  }
+  R(x, GY - 22, w, 22, '#4a4a4f'); R(x, GY - 24, w, 2, '#8a8c88'); for (let k = 0; k < 7; k++) R(x + 4 + k * 15, GY - 19, 11, 15, hash(k, 23) > .3 ? '#e9b860' : '#2a2a30');
+}
+function horseStatue(x) { // a rider on a rearing horse, on a red stone plinth
+  const b = '#4d4a3c'; R(x - 9, GY - 30, 18, 30, '#7a3f32'); R(x - 10, GY - 31, 20, 2, '#8a4c3e');
+  R(x - 8, GY - 42, 15, 6, b); R(x - 7, GY - 36, 2, 6, b); R(x + 3, GY - 36, 2, 6, b); R(x + 5, GY - 49, 3, 9, b); R(x + 6, GY - 52, 5, 3, b); R(x - 10, GY - 43, 3, 5, b);
+  R(x - 3, GY - 51, 4, 9, b); R(x - 2, GY - 55, 3, 4, b); R(x + 1, GY - 50, 4, 2, b);
+}
+function bankBlock(x) { // the white building in horizontal bands, a glass drum on top and a colonnade below
+  const w = 150; R(x - 12, GY - 14, w + 24, 14, '#cfcac0'); R(x, GY - 40, w, 26, '#3a3530'); for (let k = 0; k < 13; k++) R(x + 2 + k * 12, GY - 40, 4, 26, '#e9e3d6');
+  R(x, GY - 140, w, 100, '#ecebe6'); for (let y = GY - 134; y < GY - 44; y += 11) { R(x + 4, y, w - 8, 5, '#3f4a55'); for (let k = 0; k < 14; k++) if (hash(y + k, 4) > .7) R(x + 6 + k * 10, y + 1, 6, 3, '#ffd98a'); }
+  R(x + 40, GY - 154, 70, 14, '#d6d8d6'); R(x + 44, GY - 151, 62, 6, '#5a6a78'); R(x + w, GY - 124, 16, 84, '#e2e2dc');
+}
+function redGrid(x) { // the new building in a dark red grid
+  const w = 92, top = GY - 130; R(x, top, w, 130, '#3a4652');
+  for (let xx = x; xx <= x + w; xx += 11) R(xx, top, 3, 130, '#7a2630'); for (let yy = top; yy < GY; yy += 14) R(x, yy, w, 3, '#7a2630');
+  for (let xx = x + 3; xx < x + w; xx += 11) for (let yy = top + 3; yy < GY - 4; yy += 14) if (hash(xx * 3 + yy, 5) > .7) R(xx, yy, 8, 11, '#ffd98a');
+  R(x + w * .55, top, w * .45, 130, 'rgba(0,0,0,.18)');
+}
+function domeCorner(x) { // the corner building with a dome and balconies all round
+  const w = 70, top = GY - 112; R(x, top, w, 112, '#dad7d0'); for (let y = top + 8; y < GY - 20; y += 16) { R(x - 2, y + 11, w + 4, 2, '#8a8c90'); for (let k = 0; k < 4; k++) winBox(x + 6 + k * 16, y, 8, 11, 80, y + k, '#eeeae2', null); }
+  ctx.fillStyle = '#8e989e'; ctx.beginPath(); ctx.ellipse(x + 35, top, 22, 22, 0, Math.PI, 0); ctx.fill(); R(x + 31, top - 30, 8, 8, '#a8b0b4'); R(x + 34, top - 36, 2, 6, '#6d7478');
+  R(x, GY - 18, w, 18, '#3b3a3f');
+}
+function planeTree(x, s) { for (const [dx, dy, r, c] of [[0, -50, 20, '#2f5a32'], [-14, -40, 16, '#3a6b3c'], [14, -40, 16, '#2f5a32'], [0, -34, 18, '#447a44']]) { ctx.fillStyle = c; ctx.beginPath(); ctx.arc(x + dx * s, GY + dy * s, r * s, 0, Math.PI * 2); ctx.fill(); } R(x - 2, GY - 24 * s, 4, 24 * s, '#5a4a3a'); }
+function drawPortoBack() {
+  const p = .35, ox = -camX * p;
+  const L2 = [['old', -40, 70], ['rivoli', 34], ['grey', 192], ['old', 312, 64], ['old', 380, 60], ['horse', 470], ['bank', 492], ['horse', 676], ['red', 696], ['dome', 794], ['old', 870, 64],
+    ['old', 938, 70], ['grey', 1014], ['old', 1130, 64], ['old', 1198, 60], ['red', 1264], ['dome', 1362], ['old', 1438, 70], ['old', 1512, 64], ['grey', 1582], ['old', 1698, 64], ['old', 1766, 70], ['old', 1840, 64], ['old', 1908, 70]];
+  for (const [k, x0, w] of L2) {
+    const x = ox + x0, wd = { rivoli: 150, grey: 110, bank: 166, red: 92, dome: 70, horse: 20 }[k] || w;
+    if (x > W + 30 || x + wd < -30) continue;
+    ({ old: () => portoOld(x, w, x0), rivoli: () => rivoli(x), grey: () => greyTower(x), horse: () => horseStatue(x), bank: () => bankBlock(x), red: () => redGrid(x), dome: () => domeCorner(x) })[k]();
+  }
+  // the crane's tower far away, and plane trees nearer
+  const kx = -camX * .6 + 900; for (let yy = 30; yy < GY; yy += 6) { R(kx, yy, 1, 6, '#e8b21c'); R(kx + 8, yy, 1, 6, '#e8b21c'); R(kx, yy + 5, 9, 1, '#e8b21c'); }
+  for (let k = 0; k < 14; k++) { const tx = -camX * .5 + 420 + k * 170 + hash(k, 2) * 50; if (tx > -40 && tx < W + 40) planeTree(tx, .9 + hash(k, 3) * .3); }
+}
+function drawLights() { // Christmas lights across the square, between lamp posts
+  const sp = 160;
+  for (let i = Math.floor(camX / sp) - 1; i < Math.floor((camX + W) / sp) + 2; i++) {
+    const x0 = i * sp; R(x0, GY - 96, 2, 96, '#2b2b33'); R(x0 - 3, GY - 98, 8, 3, '#2b2b33'); R(x0 - 1, GY - 95, 4, 3, '#ffe9a8');
+    for (let k = 1; k < 16; k++) { const u = k / 16, x = x0 + u * sp, y = GY - 92 + Math.sin(u * Math.PI) * 18; R(x, y, 2, 2, (Math.floor(t * 2) + k + i) % 3 ? ['#ffd23a', '#ff5a5a', '#8fd0ff', '#b6ff3b'][(k + i) % 4] : '#4a4040'); }
+  }
+}
+function drawGround() {
+  if (!lvl.ice) { // the Rossio's waves in black and white stone
+    R(camX - 2, GY, W + 4, H - GY, '#ece6d6');
+    const x0 = Math.floor(camX / 2) * 2;
+    for (let x = x0; x < camX + W + 2; x += 2) for (let k = 0; k < 4; k++) { const y = GY + 4 + k * 8 + Math.sin(x / 11) * 3; R(x, y, 2, 3, '#26262b'); }
+    R(camX - 2, GY, W + 4, 1, '#b9b2a2');
+  } else { // ice
+    R(camX - 2, GY, W + 4, H - GY, '#cfe8f5'); R(camX - 2, GY, W + 4, 2, '#f4fbff');
+    for (let i = Math.floor(camX / 37); i < (camX + W) / 37 + 1; i++) { const x = i * 37 + hash(i, 3) * 20; R(x, GY + 6 + hash(i, 4) * 20, 12 + hash(i, 6) * 10, 1, '#ffffff'); R(x + 4, GY + 12 + hash(i, 5) * 14, 8, 1, '#a9cfe6'); }
+  }
+}
+function drawStall(s) {
+  const x = s.x, w = s.w, top = GY - 40;
+  R(x - 3, top - 1, w + 6, 4, '#f4f1ea'); R(x - 1, top + 3, w + 2, 3, '#7a3b1e');
+  R(x, top + 6, w, 34, '#a0602f'); for (let k = top + 9; k < GY; k += 4) R(x, k, w, 1, '#8a4f25');
+  R(x + 3, top + 7, w - 6, 9, '#f4f1ea'); text(s.sign, x + w / 2, top + 14, 5, '#b02a2a');
+  R(x + 4, top + 18, w - 8, 11, '#3a1d0f');
+  for (let k = 0; k < (w - 12) / 6; k++) R(x + 6 + k * 6, top + 24, 4, 5, ['#ffd23a', '#e2533c', '#f4f1ea', '#55b05a'][k % 4]);
+  R(x + 2, top + 29, w - 4, 3, '#c98a4a');
+  for (let k = 0; k < w / 6; k++) R(x - 2 + k * 6, top + 2, 2, 2, (Math.floor(t * 3) + k) % 2 ? '#ffd23a' : '#ff5a5a');
+}
+function drawTag(tg) {
+  const h = Math.round(tg.h), w = Math.round(tg.cw), x = Math.round(tg.x - w / 2), y = GY - h;
+  R(x - 1, y + 2, w + 2, h - 2, '#7a1414'); R(x + 2, y - 1, w - 4, 3, '#7a1414');
+  R(x, y + 3, w, h - 3, '#fff6d8'); R(x + 3, y, w - 6, 3, '#fff6d8');
+  R(tg.x - 1, y + 3, 3, 3, '#7a1414');
+  const big = clamp(Math.round(h * .32), 6, 16);
+  if (h > 24) { tg.name.forEach((ln, i) => text(ln, tg.x, y + 13 + i * 7, 5, '#7a1414')); text(tg.price, tg.x, GY - 5, big, '#d22a2a'); }
+  else text(tg.price, tg.x, GY - 3, 6, '#d22a2a');
+}
+function drawCop(c, sayList) {
+  if (c.fall > 0) { // on the ice, on his back
+    const x = Math.round(c.x), y = GY - 6; R(x - 4, y, 18, 6, '#1f2d55'); R(x - 4, y + 2, 18, 1, '#d8f03a'); R(x + 12, y - 1, 5, 5, '#d9a07a'); R(x + 16, y - 2, 3, 6, '#16213e'); return;
+  }
+  drawPerson(c.x, c.y, c.vx >= 0 ? 1 : -1, Math.floor(t * 6 + c.a) % 3, COP);
+  if (Math.abs(P.x - c.x) < 150 && c.say) bubble(sayList[c.say], c.x + 5, c.y - 3);
+}
+function drawFlyer(f) {
+  ctx.save(); ctx.translate(Math.round(f.x), Math.round(f.y)); ctx.rotate(Math.sin(f.ph * .7) * .18);
+  const w = f.w, h = f.h;
+  if (lvl.n === 1) { // the order, stamped
+    R(-w / 2 + 2, -h / 2 + 2, w, h, 'rgba(0,0,0,.35)'); R(-w / 2, -h / 2, w, h, '#f7f5ee');
+    for (let k = 0; k < 5; k++) R(-w / 2 + 4, -h / 2 + 4 + k * 4, w - 8 - (k % 2) * 8, 1, '#9a968c');
+    ctx.rotate(-.15); ctx.strokeStyle = '#d22a2a'; ctx.lineWidth = 1.2; ctx.strokeRect(-w / 2 + 3, -4, w - 6, 9); text(L('DESPACHO', 'ORDER'), 0, 3, 5, '#d22a2a');
+  } else { // an e-mail from the town hall
+    R(-w / 2 + 2, -h / 2 + 2, w, h, 'rgba(0,0,0,.35)'); R(-w / 2, -h / 2, w, h, '#f1ead8');
+    ctx.strokeStyle = '#b9ad94'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-w / 2, -h / 2); ctx.lineTo(0, 1); ctx.lineTo(w / 2, -h / 2); ctx.stroke();
+    text('@', -w / 2 + 6, h / 2 - 3, 7, '#3a8fd8', 'center', 'Jost', '800');
+    text(L(`${f.mail}.º e-mail`, `e-mail #${f.mail}`), 3, h / 2 - 3, 6, '#b02a2a', 'center', 'Jost', '800');
+  }
+  ctx.restore();
+}
+function drawCravo(c) {
+  if (c.got) return; const b = Math.sin(t * 3 + c.x) * 1.5, x = Math.round(c.x), y = Math.round(c.y + b);
+  R(x, y, 1, 8, '#3b8a3a'); R(x + 1, y + 4, 2, 1, '#3b8a3a'); R(x - 2, y - 3, 5, 3, '#d22a2a'); R(x - 1, y - 4, 3, 1, '#ff5a5a'); R(x - 3, y - 2, 1, 1, '#d22a2a'); R(x + 3, y - 2, 1, 1, '#d22a2a');
+}
+function drawCheck(c) {
+  const x = c.x; R(x, GY - 34, 2, 34, '#5a5048'); R(x + 2, GY - 34, 34, 12, c.on ? '#b6ff3b' : '#d22a2a');
+  text(L('ASSEMBLEIA', 'ASSEMBLY'), x + 19, GY - 26, 4, c.on ? '#0b0a0a' : '#f4f1ea');
+}
+function drawTent(x, col, frozen, sq = 0, tilt = 0) {
+  x = Math.round(x); const h = 16 - Math.round(sq * 24), sp = 14 + Math.round(sq * 10); // squashed when bounced on
+  ctx.save(); if (tilt) { ctx.translate(x, GY); ctx.rotate(-tilt); ctx.translate(-x, -GY); }
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(x - sp, GY); ctx.lineTo(x, GY - h); ctx.lineTo(x + sp, GY); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.moveTo(x - 3, GY); ctx.lineTo(x, GY - h * .55); ctx.lineTo(x + 3, GY); ctx.fill();
+  R(x, GY - h - 2, 1, 3, '#5a5048'); ctx.restore();
+  if (frozen) { R(x - 17, GY - 22, 34, 22, 'rgba(207,232,245,.75)'); R(x - 17, GY - 22, 34, 2, '#ffffff'); R(x - 13, GY - 18, 2, 8, '#ffffff'); }
+}
+function drawGoal() {
+  const x = lvl.goal;
+  if (lvl.n === 1) {
+    R(x + 20, GY - 46, 2, 46, '#5a5048'); R(x + 22, GY - 46, 58, 14, '#ffd23a'); text(L('CENTRO DA PRAÇA', 'MIDDLE OF THE SQUARE'), x + 51, GY - 37, 4, '#0b0a0a');
+    if (mode === 'done') { drawTent(x + 40, '#f08a24', false); outlined(L('DAQUI NÃO SAIO', 'I’M NOT LEAVING'), x + 46, GY - 60, 8, '#ffd23a'); }
+    else for (let k = 0; k < 3; k++) R(x + 30 + k * 10, GY - 2, 6, 2, '#d22a2a');
+  } else {
+    R(x + 20, GY - 46, 2, 46, '#5a5048'); R(x + 22, GY - 46, 66, 14, '#b6ff3b'); text(L('AQUI FICA A ACAMPADA', 'THE CAMP STAYS HERE'), x + 55, GY - 37, 4, '#0b0a0a');
+    if (mode === 'done') outlined(L('A ACAMPADA FICA', 'THE CAMP STAYS'), x + 55, GY - 60, 8, '#b6ff3b');
+  }
+}
+function drawFrost() {
+  const F = lvl.frost, fx = Math.round(F.x);
+  if (fx < camX - 10) return;
+  R(camX - 2, 40, fx - camX + 2, GY - 40, 'rgba(207,232,245,.55)');
+  R(camX - 2, GY - 22, fx - camX + 2, 22, 'rgba(240,250,255,.85)');
+  for (let x = Math.floor(camX / 14) * 14; x < fx; x += 14) { R(x, GY - 22, 12, 3, '#3a8fd8'); R(x, GY - 19, 1, 19, '#a9cfe6'); } // the rink's boards
+  for (let y = 40; y < GY; y += 6) R(fx - (y % 12 ? 2 : 5), y, y % 12 ? 2 : 5, 4, '#ffffff'); // the jagged edge
+  for (let i = 0; i < 10; i++) { const sx = fx - 10 - hash(i, 2) * 120, sy = 50 + ((hash(i, 3) * 130 + t * 20) % 130); if (sx > camX) { R(sx, sy, 3, 1, '#ffffff'); R(sx + 1, sy - 1, 1, 3, '#ffffff'); } }
+  R(fx - 64, 70, 60, 14, '#3a8fd8'); text(L('PISTA DE GELO', 'ICE RINK'), fx - 34, 79, 5, '#ffffff');
+}
+function drawCrane() {
+  const C = lvl.crane, sx = C.x;
+  const J = 36; // the jib, under the title
+  R(camX - 2, J, W + 4, 3, '#e8b21c'); for (let x = Math.floor(camX / 8) * 8; x < camX + W; x += 8) R(x, J + 3, 1, 4, '#e8b21c'); R(camX - 2, J + 6, W + 4, 1, '#e8b21c');
+  R(sx - 5, J - 2, 10, 9, '#4a4a52');
+  if (C.state === 'hold' || C.state === 'move') { R(sx, J + 7, 1, 3, '#2b2b33'); R(sx - 14, J + 10, 28, 12, '#dff2fb'); R(sx - 14, J + 10, 28, 2, '#ffffff'); }
+  if (C.state === 'hold') { const a = .25 + .2 * Math.sin(t * 20); R(sx - 15, GY - 1, 30, 2, `rgba(0,0,0,${a})`); }
+  for (const p of lvl.panels) if (!p.landed) R(p.x - 1, GY - 1, p.w + 2, 2, 'rgba(0,0,0,.35)');
+}
+function drawPanel(p) { R(p.x, p.y, p.w, p.h, '#dff2fb'); R(p.x, p.y, p.w, 2, '#ffffff'); R(p.x, p.y + p.h - 2, p.w, 2, '#a9cfe6'); R(p.x + 4, p.y + 4, 8, 1, '#ffffff'); }
+function drawCamara(c) { // a piece of the town hall with its balcony: a hand waves the order out of the door
+  const x = c.x, top = GY - 150, porto = lvl.n === 2;
+  R(x, top, 120, 150, porto ? '#b9b2a6' : '#eadfc4'); R(x - 4, top - 4, 128, 6, porto ? '#8c8579' : '#cdbf9e');
+  for (let k = 0; k < 3; k++) { R(x + 12 + k * 38, top + 24, 18, 26, '#2a2f45'); R(x + 12 + k * 38, top + 120 - 18, 18, 30, '#2a2f45'); }
+  R(x + 14, top + 6, 92, 12, '#7a1414'); text(porto ? L('CÂMARA MUNICIPAL DO PORTO', 'PORTO CITY HALL') : L('CÂMARA MUNICIPAL', 'CITY HALL'), x + 60, top + 14, 4, '#f4f1ea');
+  R(x + 44, top + 54, 32, 34, '#3a2414'); // the balcony door
+  const wave = Math.sin(t * 8) * 3;
+  R(x + 58, top + 70 + wave, 3, 10, '#2a2f45'); R(x + 57, top + 66 + wave, 5, 4, '#d9a07a'); // an arm in a suit, a hand
+  R(x + 52, top + 56 + wave, 16, 11, '#f7f5ee'); R(x + 55, top + 60 + wave, 10, 3, '#d22a2a'); // the paper
+  R(x + 34, top + 88, 52, 3, '#3a3a42'); for (let k = 0; k < 9; k++) R(x + 35 + k * 6, top + 78, 1, 10, '#3a3a42'); R(x + 34, top + 77, 52, 2, '#3a3a42');
+  if (Math.abs(P.x - (x + 60)) < 200) bubble(c.say, x + 60, top + 52);
+}
+function drawPortoTent(tn) {
+  if (tn.saved) return; // pegged down: drawn over the ice (drawPegged)
+  drawTent(tn.x, tn.col, tn.frozen, tn.sq);
+  if (!tn.frozen) for (let k = 0; k < tn.ppl; k++) { const px = tn.x - 22 - k * 8; R(px, GY - 8, 6, 5, k ? '#9b59d0' : '#e2533c'); R(px + 1, GY - 13, 4, 4, '#e3a878'); R(px, GY - 3, 6, 3, '#2a3550'); }
+  if (!tn.frozen && tn.fold > 0) { R(tn.x - 12, GY - 28, 24, 4, '#0b0a0a'); R(tn.x - 11, GY - 27, 22 * tn.fold, 2, '#b6ff3b'); outlined(L('a fincar…', 'pegging…'), tn.x, GY - 32, 5, '#b6ff3b', 'center', 'Jost', '800'); }
+  else if (!tn.frozen && Math.abs(P.x - tn.x) < 120) outlined(L('PARA AQUI', 'STOP HERE'), tn.x, GY - 24 + Math.sin(t * 6) * 2, 5, '#ffd23a');
+}
+function drawPegged(tn) { // a pegged tent: it stays, and once the ice has reached it, it stands in a ring of clear ground
+  const inIce = lvl.frost.x > tn.x - 20, cheer = inIce && Math.floor(t * 3) % 2;
+  if (inIce) { ctx.fillStyle = '#b9b2a6'; ctx.beginPath(); ctx.ellipse(tn.x - 6, GY + 3, 36, 6, 0, 0, Math.PI * 2); ctx.fill(); }
+  drawTent(tn.x, tn.col, false, tn.sq);
+  R(tn.x - 17, GY - 3, 2, 4, '#ffd23a'); R(tn.x + 15, GY - 3, 2, 4, '#ffd23a'); R(tn.x - 16, GY - 3, 4, 1, '#f4f1ea'); R(tn.x + 12, GY - 3, 4, 1, '#f4f1ea'); // pegs and ropes
+  for (let k = 0; k < tn.ppl; k++) { const px = tn.x - 22 - k * 8; R(px, GY - 8, 6, 5, k ? '#9b59d0' : '#e2533c'); R(px + 1, GY - 13, 4, 4, '#e3a878'); R(px, GY - 3, 6, 3, '#2a3550'); if (cheer) { R(px - 1, GY - 15, 1, 4, '#e3a878'); R(px + 6, GY - 15, 1, 4, '#e3a878'); } }
+}
+const SKATER = { coat: '#e2533c', scarf: '#f4f1ea', hair: '#e8c070', skin: '#f0c8a0', legs: '#2a3550', hat: '#3a8fd8' };
+const CHOQUE = { coat: '#22252b', skin: '#d9a07a', legs: '#16181d', hat: 'helmet' };
+function drawPusher(pu) {
+  if (!pu || pu.state === 'gone') return;
+  const pushing = pu.state === 'push', face = pushing ? -1 : pu.state === 'leave' ? 1 : pu.dir, fr = Math.floor(t * 7 + pu.x) % 3;
+  if (pu.kind === 'skate') {
+    drawPerson(pu.x, GY - 19, face, pushing ? fr : 0, SKATER);
+    R(pu.x, GY - 1, 11, 1, '#c9d2da'); // the blades
+    if (!pushing) { R(pu.x - 4, GY - 11, 4, 2, '#e2533c'); R(pu.x + 10, GY - 11, 4, 2, '#e2533c'); } // arms out, gliding
+  } else {
+    drawPerson(pu.x, GY - 19, face, fr, CHOQUE);
+    const bx = face > 0 ? pu.x + 10 : pu.x - 2; R(bx, GY - 22 + (fr === 1 ? 1 : 0), 2, 9, '#6a707c'); // the baton, raised
+  }
+}
+function drawCart(pt) { // a market stall on wheels
+  const x = Math.round(pt.cart.x), w = pt.cart.w, top = GY - 40;
+  R(x - 2, top - 1, w + 4, 4, '#f4f1ea'); R(x, top + 3, w, 31, '#a0602f'); for (let k = top + 6; k < GY - 6; k += 4) R(x, k, w, 1, '#8a4f25');
+  R(x + 3, top + 6, w - 6, 8, '#f4f1ea'); text(L('MERCADO', 'MARKET'), x + w / 2, top + 12, 4, '#b02a2a');
+  R(x + 4, top + 16, w - 8, 10, '#3a1d0f');
+  for (const wx of [x + 6, x + w - 14]) { R(wx, GY - 7, 8, 7, '#2b2b33'); R(wx + 3, GY - 4, 2, 2, '#a9a39a'); }
+}
+function drawPushTent(pt) {
+  if (pt.state === 'lost') { if (pt.lostT > 0) { ctx.globalAlpha = pt.lostT; drawTent(pt.x - (1 - pt.lostT) * 20, pt.col, false, 0, (1 - pt.lostT) * 1.4); ctx.globalAlpha = 1; } return; }
+  drawTent(pt.x, pt.col, false, pt.sq);
+  if (pt.state === 'fixed') { R(pt.x - 16, GY - 2, 2, 3, '#ffd23a'); R(pt.x + 14, GY - 2, 2, 3, '#ffd23a'); return; }
+  if (pt.fix > 0) { R(pt.x - 12, GY - 28, 24, 4, '#0b0a0a'); R(pt.x - 11, GY - 27, 22 * pt.fix, 2, '#b6ff3b'); outlined(L('a fincar…', 'pegging…'), pt.x, GY - 32, 5, '#b6ff3b', 'center', 'Jost', '800'); }
+  else if (Math.abs(P.x - pt.x) < 160) outlined(L('PARA AQUI', 'STOP HERE'), pt.x, GY - 24 + Math.sin(t * 6) * 2, 5, '#ffd23a');
+}
+function drawHUD() {
+  for (let i = 0; i < 3; i++) { const x = 8 + i * 13, y = 8, c = i < P.hearts ? '#d22a2a' : '#3a2a2a'; R(x + 1, y, 3, 2, c); R(x + 6, y, 3, 2, c); R(x, y + 2, 10, 3, c); R(x + 1, y + 5, 8, 2, c); R(x + 3, y + 7, 4, 2, c); R(x + 4, y + 9, 2, 1, c); }
+  R(50, 8, 1, 7, '#3b8a3a'); R(48, 6, 5, 3, '#d22a2a'); outlined('× ' + stats.cravos, 56, 15, 7, '#f4f1ea', 'left');
+  if (lvl.n === 2) outlined(L('TENDAS FINCADAS ', 'TENTS PEGGED ') + lvl.tents.filter(tn => tn.saved).length + '/' + lvl.tents.length + L(' · MÍNIMO ', ' · AT LEAST ') + lvl.need, 8, 28, 6, '#b6ff3b', 'left');
+  else if (lvl.pushT.length) outlined(L('TENDAS FINCADAS ', 'TENTS PEGGED ') + lvl.pushT.filter(pt => pt.state === 'fixed').length + '/' + lvl.pushT.length, 8, 28, 6, '#b6ff3b', 'left');
+  outlined(lvl.name, W / 2, 15, 7, '#ffd23a');
+  const pr = clamp((P.x - START) / (lvl.goal - START), 0, 1); R(W / 2 - 50, 20, 100, 2, '#3a3436'); R(W / 2 - 50, 20, 100 * pr, 2, '#ffd23a');
+}
+function draw() {
+  ctx.setTransform(SC, 0, 0, SC, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  if (!lvl) { R(0, 0, W, H, '#0b0a0a'); return; }
+  drawSkyAndBack();
+  const cx = Math.round(camX); ctx.save(); ctx.translate(-cx, 0);
+  drawLights();
+  drawGround();
+  if (lvl.n === 2) { drawCrane(); for (const tn of lvl.tents) { drawPortoTent(tn); drawPusher(tn.pusher); } }
+  for (const k of lvl.skaters) if (Math.abs(k.x - camX - W / 2) < W) { drawPerson(k.x, GY - 19, k.vx >= 0 ? 1 : -1, 0, { ...SKATER, coat: k.col }); R(k.x, GY - 1, 11, 1, '#c9d2da'); R(k.x - 4, GY - 11, 4, 2, k.col); R(k.x + 10, GY - 11, 4, 2, k.col); }
+  if (Math.abs(lvl.camara.x - camX - W / 2) < W) drawCamara(lvl.camara);
+  for (const c of lvl.checks) drawCheck(c);
+  for (const s of lvl.stalls) if (s.x + s.w > camX - 10 && s.x < camX + W + 10) drawStall(s);
+  for (const c of lvl.camp) if (Math.abs(c.x - camX - W / 2) < W) drawTent(c.x, c.col, false, c.sq);
+  for (const pt of lvl.pushT) if (Math.abs(pt.x - camX - W / 2) < W) { drawPushTent(pt); drawCart(pt); }
+  for (const tg of lvl.tags) if (Math.abs(tg.x - camX - W / 2) < W) drawTag(tg);
+  for (const p of lvl.panels) drawPanel(p);
+  drawGoal();
+  for (const c of lvl.cravos) drawCravo(c);
+  const say = lvl.n === 1 ? COP_SAY() : COP_SAY_PORTO();
+  for (const c of lvl.cops) if (Math.abs(c.x - camX - W / 2) < W) drawCop(c, say);
+  if (!(P.inv > 0 && Math.floor(t * 12) % 2)) { const fr = !P.ground ? 1 : Math.abs(P.vx) > 15 ? 1 + Math.floor(P.anim * 2) % 2 : 0; drawPerson(P.x, P.y, P.face, fr, mode === 'done' && lvl.n === 1 ? { ...ME, back: null } : ME); }
+  for (const f of lvl.flyers) drawFlyer(f);
+  for (const f of lvl.flyers) if (Math.abs(f.x - P.x) < 120 && f.x > P.x - 20) bubble(lvl.camara.say, f.x, f.y - f.h / 2 - 2);
+  if (lvl.n === 2) { drawFrost(); for (const tn of lvl.tents) if (tn.saved && Math.abs(tn.x - camX - W / 2) < W) drawPegged(tn); }
+  for (const f of lvl.floats) { ctx.globalAlpha = clamp(f.t / f.life * 2, 0, 1); outlined(f.s, f.x, f.y, 6, f.c, 'center', 'Jost', '800'); ctx.globalAlpha = 1; }
+  ctx.restore();
+  for (const s of lvl.snow) if (lvl.n === 2 || s.s === 2) R(s.x, s.y, s.s, s.s, lvl.n === 2 ? '#ffffff' : 'rgba(255,233,168,.6)');
+  drawHUD();
+}
+
+// ---------- screens
+function show(html) { ov.innerHTML = html; ov.hidden = false; const b = ov.querySelector('button.big'); if (b && !isTouch) b.focus(); }
+function title() {
+  mode = 'title'; lvl = null; stats = { cravos: 0, cravosAll: 0, tents: 0, tentsAll: 0, fixed: 0, fixedAll: 0 };
+  show(`<div class="card"><p class="kick">ACAMPADA PIXEL · ${L('MINI-JOGO', 'MINI-GAME')}</p><h1>${L('Natal na praça', 'Christmas in the square')}</h1>
+  <p>${L('O <b>mercado de Natal</b> quer o Rossio. A <b>pista de gelo</b> quer a Praça D. João I. A acampada pela habitação já lá está.', 'The <b>Christmas market</b> wants the Rossio. The <b>ice rink</b> wants Praça D. João I. The camp for housing is already there.')}</p>
+  <p class="small">${isTouch ? L('◀︎ ▶︎ para andar, SALTAR para saltar.', '◀︎ ▶︎ to move, JUMP to jump.') : L('Setas ou A/D para andar · Espaço ou ↑ para saltar · P pausa · M som', 'Arrows or A/D to move · Space or ↑ to jump · P pause · M sound')}</p>
+  <div class="btns"><button class="big" id="go">${L('Jogar', 'Play')} →</button><a class="big alt" href="./">${L('Acampada Pixel', 'Acampada Pixel')}</a></div>
+  <p class="small" style="margin-top:14px"><a href="#" id="lang" style="color:var(--dim)">${LANG === 'en' ? 'Português' : 'English'}</a></p></div>`);
+  document.getElementById('go').onclick = () => { audioOn(); intro(1); };
+  document.getElementById('lang').onclick = e => { e.preventDefault(); LANG = LANG === 'en' ? 'pt' : 'en'; try { localStorage.setItem('acampada-lang', LANG); } catch (x) {} fit(); title(); };
+}
+function intro(n) {
+  mode = 'intro';
+  const body = n === 1
+    ? L('Lisboa, 13 de novembro: as barracas do mercado de Natal começam a montar-se em cima da acampada. Leva a tua tenda até ao <b>centro da praça</b>. Salta as etiquetas de preços, foge do <b>despacho</b> e da <b>Polícia Municipal</b>. Há barracas sobre rodas a empurrar tendas: <b>para junto delas</b> para as fincar. E salta nas tendas para ir mais alto!', 'Lisbon, 13 November: the Christmas market stalls go up on top of the camp. Carry your tent to the <b>middle of the square</b>. Jump the price tags, dodge the <b>order</b> and the <b>Municipal Police</b>. Stalls on wheels are pushing tents out: <b>stop by them</b> to peg them down. And bounce on the tents to go higher!')
+    : L('Porto, 13 de novembro: começa a montagem da pista de gelo em frente ao Rivoli. O chão <b>escorrega</b>. O gelo da pista avança pela praça: <b>para junto de cada tenda</b> para a fincar antes que o gelo a apanhe: tenda fincada fica, e a pista que se desvie. Patinadores e polícia de choque empurram tendas para o gelo. Precisas de fincar pelo menos <b>6 tendas</b>. Cuidado com os patinadores à solta, com as peças que a grua larga (escorregam!) e com os e-mails da Câmara.', 'Porto, 13 November: the ice rink goes up in front of the Rivoli. The floor is <b>slippery</b>. The rink’s ice spreads across the square: <b>stop by each tent</b> to peg it down before the ice gets it: a pegged tent stays, and the rink has to go round it. Skaters and riot police push tents onto the ice. You need to peg at least <b>6 tents</b>. Mind the loose skaters, the pieces the crane drops (they slide!) and the town hall’s e-mails.');
+  show(`<div class="card"><p class="kick">${L('NÍVEL', 'LEVEL')} ${n} / 2</p><h2>${n === 1 ? L('Rossio · Lisboa', 'Rossio · Lisbon') : 'Praça D. João I · Porto'}</h2><p>${body}</p>
+  <div class="btns"><button class="big" id="go">${L('Começar', 'Start')} →</button></div></div>`);
+  document.getElementById('go').onclick = () => { audioOn(); startLevel(n); };
+}
+function lostPorto() {
+  if (mode !== 'lost') return;
+  show(`<div class="card"><p class="kick">${L('PRAÇA D. JOÃO I', 'PRAÇA D. JOÃO I')}</p><h2>${L('O gelo apanhou demasiadas tendas', 'The ice caught too many tents')}</h2>
+  <p>${L(`Para a acampada ficar são precisas pelo menos <b>${lvl.need} tendas fincadas</b>. Tenta outra vez!`, `The camp needs at least <b>${lvl.need} tents pegged down</b> to stay. Try again!`)}</p>
+  <div class="btns"><button class="big" id="go">${L('Tentar outra vez', 'Try again')}</button></div></div>`);
+  document.getElementById('go').onclick = () => { audioOn(); stats.cravos = lvl.c0; startLevel(2); };
+}
+function levelEnd() {
+  stats.cravosAll += lvl.cravos.length;
+  if (lvl.n === 1) {
+    stats.fixed = lvl.pushT.filter(pt => pt.state === 'fixed').length; stats.fixedAll = lvl.pushT.length;
+    show(`<div class="card"><p class="kick">${L('NÍVEL 1 · FEITO', 'LEVEL 1 · DONE')}</p><h2>${L('Tenda montada no Rossio', 'Tent up in the Rossio')}</h2>
+    <p>${L('O tribunal deixou ficar até <b>24 de novembro</b>, dia da votação final do Orçamento. O mercado que se arranje ao lado.', 'The court let the camp stay until <b>24 November</b>, the day of the final budget vote. The market can fit in beside it.')}</p>
+    <p class="stats">${L('CRAVOS', 'CARNATIONS')} ${stats.cravos}<br>${L('TENDAS FINCADAS', 'TENTS PEGGED')} ${stats.fixed} / ${stats.fixedAll}</p><div class="btns"><button class="big" id="go">${L('Seguir para o Porto', 'On to Porto')} →</button></div></div>`);
+    document.getElementById('go').onclick = () => intro(2);
+  } else {
+    const saved = lvl.tents.filter(tn => tn.saved).length; stats.tents = saved; stats.tentsAll = lvl.tents.length;
+    final();
+  }
+}
+function final() {
+  mode = 'end';
+  show(`<div class="card"><p class="kick">24 ${L('DE NOVEMBRO', 'NOVEMBER')}</p><h1>${L('A acampada continua', 'The camp goes on')}</h1>
+  <p>${L('Nem o mercado de Natal nem a pista de gelo. <b>Saímos nos nossos termos.</b>', 'Not for the Christmas market, not for the ice rink. <b>We leave on our own terms.</b>')}</p>
+  <p class="stats">${L('CRAVOS', 'CARNATIONS')} ${stats.cravos} / ${stats.cravosAll}<br>${L('TENDAS FINCADAS NO ROSSIO', 'TENTS PEGGED IN THE ROSSIO')} ${stats.fixed} / ${stats.fixedAll}<br>${L('TENDAS QUE FICARAM NO PORTO', 'TENTS THAT STAYED IN PORTO')} ${stats.tents} / ${stats.tentsAll}</p>
+  <div class="btns"><button class="big" id="go">${L('Jogar outra vez', 'Play again')}</button><a class="big alt" href="./">${L('Voltar à Acampada Pixel', 'Back to Acampada Pixel')}</a></div></div>`);
+  document.getElementById('go').onclick = () => { stats = { cravos: 0, cravosAll: 0, tents: 0, tentsAll: 0, fixed: 0, fixedAll: 0 }; intro(1); };
+}
+function togglePause() { if (mode === 'play') { if (paused) resume(); else pause(); } }
+function pause() { // a screen of its own, with big buttons (easy to hit on a phone)
+  if (mode !== 'play' || paused) return; paused = true; keys.left = keys.right = keys.jump = false;
+  document.getElementById('bPause').style.visibility = 'hidden';
+  show(`<div class="card"><p class="kick">${lvl.name.toUpperCase()}</p><h2>${L('Pausa', 'Paused')}</h2>
+  <div class="btns"><button class="big" id="go">▶︎ ${L('Continuar', 'Go on')}</button><button class="big alt" id="again">${L('Recomeçar o nível', 'Restart the level')}</button></div>
+  <p class="small" style="margin-top:14px"><a href="#" id="quit" style="color:var(--dim)">${L('Sair para o início', 'Back to the start')}</a></p></div>`);
+  document.getElementById('go').onclick = () => { audioOn(); resume(); };
+  document.getElementById('again').onclick = () => { audioOn(); stats.cravos = lvl.c0; startLevel(lvl.n); };
+  document.getElementById('quit').onclick = e => { e.preventDefault(); paused = false; document.getElementById('bPause').style.visibility = ''; musicOn = false; title(); };
+}
+function resume() {
+  paused = false; ov.hidden = true; jumpPressed = false; document.getElementById('bPause').style.visibility = '';
+  if (actx) musicNext = actx.currentTime + .05;
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && !paused) pause(); });
+
+// ---------- the loop
+let last = performance.now(), acc = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (lvl && (mode === 'play' || mode === 'done' || mode === 'lost') && !paused) { acc += dt; while (acc >= 1 / 120) { step(1 / 120); acc -= 1 / 120; } }
+  else acc = 0;
+  if (!paused && (mode === 'play')) musicTick();
+  draw();
+  requestAnimationFrame(frame);
+}
+// the canvas only asks for a font once it uses it: load them first (but don't wait more than 2 s for them)
+const fontsIn = document.fonts ? Promise.all(['8px Silkscreen', '800 8px Jost', '700 8px Jost'].map(f => document.fonts.load(f).catch(() => {}))) : Promise.resolve();
+Promise.race([fontsIn, new Promise(r => setTimeout(r, 2000))]).then(() => { title(); requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

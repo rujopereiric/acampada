@@ -788,7 +788,7 @@ const VPAL = { W: '#f3eee2', s: '#d2cab6' };
 
 /* ================= cities (from reporting on each square) ================= */
 const CITIES = [
-  { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', violent: true, peopleK: .8, bikeK: .8, police: 1.3, cops: 5, patrols: true, helmets: true, cleaners: true,
+  { name: 'Porto', place: 'Praça D. João I', ground: 'slabs', xmas: true, violent: true, peopleK: .8, bikeK: .8, police: 1.3, cops: 5, patrols: true, helmets: true, cleaners: true,
     // artists who played at the Porto acampada (from @acampadaporto's daily programmes, October 2026)
     artists: ['Manel Cruz', 'Emmy Curl', 'Clã', 'Capicua', 'Egoísticos Implacáveis', 'Unsafe Space Garden', 'Sapatrux', 'Roídos na Acampada'], tag: 'Capacetes azuis e a equipa de limpeza', tagEn: 'Blue helmets and the cleaning crew',
     intro: '10 de outubro. A primeira acampada monta-se entre o Rivoli e o Palácio Atlântico. Os capacetes azuis vão para quem segura a frente do cordão, e sempre que a polícia sai a equipa de limpeza lava a praça.',
@@ -809,7 +809,7 @@ const CITIES = [
     L: [{ a: 0, b: 10, h: 64, style: 'atlantico', roof: '#b8ad94' }],
     R: [{ a: 2.6, b: 6.4, h: 44, style: 'pombal', col: '#f2efe6' }, { a: 6.4, b: 10, h: 40, style: 'pombal', col: '#e3b54b', neon: '#ff5fc8' }],
     C: { h: 96, style: 'rialto', roof: '#b0a588' } },
-  { name: 'Lisboa', place: 'Rossio', ground: 'waves', police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true, cleaners: true, tentMan: [0, 1], // the tent man runs on the west and north streets: the front ones hide behind the near blocks
+  { name: 'Lisboa', place: 'Rossio', ground: 'waves', xmas: true, police: 1.2, cops: 4, rough: true, patrols: true, donkey: true, dj: true, choir: true, cleaners: true, tentMan: [0, 1], // the tent man runs on the west and north streets: the front ones hide behind the near blocks
     // artists who played, or were announced, at the Rossio acampada (October 2026)
     artists: ['B Fachada', 'Maria Reis', 'Ana Moura', 'Sérgio Godinho', 'Nenny', 'Tim', 'Dino d’Santiago', 'Samuel Úria', 'Gaspar Varela', 'Expresso Transatlântico'], tag: 'O DJ p.45 e a cabeça de burro', tagEn: 'DJ p.45 and the donkey head',
     intro: 'Sábado, 17:00. As chaves tilintam no ar e as tendas rodeiam a coluna de D. Pedro IV. Alguém pendura uma pequena cabeça de burro debaixo da placa, e algures na multidão o DJ p.45 está a aquecer.',
@@ -3267,9 +3267,10 @@ function update(dt) {
   const hr = S.clock % 24; S.dark = darkness(hr); if (S.stat && S.tents.length > S.stat.maxTents) S.stat.maxTents = S.tents.length;
   const p = S.player;
   const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0), jm = Math.hypot(JOY.x, JOY.y);
-  if (p.toPaper && (jm > .2 || kx || ky)) p.toPaper = false; // walking off somewhere else
+  if ((p.toPaper || p.toTree) && (jm > .2 || kx || ky)) p.toPaper = p.toTree = false; // walking off somewhere else
   if (p.down > 0 || p.talk > 0) { if (p.down > 0) p.down -= dt; else p.talk -= dt; p.moving = false; p.path = null; p.tx = p.gx; p.ty = p.gy; }
   else if (prWalk(p, dt)) {}
+  else if (treeWalk(p, dt)) {}
   else if (jm > .2) { // the walking ball: the screen direction turned into the square's (tiles are twice as wide as tall)
     let wx = JOY.x * .5 + JOY.y, wy = JOY.y - JOY.x * .5; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3 * Math.min(1, jm), dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
@@ -3277,7 +3278,7 @@ function update(dt) {
     let wx = (kx + ky) / 2, wy = (ky - kx) / 2; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3, dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
   } else if (!moveEnt(p, p.tx, p.ty, 3, dt)) {} else p.moving = false;
-  if (!p.toPaper) { p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); }
+  if (!p.toPaper && !p.toTree) { p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); } // (off the square: on the way to the paper or the tree)
 
   S.chainCd = Math.max(0, S.chainCd - dt); S.liveCd = Math.max(0, S.liveCd - dt); S.live = Math.max(0, S.live - dt); S.asmCd = Math.max(0, S.asmCd - dt);
   if (S.chain) { S.chain.t -= dt; if (S.chain.t <= 0) S.chain = null; }
@@ -3351,7 +3352,7 @@ function update(dt) {
     if (S.eveDay !== day && hr >= 18) { S.eveDay = day; S.eveAt = rnd(18.5, 22.5); }
     if (S.eveAt && hr >= S.eveAt && hr < 24 && !S.bikes && !S.raid && !S.fasc && calm()) { S.eveAt = 0; startBikes(); } }
   nightEvents(dt);
-  prPaperTick(); updZez(dt); updInf(dt); updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
+  prPaperTick(); xmasTick(); updZez(dt); updInf(dt); updTraffic(dt); updAmbush(dt); updReporter(dt); updWounded(dt); updFollowers(dt); updGraf(dt); updTut(dt);
 
   // donkey tandem (Lisboa)
   if (S.tandemT > 0 && !S.kettle) { S.tandemT -= dt; if (S.tandemT <= 0 && (S.dj || S.choir)) S.tandemT = 3; else if (S.tandemT <= 0) { S.tandem = { gx: -3, gy: NY + 1.2, wp: [[CX - .5, NY + 1.2], [CX + .5, NY - .6], [CX + .6, CY + 2.3]], state: 'in', cargo: true, step: 0, flip: false }; floatXY(0, 0, 'Vem aí um tandem com a cabeça de burro', '#ffd36b', { gx: CX + .6, gy: CY + 2.3 }); } } // it rides into the square and stops next to the column
@@ -4193,6 +4194,7 @@ function draw() {
   for (const s of S.stations) add(s.gx, s.gy, drawStation, s);
   for (const c of S.crates) add(c.gx, c.gy, drawCrate, c);
   if (S.prPaper) add(S.prPaper.gx, S.prPaper.gy, () => drawPaper(S.prPaper));
+  if (xmasShown()) { const xt = xmasAt(); add(xt.gx, xt.gy, () => drawXmasTree(xt)); }
   for (const r of S.residents) addP(r.gx, r.gy, drawResident, r);
   for (const a of S.arrivals) addP(a.gx, a.gy, drawArrival, a);
   for (const o of S.police) addP(o.gx, o.gy, drawCop, o);
@@ -4498,7 +4500,7 @@ function chapterScreen() {
   mode = 'chapters';
   const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
-  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${natalSaved() ? `<button class="btnp" data-a="natalmenu">🎄 ${L('Especial Natal', 'Christmas Special')}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
 }
 function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
@@ -4528,6 +4530,10 @@ let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Guimarães · Alameda de São Dâmaso', 'Guimarães · Alameda de São Dâmaso')}</p><div class="rule"></div>
+    <p class="t">${L('Assembleia popular', 'People’s assembly')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>14:30</b></div><div><b>Coreto da Alameda</b><br>Guimarães</div></div>
+    <p class="src">${L('Assembleia popular pela habitação, perto de Braga. Aparece e traz quem puderes!', 'People’s assembly for housing, near Braga. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
@@ -4981,6 +4987,9 @@ ov.addEventListener('click', e => {
   else if (a === 'calgo') calOpen('game');
   else if (a === 'calno') { mode = 'play'; ov.hidden = true; }
   else if (a === 'calmenu') calOpen('menu');
+  else if (a === 'natalgo') { natalStore(); mode = 'play'; ov.hidden = true; saveGame(); location.href = 'natal.html'; }
+  else if (a === 'natalno') { mode = 'play'; ov.hidden = true; }
+  else if (a === 'natalmenu') location.href = 'natal.html';
   else if (a === 'tasksreset') { TASKS.g = 0; TASKS.cord = TASKS.live = false; tasksSave(); chapterScreen(); }
   else if (a === 'reset') { cleared.clear(); saveCleared(); chapterScreen(); }
   else if (a === 'retry') { dropSave(); newLevel(); introScreen(); }
@@ -5060,7 +5069,7 @@ function setTarget(e) {
   if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < NY; yy++) for (let xx = 0; xx < NX; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
   S.player.tx = gx; S.player.ty = gy;
 }
-cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapPaper(e) || tapGraf(e) || tapLook(e) || tapRecruit(e) || joyStart(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
+cv.addEventListener('pointerdown', e => { if (mode !== 'play') return; audioOn(); if (tapPaper(e) || tapTree(e) || tapGraf(e) || tapLook(e) || tapRecruit(e) || joyStart(e)) return; dragging = true; setTarget(e); try { cv.setPointerCapture(e.pointerId); } catch (_) {} });
 cv.addEventListener('pointermove', e => { if (joyMove(e)) return; if (dragging && mode === 'play') setTarget(e); });
 for (const ev of ['pointerup', 'pointercancel', 'lostpointercapture']) cv.addEventListener(ev, e => { if (!joyEnd(e)) dragging = false; });
 // phones: a ball to walk with. Touch the left half of the square and drag: the ball appears under the thumb, the
@@ -5613,6 +5622,49 @@ function prWalk(p, dt) { // the walk to the paper; true while it is going on
   if (!prPaperOn()) { p.toPaper = false; return false; }
   if (moveEnt(p, S.prPaper.gx, S.prPaper.gy, 3, dt, true)) prOpen();
   return true;
+}
+/* secret: the Christmas special (natal.html). From day 5, in Lisboa and in Porto, a Christmas tree stands on one of
+   the streets by the square: tap it (the player walks there), and a paper on a branch offers the game. Once opened,
+   it stays in the squares menu as "Especial Natal", like Caldas. */
+const NATAL_KEY = 'acampada-natal';
+const natalSaved = () => { try { return !!JSON.parse(localStorage.getItem(NATAL_KEY) || '{}').open; } catch (e) { return false; } };
+function natalStore() { try { localStorage.setItem(NATAL_KEY, JSON.stringify({ open: true })); } catch (e) {} }
+const xmasDay = () => 1 + Math.floor((S.clock - 6) / 24);
+const xmasShown = () => !!(S && S.city.xmas && xmasDay() >= 5); // it stands there from day 5
+const xmasOn = () => xmasShown() && !S.raid && !S.van && !S.kettle && !S.winning; // and can be tapped when no police are on the square
+const xmasAt = () => S.city.violent ? { gx: 1.4, gy: NY - 3 } : { gx: NX - 3, gy: -1 }; // Porto: the raised road; Lisboa: the north street
+function xmasTick() {
+  if (!xmasOn() || S.xmasHint) return;
+  S.xmasHint = true; const p = xmasAt(), q = iso(p.gx, p.gy, elevAt(p.gx, p.gy) + 28); floatXY(q.x, q.y, L('Uma árvore de Natal na rua…', 'A Christmas tree on the street…'), '#ffffff');
+}
+function tapTree(e) {
+  if (!xmasOn()) return false;
+  const p = xmasAt(), r = cv.getBoundingClientRect(), sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H, q = iso(p.gx, p.gy, elevAt(p.gx, p.gy));
+  if (Math.abs(sx - q.x) > 10 || sy < q.y - 30 || sy > q.y + 6) return false;
+  if (Math.hypot(S.player.gx - p.gx, S.player.gy - p.gy) < .9) treeOpen(); else S.player.toTree = true;
+  return true;
+}
+function treeWalk(p, dt) { // the walk to the tree; true while it is going on
+  if (!p.toTree) return false;
+  if (!xmasOn()) { p.toTree = false; return false; }
+  const t = xmasAt(); if (moveEnt(p, t.gx + .5, t.gy + (S.city.violent ? 0 : .6), 3, dt, true)) treeOpen();
+  return true;
+}
+function treeOpen() {
+  const p = S.player; p.toTree = false;
+  p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); p.tx = p.gx; p.ty = p.gy; p.path = null; // back on the square
+  mode = 'xmasask';
+  show(`<h2 class="p-red rough">${L('Especial Natal', 'Christmas Special')}</h2><p class="help">${L('Pendurado na árvore, um papel: «O mercado de Natal quer o Rossio e a pista de gelo quer a Praça D. João I. Vens defender as tendas?»', 'Hanging on the tree, a sheet of paper: “The Christmas market wants the Rossio and the ice rink wants Praça D. João I. Will you come and stand up for the tents?”')}</p>
+    <button class="btnp red" data-a="natalgo">${L('Jogar →', 'Play →')}</button><button class="btnp" data-a="natalno">${L('Agora não', 'Not now')}</button>`);
+}
+function drawXmasTree(p) {
+  const q = iso(p.gx, p.gy, elevAt(p.gx, p.gy)), x = Math.round(q.x), y = Math.round(q.y), f = Math.floor(S.t * 3);
+  R(x - 7, y - 1, 15, 3, 'rgba(30,10,70,.3)'); R(x - 1, y - 5, 3, 5, '#5a3418');
+  for (const [w, yy, h] of [[15, -10, 6], [12, -15, 6], [9, -20, 6], [5, -24, 5]]) { R(x - (w >> 1), y + yy, w, h, '#1f6b3a'); R(x + 1, y + yy, (w >> 1) + 1, h, '#18552e'); }
+  [[-5, -7], [3, -9], [-3, -12], [4, -14], [-2, -17], [2, -19], [0, -22]].forEach(([dx, dy], k) => R(x + dx, y + dy, 1, 1, (f + k) % 3 ? ['#ffd23a', '#ff5a5a', '#8fd0ff', '#b6ff3b'][k % 4] : '#0f3a20'));
+  R(x - 1, y - 27, 3, 3, '#ffd23a'); R(x, y - 28, 1, 5, '#ffd23a');
+  R(x + 3, y - 13, 3, 3, '#f4f1ea'); // the paper on a branch
+  if (xmasOn() && f % 2) { R(x - 1, y - 38, 3, 5, '#ffd23a'); R(x - 1, y - 32, 3, 2, '#ffd23a'); }
 }
 function drawPaper(p) { if (!prPaperOn()) return; const q = iso(p.gx, p.gy, elevAt(p.gx, p.gy)), x = Math.round(q.x), y = Math.round(q.y), f = Math.floor(S.t * 2) % 2; R(x - 4, y - 2, 8, 5, '#f4f1ea'); R(x - 3, y - 1, 6, 1, '#9aa0ad'); R(x - 3, y + 1, 4, 1, '#9aa0ad'); if (f) { R(x - 1, y - 11, 3, 5, '#ffd23a'); R(x - 1, y - 5, 3, 2, '#ffd23a'); } }
 $('calTapB').addEventListener('click', e => { calTap(); e.currentTarget.blur(); });
