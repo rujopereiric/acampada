@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Primavera de Coros · Acampada Pixel</title>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Jost:wght@700;800&family=Silkscreen&display=swap" rel="stylesheet">
+<style>
+/* Primavera de Coros: a SingStar-like side game for Acampada Pixel. Sing the camp's songs into the microphone; the
+   choir sings with you. The pitch counts in any octave, so every voice can score. A test page for now, apart from
+   index.html; songs live in SONGS below, in the same format as the Caldas game (syllable, beats, note, strong). */
+:root{--bg:#0b0a0a;--ink:#f4f1ea;--muted:#a39d97;--red:#b02a22;--gold:#ffd36b;--green:#4ba36f;--panel:#161414}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--ink);font-family:Jost,sans-serif;min-height:100%}
+body{display:flex;flex-direction:column;align-items:center;padding:max(12px,env(safe-area-inset-top)) 16px 24px}
+.wrap{width:100%;max-width:640px}
+h1{font-family:Audiowide,sans-serif;font-size:clamp(24px,7vw,40px);line-height:1;letter-spacing:1px;color:var(--gold);text-align:center;margin:6px 0 2px}
+.sub{font-family:Silkscreen,monospace;font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
+canvas{display:block;width:100%;image-rendering:pixelated;border:3px solid var(--ink);background:#1b1430}
+.lyric{min-height:3.2em;font-weight:800;font-size:clamp(20px,5.4vw,30px);line-height:1.15;text-align:center;margin:12px 0 2px}
+.lyric b{color:var(--gold)}.lyric i{font-style:normal;color:var(--muted)}
+.next{min-height:1.4em;font-weight:700;font-size:16px;color:var(--muted);text-align:center}
+.hud{display:flex;justify-content:space-between;font-family:Silkscreen,monospace;font-size:13px;margin:8px 0 0}
+.panel{background:var(--panel);border:3px solid var(--ink);padding:16px;margin-top:12px}
+.panel p{font-weight:700;font-size:17px;line-height:1.3;margin:0 0 10px}.panel small{display:block;color:var(--muted);font-size:14px;line-height:1.3}
+button{font-family:Jost,sans-serif;font-weight:800;font-size:20px;text-transform:uppercase;border:3px solid var(--ink);background:var(--red);color:#fff;padding:12px 16px;width:100%;margin-top:10px;cursor:pointer}
+button.alt{background:transparent;color:var(--ink)}button:disabled{opacity:.4}
+.row{display:flex;gap:10px}.row button{flex:1}
+.songs button{text-transform:none;text-align:left;background:transparent;color:var(--ink);display:flex;justify-content:space-between;align-items:center}
+.songs button span{font-family:Silkscreen,monospace;font-size:12px;color:var(--gold)}
+.stars{font-size:44px;text-align:center;color:var(--gold);letter-spacing:6px}
+.big{font-family:Audiowide,sans-serif;font-size:34px;text-align:center;margin:4px 0}
+.hidden{display:none}
+.meter{height:8px;background:#2a2630;margin-top:8px}.meter i{display:block;height:100%;width:0;background:var(--green)}
+a{color:var(--gold)}
+</style></head><body><div class="wrap">
+<h1>PRIMAVERA DE COROS</h1>
+<div class="sub">ACAMPADA PIXEL · CANTA COM O CORO</div>
+<canvas id="cv" width="320" height="200"></canvas>
+<div id="play" class="hidden">
+  <div class="hud"><span id="score">0</span><span id="tune">—</span><span id="time"></span></div>
+  <div class="lyric" id="lyric"></div><div class="next" id="next"></div>
+  <div class="row"><button class="alt" id="stop">Parar</button></div>
+</div>
+<div id="menu" class="panel">
+  <p>Canta para o microfone. As barras são as notas; o teu ponto mostra onde está a tua voz. Conta em qualquer oitava: grave ou agudo, todas as vozes servem.</p>
+  <small>Com auscultadores é melhor: assim o microfone só te ouve a ti, não ao coro.</small>
+  <button id="mic">Ligar o microfone</button>
+  <div class="meter"><i id="lvl"></i></div>
+  <small id="micmsg" style="margin-top:8px"></small>
+  <div class="songs" id="songs"></div>
+  <div class="row"><button class="alt" id="guide">Coro: alto</button></div>
+</div>
+<div id="end" class="panel hidden">
+  <div class="stars" id="stars"></div><div class="big" id="final"></div>
+  <p id="verdict" style="text-align:center"></p>
+  <div class="row"><button id="again">Outra vez</button><button class="alt" id="back">Canções</button></div>
+</div>
+<p class="sub" style="margin-top:16px">Os coros cantam na praça, ao vivo. <a href="https://acampadapixel.pt">Joga a Acampada</a> · nenhum ecrã substitui a rua.</p>
+</div>
+<script>
+'use strict';
+// ---------- songs: lines of [syllable, beats, note, strong]; '' is a rest. words: each line as written ----------
+const NOTE = n => { const m = /^([A-G])(b|#)?(\d)$/.exec(n); return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+const SONGS = [
+  { id: 'mostra-a-cara', title: 'Mostra a cara', who: 'Coro Social do Bairro · melodia do jogo', bpm: 96,
+    words: ['Mostra a cara', 'Mostra a casa', 'Abra a boca Senhor Presidente', 'Quebra o silêncio que nos morre', 'Que nos mata', 'Mostra a cara', 'Mostra a cara', 'Sai de casa, vem ’pras ruas', 'Nossas ruas, nossas praças', 'Acampadas', 'Acampadas'],
+    lines: [
+      [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'C5'], ['', .5]],
+      [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'C5', 1], ['sa', 1.5, 'Bb4'], ['', .5]],
+      [['A', .5, 'G4'], ['bra a', .5, 'G4'], ['bo', 1, 'Bb4', 1], ['ca', .5, 'A4'], ['Se', .5, 'G4'], ['nhor', .5, 'F4'], ['Pre', .5, 'G4', 1], ['si', .5, 'A4'], ['den', 1, 'A4', 1], ['te', 1.5, 'D4'], ['', .5]],
+      [['Que', .5, 'F4'], ['bra o', .5, 'F4'], ['si', .5, 'G4'], ['lên', 1, 'A4', 1], ['cio', .5, 'G4'], ['que', .5, 'F4'], ['nos', .5, 'E4'], ['mor', 1, 'F4', 1], ['re', 1, 'E4'], ['', .5]],
+      [['Que', .5, 'D4'], ['nos', .5, 'E4'], ['ma', 1, 'F4', 1], ['ta', 2, 'D4'], ['', 1]],
+      [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'C5'], ['', .5]],
+      [['Mos', .5, 'A4'], ['tra a', .5, 'A4'], ['ca', 1, 'D5', 1], ['ra', 1.5, 'A4'], ['', .5]],
+      [['Sai', .5, 'A4'], ['de', .5, 'A4'], ['ca', 1, 'D5', 1], ['sa,', .5, 'C5'], ['vem', .5, 'Bb4'], ['’pras', .5, 'A4'], ['ru', 1, 'G4', 1], ['as', 1, 'A4'], ['', .5]],
+      [['Nos', .5, 'A4'], ['sas', .5, 'A4'], ['ru', 1, 'Bb4', 1], ['as,', .5, 'A4'], ['nos', .5, 'G4'], ['sas', .5, 'F4'], ['pra', 1, 'G4', 1], ['ças', 1, 'A4'], ['', .5]],
+      [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'A4', 1], ['das', 1.5, 'G4'], ['', .5]],
+      [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'E4', 1], ['das', 2, 'D4'], ['', 1.5]]
+    ] }
+];
+const LEAD = 2; // seconds before the first note
+function build(song) { // notes with times in seconds; strong notes count double
+  const b = 60 / song.bpm, notes = []; let t = LEAD;
+  song.lines.forEach((line, li) => { for (const [s, d, n, strong] of line) { if (s) notes.push({ s, t, d: d * b, m: NOTE(n), strong: !!strong, li, on: 0, in: 0 }); t += d * b; } });
+  return { notes, end: t + 1.2 };
+}
+// ---------- audio: the microphone, pitch detection, and the choir's guide voice ----------
+let actx = null, an = null, buf = null, stream = null, guideVol = 1;
+const GUIDE = [['Coro: alto', 1], ['Coro: baixo', .4], ['Sem coro', 0]];
+function audio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+async function micOn() {
+  const a = audio();
+  stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
+  attach(a.createMediaStreamSource(stream));
+}
+function attach(src) { const a = audio(); an = a.createAnalyser(); an.fftSize = 2048; buf = new Float32Array(an.fftSize); src.connect(an); }
+// autocorrelation pitch (a light YIN): returns { f, rms } with f = 0 when there's no clear voice
+function pitch() {
+  if (!an) return { f: 0, rms: 0 };
+  an.getFloatTimeDomainData(buf); const N = buf.length, sr = actx.sampleRate; let rms = 0;
+  for (let i = 0; i < N; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / N);
+  if (rms < .012) return { f: 0, rms };
+  const W = N >> 1, minL = Math.floor(sr / 1100), maxL = Math.min(W - 1, Math.floor(sr / 70)), d = new Float32Array(maxL + 2);
+  for (let L = 1; L <= maxL + 1; L++) { let s = 0; for (let i = 0; i < W; i++) { const x = buf[i] - buf[i + L]; s += x * x; } d[L] = s; }
+  let run = 0, best = -1; // cumulative mean normalised difference, first dip under the threshold
+  for (let L = 1; L <= maxL + 1; L++) { run += d[L]; d[L] = d[L] * L / (run || 1); }
+  for (let L = minL; L <= maxL; L++) if (d[L] < .15) { while (L + 1 <= maxL && d[L + 1] < d[L]) L++; best = L; break; }
+  if (best < 0) return { f: 0, rms };
+  const a = d[best - 1], b = d[best], c = d[best + 1], sh = (a - c) / (2 * (a - 2 * b + c) || 1); // parabolic refinement
+  return { f: sr / (best + (Math.abs(sh) < 1 ? sh : 0)), rms };
+}
+const midiOf = f => 69 + 12 * Math.log2(f / 440), hz = m => 440 * Math.pow(2, (m - 69) / 12);
+const fold = (m, t) => { const d = ((m - t) % 12 + 18) % 12 - 6; return t + d; }; // the sung pitch moved to the octave of the target
+// the choir's voice: a few detuned saws through two vowel formants, like the Caldas choir
+function choir(m, d, t0, vol) {
+  if (!guideVol || !actx) return; const a = actx, f = hz(m), g = a.createGain(), f1 = a.createBiquadFilter(), f2 = a.createBiquadFilter(), mix = a.createGain();
+  f1.type = 'bandpass'; f1.frequency.value = 760; f1.Q.value = 5; f2.type = 'bandpass'; f2.frequency.value = 1180; f2.Q.value = 6;
+  const v = .06 * vol * guideVol; g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + .06); g.gain.setValueAtTime(v, t0 + Math.max(.07, d - .05)); g.gain.exponentialRampToValueAtTime(.0001, t0 + d + .25);
+  g.connect(f1).connect(mix); g.connect(f2).connect(mix); mix.gain.value = 1.2; mix.connect(a.destination);
+  for (const det of [-9, -3, 4, 10]) { const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(g); o.start(t0); o.stop(t0 + d + .3); }
+}
+// ---------- the game ----------
+const $ = id => document.getElementById(id), cv = $('cv'), ctx = cv.getContext('2d'), W = 320, H = 200;
+const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+let G = null, song = SONGS[0], trail = [], level = 0;
+const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado: a synthetic singer instead of the mic (for testing)
+function start(s) {
+  song = s; audio(); const { notes, end } = build(s);
+  const lo = Math.min(...notes.map(n => n.m)) - 2, hi = Math.max(...notes.map(n => n.m)) + 2;
+  G = { notes, end, lo, hi, t0: actx.currentTime + .3, sched: 0, score: 0, max: notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1), 0), last: 0, combo: 0 };
+  trail = []; show('play');
+  if (TEST) { // a synthetic voice an octave below the tune (sharp by 2 semitones when 'errado'), straight into the analyser
+    const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; g.gain.value = 0; o.connect(g); attach(g); o.start();
+    for (const n of notes) { const t = G.t0 + n.t; o.frequency.setValueAtTime(hz(n.m - 12 + (TEST === 'errado' ? 2 : 0)), t); g.gain.setValueAtTime(.3, t + .03); g.gain.setValueAtTime(0, t + n.d - .03); }
+    G.osc = o;
+  }
+}
+function stop(done) {
+  if (!G) return; if (G.osc) try { G.osc.stop(); } catch (e) {}
+  const pct = G.score / G.max, pts = Math.round(pct * 10000), stars = pct >= .8 ? 3 : pct >= .55 ? 2 : pct >= .25 ? 1 : 0;
+  window.__coros.result = { pct, pts, stars, notes: G.notes.map(n => +(n.on ? n.in / n.on : 0).toFixed(2)) };
+  G = null;
+  if (!done) { show('menu'); return; }
+  $('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars); $('final').textContent = pts + ' pontos';
+  $('verdict').textContent = ['O coro desafinou e foi para casa… tenta outra vez!', 'Já se ouve na praça. Mais uma volta?', 'O Rossio inteiro canta contigo!', 'Voz da Primavera de Coros! Agora vem cantar ao vivo.'][stars];
+  show('end');
+}
+function show(id) { for (const k of ['menu', 'play', 'end']) $(k).classList.toggle('hidden', k !== id); }
+function lyric(li, cur) { // the line as written, the current syllable bold, sung ones dim
+  const txt = song.words[li] || '', ns = G.notes.filter(n => n.li === li); let i = 0, out = '';
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  for (const n of ns) {
+    let k = n.s.replace(/\s/g, '').length, j = i; while (j < txt.length && /\s/.test(txt[j])) j++; out += esc(txt.slice(i, j)); i = j;
+    while (j < txt.length && k > 0) { if (!/\s/.test(txt[j])) k--; j++; }
+    const part = esc(txt.slice(i, j)); out += n === cur ? `<b>${part}</b>` : cur && n.t < cur.t ? `<i>${part}</i>` : part; i = j;
+  }
+  return out + esc(txt.slice(i));
+}
+// ---------- drawing: the Rossio at dusk with the choir on top, the note lane below ----------
+const SKIN = ['#f1c9a5', '#d9a47a', '#a8714a', '#6e4630'], SHIRT = ['#e2483d', '#ffd36b', '#4ba36f', '#5a8fd8', '#c45fd0', '#f4f1ea', '#ff8a3d'];
+function stage(t, singing, glow) {
+  for (let y = 0; y < 70; y++) R(0, y, W, 1, ['#1d1642', '#2f2159', '#4e2d6a', '#82396d'][Math.min(3, y / 18 | 0)]);
+  R(118, 22, 84, 34, '#cfc5ae'); for (let y = 6; y < 22; y++) { const h = (y - 6) * 2.6; R(160 - h, y, h * 2, 1, '#e4dccb'); } // the theatre
+  for (let i = 0; i < 6; i++) R(124 + i * 13, 24, 4, 32, '#f6f1e4'); R(124, 40, 72, 16, 'rgba(255,207,122,.5)');
+  for (const x of [0, 228]) { R(x, 18, 92, 40, x ? '#e6c46a' : '#e7a9a0'); for (let wx = x + 4; wx < x + 88; wx += 9) for (const wy of [24, 36]) R(wx, wy, 5, 6, (wx + wy) % 4 ? '#2a2350' : '#ffd36b'); }
+  for (let y = 56; y < 70; y++) for (let x = 0; x < W; x += 2) R(x, y, 2, 1, Math.floor((Math.sin((x + y * .5) / 6) * 3 + y) / 3) % 2 ? '#2e2a2a' : '#e9e4da'); // the wave pavement
+  if (glow > 0) { ctx.fillStyle = `rgba(255,211,107,${.25 * glow})`; ctx.beginPath(); ctx.ellipse(160, 64, 120, 12, 0, 0, 7); ctx.fill(); }
+  for (let i = 0; i < 9; i++) { // the choir in a half circle, mouths open while they sing
+    const x = 64 + i * 24, y = 66 - Math.abs(i - 4) * 2 + (singing && (Math.floor(t * 4) + i) % 2 ? -1 : 0), sk = SKIN[i % 4], sh = SHIRT[i % 7];
+    R(x - 3, y - 12, 7, 8, sh); R(x - 2, y - 4, 2, 4, '#2b2d55'); R(x + 1, y - 4, 2, 4, '#2b2d55'); R(x - 3, y - 18, 7, 6, sk); R(x - 3, y - 19, 7, 2, ['#2a1c14', '#c8a040', '#16121a'][i % 3]);
+    R(x - 1, y - 14, 3, singing ? 2 : 1, '#5a1a1a'); R(x - 6, y - 11, 3, 5, '#f4f1ea'); // the song sheet
+  }
+}
+function lane(t, cur, now) {
+  const top = 74, h = 122, X0 = 70, PX = 46; // the "now" line, pixels per second
+  R(0, top, W, h, '#120f1c'); const y = m => top + h - 6 - (m - G.lo) / (G.hi - G.lo) * (h - 12);
+  for (let m = Math.ceil(G.lo); m <= G.hi; m++) if (m % 12 === 2 || m % 12 === 9) R(0, y(m), W, 1, '#221d33'); // D and A guides
+  for (const n of G.notes) {
+    const x = X0 + (n.t - t) * PX, w = n.d * PX - 2; if (x > W || x + w < 0) continue;
+    const yy = y(n.m) - 3, hit = n.on ? n.in / n.on : 0;
+    R(x, yy, w, 6, n.strong ? '#8a6a20' : '#3e3a5c'); R(x, yy, w, 1, n.strong ? '#ffd36b' : '#7a74a8');
+    if (n.t < t) R(x, yy, Math.min(w, (t - n.t) * PX) * hit, 6, hit > .5 ? '#4ba36f' : '#b02a22');
+  }
+  R(X0, top, 1, h, '#f4f1ea');
+  for (const p of trail) { const x = X0 + (p.t - t) * PX; if (x > 0) R(x - 1, y(p.m) - 1, 2, 2, p.ok ? '#b6ff3b' : '#ff6b5e'); }
+  if (now) { R(X0 - 3, y(now.m) - 3, 7, 7, now.ok ? '#b6ff3b' : '#ff6b5e'); R(X0 - 2, y(now.m) - 2, 5, 5, '#fff'); }
+}
+// ---------- the loop ----------
+function frame() {
+  requestAnimationFrame(frame);
+  const p = pitch(); level = level * .8 + Math.min(1, p.rms * 12) * .2; $('lvl').style.width = (level * 100) + '%';
+  if (!G) { ctx.clearRect(0, 0, W, H); stage(performance.now() / 1000, false, 0); R(0, 74, W, 126, '#120f1c'); return; }
+  const t = actx.currentTime - G.t0;
+  while (G.sched < G.notes.length && G.notes[G.sched].t < t + .25) { const n = G.notes[G.sched++]; choir(n.m, n.d, G.t0 + n.t, n.strong ? 1.15 : 1); }
+  const cur = G.notes.find(n => t >= n.t && t < n.t + n.d), soon = G.notes.find(n => n.t + n.d > t) || G.notes[G.notes.length - 1];
+  let now = null;
+  if (cur) {
+    const dt = Math.min(.1, t - G.last); cur.on += dt;
+    if (p.f) { const m = fold(midiOf(p.f), cur.m), ok = Math.abs(m - cur.m) <= 1; now = { m, ok }; if (ok) { cur.in += dt; G.score += dt * (cur.strong ? 2 : 1); } trail.push({ t, m, ok }); }
+  } else if (p.f) { const m = fold(midiOf(p.f), soon.m); now = { m, ok: false }; trail.push({ t, m, ok: false }); }
+  G.last = t; while (trail.length && trail[0].t < t - 2) trail.shift();
+  const pct = G.score / G.max;
+  ctx.clearRect(0, 0, W, H); stage(t, !!cur, Math.min(1, pct * 1.6)); lane(t, cur, now);
+  $('score').textContent = Math.round(pct * 10000) + ' pts'; $('tune').textContent = now ? (now.ok ? 'AFINADO' : now.m > (cur || soon).m ? 'MAIS GRAVE ↓' : 'MAIS AGUDO ↑') : cur ? 'CANTA!' : '—';
+  $('time').textContent = Math.max(0, Math.ceil(G.end - t)) + 's';
+  $('lyric').innerHTML = lyric(soon.li, cur); $('next').textContent = song.words[soon.li + 1] || '';
+  window.__coros.t = t;
+  if (t > G.end) stop(true);
+}
+// ---------- menu ----------
+window.__coros = { songs: SONGS, build, fold, midiOf };
+$('songs').innerHTML = SONGS.map((s, i) => `<button data-i="${i}" ${TEST ? '' : 'disabled'}>${s.title}<span>${s.who}</span></button>`).join('');
+$('songs').onclick = e => { const b = e.target.closest('button'); if (b && !b.disabled) start(SONGS[+b.dataset.i]); };
+$('mic').onclick = async () => {
+  try { await micOn(); $('micmsg').textContent = 'Microfone ligado. Escolhe uma canção.'; $('mic').disabled = true; document.querySelectorAll('#songs button').forEach(b => b.disabled = false); }
+  catch (e) { $('micmsg').textContent = 'Sem microfone: o browser não deixou (' + (e.name || e) + '). Dá permissão ao microfone nas definições do site e tenta outra vez.'; }
+};
+let gi = 0; $('guide').onclick = () => { gi = (gi + 1) % GUIDE.length; $('guide').textContent = GUIDE[gi][0]; guideVol = GUIDE[gi][1]; };
+$('stop').onclick = () => stop(false); $('again').onclick = () => start(song); $('back').onclick = () => show('menu');
+frame();
+</script></body></html>
