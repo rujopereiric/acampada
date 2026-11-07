@@ -4530,15 +4530,16 @@ const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas
 const ADS = [
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Sexta-feira<br><b>6 nov. 2026</b>', 'Friday<br><b>6 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
+    <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-    <div class="cols"><div>${L('Sexta-feira<br><b>6 nov. 2026</b>', 'Friday<br><b>6 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
+    <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
     <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 19h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 7 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Lisboa<small>${L('Rossio: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Rossio: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
     <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 19h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 7 pm')}</small></span></div>
+    <div><span class="when">${L('Sex 13 nov', 'Fri 13 Nov')} · 19:00</span><span class="what">Sertã<small>${L('Vigília pela habitação, Casa da Cultura', 'Housing vigil, Casa da Cultura')}</small></span></div>
     <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa, Porto e Faro', 'Lisboa, Porto and Faro')}<small>${L('Casa para viver. Alameda D. Afonso Henriques, Praça do Marquês e Liceu João de Deus. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques, Praça do Marquês and Liceu João de Deus. And dozens of other towns')}</small></span></div>
     <div><span class="when">${L('Sáb 28 nov', 'Sat 28 Nov')} · 10:00</span><span class="what">Lisboa<small>${L('Grande Assembleia Vida Justa, Fábrica Braço de Prata (inscrição prévia)', 'Vida Justa General Assembly, Fábrica Braço de Prata (prior registration)')}</small></span></div>
   </div>${CHECK()}</div>`],
@@ -4647,6 +4648,7 @@ const RALLIES = [
   { date: '2026-11-12', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-13', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-13', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-13', at: '19:00', city: 'Sertã', title: 'Vigília pela habitação', where: 'Casa da Cultura da Sertã', horas: 2 },
   { date: '2026-11-28', at: '10:00', city: 'Lisboa', title: 'Grande Assembleia Vida Justa', where: 'Fábrica Braço de Prata · inscrição prévia', horas: 8 },
   { date: '2026-11-14', at: '15:00', city: 'Lisboa', title: 'Casa para viver', where: 'Alameda D. Afonso Henriques' },
   { date: '2026-11-14', at: '15:00', city: 'Coimbra', title: 'Casa para viver', where: 'Ponte de Santa Clara' },
