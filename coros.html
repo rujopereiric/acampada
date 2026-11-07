@@ -59,7 +59,7 @@ a{color:var(--gold)}
 <script>
 'use strict';
 // ---------- songs: lines of [syllable, beats, note, strong]; '' is a rest. words: each line as written ----------
-const NOTE = n => { const m = /^([A-G])(b|#)?(\d)$/.exec(n); return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+const NOTE = n => { if (typeof n === 'number') return n; const m = /^([A-G])(b|#)?(\d)$/.exec(n); return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
 const SONGS = [
   { id: 'mostra-a-cara', title: 'Mostra a cara', who: 'Coro Social do Bairro · melodia do jogo', bpm: 96,
     words: ['Mostra a cara', 'Mostra a casa', 'Abra a boca Senhor Presidente', 'Quebra o silêncio que nos morre', 'Que nos mata', 'Mostra a cara', 'Mostra a cara', 'Sai de casa, vem ’pras ruas', 'Nossas ruas, nossas praças', 'Acampadas', 'Acampadas'],
@@ -76,29 +76,32 @@ const SONGS = [
       [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'A4', 1], ['das', 1.5, 'G4'], ['', .5]],
       [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'E4', 1], ['das', 2, 'D4'], ['', 1.5]]
     ] },
-  { id: 'semana-sangrenta', title: 'Semana Sangrenta', who: 'versão do Coro da Achada · La semaine sanglante, 1871', bpm: 120,
+  { id: 'semana-sangrenta', title: 'A semana sangrenta', who: 'versão do Coro da Achada · arranjo a 4 vozes do jogo', bpm: 104,
     words: ["P’ra além do bufo e do militar", "Já só se vêem nos caminhos", "Velhos e tristes a chorar", "Pobres viúvas e meninos", "Até Paris cheira a miséria", "Mesmo os sortudos assustados", "A moda também vai à guerra", "Há passeios ensanguentados", "Sim, mas... a terra treme", "Os dias maus vão acabar", "O contra-ataque não se teme", "Se toda a gente se juntar", "Se toda a gente se juntar"],
     lines: [
-      [["P’ra a", 0.5, "C4"], ["lém", 0.25, "D4"], ["do", 0.5, "Eb4"], ["bu", 1, "C4", 1], ["fo e", 0.75, "G3"], ["do", 1, "G3"], ["mi", 0.75, "D4"], ["li", 0.5, "Eb4"], ["tar", 1.5, "C4", 1], ["", 1.25]],
-      [["Já", 0.5, "C4"], ["só", 0.25, "D4"], ["se", 0.25, "Eb4"], ["vê", 1, "C4", 1], ["em", 1, "G3"], ["nos", 0.75, "G3"], ["ca", 0.75, "D4"], ["mi", 0.5, "Eb4", 1], ["nhos", 1.5, "C4"], ["", 1.5]],
-      [["Ve", 0.5, "C4"], ["lhos", 0.5, "D4"], ["e", 0.75, "Eb4"], ["tris", 0.75, "F4", 1], ["tes", 0.75, "F4"], ["a", 1, "F4"], ["cho", 0.75, "Eb4"], ["rar", 1.5, "G4", 1], ["", 1.5]],
-      [["Po", 0.5, "D4"], ["bres", 0.5, "Eb4"], ["vi", 0.5, "F4"], ["ú", 1, "G4", 1], ["vas e", 0.75, "G4"], ["me", 1, "G4"], ["ni", 0.75, "F4", 1], ["nos", 1.75, "D4"], ["", 2.75]],
-      [["A", 0.25, "G4"], ["té", 0.5, "G4"], ["Pa", 0.5, "G4"], ["ris", 0.75, "G4", 1], ["chei", 1, "G4", 1], ["ra a", 0.75, "G4"], ["mi", 0.5, "F4"], ["sé", 0.75, "Eb4", 1], ["ria", 1.75, "G4"], ["", 1.25]],
-      [["Mes", 0.25, "G4"], ["mo os", 0.5, "G4"], ["sor", 0.5, "G4"], ["tu", 1, "G4", 1], ["dos as", 1.25, "G4"], ["sus", 0.5, "F4"], ["ta", 0.75, "Eb4", 1], ["dos", 1.25, "G4"], ["", 2]],
-      [["A", 0.5, "G4"], ["mo", 0.75, "F4", 1], ["da", 0.75, "D4"], ["tam", 0.5, "D4"], ["bém", 0.75, "D4", 1], ["vai", 1, "D4"], ["à", 0.5, "F4"], ["guer", 0.5, "Eb4", 1], ["ra", 1.5, "C4"], ["", 1.25]],
-      [["Há", 0.25, "Eb4"], ["pas", 0.25, "Eb4"], ["sei", 0.5, "D4", 1], ["os en", 0.5, "C4"], ["san", 0.5, "Bb3"], ["guen", 0.5, "D4"], ["ta", 0.5, "Eb4", 1], ["dos", 2, "C4"], ["", 2]],
-      [["Sim,", 2, "G4", 1], ["mas...", 1.5, "G4"], ["a", 0.5, "F4"], ["ter", 0.5, "F4", 1], ["ra", 1, "G4"], ["tre", 0.75, "Eb4", 1], ["me", 0.75, "C4"], ["", 0.5]],
-      [["Os", 0.25, "C4"], ["di", 0.25, "D4"], ["as", 0.5, "Eb4"], ["maus", 1, "F4", 1], ["vão", 1.25, "F4"], ["a", 0.5, "Eb4"], ["ca", 0.5, "F4"], ["bar", 1.5, "G4", 1], ["", 2.25]],
-      [["O", 1, "G4"], ["con", 1, "G4", 1], ["tra-a", 1, "G4"], ["ta", 0.25, "F4", 1], ["que", 0.25, "Eb4"], ["não", 0.5, "F4"], ["se", 1, "G4"], ["te", 0.75, "Eb4", 1], ["me", 0.75, "C4"], ["", 1]],
-      [["Se", 0.25, "C4"], ["to", 0.25, "D4"], ["da a", 0.5, "Eb4"], ["gen", 0.75, "F4", 1], ["te", 0.75, "F4"], ["se", 0.75, "F4"], ["jun", 0.5, "Eb4"], ["tar", 1.25, "G4", 1], ["", 3.75]],
-      [["Se", 0.75, "G4"], ["to", 0.75, "G4", 1], ["da a", 0.5, "Ab4"], ["gen", 0.5, "G4", 1], ["te", 0.5, "F4"], ["se", 0.25, "Eb4"], ["jun", 0.5, "D4", 1], ["tar", 2, "C4"], ["", 1]]
-    ] }
+      [["P’ra a", 0.5, 65], ["lém", 0.5, 67], ["do", 0.5, 68], ["bu", 2, 65, 1], ["", 0.5], ["fo e", 0.5, 65], ["do", 0.5, 67], ["mi", 0.5, 68], ["li", 1, 65, 1], ["tar", 1, 65, 1], ["", 0.5]],
+      [["Já", 0.5, 65], ["só", 0.5, 67], ["se", 0.5, 68], ["vêem", 2, 65, 1], ["", 0.5], ["nos", 0.5, 65], ["ca", 0.5, 67], ["mi", 0.5, 68], ["nhos", 2, 65, 1], ["", 0.5]],
+      [["Ve", 0.5, 65], ["lhos", 0.5, 67], ["e", 0.5, 68], ["tris", 2.5, 70, 1], ["tes", 0.5, 70], ["a", 0.5, 68], ["cho", 0.5, 70], ["rar", 1, 72, 1], ["_", 1, 67], ["", 0.5]],
+      [["Po", 0.5, 67], ["bres", 0.5, 68], ["vi", 0.5, 70], ["ú", 1, 72, 1], ["vas e", 1, 72, 1], ["me", 1, 70, 1], ["ni", 1, 68, 1], ["nos", 2, 67, 1], ["", 0.5]],
+      [["A", 0.5, 72], ["té", 0.5, 72], ["Pa", 0.5, 72], ["ris", 2.5, 72, 1], ["chei", 0.5, 70], ["ra a", 0.5, 68], ["mi", 0.5, 70], ["sé", 1, 72, 1], ["ria", 1, 72, 1], ["", 0.5]],
+      [["Mes", 0.5, 72], ["mo os", 0.5, 72], ["sor", 0.5, 72], ["tu", 2.5, 72, 1], ["dos as", 0.5, 70], ["sus", 0.5, 68], ["ta", 0.5, 70], ["dos", 1, 72, 1], ["", 1.5]],
+      [["A", 0.5, 72], ["mo", 0.5, 70], ["da", 0.5, 68], ["tam", 1, 67, 1], ["bém", 1, 70, 1], ["vai", 1.5, 68, 1], ["à", 0.5, 67], ["guer", 1, 65, 1], ["ra", 1, 65, 1], ["", 0.5]],
+      [["Há", 0.5, 68], ["pas", 0.5, 67], ["sei", 0.5, 65], ["os en", 0.5, 64], ["san", 0.5, 65], ["guen", 0.5, 67], ["ta", 0.5, 68], ["dos", 1, 65, 1], ["", 0.5]],
+      [["Sim,", 0.5, 72], ["mas...", 2.5, 72, 1], ["a", 0.5, 70], ["ter", 0.5, 68], ["ra", 0.5, 70], ["tre", 1, 72, 1], ["me", 1, 68, 1]],
+      [["Os", 0.5, 65], ["di", 0.5, 65], ["as", 0.5, 67], ["maus", 0.5, 68], ["vão", 3, 60, 1], ["a", 0.5, 64], ["ca", 0.5, 67], ["bar", 3, 65, 1], ["", 0.5]],
+      [["O", 0.5, 72], ["con", 2.5, 72, 1], ["tra-a", 0.5, 70], ["ta", 0.5, 68], ["que", 0.5, 70], ["não", 1, 72, 1], ["se", 1, 68, 1], ["te", 0.5, 65], ["me", 0.5, 65]],
+      [["Se", 0.5, 67], ["to", 0.5, 68], ["da a", 2.5, 70, 1], ["gen", 0.5, 70], ["te", 0.5, 68], ["se", 0.5, 70], ["jun", 2, 72, 1], ["tar", 1, 77, 1], ["", 1]],
+      [["Se", 1, 72, 1], ["to", 0.5, 73], ["da a", 0.5, 72], ["gen", 0.5, 70], ["te", 0.5, 68], ["se", 0.5, 67], ["jun", 0.5, 68], ["tar", 2, 65, 1], ["", 2]]
+    ],
+    parts: { a: [60, 0.5, 60, 0.5, 60, 0.5, 60, 1, 60, 1, 0, 0.5, 61, 0.5, 63, 0.5, 61, 0.5, 60, 1, 60, 1, 0, 0.5, 60, 0.5, 60, 0.5, 60, 0.5, 60, 1, 60, 1, 0, 0.5, 61, 0.5, 63, 0.5, 61, 0.5, 60, 2, 0, 0.5, 60, 0.5, 60, 0.5, 60, 0.5, 65, 2.5, 65, 0.5, 65, 0.5, 65, 0.5, 64, 1, 64, 1, 0, 0.5, 64, 0.5, 65, 0.5, 67, 0.5, 65, 1, 65, 1, 67, 1, 65, 1, 64, 2, 0, 0.5, 68, 0.5, 68, 0.5, 68, 0.5, 68, 2.5, 63, 0.5, 63, 0.5, 63, 0.5, 68, 1, 68, 1, 0, 0.5, 68, 0.5, 68, 0.5, 68, 0.5, 68, 2.5, 63, 0.5, 63, 0.5, 63, 0.5, 68, 1, 0, 1.5, 65, 0.5, 65, 0.5, 65, 0.5, 64, 1, 67, 1, 65, 1.5, 64, 0.5, 61, 1, 61, 1, 0, 0.5, 65, 0.5, 63, 0.5, 61, 0.5, 60, 0.5, 62, 0.5, 64, 0.5, 60, 0.5, 60, 1, 0, 0.5, 68, 0.5, 68, 2.5, 63, 0.5, 63, 0.5, 63, 0.5, 68, 1, 68, 1, 65, 0.5, 65, 0.5, 67, 0.5, 68, 0.5, 60, 3, 60, 0.5, 64, 0.5, 60, 3, 0, 0.5, 68, 0.5, 68, 2.5, 63, 0.5, 63, 0.5, 63, 0.5, 68, 1, 68, 1, 65, 0.5, 65, 0.5, 67, 0.5, 68, 0.5, 65, 2.5, 65, 0.5, 65, 0.5, 65, 0.5, 70, 2, 68, 1, 0, 1, 65, 1, 65, 0.5, 65, 0.5, 67, 0.5, 65, 0.5, 64, 0.5, 64, 0.5, 60, 2, 0, 2], t: [56, 0.5, 58, 0.5, 60, 0.5, 56, 1, 56, 1, 0, 0.5, 58, 0.5, 58, 0.5, 58, 0.5, 56, 1, 56, 1, 0, 0.5, 56, 0.5, 58, 0.5, 60, 0.5, 56, 1, 56, 1, 0, 0.5, 58, 0.5, 58, 0.5, 58, 0.5, 56, 2, 0, 0.5, 56, 0.5, 58, 0.5, 60, 0.5, 61, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 60, 1, 60, 1, 0, 0.5, 60, 0.5, 58, 0.5, 60, 0.5, 56, 1, 60, 1, 61, 1, 62, 1, 60, 2, 0, 0.5, 63, 0.5, 63, 0.5, 63, 0.5, 63, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 63, 1, 63, 1, 0, 0.5, 63, 0.5, 63, 0.5, 63, 0.5, 63, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 63, 1, 0, 1.5, 60, 0.5, 60, 0.5, 60, 0.5, 60, 1, 60, 1, 60, 1.5, 60, 0.5, 56, 1, 56, 1, 0, 0.5, 56, 0.5, 56, 0.5, 56, 0.5, 55, 0.5, 55, 0.5, 58, 0.5, 58, 0.5, 56, 1, 0, 0.5, 63, 0.5, 63, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 63, 1, 65, 1, 53, 0.5, 53, 0.5, 55, 0.5, 56, 0.5, 60, 3, 58, 0.5, 58, 0.5, 56, 3, 0, 0.5, 63, 0.5, 63, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 63, 1, 63, 1, 53, 0.5, 53, 0.5, 55, 0.5, 56, 0.5, 61, 2.5, 61, 0.5, 60, 0.5, 61, 0.5, 64, 2, 60, 1, 0, 1, 65, 1, 65, 0.5, 63, 0.5, 61, 0.5, 60, 0.5, 58, 0.5, 58, 0.5, 56, 2, 0, 2], b: [53, 0.5, 53, 0.5, 53, 0.5, 53, 1, 53, 1, 0, 0.5, 53, 0.5, 53, 0.5, 53, 0.5, 53, 1, 53, 1, 0, 0.5, 53, 0.5, 53, 0.5, 53, 0.5, 53, 1, 53, 1, 0, 0.5, 53, 0.5, 53, 0.5, 53, 0.5, 53, 2, 0, 0.5, 53, 0.5, 53, 0.5, 53, 0.5, 46, 2.5, 46, 0.5, 46, 0.5, 46, 0.5, 48, 1, 48, 1, 0, 0.5, 48, 0.5, 50, 0.5, 52, 0.5, 53, 1, 56, 1, 58, 1, 58, 1, 48, 2, 0, 0.5, 56, 0.5, 56, 0.5, 56, 0.5, 56, 2.5, 56, 0.5, 56, 0.5, 56, 0.5, 56, 1, 56, 1, 0, 0.5, 56, 0.5, 56, 0.5, 56, 0.5, 56, 2.5, 56, 0.5, 56, 0.5, 56, 0.5, 56, 1, 0, 1.5, 56, 0.5, 55, 0.5, 53, 0.5, 48, 1, 48, 1, 48, 1.5, 48, 0.5, 49, 1, 49, 1, 0, 0.5, 49, 0.5, 49, 0.5, 49, 0.5, 48, 0.5, 48, 0.5, 50, 0.5, 52, 0.5, 53, 1, 0, 0.5, 44, 0.5, 44, 2.5, 44, 0.5, 44, 0.5, 44, 0.5, 48, 1, 53, 1, 53, 0.5, 53, 0.5, 55, 0.5, 56, 0.5, 48, 3, 48, 0.5, 48, 0.5, 53, 3, 0, 0.5, 44, 0.5, 44, 2.5, 44, 0.5, 44, 0.5, 44, 0.5, 44, 1, 48, 1, 53, 0.5, 53, 0.5, 55, 0.5, 56, 0.5, 46, 2.5, 46, 0.5, 46, 0.5, 46, 0.5, 48, 2, 53, 1, 0, 1, 44, 1, 46, 0.5, 46, 0.5, 48, 0.5, 48, 0.5, 48, 0.5, 48, 0.5, 53, 2, 0, 2] } }
 ];
 const LEAD = 2; // seconds before the first note
 function build(song) { // notes with times in seconds; strong notes count double
   const b = 60 / song.bpm, notes = []; let t = LEAD;
   song.lines.forEach((line, li) => { for (const [s, d, n, strong] of line) { if (s) notes.push({ s, t, d: d * b, m: NOTE(n), strong: !!strong, li, on: 0, in: 0 }); t += d * b; } });
-  return { notes, end: t + 1.2 };
+  const parts = []; // the arrangement's other voices (alto, tenor, bass), sung by the choir under the melody
+  for (const seq of Object.values(song.parts || {})) { let u = LEAD; for (let i = 0; i < seq.length; i += 2) { if (seq[i]) parts.push({ t: u, d: seq[i + 1] * b, m: seq[i] }); u += seq[i + 1] * b; } }
+  return { notes, parts: parts.sort((x, y) => x.t - y.t), end: t + 1.2 };
 }
 // ---------- audio: the microphone, pitch detection, and the choir's guide voice ----------
 let actx = null, an = null, buf = null, stream = null, guideVol = 1;
@@ -141,9 +144,9 @@ const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Ma
 let G = null, song = SONGS[0], trail = [], level = 0;
 const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado: a synthetic singer instead of the mic (for testing)
 function start(s) {
-  song = s; audio(); const { notes, end } = build(s);
+  song = s; audio(); const { notes, parts, end } = build(s);
   const lo = Math.min(...notes.map(n => n.m)) - 2, hi = Math.max(...notes.map(n => n.m)) + 2;
-  G = { notes, end, lo, hi, t0: actx.currentTime + .3, sched: 0, score: 0, max: notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1), 0), last: 0, combo: 0 };
+  G = { notes, parts, end, lo, hi, t0: actx.currentTime + .3, sched: 0, psched: 0, score: 0, max: notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1), 0), last: 0, combo: 0 };
   trail = []; show('play');
   if (TEST) { // a synthetic voice an octave below the tune (sharp by 2 semitones when 'errado'), straight into the analyser
     const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; g.gain.value = 0; o.connect(g); attach(g); o.start();
@@ -165,10 +168,12 @@ function show(id) { for (const k of ['menu', 'play', 'end']) $(k).classList.togg
 function lyric(li, cur) { // the line as written, the current syllable bold, sung ones dim
   const txt = song.words[li] || '', ns = G.notes.filter(n => n.li === li); let i = 0, out = '';
   const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  const shown = cur && cur.s === '_' ? ns[ns.indexOf(cur) - 1] : cur; // a held syllable stays lit
   for (const n of ns) {
+    if (n.s === '_') continue;
     let k = n.s.replace(/\s/g, '').length, j = i; while (j < txt.length && /\s/.test(txt[j])) j++; out += esc(txt.slice(i, j)); i = j;
     while (j < txt.length && k > 0) { if (!/\s/.test(txt[j])) k--; j++; }
-    const part = esc(txt.slice(i, j)); out += n === cur ? `<b>${part}</b>` : cur && n.t < cur.t ? `<i>${part}</i>` : part; i = j;
+    const part = esc(txt.slice(i, j)); out += n === shown ? `<b>${part}</b>` : shown && n.t < shown.t ? `<i>${part}</i>` : part; i = j;
   }
   return out + esc(txt.slice(i));
 }
@@ -208,6 +213,7 @@ function frame() {
   if (!G) { ctx.clearRect(0, 0, W, H); stage(performance.now() / 1000, false, 0); R(0, 74, W, 126, '#120f1c'); return; }
   const t = actx.currentTime - G.t0;
   while (G.sched < G.notes.length && G.notes[G.sched].t < t + .25) { const n = G.notes[G.sched++]; choir(n.m, n.d, G.t0 + n.t, n.strong ? 1.15 : 1); }
+  while (G.psched < G.parts.length && G.parts[G.psched].t < t + .25) { const n = G.parts[G.psched++]; choir(n.m, n.d, G.t0 + n.t, .45); }
   const cur = G.notes.find(n => t >= n.t && t < n.t + n.d), soon = G.notes.find(n => n.t + n.d > t) || G.notes[G.notes.length - 1];
   let now = null;
   if (cur) {
