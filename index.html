@@ -4528,6 +4528,10 @@ let adIdx = 0, adNext = null;
 try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } catch (e) {}
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
+  () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Guimarães · Alameda de São Dâmaso', 'Guimarães · Alameda de São Dâmaso')}</p><div class="rule"></div>
+    <p class="t">${L('Assembleia popular', 'People’s assembly')}</p><div class="rule"></div>
+    <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>14:30</b></div><div><b>Coreto da Alameda</b><br>Guimarães</div></div>
+    <p class="src">${L('Assembleia popular pela habitação, perto de Braga. Aparece e traz quem puderes!', 'People’s assembly for housing, near Braga. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Rossio', 'Lisboa · Rossio')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Sábado<br><b>7 nov. 2026</b>', 'Saturday<br><b>7 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Rossio</b><br>Lisboa</div></div>
@@ -4634,6 +4638,7 @@ const RALLIES = [
   { date: '2026-11-05', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-06', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 19h assembleia popular', horas: 5 },
   { date: '2026-11-06', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 19h assembleia popular', horas: 5 },
+  { date: '2026-11-07', at: '14:30', city: 'Guimarães', near: 'Braga', title: 'Assembleia popular', where: 'Coreto da Alameda de São Dâmaso', horas: 2 },
   { date: '2026-11-07', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 21h assembleia popular', horas: 7 },
   { date: '2026-11-07', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
   { date: '2026-11-08', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 21h assembleia popular', horas: 7 },

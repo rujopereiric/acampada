@@ -277,6 +277,15 @@
  },
  {
   "date": "2026-11-07",
+  "at": "14:30",
+  "city": "Guimarães",
+  "near": "Braga",
+  "title": "Assembleia popular",
+  "where": "Coreto da Alameda de São Dâmaso",
+  "horas": 2
+ },
+ {
+  "date": "2026-11-07",
   "at": "17:00",
   "city": "Lisboa",
   "title": "Acampada",
