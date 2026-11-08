@@ -156,6 +156,7 @@ function sfx(k) {
   else if (k === 'thud') tone(90, t, .2, 'square', .07, .5);
   else if (k === 'tok') { tone(1200, t, .05, 'square', .07); tone(240, t, .1, 'triangle', .08); }
   else if (k === 'pum') { tone(160, t, .12, 'square', .09, .5); tone(80, t + .05, .25, 'sawtooth', .06); }
+  else if (k === 'jump2') tone(520, t, .14, 'square', .05, 1.8);
   else if (k === 'boing') tone(180, t, .22, 'triangle', .09, 3);
   else if (k === 'win') { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, t + i * .11, .2, 'square', .06)); }
   else if (k === 'check') { tone(660, t, .1, 'triangle', .07); tone(990, t + .1, .15, 'triangle', .07); }
@@ -349,7 +350,8 @@ function step(dt) {
   P.buf -= dt; P.coyote -= dt;
   const ht = P.buf > 0 ? hammerTarget() : null;
   if (ht) { hammer(ht); P.buf = 0; }
-  else if (P.buf > 0 && (P.ground || P.coyote > 0) && mode === 'play' && P.hearts > 0 && !(P.stun > 0)) { P.vy = -305; P.ground = false; P.coyote = 0; P.buf = 0; sfx('jump'); }
+  else if (P.buf > 0 && (P.ground || P.coyote > 0) && mode === 'play' && P.hearts > 0 && !(P.stun > 0)) { P.vy = -305; P.ground = false; P.coyote = 0; P.buf = 0; P.air = 0; sfx('jump'); }
+  else if (P.buf > 0 && !P.ground && !(P.air > 0) && mode === 'play' && P.hearts > 0 && !(P.stun > 0)) { P.vy = -280; P.air = 1; P.buf = 0; P.spin = .3; sfx('jump2'); } // the double jump: once more, in the air
   if (!keys.jump && P.vy < -120) P.vy += 1400 * dt; // a short tap, a short jump
   P.vy = Math.min(P.vy + 900 * dt, 420);
   const S = solids();
@@ -363,7 +365,7 @@ function step(dt) {
     if (s.one) {
       if (P.vy >= 0 && prevBottom <= s.y + 1) {
         P.y = s.y - P.h;
-        if (s.bounce) { P.vy = keys.jump ? -470 : -390; s.bounce.sq = .25; sfx('boing'); } // a tent: up you go (higher holding jump)
+        if (s.bounce) { P.vy = keys.jump ? -470 : -390; s.bounce.sq = .25; P.air = 0; sfx('boing'); } // a tent: up you go (higher holding jump)
         else { P.vy = 0; P.ground = true; }
       }
       continue;
@@ -371,6 +373,7 @@ function step(dt) {
     if (P.vy > 0) { P.y = s.y - P.h; P.vy = 0; P.ground = true; } else if (P.vy < 0) { P.y = s.y + s.h; P.vy = 0; }
   }
   if (wasGround && !P.ground) P.coyote = .1;
+  if (P.ground) P.air = 0; // back on the ground: the double jump again
   // a solid that grew into the player pushes them out sideways (or on top)
   for (const s of S) if (!s.one && hits(P, s, 1)) { if (P.y + P.h - s.y < 8) { P.y = s.y - P.h; P.ground = true; P.vy = 0; } else P.x = (P.x + P.w / 2 < s.x + s.w / 2) ? s.x - P.w : s.x + s.w; }
   P.inv = Math.max(0, P.inv - dt); P.anim += dt * (Math.abs(P.vx) / 60 + .5); P.stun = Math.max(0, (P.stun || 0) - dt); P.ham = Math.max(0, (P.ham || 0) - dt);
@@ -876,6 +879,7 @@ function draw() {
   const say = lvl.n === 1 ? COP_SAY() : COP_SAY_PORTO();
   for (const c of lvl.cops) if (Math.abs(c.x - camX - W / 2) < W) drawCop(c, say);
   if (!(P.inv > 0 && !(P.stun > 0) && Math.floor(t * 12) % 2)) { const fr = !P.ground ? 1 : Math.abs(P.vx) > 15 ? 1 + Math.floor(P.anim * 2) % 2 : 0; drawPerson(P.x, P.y, P.face, fr, mode === 'done' && lvl.n === 1 ? { ...ME, back: null } : ME); }
+  if (P.spin > 0) { P.spin -= 1 / 60; const a = 1 - P.spin / .3; for (let k = -1; k <= 1; k += 2) R(P.x + 4 + k * (3 + a * 6), P.y + 18 + a * 2, 2, 1, `rgba(244,241,234,${(1 - a).toFixed(2)})`); }
   if (P.ham > 0) { const up = P.ham > .11, hx = Math.round(P.x + (P.face > 0 ? 9 : -5)), hy = Math.round(P.y + (up ? 3 : 10)); R(hx, hy, 2, up ? 6 : 2, '#8a5a2a'); R(hx - 1, up ? hy - 2 : hy + 2, 5, 3, '#8a8f99'); } // the hammer
   if (P.stun > 0) { const hx = P.x + 5, hy = P.y - 2; for (let k = 0; k < 3; k++) { const a = t * 6 + k * 2.1; R(hx + Math.cos(a) * 7, hy + Math.sin(a) * 2, 2, 2, '#ffd23a'); } R(P.x + 6, P.y + 2, 1, 2, '#c81e1e'); if (P.stun < .7) R(P.x + 6, P.y + 4, 1, 1, '#c81e1e'); }
   for (const f of lvl.flyers) drawFlyer(f);
@@ -893,7 +897,7 @@ function title() {
   mode = 'title'; lvl = null; stats = { cravos: 0, cravosAll: 0, tents: 0, tentsAll: 0, fixed: 0, fixedAll: 0 };
   show(`<div class="card"><p class="kick">ACAMPADA PIXEL · ${L('MINI-JOGO', 'MINI-GAME')}</p><h1>${L('Natal na praça', 'Christmas in the square')}</h1>
   <p>${L('O <b>mercado de Natal</b> quer o Rossio. A <b>pista de gelo</b> quer a Praça D. João I. A acampada pela habitação já lá está.', 'The <b>Christmas market</b> wants the Rossio. The <b>ice rink</b> wants Praça D. João I. The camp for housing is already there.')}</p>
-  <p class="small">${isTouch ? L('◀︎ ▶︎ para andar, SALTAR para saltar.', '◀︎ ▶︎ to move, JUMP to jump.') : L('Setas ou A/D para andar · Espaço ou ↑ para saltar · P pausa · M som', 'Arrows or A/D to move · Space or ↑ to jump · P pause · M sound')}</p>
+  <p class="small">${isTouch ? L('◀︎ ▶︎ para andar, SALTAR para saltar (outra vez no ar: salto duplo).', '◀︎ ▶︎ to move, JUMP to jump (again in the air: double jump).') : L('Setas ou A/D para andar · Espaço ou ↑ para saltar, outra vez no ar para o salto duplo · P pausa · M som', 'Arrows or A/D to move · Space or ↑ to jump, again in the air to double jump · P pause · M sound')}</p>
   <div class="btns"><button class="big" id="go">${L('Jogar', 'Play')} →</button><a class="big alt" href="./">${L('Acampada Pixel', 'Acampada Pixel')}</a></div>
   <p class="small" style="margin-top:14px"><a href="#" id="lang" style="color:var(--dim)">${LANG === 'en' ? 'Português' : 'English'}</a></p></div>`);
   document.getElementById('go').onclick = () => { audioOn(); intro(1); };
