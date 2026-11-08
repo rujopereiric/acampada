@@ -467,5 +467,45 @@
   "title": "Grande Assembleia Vida Justa",
   "where": "Fábrica Braço de Prata · inscrição prévia",
   "horas": 8
+ },
+ {
+  "date": "2026-11-14",
+  "at": "17:00",
+  "city": "Lisboa",
+  "title": "Acampada",
+  "where": "Rossio · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
+  "date": "2026-11-14",
+  "at": "17:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
+  "date": "2026-11-15",
+  "at": "17:00",
+  "city": "Lisboa",
+  "title": "Acampada",
+  "where": "Rossio · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
+  "date": "2026-11-15",
+  "at": "17:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
+  "date": "2026-11-20",
+  "at": "15:00",
+  "city": "Sines",
+  "title": "Manifestação pela habitação",
+  "where": "Largo do Poeta Bocage",
+  "horas": 3
  }
 ]
