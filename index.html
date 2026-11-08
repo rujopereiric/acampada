@@ -1843,6 +1843,7 @@ function contextAction() {
   if (S.winning && S.winT > 3) return { label: 'Continuar →', ok: true, fn: () => { S.winGo = true; } }; // after the win: you choose when to move on
   if (S.graf && S.graf.state === 'spray' && gd(p, S.graf) < 2.4) return { label: 'Travar o grafíti', ok: true, fn: () => { const g = S.graf; g.hits++; sparkle(g.gx, g.gy, 3, g.z + 10); tone(520 + g.hits * 40, .06, 'square', .03); } }; // Space, again and again (or tap the climber)
   if (S.tandem && S.tandem.state === 'wait' && gd(p, S.tandem) < 2) return { label: 'Ajudar a içar a cabeça de burro', fn: hoist, ok: true };
+  if (xmasOn()) { const xt = xmasAt(); if (Math.hypot(p.gx - xt.gx, p.gy - xt.gy) < 2.2) return { label: L('🎄 Especial Natal', '🎄 Christmas Special'), ok: true, fn: treeOpen }; } // by the Christmas tree
   if (S.zez && gd(p, S.zez) < 1.6) { const z = S.zez, cd = S.zezCd > 0, done = (S.zezN || 0) >= ZEZ_LIVES; // Porto: Zezinho goes live on TikTok, +5 support (once a minute, 3 times a game)
     return { label: z.live > 0 ? L('Zezinho em direto no TikTok', 'Zezinho live on TikTok') : done ? L('O Zezinho já fez os 3 lives', 'Zezinho has done his 3 lives') : cd ? L(`Live no TikTok · ${Math.ceil(S.zezCd)}s`, `TikTok live · ${Math.ceil(S.zezCd)}s`) : L(`Pedir ao Zezinho um live no TikTok (${ZEZ_LIVES - (S.zezN || 0)})`, `Ask Zezinho to go live on TikTok (${ZEZ_LIVES - (S.zezN || 0)})`), ok: !cd && !done && !(z.live > 0),
       fn: () => { S.zezN = (S.zezN || 0) + 1; S.zezCd = 60; z.live = 7; z.wait = 7; z.moving = false; z.flip = p.gx - z.gx - (p.gy - z.gy) < 0; S.support = Math.min(100, S.support + 5); float(z.gx, z.gy, L('Live no TikTok! +5 de apoio', 'TikTok live! +5 support'), '#ff3b8b', 30); sfx('join'); } }; }
@@ -2547,16 +2548,27 @@ function tvSync() {
   tvShot(K);
 }
 function tvShot(K) {
-  const ng = (K.neg || []).find(m => m.kind === 'neg') || { gx: K.nc[0], gy: K.nc[1] }; // the close-up: the negotiator, being interviewed
-  // the TV camera: the square's background (no night, no darkening) and only the people in the shot, lit
-  const w = 72, hh = 40, tc = $('tvc'); if (tc.width !== w) { tc.width = w; tc.height = hh; }
-  const g = tc.getContext('2d'), q = iso(ng.gx, ng.gy), sx = Math.round(q.x - w / 2 - 4), sy = Math.round(q.y - hh / 2 - 9);
+  // the close-up: the negotiator face to face with the officer (between the two), the press round them
+  const ng = (K.neg || []).find(m => m.kind === 'neg' && !m.go), cop = (K.neg || []).find(m => m.kind === 'cop' && !m.go);
+  const fc = ng && cop ? { gx: (ng.gx + cop.gx) / 2, gy: (ng.gy + cop.gy) / 2 } : ng || { gx: K.nc[0], gy: K.nc[1] };
+  // the TV camera: the square's background (no night, no darkening) and only the people in the shot, lit. 96x54, the size
+  // of the TV set's picture, so it is copied 1:1 (stretched from a smaller one, its pixels came out uneven and blurred)
+  const w = 96, hh = 54, tc = $('tvc'); if (tc.width !== w) { tc.width = w; tc.height = hh; }
+  const g = tc.getContext('2d'), q = iso(fc.gx, fc.gy), sx = Math.round(q.x - w / 2), sy = Math.round(q.y - hh / 2 - 12);
   g.imageSmoothingEnabled = false; g.fillStyle = '#2a2440'; g.fillRect(0, 0, w, hh); if (bg) g.drawImage(bg, sx, sy, w, hh, 0, 0, w, hh);
   if (S.dark > .3) { g.fillStyle = 'rgba(18,8,64,.25)'; g.fillRect(0, 0, w, hh); } // a little night, but the camera light is on them
   const inShot = o => { const p = iso(o.gx, o.gy); return p.x > sx - 12 && p.x < sx + w + 12 && p.y > sy - 4 && p.y < sy + hh + 24; };
-  const shot = [...(K.neg || []).map(m => [m, () => drawNeg(m)]), ...S.police.filter(inShot).map(o => [o, () => drawCop(o)]), ...(K.crowd || []).filter(inShot).map(m => [m, () => drawNeg(m)])].sort((a, b) => a[0].gx + a[0].gy - b[0].gx - b[0].gy);
+  const shot = [...(K.neg || []).map(m => [m, () => drawNeg(m)]), ...S.police.filter(inShot).map(o => [o, () => drawCop(o)]), ...(K.phase === 'charge' ? (K.crowd || []).filter(inShot) : []).map(m => [m, () => drawNeg(m)])].sort((a, b) => a[0].gx + a[0].gy - b[0].gx - b[0].gy);
   const main = ctx; ctx = g; ctx.save(); ctx.translate(-sx, -sy);
-  try { for (const [o, f] of shot) { const p = iso(o.gx, o.gy); small(p.x, p.y, f); } } finally { ctx.restore(); ctx = main; }
+  try {
+    for (const [o, f] of shot) { const p = iso(o.gx, o.gy); small(p.x, p.y, f); }
+    // while they negotiate, speech bubbles, one then the other: so it reads as a talk, not a crowd
+    if (ng && cop && K.phase !== 'charge') {
+      const who = Math.floor(S.t / 1.1) % 2 ? ng : cop, p = iso(who.gx, who.gy), k = S.city.peopleK || 1, bx = Math.round(p.x) - 4, by = Math.round(p.y - 18 * k) - 10, dots = Math.floor(S.t * 3) % 4;
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(bx, by, 9, 6); ctx.fillRect(bx + 1, by - 1, 7, 8); ctx.fillRect(bx + 3, by + 7, 2, 2);
+      ctx.fillStyle = '#16121a'; for (let i = 0; i < Math.min(3, dots); i++) ctx.fillRect(bx + 2 + i * 2, by + 3, 1, 1);
+    }
+  } finally { ctx.restore(); ctx = main; }
 }
 /* ================= the TV set: in the free space beside the square (phones on their side, computers) =================
    by the hour: horoscope 7–10, soap opera 10–19 (Ossitrim ads in between), news 19–21, debate 21–3, teleshopping 3–7;
@@ -2731,7 +2743,7 @@ function tellySync(dt) {
   }
   const c = $('tlc'), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
   if (cut) { for (let i = 0; i < 160; i++) { const v = Math.floor(Math.random() * 200 + 40); g.fillStyle = `rgb(${v},${v},${v})`; g.fillRect(Math.floor(Math.random() * 16) * 6, Math.floor(Math.random() * 9) * 6, 6, 6); } return; }
-  if (p === 'alerta') { const K = S.kettle; if (K.nc && K.tvOn) g.drawImage($('tvc'), 0, 0, 72, 40, 0, 0, 96, 54); else tvCrop(g, S.player.gx, S.player.gy); }
+  if (p === 'alerta') { const K = S.kettle; if (K.nc && K.tvOn) g.drawImage($('tvc'), 0, 0); /* 1:1: tvShot draws it at 96x54 */ else tvCrop(g, S.player.gx, S.player.gy); }
   else if (p === 'rusga') { const cop = tvCop(); if (cop) { TELLY.cx = TELLY.cx == null ? cop.gx : TELLY.cx + (cop.gx - TELLY.cx) * .25; TELLY.cy = TELLY.cy == null ? cop.gy : TELLY.cy + (cop.gy - TELLY.cy) * .25; tvCrop(g, TELLY.cx, TELLY.cy, 1.5); } else tvCrop(g, S.player.gx, S.player.gy, 1.5); } // zoomed in on the police, the camera follows smoothly
   else if (p === 'vitoria') tvCrop(g, CX, CY);
   else if (p === 'direto' || p === 'rep' || p === 'laranja') tvCrop(g, S.player.gx, S.player.gy, 1.5); // close-up on the one being interviewed
@@ -5633,14 +5645,14 @@ function prWalk(p, dt) { // the walk to the paper; true while it is going on
   if (moveEnt(p, S.prPaper.gx, S.prPaper.gy, 3, dt, true)) prOpen();
   return true;
 }
-/* secret: the Christmas special (natal.html). From day 5, in Lisboa and in Porto, a Christmas tree stands on one of
+/* secret: the Christmas special (natal.html). From day 2, in Lisboa and in Porto, a Christmas tree stands on one of
    the streets by the square: tap it (the player walks there), and a paper on a branch offers the game. Once opened,
    it stays in the squares menu as "Especial Natal", like Caldas. */
 const NATAL_KEY = 'acampada-natal';
 const natalSaved = () => { try { return !!JSON.parse(localStorage.getItem(NATAL_KEY) || '{}').open; } catch (e) { return false; } };
 function natalStore() { try { localStorage.setItem(NATAL_KEY, JSON.stringify({ open: true })); } catch (e) {} }
 const xmasDay = () => 1 + Math.floor((S.clock - 6) / 24);
-const xmasShown = () => !!(S && S.city.xmas && xmasDay() >= 5); // it stands there from day 5
+const xmasShown = () => !!(S && S.city.xmas && xmasDay() >= 2); // it stands there from day 2
 const xmasOn = () => xmasShown() && !S.raid && !S.van && !S.kettle && !S.winning; // and can be tapped when no police are on the square
 const xmasAt = () => S.city.violent ? { gx: 1.4, gy: NY - 3 } : { gx: NX - 3, gy: -1 }; // Porto: the raised road; Lisboa: the north street
 function xmasTick() {

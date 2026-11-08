@@ -454,7 +454,7 @@ function makeDecor() {
   DECOR = [];
   for (const [x, y] of [[1, 1], [W - 1, 1], [1, H - 1], [W - 1, H - 1], [CXg, .8], [.8, CYg], [W - .8, CYg], [CXg, H - .8]]) DECOR.push({ gx: x, gy: y, k: 'lamp' });
   for (const [x, y, r] of [[4, 2, 0], [2, 5, 1], [2, H - 6, 1], [W - 2, 5, 1], [W - 2, H - 6, 1]]) DECOR.push({ gx: x, gy: y, k: 'bench', r });
-  for (const [x, y] of [[W - 3, 3], [3, H - 3]]) DECOR.push({ gx: x, gy: y, k: 'tree' });
+  DECOR.push({ gx: W - 3, gy: 3, k: 'natal' }); DECOR.push({ gx: 3, gy: H - 3, k: 'tree' }); // one of the two trees is the Christmas tree (tap it: the Christmas special)
   DECOR.push({ gx: CXg, gy: CYg, k: 'cravo' }); // the giant carnation of the 25th of April, in the middle
   DECOR.push({ gx: 16.5, gy: 16.5, k: 'fonte' }); // the fountain (the characters walk round it: personagens.js OBST)
   DECOR.push({ gx: 16.4, gy: 2.75, k: 'cantina' }); // the canteen's table
@@ -466,11 +466,22 @@ function drawDecor(g, d) {
   if (d.k === 'fonte') return drawFonte(g, d);
   if (d.k === 'cantina') return drawCantina(g, d);
   if (d.k === 'mesa') return drawMesa(g, d);
+  if (d.k === 'natal') return drawNatalTree(g, x, y);
   if (d.k === 'lamp') { R(g, x - 1, y - 1, 3, 1, '#2a2350'); vl(g, x, y - 24, y, '#2a2350'); R(g, x - 2, y - 27, 5, 3, '#2a2350'); R(g, x - 1, y - 26, 3, 2, dusk > .4 ? '#fff3b0' : '#dfe6f5'); }
   else if (d.k === 'bench') { if (d.r) box(g, d.gx - .12, d.gy - .35, d.gx + .12, d.gy + .35, 0, 3, '#b4b3b9', '#98979e', '#838289'); else box(g, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
   else { ell(g, x, y, 9, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 14, 2, 14, '#6b4a2b'); circ(g, x, y - 22, 9, '#2f8a50'); circ(g, x - 3, y - 25, 5, '#57c46e'); circ(g, x + 3, y - 19, 4, '#25703f'); }
 }
-const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, mesa: .8 }[d.k]));
+const blocked = (gx, gy) => DECOR.some(d => d.k !== 'bench' && Math.hypot(d.gx - gx, d.gy - gy) < ({ tree: .55, natal: .55, lamp: .3, cravo: 1.75, fonte: 1.6, cantina: 1, mesa: .8 }[d.k]));
+// the Christmas tree: tiers of green, lights blinking, a star, a paper on a branch (the secret Christmas special, natal.html)
+function drawNatalTree(g, x, y) {
+  const f = Math.floor(performance.now() / 330);
+  ell(g, x, y, 10, 'rgba(30,10,70,.25)'); R(g, x - 1, y - 6, 3, 6, '#6b4a2b');
+  for (const [w, yy, h] of [[19, -12, 7], [15, -18, 7], [11, -24, 7], [7, -29, 6], [3, -32, 4]]) { R(g, x - (w >> 1), y + yy, w, h, '#1f6b3a'); R(g, x + 1, y + yy, (w >> 1) + 1, h, '#18552e'); }
+  [[-7, -8], [5, -9], [-4, -13], [6, -15], [-2, -19], [4, -21], [-3, -24], [2, -27], [0, -30]].forEach(([dx, dy], k) => R(g, x + dx, y + dy, 1, 1, (f + k) % 3 ? ['#ffd23a', '#ff5a5a', '#8fd0ff', '#b6ff3b'][k % 4] : '#0f3a20'));
+  R(g, x - 1, y - 36, 3, 3, '#ffd23a'); R(g, x, y - 37, 1, 5, '#ffd23a');
+  R(g, x + 3, y - 16, 3, 3, '#f4f1ea'); // the paper
+  R(g, x - 9, y - 4, 5, 4, '#d22a2a'); R(g, x - 7, y - 4, 1, 4, '#ffd23a'); R(g, x + 5, y - 3, 4, 3, '#3a8fd8'); R(g, x + 6, y - 3, 1, 3, '#f4f1ea'); // presents
+}
 // the statue: a granite plinth, a bronze-green stem with two leaves and a huge red carnation on top
 function drawCravo(g, d) {
   const c = d.gx, r = d.gy;
@@ -1377,6 +1388,7 @@ function targets() {
   if (J.banner && J.banner.open) out.push({ kind: 'faixaab', id: J.banner.id, x: J.banner.x, y: J.banner.y, z: 21 });
   for (const c of cartazes) { const s = cartazCentre(c); out.push({ kind: 'cartaz', id: c.id, x: s.gx, y: s.gy, z: s.z, c }); }
   Object.entries(MESAS).forEach(([j, M], k) => out.push({ kind: 'mesa', id: k, j, x: M.gx, y: M.gy, z: 12 }));
+  out.push({ kind: 'natal', id: 0, x: W - 3, y: 3, z: 16 });
   return out;
 }
 function hitTest(sx, sy) {
@@ -1391,6 +1403,7 @@ function hitTest(sx, sy) {
 const distTo = t => me ? Math.hypot(me.x - t.x, me.y - t.y) : 99;
 function approach(t) {
   if (t.kind === 'mesa') return chessOpen(t.j); // a game table: from anywhere in the square
+  if (t.kind === 'natal') return natalDialog();
   if (t.kind === 'cartaz') return showCartaz(t.c);
   if (t.kind === 'bicicletada') return bikeRideInfo();
   if (t.kind === 'tenda') return toast(L(`⛺ Montada por ${t.t.n.join(' e ')}`, `⛺ Pitched by ${t.t.n.join(' and ')}`), 3000);
@@ -1426,6 +1439,14 @@ function interact(t) {
     return dialog(L('Que frase leva a faixa?', 'Which slogan goes on the banner?'), L('Escolhe, levanta a tua ponta e espera que alguém pegue na outra (6 s).', 'Pick one, lift your end and wait for someone to take the other (6 s).'), b => { const gr = optGrid(b); PHRASES.slice(0, 9).forEach((ph, i) => gr.append(optBtn(L(ph[0], ph[1]), () => { send({ t: 'faixa', id: t.gid, k: t.k, f: i }); closeSheets(); toast(L('Ponta levantada! Falta alguém na outra.', 'End lifted! Someone needs to take the other.'), 3500); }))); }); }
 }
 // leaving the square: asked first
+function natalDialog() { // the Christmas tree: the secret Christmas special (it opens natal.html; and unlocks it in the game's menu)
+  dialog(L('Especial Natal', 'Christmas Special'), L('Pendurado na árvore, um papel: «O mercado de Natal quer o Rossio e a pista de gelo quer a Praça D. João I. Vens defender as tendas?»', 'Hanging on the tree, a sheet of paper: “The Christmas market wants the Rossio and the ice rink wants Praça D. João I. Will you come and stand up for the tents?”'), b => {
+    const row = document.createElement('div'); row.className = 'row2';
+    const yes = optBtn(L('🎄 Jogar', '🎄 Play'), () => { try { localStorage.setItem('acampada-natal', JSON.stringify({ open: true })); } catch (e) {} wantOpen = false; closedByServer = true; try { ws && ws.close(1000); } catch (e) {} location.href = 'natal.html'; }); yes.className = 'redbtn';
+    const no = optBtn(L('Agora não', 'Not now'), () => closeSheets()); no.className = 'ghost';
+    row.append(yes, no); b.append(row);
+  });
+}
 function quitDialog() {
   dialog(L('Queres mesmo sair?', 'Do you really want to leave?'), L('Sais da praça e voltas ao menu inicial. Podes voltar a entrar enquanto estiver aberta.', 'You leave the square and go back to the main menu. You can come back in while it’s open.'), b => {
     const row = document.createElement('div'); row.className = 'row2';
