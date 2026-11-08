@@ -2,7 +2,7 @@
 <html lang="pt">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" id="vp" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Natal na Praça · Acampada Pixel</title>
 <meta name="description" content="Mini-jogo de plataformas da Acampada Pixel: o mercado de Natal no Rossio e a pista de gelo na Praça D. João I querem o lugar das tendas.">
 <meta name="theme-color" content="#0b0a0a">
@@ -50,7 +50,7 @@ body.touch #top button{ min-width:48px; height:48px; font-size:18px; }
   padding:10px max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); pointer-events:none; box-sizing:border-box; }
 body.touch #pad{ display:flex; }
 #pad .grp{ display:flex; gap:12px; }
-#pad button{ pointer-events:auto; width:78px; height:78px; border-radius:50%; border:3px solid rgba(244,241,234,.75); background:rgba(11,10,10,.45);
+#pad button{ pointer-events:auto; -webkit-user-select:none; user-select:none; width:78px; height:78px; border-radius:50%; border:3px solid rgba(244,241,234,.75); background:rgba(11,10,10,.45);
   color:var(--ink); font:800 26px/1 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; touch-action:none; }
 #pad button.jump{ width:96px; height:96px; font-size:15px; text-transform:uppercase; border-color:var(--yel); color:var(--yel); }
 #pad button.on{ background:rgba(244,241,234,.35); }
@@ -108,6 +108,19 @@ function fit() {
   const turn = document.getElementById('turn'); if (turn) { turn.textContent = L('↻ Melhor com o telemóvel deitado', '↻ Better with the phone on its side'); turn.style.top = Math.max(8, (room - h) / 2 - 30) + 'px'; }
 }
 addEventListener('resize', fit); addEventListener('orientationchange', () => setTimeout(fit, 200)); fit();
+
+// ---------- a game, not a page: no zoom. The iPhone ignores the viewport setting, so the gestures themselves are stopped:
+// pinching (two fingers, e.g. ◀ and SALTAR at once), and the quick double tap (hammering, the double jump) that zooms.
+// And if the page got zoomed anyway, it snaps back to normal size.
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+for (const el of [stage, document.getElementById('pad')]) el.addEventListener('touchend', e => { if (!e.target.closest('#top')) e.preventDefault(); }, { passive: false }); // (the buttons work by pointer events; ♪ and II keep their click)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => { const now = Date.now(); if (now - lastTouchEnd < 350 && !e.target.closest('#ov a, #ov button, #top')) e.preventDefault(); lastTouchEnd = now; }, { passive: false });
+if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+  if (visualViewport.scale > 1.01) { const m = document.getElementById('vp'), c = m.content; m.content = c + ', minimum-scale=1'; setTimeout(() => { m.content = c; }, 300); }
+});
 
 // ---------- input
 const keys = { left: false, right: false, jump: false };
