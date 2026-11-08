@@ -126,12 +126,12 @@ function pitch() {
   if (!an) return { f: 0, rms: 0 };
   an.getFloatTimeDomainData(buf); const N = buf.length, sr = actx.sampleRate; let rms = 0;
   for (let i = 0; i < N; i++) rms += buf[i] * buf[i]; rms = Math.sqrt(rms / N);
-  if (rms < .012) return { f: 0, rms };
+  if (rms < .007) return { f: 0, rms }; // quiet voices count too
   const W = N >> 1, minL = Math.floor(sr / 1100), maxL = Math.min(W - 1, Math.floor(sr / 70)), d = new Float32Array(maxL + 2);
   for (let L = 1; L <= maxL + 1; L++) { let s = 0; for (let i = 0; i < W; i++) { const x = buf[i] - buf[i + L]; s += x * x; } d[L] = s; }
   let run = 0, best = -1; // cumulative mean normalised difference, first dip under the threshold
   for (let L = 1; L <= maxL + 1; L++) { run += d[L]; d[L] = d[L] * L / (run || 1); }
-  for (let L = minL; L <= maxL; L++) if (d[L] < .15) { while (L + 1 <= maxL && d[L + 1] < d[L]) L++; best = L; break; }
+  for (let L = minL; L <= maxL; L++) if (d[L] < .2) { while (L + 1 <= maxL && d[L + 1] < d[L]) L++; best = L; break; }
   if (best < 0) return { f: 0, rms };
   const a = d[best - 1], b = d[best], c = d[best + 1], sh = (a - c) / (2 * (a - 2 * b + c) || 1); // parabolic refinement
   return { f: sr / (best + (Math.abs(sh) < 1 ? sh : 0)), rms };
@@ -150,7 +150,7 @@ function choir(m, d, t0, vol) {
 const $ = id => document.getElementById(id), cv = $('cv'), ctx = cv.getContext('2d'), W = 320, H = 200;
 const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
 let G = null, song = SONGS[0], trail = [], level = 0;
-const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado: a synthetic singer instead of the mic (for testing)
+const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado|real: a synthetic singer instead of the mic (for testing)
 function start(s) {
   song = s; audio(); const { notes, parts, end } = build(s);
   const lo = Math.min(...notes.map(n => n.m)) - 2, hi = Math.max(...notes.map(n => n.m)) + 2;
@@ -158,13 +158,17 @@ function start(s) {
   trail = []; show('play');
   if (TEST) { // a synthetic voice an octave below the tune (sharp by 2 semitones when 'errado'), straight into the analyser
     const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; g.gain.value = 0; o.connect(g); attach(g); o.start();
+    if (TEST === 'real') { // like a person: 0.15 s late, 0.4 semitone flat, a vibrato of half a semitone, a short breath before each note
+      const vib = actx.createOscillator(), vg = actx.createGain(); vib.frequency.value = 5.5; vg.gain.value = 25; vib.connect(vg).connect(o.detune); vib.start(); o.detune.value = -40;
+      for (const n of notes) { const t = G.t0 + n.t + .15; o.frequency.setValueAtTime(hz(n.m - 12), t); g.gain.setValueAtTime(.25, t + .06); g.gain.setValueAtTime(0, t + Math.max(.08, n.d - .1)); }
+    } else
     for (const n of notes) { const t = G.t0 + n.t; o.frequency.setValueAtTime(hz(n.m - 12 + (TEST === 'errado' ? 2 : 0)), t); g.gain.setValueAtTime(.3, t + .03); g.gain.setValueAtTime(0, t + n.d - .03); }
     G.osc = o;
   }
 }
 function stop(done) {
   if (!G) return; if (G.osc) try { G.osc.stop(); } catch (e) {}
-  const pct = G.score / G.max, pts = Math.round(pct * 10000), stars = pct >= .8 ? 3 : pct >= .55 ? 2 : pct >= .25 ? 1 : 0;
+  const pct = G.score / G.max, pts = Math.round(pct * 10000), stars = pct >= .75 ? 3 : pct >= .45 ? 2 : pct >= .2 ? 1 : 0;
   window.__coros.result = { pct, pts, stars, notes: G.notes.map(n => +(n.on ? n.in / n.on : 0).toFixed(2)) };
   G = null;
   if (!done) { show('menu'); return; }
@@ -224,10 +228,21 @@ function frame() {
   while (G.psched < G.parts.length && G.parts[G.psched].t < t + .25) { const n = G.parts[G.psched++]; choir(n.m, n.d, G.t0 + n.t, .45); }
   const cur = G.notes.find(n => t >= n.t && t < n.t + n.d), soon = G.notes.find(n => n.t + n.d > t) || G.notes[G.notes.length - 1];
   let now = null;
-  if (cur) {
-    const dt = Math.min(.1, t - G.last); cur.on += dt;
-    if (p.f) { const m = fold(midiOf(p.f), cur.m), ok = Math.abs(m - cur.m) <= 1; now = { m, ok }; if (ok) { cur.in += dt; G.score += dt * (cur.strong ? 2 : 1); } trail.push({ t, m, ok }); }
+  // kind scoring: within 1.5 semitones is in tune, and 60% of a note held in tune counts as all of it. The note being sung
+  // is the one under way; in the first 0.25 s of a note the one just before still counts (everyone, and the microphone, is
+  // a little late), and in its last 0.1 s the next one too (coming in early)
+  const dt = Math.min(.1, t - G.last); if (cur) cur.on += dt;
+  const i0 = cur ? G.notes.indexOf(cur) : -1, prev = i0 > 0 ? G.notes[i0 - 1] : null, next = i0 >= 0 ? G.notes[i0 + 1] : null;
+  const near = cur ? [cur] : G.notes.filter(n => t >= n.t + n.d && t < n.t + n.d + .25); // in a rest: the note that just ended
+  if (cur && prev && t < cur.t + .25 && t < prev.t + prev.d + .25) near.push(prev);
+  if (cur && next && t >= next.t - .1) near.push(next);
+  if (p.f && near.length) {
+    let best = null, bd = 99; for (const n of near) { const d = Math.abs(fold(midiOf(p.f), n.m) - n.m); if (d < bd) { bd = d; best = n; } }
+    const m = fold(midiOf(p.f), best.m), ok = bd <= 1.5; now = { m, ok };
+    if (ok) best.in = Math.min(best.d, best.in + dt);
+    trail.push({ t, m, ok });
   } else if (p.f) { const m = fold(midiOf(p.f), soon.m); now = { m, ok: false }; trail.push({ t, m, ok: false }); }
+  G.score = G.notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1) * Math.min(1, n.in / (n.d * .6)), 0);
   G.last = t; while (trail.length && trail[0].t < t - 2) trail.shift();
   const pct = G.score / G.max;
   ctx.clearRect(0, 0, W, H); stage(t, !!cur, Math.min(1, pct * 1.6)); lane(t, cur, now);
