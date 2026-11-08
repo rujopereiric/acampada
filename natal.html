@@ -342,7 +342,11 @@ function respawn() {
   if (!lvl) return;
   const c = P.check; P.x = c; P.y = GY - 40; P.vx = 0; P.vy = 0; P.hearts = 3; P.inv = 2;
   lvl.flyers = []; for (const c2 of lvl.cops) { c2.x = c2.a + 10; c2.fall = 0; }
-  if (lvl.frost) { lvl.frost.x = Math.min(lvl.frost.x, c - 230); lvl.frost.wait = 1.5; }
+  if (lvl.frost) {
+    lvl.frost.x = Math.min(lvl.frost.x, c - 230); lvl.frost.wait = 1.5;
+    // the ice goes back: the tents it leaves behind thaw, and can be pegged down again
+    for (const tn of lvl.tents) if (tn.frozen && tn.x > lvl.frost.x + 10) { tn.frozen = false; tn.blows = 0; tn.fold = 0; floatText(tn.x, GY - 30, L('Descongelou!', 'Thawed!'), '#b6ff3b', 1.6); }
+  }
 }
 
 // ---------- the step
