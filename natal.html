@@ -17,12 +17,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Jost:wght@500;700;800&family=Silkscreen&display=swap" rel="stylesheet">
 <style>
 :root{ --bg:#0b0a0a; --red:#d22a2a; --lime:#b6ff3b; --yel:#ffd23a; --ink:#f4f1ea; --dim:#a9a39a; }
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; } /* iOS blows the text up when the phone is turned on its side: not here */
 html,body{ margin:0; height:100%; background:var(--bg); color:var(--ink); font-family:Jost, 'Avenir Next', 'Helvetica Neue', system-ui, sans-serif; overflow:hidden;
   touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
 #stage{ position:fixed; left:50%; top:0; transform:translateX(-50%); background:#000; }
 canvas{ display:block; width:100%; height:100%; image-rendering:pixelated; }
 #ov{ position:fixed; inset:0; z-index:5; display:flex; background:rgba(11,10,10,.92);
-  padding:14px; box-sizing:border-box; overflow:auto; }
+  padding:14px; box-sizing:border-box; overflow:auto; touch-action:pan-y; -webkit-overflow-scrolling:touch; } /* (it can scroll when the text doesn't fit) */
 #ov[hidden]{ display:none; }
 .card{ max-width:600px; text-align:center; margin:auto; } /* margin:auto centres it, and lets it scroll when it doesn't fit */
 @media (max-height: 520px){ /* a phone on its side: smaller, so a level's screen fits with its button */
@@ -31,6 +32,10 @@ canvas{ display:block; width:100%; height:100%; image-rendering:pixelated; }
   h1{ font-size:34px; margin-bottom:6px; } h2{ font-size:24px; margin-bottom:6px; }
   p{ font-size:14px; line-height:1.3; margin-bottom:6px; } .kick{ margin-bottom:4px; } .stats{ margin:4px 0 6px; }
   .btns{ margin-top:6px; } button.big, a.big{ font-size:16px; padding:10px 22px; }
+}
+@media (max-height: 360px){ /* and shorter still, with the browser's bars taking their share */
+  h1{ font-size:28px; } h2{ font-size:20px; } p{ font-size:13px; line-height:1.25; margin-bottom:4px; } .kick{ font-size:10px; }
+  button.big, a.big{ font-size:15px; padding:8px 20px; }
 }
 .kick{ font:400 clamp(10px,2.2vw,14px)/1.2 Silkscreen, monospace; color:var(--yel); letter-spacing:1px; margin:0 0 8px; }
 h1{ font:800 clamp(30px,7.4vw,64px)/.88 Jost, 'Avenir Next', 'Helvetica Neue', sans-serif; color:var(--red); text-transform:uppercase; margin:0 0 10px; letter-spacing:-1px; }
@@ -148,10 +153,32 @@ for (const b of document.querySelectorAll('#pad button')) {
 // ---------- sound: a few effects and "Jingle Bells" (Pierpont, 1857, public domain) on a little square wave
 let actx = null, muted = false, master = null, musicOn = false, musicNext = 0, musicI = 0;
 try { muted = localStorage.getItem('natal-mute') === '1'; } catch (e) {}
-function audioOn() {
-  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(actx.destination); } catch (e) { actx = null; } }
-  if (actx && actx.state === 'suspended') actx.resume();
+// the iPhone plays Web Audio as "ambient" sound, which the silent switch turns off: ask for "playback", like a video
+// (and where that can't be asked for, a silent sound on loop in an <audio> does the same)
+let session = false, keepAlive = null;
+function audioSession() {
+  if (session) return; session = true;
+  try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; } } catch (e) {}
+  if (!/iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return;
+  try {
+    const n = 4000, b = new Uint8Array(44 + n), v = new DataView(b.buffer), str = (o, x) => { for (let i = 0; i < x.length; i++) b[o + i] = x.charCodeAt(i); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+    keepAlive = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); keepAlive.loop = true; keepAlive.setAttribute('playsinline', '');
+    keepAlive.play().catch(() => {});
+  } catch (e) {}
 }
+function audioOn() {
+  audioSession();
+  if (keepAlive && keepAlive.paused && !muted) keepAlive.play().catch(() => {});
+  if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); master = actx.createGain(); master.gain.value = muted ? 0 : 1; master.connect(actx.destination); } catch (e) { actx = null; } }
+  if (actx && actx.state !== 'running') { try { actx.resume(); } catch (e) {} }
+  if (actx && !actx.primed) { // the iPhone only opens the sound once something has played inside a tap: a moment of silence
+    try { const b = actx.createBufferSource(); b.buffer = actx.createBuffer(1, 1, 22050); b.connect(actx.destination); b.start(0); actx.primed = true; } catch (e) {}
+  }
+}
+// a pointerdown with a finger doesn't count as a tap for the browser's sound rules; the lifting of the finger does
+for (const ev of ['touchend', 'pointerup', 'click']) addEventListener(ev, () => { if (!actx || actx.state !== 'running' || (keepAlive && keepAlive.paused && !muted)) audioOn(); }, { capture: true, passive: true });
 function tone(f, t0, dur, type = 'square', vol = .06, slide = 0) {
   if (!actx) return;
   const o = actx.createOscillator(), g = actx.createGain();
@@ -193,7 +220,7 @@ function musicTick() {
 }
 function toggleMute() {
   muted = !muted; try { localStorage.setItem('natal-mute', muted ? '1' : '0'); } catch (e) {}
-  if (master) master.gain.value = muted ? 0 : 1; document.getElementById('bMute').textContent = muted ? '♪︎̸' : '♪︎';
+  if (master) master.gain.value = muted ? 0 : 1; if (keepAlive) { if (muted) keepAlive.pause(); else keepAlive.play().catch(() => {}); } document.getElementById('bMute').textContent = muted ? '♪︎̸' : '♪︎';
   if (!muted && actx) musicNext = actx.currentTime + .05;
 }
 document.getElementById('bMute').addEventListener('click', e => { audioOn(); toggleMute(); e.currentTarget.blur(); }); // blur: Space is for jumping
@@ -233,7 +260,7 @@ function makeLevel(n) {
     const signs = ['PINA COLADA SEXY', L('VINHO QUENTE', 'MULLED WINE'), L('CASTANHAS', 'CHESTNUTS'), 'GINJINHA', L('BOLO-REI', 'KING CAKE'), L('FARTURAS', 'CHURROS'), L('ÍMANES', 'MAGNETS'), L('GORROS', 'BEANIES')];
     // each stretch: a stall, a camp tent to bounce on (a carnation high above it), a price tag (the tall ones, 10€, can
     // also be taken from the roof or the tent), then the open square: the Polícia Municipal, or a stall on wheels
-    // pushing a tent out of the square (get there and stop by it to peg it down)
+    // pushing a tent out of the square (get there and hammer it down: 3 blows)
     const P = PRICES(), order = [2, 1, 0, 2, 0, 1, 0, 2, 1, 0, 1, 2], cols = ['#3a8fd8', '#55b05a', '#9b59d0', '#2bb3a8', '#f0b429'];
     let x = 250, i = 0;
     while (x < lv.goal - 300) {
@@ -301,7 +328,7 @@ function hammer(tg) {
   if (tg.blows < BLOWS) return;
   if (tg.cart) { tg.state = 'fixed'; sfx('save'); floatText(tg.x, GY - 30, L('Tenda pregada! A barraca parou', 'Tent pegged down! The stall stopped'), '#b6ff3b', 1.8); }
   else { tg.saved = true; sfx('save'); floatText(tg.x, GY - 30, L('Tenda pregada! Fica!', 'Tent pegged down! It stays!'), '#b6ff3b', 1.6); }
-} // clear of the arrow buttons on a phone on its side
+}
 function newPlayer(x) { return { x, y: GY - 18, w: 10, h: 18, vx: 0, vy: 0, face: 1, ground: true, coyote: 0, buf: 0, hearts: 3, inv: 0, anim: 0, check: x, dead: 0 }; }
 function startLevel(n) {
   const c0 = stats.cravos; // carnations had before this level (a restart puts the count back)
@@ -340,7 +367,7 @@ function hurt(from, baton) {
 }
 function respawn() {
   if (!lvl) return;
-  const c = P.check; P.x = c; P.y = GY - 40; P.vx = 0; P.vy = 0; P.hearts = 3; P.inv = 2;
+  const c = P.check; P.x = c; P.y = GY - 40; P.vx = 0; P.vy = 0; P.hearts = 3; P.inv = 2; P.stun = 0; P.ham = 0; P.spin = 0; P.dead = 0;
   lvl.flyers = []; for (const c2 of lvl.cops) { c2.x = c2.a + 10; c2.fall = 0; }
   if (lvl.frost) {
     lvl.frost.x = Math.min(lvl.frost.x, c - 230); lvl.frost.wait = 1.5;
@@ -393,7 +420,7 @@ function step(dt) {
   if (P.ground) P.air = 0; // back on the ground: the double jump again
   // a solid that grew into the player pushes them out sideways (or on top)
   for (const s of S) if (!s.one && hits(P, s, 1)) { if (P.y + P.h - s.y < 8) { P.y = s.y - P.h; P.ground = true; P.vy = 0; } else P.x = (P.x + P.w / 2 < s.x + s.w / 2) ? s.x - P.w : s.x + s.w; }
-  P.inv = Math.max(0, P.inv - dt); P.anim += dt * (Math.abs(P.vx) / 60 + .5); P.stun = Math.max(0, (P.stun || 0) - dt); P.ham = Math.max(0, (P.ham || 0) - dt);
+  P.inv = Math.max(0, P.inv - dt); P.anim += dt * (Math.abs(P.vx) / 60 + .5); P.stun = Math.max(0, (P.stun || 0) - dt); P.ham = Math.max(0, (P.ham || 0) - dt); P.spin = Math.max(0, (P.spin || 0) - dt);
   if (P.dead > 0) { P.dead -= dt; if (P.dead <= 0) respawn(); }
   if (P.y > 400) respawn();
 
@@ -496,7 +523,8 @@ function stepPorto(dt) {
   }
   // not enough tents left to win: the ice took too many
   const savable = lvl.tents.filter(tn => !tn.frozen).length;
-  if (mode === 'play' && savable < lvl.need) { mode = 'lost'; sfx('hit'); musicOn = false; setTimeout(lostPorto, 900); }
+  if (mode === 'play' && savable < lvl.need) { mode = 'lost'; sfx('hit'); musicOn = false; lvl.lostT = .9; }
+  if (mode === 'lost' && lvl.lostT > 0) { lvl.lostT -= dt; if (lvl.lostT <= 0) lostPorto(); } // (game time, like the rest)
   // the crane: goes ahead of you and drops a piece of the rink (its shadow warns you first)
   const C = lvl.crane;
   C.t -= dt;
@@ -827,7 +855,6 @@ function drawPortoTent(tn) {
   if (tn.sq > 0) drawTent(tn.x, tn.col, tn.frozen, tn.sq); else drawLoose(tn.x, tn.col, tn.frozen); // (squashed a moment when bounced on)
   if (!tn.frozen) for (let k = 0; k < tn.ppl; k++) { const px = tn.x - 22 - k * 8; R(px, GY - 8, 6, 5, k ? '#9b59d0' : '#e2533c'); R(px + 1, GY - 13, 4, 4, '#e3a878'); R(px, GY - 3, 6, 3, '#2a3550'); }
   if (!tn.frozen && (tn.blows || Math.abs(P.x - tn.x) < 120)) drawStakes(tn);
-
 }
 function drawPegged(tn) { // a pegged tent: it stays, and once the ice has reached it, it stands in a ring of clear ground
   const inIce = lvl.frost.x > tn.x - 20, cheer = inIce && Math.floor(t * 3) % 2;
@@ -864,7 +891,6 @@ function drawPushTent(pt) {
   if (pt.state === 'fixed' || pt.sq > 0) drawTent(pt.x, pt.col, false, pt.sq); else drawLoose(pt.x, pt.col, false);
   if (pt.state === 'fixed') { R(pt.x - 16, GY - 2, 2, 3, '#ffd23a'); R(pt.x + 14, GY - 2, 2, 3, '#ffd23a'); return; }
   if (pt.blows || Math.abs(P.x - pt.x) < 160) drawStakes(pt);
-
 }
 function drawHUD() {
   for (let i = 0; i < 3; i++) { const x = 8 + i * 13, y = 8, c = i < P.hearts ? '#d22a2a' : '#3a2a2a'; R(x + 1, y, 3, 2, c); R(x + 6, y, 3, 2, c); R(x, y + 2, 10, 3, c); R(x + 1, y + 5, 8, 2, c); R(x + 3, y + 7, 4, 2, c); R(x + 4, y + 9, 2, 1, c); }
@@ -896,7 +922,7 @@ function draw() {
   const say = lvl.n === 1 ? COP_SAY() : COP_SAY_PORTO();
   for (const c of lvl.cops) if (Math.abs(c.x - camX - W / 2) < W) drawCop(c, say);
   if (!(P.inv > 0 && !(P.stun > 0) && Math.floor(t * 12) % 2)) { const fr = !P.ground ? 1 : Math.abs(P.vx) > 15 ? 1 + Math.floor(P.anim * 2) % 2 : 0; drawPerson(P.x, P.y, P.face, fr, mode === 'done' && lvl.n === 1 ? { ...ME, back: null } : ME); }
-  if (P.spin > 0) { P.spin -= 1 / 60; const a = 1 - P.spin / .3; for (let k = -1; k <= 1; k += 2) R(P.x + 4 + k * (3 + a * 6), P.y + 18 + a * 2, 2, 1, `rgba(244,241,234,${(1 - a).toFixed(2)})`); }
+  if (P.spin > 0) { const a = 1 - P.spin / .3; for (let k = -1; k <= 1; k += 2) R(P.x + 4 + k * (3 + a * 6), P.y + 18 + a * 2, 2, 1, `rgba(244,241,234,${(1 - a).toFixed(2)})`); }
   if (P.ham > 0) { const up = P.ham > .11, hx = Math.round(P.x + (P.face > 0 ? 9 : -5)), hy = Math.round(P.y + (up ? 3 : 10)); R(hx, hy, 2, up ? 6 : 2, '#8a5a2a'); R(hx - 1, up ? hy - 2 : hy + 2, 5, 3, '#8a8f99'); } // the hammer
   if (P.stun > 0) { const hx = P.x + 5, hy = P.y - 2; for (let k = 0; k < 3; k++) { const a = t * 6 + k * 2.1; R(hx + Math.cos(a) * 7, hy + Math.sin(a) * 2, 2, 2, '#ffd23a'); } R(P.x + 6, P.y + 2, 1, 2, '#c81e1e'); if (P.stun < .7) R(P.x + 6, P.y + 4, 1, 1, '#c81e1e'); }
   for (const f of lvl.flyers) drawFlyer(f);
@@ -972,7 +998,7 @@ function resume() {
   paused = false; ov.hidden = true; jumpPressed = false; document.getElementById('bPause').style.visibility = '';
   if (actx) musicNext = actx.currentTime + .05;
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && mode === 'play' && !paused) pause(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && keepAlive) keepAlive.pause(); if (document.hidden && mode === 'play' && !paused) pause(); });
 
 // ---------- the loop
 let last = performance.now(), acc = 0;
