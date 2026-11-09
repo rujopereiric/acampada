@@ -509,6 +509,22 @@
   "horas": 7
  },
  {
+  "date": "2026-11-16",
+  "at": "17:00",
+  "city": "Lisboa",
+  "title": "Acampada",
+  "where": "Rossio · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
+  "date": "2026-11-16",
+  "at": "17:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "horas": 7
+ },
+ {
   "date": "2026-11-20",
   "at": "15:00",
   "city": "Sines",
