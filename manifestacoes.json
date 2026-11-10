@@ -345,7 +345,7 @@
   "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "where": "Praça D. João I · a partir das 17h · assembleia popular na Galeria Geraldes da Silva",
   "horas": 7
  },
  {
@@ -401,7 +401,7 @@
   "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "where": "Praça D. João I · a partir das 17h · assembleia popular na Estação de São Bento e na Praça de Almeida Garrett",
   "horas": 7
  },
  {
@@ -480,16 +480,16 @@
   "date": "2026-11-10",
   "at": "18:00",
   "city": "Lisboa",
-  "title": "Assembleia popular no Alto do Pina",
-  "where": "Jardim Bulhão Pato (Jardim da Nêspera)",
+  "title": "Cancelado: Alto do Pina",
+  "where": "Assembleia cancelada pelo mau tempo · Jardim Bulhão Pato",
   "horas": 3
  },
  {
   "date": "2026-11-11",
   "at": "19:00",
   "city": "Lisboa",
-  "title": "Protesto contra a Web Summit",
-  "where": "Pavilhão de Portugal",
+  "title": "Cancelado: protesto Web Summit",
+  "where": "Cancelado pelo mau tempo · Pavilhão de Portugal",
   "horas": 3
  },
  {

@@ -902,7 +902,7 @@ const CITIES = [
 const LUTA_FROM = CITIES.length;
 CITIES.push(
   { name: 'Lisboa', place: 'Jardim da Nêspera', ground: 'jardim', police: .8, patrols: true, noTents: true, drums: 'marcha', pressK: 3, startH: 18, clockK: .1, raidAt: [19, 20.5], lutaGap: 1.5,
-    luta: { date: '2026-11-10', at: '18:00', where: 'Alto do Pina · Jardim Bulhão Pato (Jardim da Nêspera)', title: 'Assembleia popular no Alto do Pina', titleEn: 'People’s assembly in Alto do Pina', twist: 'leilao' },
+    luta: { cancelled: true, date: '2026-11-10', at: '18:00', where: 'Alto do Pina · Jardim Bulhão Pato (Jardim da Nêspera)', title: 'Assembleia popular no Alto do Pina', titleEn: 'People’s assembly in Alto do Pina', twist: 'leilao' },
     tag: 'Terrenos da cidade não estão à venda', tagEn: 'The city’s land is not for sale',
     intro: 'A Acampada de Lisboa sai do Rossio e leva a assembleia popular ao Alto do Pina, com os moradores. A Câmara pôs à venda em hasta pública dez terrenos municipais. Arranca os cartazes do leilão, põe no lugar os de «Aqui podia morar gente» e faz crescer a assembleia.',
     clear: 'O Alto do Pina não se vende: a assembleia popular encheu o jardim e os terrenos da cidade ficaram com cartazes a dizer «Aqui podia morar gente».',
@@ -4634,7 +4634,7 @@ function lutaButton() {
 function lutaScreen() {
   mode = 'chapters';
   const rows = lutaIdx().map(i => { const c = CITIES[i], u = c.luta, open = lutaOpen(i), when = `${lutaDay(u.date, LANG === 'en')} · ${u.at || L('hora a anunciar', 'time tba')}`;
-    return `<button class="chap${lutaDone.has(i) ? ' done' : ''}"${open ? ` data-city="${i}"` : ' disabled'}><span class="k">${open ? (u.date === lutaToday() ? L('HOJE', 'TODAY') : '✓') : '🔒'}</span><span><span class="n">${esc(c.place)}</span><span class="pl">${esc(when)} · ${esc(L(u.title, u.titleEn || u.title))}</span></span></button>`; }).join('');
+    return `<button class="chap${lutaDone.has(i) ? ' done' : ''}"${open ? ` data-city="${i}"` : ' disabled'}><span class="k">${open ? (u.date === lutaToday() ? L('HOJE', 'TODAY') : '✓') : '🔒'}</span><span><span class="n">${esc(c.place)}</span><span class="pl">${esc(when)} · ${esc(L(u.title, u.titleEn || u.title))}${u.cancelled ? ' · ' + L('cancelado (mau tempo)', 'cancelled (bad weather)') : ''}</span></span></button>`; }).join('');
   show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="help">${L('A Acampada de Lisboa saiu do Rossio por uns dias e leva a luta à cidade. Uma praça nova em cada ação, no dia em que acontece.', 'Acampada Lisboa left the Rossio for a few days and takes the fight across the city. A new square for each action, on the day it happens.')}</p><div class="chaps">${rows}</div>
   <button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${FOOT}`);
 }
@@ -4643,7 +4643,7 @@ function lutaClear() {
   mode = 'clear'; const c = S.city, u = c.luta;
   show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${esc(c.place)}</span>
   <p class="help">${esc(L(c.clear, c.clearEn))}</p>${S.lutaSaved != null && u.twist === 'leilao' ? `<p class="stat rough">${S.lutaSaved}/${LEILAO_N} ${L('terrenos', 'plots')} · ${fmt(crowd())} ${L('pessoas', 'people')}${summ}</p>` : summ}
-  <p class="help real">🔴 IRL: ${esc(lutaDay(u.date, LANG === 'en'))} · ${esc(u.at || L('hora a anunciar', 'time tba'))} · ${esc(u.where)}</p>
+  <p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(lutaDay(u.date, LANG === 'en'))} · ${esc(u.at || L('hora a anunciar', 'time tba'))} · ${esc(u.where)}</p>
   <div>${shareBtn()}<button class="btnp" data-a="luta">${L('Lisboa em luta', 'Lisbon in struggle')} →</button></div>`, 'comunicado');
   prepStory();
 }
@@ -4651,7 +4651,7 @@ function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
   if (c.luta) { const u = c.luta;
     show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="p-mid rough">${esc(L(u.title, u.titleEn || u.title))}</p>${TENT}
-    <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${esc(u.where)}</p>
+    <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(u.where)}</p>
     <button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button><button class="btnp red" data-a="luta">${L('← Voltar', '← Back')}</button>${IRL_NOTE()}${FOOT}`);
     return; }
   show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
@@ -4681,18 +4681,18 @@ try { adIdx = parseInt(localStorage.getItem('acampada3-ad') || '0', 10) || 0; } 
 const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas redes dos movimentos.', 'Dates and times may change: check the movements’ social media.')}</p>`;
 const ADS = [
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Alto do Pina', 'Lisboa · Alto do Pina')}</p><div class="rule"></div>
-    <p class="t">${L('Assembleia popular', 'People’s assembly')}</p><div class="rule"></div>
+    <p class="t">${L('Cancelada', 'Cancelled')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Terça<br><b>10 nov. 2026</b>', 'Tuesday<br><b>10 Nov 2026</b>')}<br><b>18:00</b></div><div><b>Jardim Bulhão Pato</b><br>(Jardim da Nêspera)</div></div>
-    <p class="src">${L('A Acampada de Lisboa sai do Rossio por uns dias e leva a luta à cidade: hoje, a assembleia popular vai ao Alto do Pina, com os moradores que denunciam a venda de terrenos municipais. Aparece e traz quem puderes!', 'Acampada Lisboa leaves the Rossio for a few days and takes the fight across the city: today the people’s assembly goes to Alto do Pina, with the residents denouncing the sale of public land. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
+    <p class="src">${L('Por causa do mau tempo, a Acampada de Lisboa cancelou a assembleia popular de hoje no Alto do Pina e o protesto de amanhã contra a Web Summit. Fica atento às novas datas.', 'Because of the bad weather, Acampada Lisboa cancelled today’s people’s assembly in Alto do Pina and tomorrow’s protest against the Web Summit. Watch for new dates.')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
     <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
     <div class="cols"><div>${L('Terça<br><b>10 nov. 2026</b>', 'Tuesday<br><b>10 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
-    <p class="src">${L('A partir das 17h: coros, debates, atividades para crianças e mais. Assembleia popular às 21h. Aparece e traz quem puderes!', 'From 5 pm: choirs, debates, activities for children and more. People’s assembly at 9 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
+    <p class="src">${L('A acampada mantém-se na Praça D. João I, a partir das 17h. Hoje a assembleia popular vai à Galeria Geraldes da Silva; amanhã, à Estação de São Bento e à Praça de Almeida Garrett. Aparece e traz quem puderes!', 'The camp stays in Praça D. João I, from 5 pm. Today the people’s assembly goes to the Galeria Geraldes da Silva; tomorrow, to São Bento station and Praça de Almeida Garrett. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
-    <div><span class="when">${L('Ter 10 nov · 18:00', 'Tue 10 Nov · 18:00')}</span><span class="what">Lisboa<small>${L('Assembleia popular no Alto do Pina, Jardim Bulhão Pato (Jardim da Nêspera)', 'People’s assembly in Alto do Pina, Jardim Bulhão Pato (Jardim da Nêspera)')}</small></span></div>
-    <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 21h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 9 pm')}</small></span></div>
+    <div><span class="when">${L('Ter 10 nov · 18:00', 'Tue 10 Nov · 18:00')}</span><span class="what">Lisboa<small>${L('Cancelada (mau tempo): assembleia popular no Alto do Pina, Jardim Bulhão Pato (Jardim da Nêspera)', 'Cancelled (bad weather): people’s assembly in Alto do Pina, Jardim Bulhão Pato (Jardim da Nêspera)')}</small></span></div>
+    <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 21h. Dia 10 na Galeria Geraldes da Silva; dia 11 na Estação de São Bento e na Praça de Almeida Garrett', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 9 pm. On the 10th at the Galeria Geraldes da Silva; on the 11th at São Bento station and Praça de Almeida Garrett')}</small></span></div>
     <div><span class="when">${L('Domingos', 'Sundays')} · 18:00</span><span class="what">Caldas da Rainha<small>${L('Largo do Termal: assembleia popular pela habitação; cantina, cartazes e música a partir das 17h', 'Largo do Termal: people’s assembly for housing; canteen, posters and music from 5 pm')}</small></span></div>
-    <div><span class="when">${L('Qua 11 nov · 19:00', 'Wed 11 Nov · 19:00')}</span><span class="what">Lisboa<small>${L('Protesto contra a Web Summit, Pavilhão de Portugal', 'Protest against the Web Summit, Pavilhão de Portugal')}</small></span></div>
+    <div><span class="when">${L('Qua 11 nov · 19:00', 'Wed 11 Nov · 19:00')}</span><span class="what">Lisboa<small>${L('Cancelado (mau tempo): protesto contra a Web Summit, Pavilhão de Portugal', 'Cancelled (bad weather): protest against the Web Summit, Pavilhão de Portugal')}</small></span></div>
     <div><span class="when">${L('Qua 11 nov', 'Wed 11 Nov')} · 20:00</span><span class="what">Angra do Heroísmo<small>${L('Manifestação pela habitação, Praça Velha', 'Housing demonstration, Praça Velha')}</small></span></div>
     <div><span class="when">${L('Sex 13 nov', 'Fri 13 Nov')} · 19:00</span><span class="what">Sertã<small>${L('Vigília pela habitação, Casa da Cultura', 'Housing vigil, Casa da Cultura')}</small></span></div>
     <div><span class="when">${L('Sáb 14 nov', 'Sat 14 Nov')} · 15:00</span><span class="what">${L('Lisboa, Porto e Faro', 'Lisboa, Porto and Faro')}<small>${L('Casa para viver. Alameda D. Afonso Henriques, Praça do Marquês e Liceu João de Deus. E dezenas de outras cidades', 'Homes to live in. Alameda D. Afonso Henriques, Praça do Marquês and Liceu João de Deus. And dozens of other towns')}</small></span></div>
@@ -4802,12 +4802,12 @@ const RALLIES = [
   { date: '2026-11-09', at: '17:00', city: 'Lisboa', title: 'Acampada', where: 'Rossio · a partir das 17h · 21h assembleia popular', horas: 7 },
   { date: '2026-11-09', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
   // Acampada Lisboa leaves the Rossio for a while (statement, 10 Nov) for dated actions across the city; it's expected back on the Rossio
-  { date: '2026-11-10', at: '18:00', city: 'Lisboa', title: 'Assembleia popular no Alto do Pina', where: 'Jardim Bulhão Pato (Jardim da Nêspera)', horas: 3 },
-  { date: '2026-11-11', at: '19:00', city: 'Lisboa', title: 'Protesto contra a Web Summit', where: 'Pavilhão de Portugal', horas: 3 },
+  { date: '2026-11-10', at: '18:00', city: 'Lisboa', title: 'Cancelado: Alto do Pina', where: 'Assembleia cancelada pelo mau tempo · Jardim Bulhão Pato', horas: 3 },
+  { date: '2026-11-11', at: '19:00', city: 'Lisboa', title: 'Cancelado: protesto Web Summit', where: 'Cancelado pelo mau tempo · Pavilhão de Portugal', horas: 3 },
   { date: '2026-11-21', at: '12:30', city: 'Lisboa', title: 'Unidade de lutas', where: 'Praça José Fontana', horas: 3 },
   { date: '2026-11-21', at: '19:00', city: 'Lisboa', title: 'Rumo à Assembleia da República', where: 'Assembleia da República · com as tendas', horas: 3 },
-  { date: '2026-11-10', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-11', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
+  { date: '2026-11-10', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · assembleia popular na Galeria Geraldes da Silva', horas: 7 },
+  { date: '2026-11-11', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · assembleia popular na Estação de São Bento e na Praça de Almeida Garrett', horas: 7 },
   { date: '2026-11-11', at: '20:00', city: 'Angra do Heroísmo', title: 'Manifestação pela habitação', where: 'Praça Velha', horas: 3 },
   { date: '2026-11-12', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
   { date: '2026-11-13', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
