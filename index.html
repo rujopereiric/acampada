@@ -896,6 +896,78 @@ const CITIES = [
     C: { h: 30, style: 'algarve' } }
 ];
 
+/* ================= Lisboa em luta: the Acampada de Lisboa leaves the Rossio for a while and goes to the city's
+   struggles (statement of 10 Nov 2026). One short square per stop, opened on its day (Lisbon time); they are not
+   chapters (not in ORDER, not in cleared) and the Rossio level stays as it is ================= */
+const LUTA_FROM = CITIES.length;
+CITIES.push(
+  { name: 'Lisboa', place: 'Jardim da Nêspera', ground: 'jardim', police: .8, patrols: true, noTents: true, drums: 'marcha', pressK: 3, startH: 18, clockK: .1, raidAt: [19, 20.5], lutaGap: 1.5,
+    luta: { date: '2026-11-10', at: '18:00', where: 'Alto do Pina · Jardim Bulhão Pato (Jardim da Nêspera)', title: 'Assembleia popular no Alto do Pina', titleEn: 'People’s assembly in Alto do Pina', twist: 'leilao' },
+    tag: 'Terrenos da cidade não estão à venda', tagEn: 'The city’s land is not for sale',
+    intro: 'A Acampada de Lisboa sai do Rossio e leva a assembleia popular ao Alto do Pina, com os moradores. A Câmara pôs à venda em hasta pública dez terrenos municipais. Arranca os cartazes do leilão, põe no lugar os de «Aqui podia morar gente» e faz crescer a assembleia.',
+    clear: 'O Alto do Pina não se vende: a assembleia popular encheu o jardim e os terrenos da cidade ficaram com cartazes a dizer «Aqui podia morar gente».',
+    news: { kick: ['Alto do Pina', 'Alto do Pina'], hl: ['O Alto do Pina não se vende!', 'Alto do Pina is not for sale!'],
+      dk: ['A assembleia popular encheu o Jardim da Nêspera contra a venda de dez terrenos municipais.', 'The people’s assembly filled the Jardim da Nêspera against the sale of ten municipal plots.'],
+      cap: ['A assembleia popular no Jardim da Nêspera.', 'The people’s assembly in the Jardim da Nêspera.'],
+      lead: ['Moradores e Acampada de Lisboa juntaram-se no Alto do Pina. Os cartazes da hasta pública deram lugar a outros: «Aqui podia morar gente», e a assembleia decidiu: a luta continua pela cidade.', 'Residents and Acampada Lisboa came together in Alto do Pina. The auction signs gave way to others: “People could live here”, and the assembly decided: the struggle carries on across the city.'],
+      box: ['As exigências', 'The demands'], list: [['Terrenos municipais para habitação pública', 'Municipal land for public housing'], ['Nenhum terreno em hasta pública', 'No land at public auction'], ['Casas para viver, não para lucrar', 'Homes to live in, not for profit']] },
+    introEn: 'Acampada Lisboa leaves the Rossio and takes the people’s assembly to Alto do Pina, with the residents. The council put ten municipal plots up for public auction. Tear down the auction signs, put up “People could live here” ones instead and grow the assembly.',
+    clearEn: 'Alto do Pina is not for sale: the people’s assembly filled the garden and the city’s plots now carry signs saying “People could live here”.',
+    size: [10, 10], viewW: 304, fullW: 384, viewY: 92,
+    tentOk: (gx, gy) => !(gx > 5.6 && gx < 9.3 && gy > .7 && gy < 3.3),
+    blocks: [[1, 4], [1, 6], [7, 2]],
+    deco: [
+      ...[1.2, 2.4, 3.6, 4.8, 6, 7.2].map(gy => ({ t: 'hedge', gx: .25, gy, l: 1.2, ax: 'y' })), ...[1.2, 2.4, 3.6, 4.8].map(gx => ({ t: 'hedge', gx, gy: .25, l: 1.2, ax: 'x' })),
+      { t: 'bear', gx: 1.3, gy: 4.4 }, { t: 'bear', gx: 1.2, gy: 5.4, slim: true }, { t: 'duck', gx: 1.4, gy: 6.6 },
+      { t: 'play', gx: 7.4, gy: 2 }, { t: 'play', gx: 6.4, gy: 2.6, bars: true }, { t: 'cabinet', gx: 7.3, gy: 4.6 }, { t: 'binb', gx: 6, gy: 4.2 },
+      { t: 'globe', gx: 5.4, gy: 3.6 }, { t: 'globe', gx: 3.4, gy: 7.4 }, { t: 'globe', gx: 9.4, gy: 9 },
+      { t: 'tree', gx: 4, gy: 3.4 }, { t: 'tree', gx: .8, gy: 9.2 }, { t: 'tree', gx: 8.9, gy: 5.4, big: true }, { t: 'tree', gx: 9.2, gy: 7.8 }, { t: 'tree', gx: 7.4, gy: 9.3 },
+      { t: 'tree', gx: .6, gy: 7.6 }, { t: 'tree', gx: .6, gy: 2.4, big: true }, { t: 'tree', gx: 9.3, gy: .6, big: true }, { t: 'bench', gx: 3, gy: 1 }, { t: 'bench', gx: 5, gy: 1 }],
+    // behind: cream flats with balconies on the left, the tall salmon gable walls at the back, a pale green block
+    // with balconies and a red-orange one on the right
+    L: [{ a: 0, b: 4.2, h: 40, style: 'pombal', col: '#ece2c8', balc: true }, { a: 4.2, b: 10, h: 34, style: 'apart', col: '#efe7d4' }],
+    R: [{ a: 0, b: 3.6, h: 60, style: 'empena' }, { a: 3.6, b: 6.8, h: 40, style: 'pombal', col: '#dfe5c6', balc: true }, { a: 6.8, b: 10, h: 44, style: 'apart', col: '#d9694a' }],
+    C: { h: 64, style: 'empena' } }
+);
+const lutaIdx = () => CITIES.map((c, i) => c.luta ? i : -1).filter(i => i >= 0);
+const lutaToday = () => { const q = new URLSearchParams(location.search).get('hoje'); return /^\d{4}-\d\d-\d\d$/.test(q || '') ? q : lisbonNow().date; };
+const lutaOpen = i => CITIES[i].luta.date <= lutaToday();
+let lutaDone = new Set();
+try { lutaDone = new Set(JSON.parse(localStorage.getItem('acampada-luta') || '[]')); } catch (e) {}
+const lutaDay = (d, en) => new Date(d + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'pt-PT', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }).replace(/\./g, '');
+// Alto do Pina: the council put ten municipal plots up for auction (hasta pública). Auction signs go up round the
+// garden; walk to one to tear it down and put up a "casas para viver" one instead. A sign left standing too long: sold
+const LEILAO_N = 10;
+function lutaStart() { S.lutaSigns = []; S.lutaT = 5; S.lutaSaved = 0; S.lutaSold = 0; lutaHud(); }
+function lutaHud() { if (S.city.luta.twist === 'leilao') $('city').textContent = `${L('Terrenos salvos', 'Plots saved')} ${S.lutaSaved}/${LEILAO_N}`; }
+function lutaUpd(dt) {
+  if (S.city.luta.twist !== 'leilao' || S.winning) return;
+  const p = S.player, up = S.lutaSigns.filter(g => !g.ok);
+  S.lutaT -= dt;
+  if (S.lutaT <= 0 && up.length < 3 && S.lutaSaved + S.lutaSold + up.length < LEILAO_N) {
+    S.lutaT = rnd(7, 12);
+    const f = freeTiles().filter(([a, b]) => Math.hypot(a + .5 - p.gx, b + .5 - p.gy) > 2.2 && !S.lutaSigns.some(g => Math.hypot(g.gx - a - .5, g.gy - b - .5) < 1.5));
+    if (f.length) { const [a, b] = pick(f); const g = { gx: a + .5, gy: b + .5, age: 0, ok: false }; S.lutaSigns.push(g);
+      const q = iso(g.gx, g.gy, 20); floatXY(q.x, q.y, L('Hasta pública! Um terreno à venda', 'Auction! A plot up for sale'), '#ff8aa8', true); }
+  }
+  for (const g of S.lutaSigns) {
+    if (g.ok) continue; g.age += dt;
+    S.support = Math.max(10, S.support - dt * .15);
+    if (Math.hypot(g.gx - p.gx, g.gy - p.gy) < .75) {
+      g.ok = true; S.lutaSaved++; S.support = Math.min(100, S.support + 6); S.morale = Math.min(100, S.morale + 4); S.pressure = Math.min(100, S.pressure + 3);
+      float(g.gx, g.gy, L('Aqui podia morar gente!', 'People could live here!'), '#b6ff3b', 24); sparkle(g.gx, g.gy, 8, 14); sfx('crate'); lutaHud();
+    } else if (g.age > 28) { g.gone = true; S.lutaSold++; S.pressure = Math.max(0, S.pressure - 4); float(g.gx, g.gy, L('Vendido!', 'Sold!'), '#ff8aa8', 24); sfx('leave'); }
+  }
+  S.lutaSigns = S.lutaSigns.filter(g => !g.gone);
+}
+function drawLutaSign(g) {
+  const q = iso(g.gx, g.gy), x = Math.round(q.x), y = Math.round(q.y);
+  if (!g.ok && g.age > 22 && Math.floor(S.t * 6) % 2) return; // about to be sold: it blinks
+  ell(ctx, x, y, 4, 'rgba(30,10,70,.25)'); R(x - 4, y - 9, 1, 9, '#6b4a2b'); R(x + 3, y - 9, 1, 9, '#6b4a2b');
+  if (!g.ok) { R(x - 6, y - 17, 13, 8, '#f6f3ea'); R(x - 6, y - 17, 13, 2, '#c2342c'); R(x - 4, y - 13, 9, 1, '#1b1418'); R(x - 4, y - 11, 6, 1, '#1b1418'); }
+  else { R(x - 6, y - 17, 13, 8, '#ffd84a'); R(x - 2, y - 15, 5, 1, '#c2342c'); R(x - 3, y - 14, 7, 1, '#c2342c'); R(x - 2, y - 13, 5, 3, '#c2342c'); R(x, y - 12, 1, 2, '#ffd84a'); }
+}
+
 /* ================= facades ================= */
 const GLASS = fz => fz >= 8 ? '#c9f6ff' : '#4f7fd0';
 // FREE PALESTINE, small and discreet: 2 x 3 letters, column by column (the two E of FREE are flags, 2 columns each)
@@ -1069,6 +1141,11 @@ const STYLES = {
     if (u % 10 < 2 || z < 1) return '#f2efe8';
     return z > h - 7 ? '#9fc3d8' : '#5d7f9a'; } }; },
   // blocks of flats behind (Faro): white or cream, a balcony on every floor, flat roofs
+  // a tall blank gable wall (Alto do Pina): salmon, a few small windows in one column, a darker cornice
+  empena: b => { const h = b.h; return { extra: 2, fn: (u, z, w) => {
+    if (z >= h) return null; if (z >= h - 2) return '#c98c78';
+    if (u > w - 10 && u < w - 5 && z % 11 >= 4 && z % 11 <= 8 && z > 6) return '#4f5a78';
+    return (z % 11 === 0) ? '#dfa592' : '#e8b3a0'; } }; },
   apart: b => { const h = b.h, col = b.col || '#f4f1ea'; return { extra: 4, fn: (u, z, w) => {
     if (z >= h) return u % 20 < 5 && z < h + 4 ? '#e4e0d8' : null;
     if (z >= h - 2) return '#ffffff';
@@ -1173,6 +1250,19 @@ const PLAZA = {
   },
   // Praça da Liberdade: light calçada, dark bands every 3 tiles, the south-west panel framed in dark red with small dark
   // grates, rings and half rings of dark stone
+  // Jardim Bulhão Pato (Jardim da Nêspera), Alto do Pina, from Street View: seen from Rua Sabino de Sousa (the front),
+  // a path of calçada goes in between two raised lawns edged with red brick to the calçada clearing; at the back
+  // right the playground on black rubber, along the back clipped hedges
+  jardim: (gx, gy) => {
+    const n = hash(Math.floor(gx * 8), Math.floor(gy * 8)) < .5, cal = n ? [214, 210, 200] : [198, 194, 184], s = gx + gy, BR = [176, 82, 60];
+    if (gx > 9.55 || gy > 9.55) return cal; // the pavement of the street
+    if (gx > 5.6 && gx < 9.3 && gy > .7 && gy < 3.3) return (gx < 5.72 || gx > 9.18 || gy < .82 || gy > 3.18) ? BR : n ? [46, 46, 52] : [40, 40, 46]; // the playground
+    if (s > 10.6 && Math.abs(gx - gy) > .62) { // the two raised lawns
+      if (s < 10.78 || Math.abs(gx - gy) < .8 || gx > 9.38 || gy > 9.38) return BR;
+      return n ? [96, 150, 74] : [86, 138, 66]; }
+    if (gx > 7.4 && gy > 3.6 && s > 8) { if (s < 10.78 && (gx < 7.55 || gy < 3.75)) return BR; return n ? [96, 150, 74] : [86, 138, 66]; } // the lawn on the right, sloping up to the street
+    return cal;
+  },
   faro: (gx, gy) => {
     const ring = (cx, cy, half) => { const r = Math.hypot(gx - cx, gy - cy); if (half && gy < cy) return 0; return (r > .55 && r < .78) || (r > .92 && r < 1.12) ? 1 : r < 1.3 ? -1 : 0; };
     for (const [cx, cy, hf] of [[4.6, 2.8, 0], [10.6, 4.2, 0], [10.6, 7, 1], [10.6, 9.8, 1]]) { const k = ring(cx, cy, hf); if (k > 0) return [96, 94, 104]; if (k < 0) return hash(Math.floor(gx * 8), Math.floor(gy * 8)) < .5 ? [230, 225, 214] : [220, 215, 204]; }
@@ -1549,7 +1639,7 @@ function summary(won) {
     .then(r => r.ok ? r.json() : null).then(j => { if (!j || !j.before) return;
       for (const k of ['tents', 'welcomed', 'days']) { const el = document.getElementById('rec-' + k); if (!el || (k === 'days' && !won)) continue;
         el.textContent = (j.novo || []).includes(k) ? L('Recorde de sempre!', 'All-time record!') : j.before[k] != null ? L('Recorde de sempre: ', 'All-time best: ') + j.before[k] : ''; } }).catch(() => {});
-  return `<div class="summ">${row('tents', L('Tendas (máx.)', 'Tents (most)'))}${row('welcomed', L('Pessoas acolhidas', 'People welcomed'))}${row('raids', L('Vezes que aguentaram a polícia', 'Raids held'))}${row('days', L('Dias', 'Days'))}</div>`;
+  return `<div class="summ">${row('tents', S.city.noTents ? L('Grupos (máx.)', 'Groups (most)') : L('Tendas (máx.)', 'Tents (most)'))}${row('welcomed', L('Pessoas acolhidas', 'People welcomed'))}${row('raids', L('Vezes que aguentaram a polícia', 'Raids held'))}${row('days', L('Dias', 'Days'))}</div>`;
 }
 
 /* ================= short goals for the first minutes; and the cordão, when the first raid begins ================= */
@@ -1612,7 +1702,7 @@ function newLevel() {
   stopSong(); winSongStop();
   const city = CITIES[cityIdx];
   [NX, NY] = city.size || [10, 10]; CX = NX / 2; CY = NY / 2; GWX = NX + 3; GWY = NY + 3; OY = city.viewY || 100; setFloor();
-  S = { city, calm: !!OPTS.calm, t: 0, clock: 17, dark: 0, occ: new Array(NX * NY).fill(null),
+  S = { city, calm: !!OPTS.calm, t: 0, clock: city.startH || 17, dark: 0, occ: new Array(NX * NY).fill(null),
     tents: [], stations: [], residents: [], arrivals: [], crates: [], police: [], parts: [], floats: [], cars: [],
     van: null, bikes: null, tandem: null, chain: null,
     supplies: 4, morale: 70, support: 15, pressure: 0, detained: 0,
@@ -1633,6 +1723,7 @@ function newLevel() {
   bg = null; fit(); if (!bg) bg = makeBG(city); // the picture's width depends on the square
   for (let i = 0; i < 3; i++) { const t = addTent(); t.occ = 2; t.pop = 0; }
   $('city').textContent = city.name + ', ' + city.place;
+  if (city.luta) { lutaStart(); if (city.raidAt) { S.nextPatrol = city.raidAt[0]; S.nextRaid = city.raidAt[1]; } }
   $('sT').previousElementSibling.textContent = T(city.noTents ? 'Grupos' : 'Tendas');
 }
 const idx = (gx, gy) => Math.floor(gy) * NX + Math.floor(gx);
@@ -2524,6 +2615,11 @@ function newsSync() {
     q('.box b').textContent = L('As medidas', 'The measures');
     q('.box ul').innerHTML = ''; for (const [pt, en] of WIN_MEASURES.slice().sort(() => Math.random() - .5).slice(0, 3)) { const m = L(pt, en); const li = document.createElement('li'); li.textContent = m; q('.box ul').appendChild(li); }
     q('.more').textContent = L('Continua na página 3 →', 'Continued on page 3 →');
+    const N = S.city.news; if (N) { // Lisboa em luta: each stop has its own front page
+      q('.dt').textContent = `${S.city.name} · ${lutaDay(S.city.luta.date, LANG === 'en')}`;
+      for (const k of ['kick', 'hl', 'dk', 'cap', 'lead']) q('.' + k).textContent = L(N[k][0], N[k][1]);
+      q('.box b').textContent = L(N.box[0], N.box[1]); q('.box ul').innerHTML = '';
+      for (const [pt, en] of N.list) { const li = document.createElement('li'); li.textContent = L(pt, en); q('.box ul').appendChild(li); } }
   }
   { const el2 = $('news'), wr = el2.querySelector('.npw'), np = el2.querySelector('.np'), k = Math.min(1.2, (el2.clientWidth - 36) / np.offsetWidth, (el2.clientHeight - (CAM.on && !CAM.land ? 110 : 30)) / np.offsetHeight), up = CAM.on && !CAM.land ? 30 : 0; wr.style.transform = `translate(-50%, calc(-50% - ${up}px)) scale(${k.toFixed(3)})`; }
   const c = $('npc'), g = c.getContext('2d'), p = iso(CX, CY), w = 160, h = 90; // the photo: the middle of the square, as it is
@@ -3275,7 +3371,7 @@ function drawChoirBubble() {
 /* ================= update ================= */
 const keys = {};
 function update(dt) {
-  S.t += dt; S.clock += dt / HOUR;
+  S.t += dt; S.clock += dt / HOUR * (S.city.clockK || 1); // Lisboa em luta: one evening, so the clock runs slower
   const hr = S.clock % 24; S.dark = darkness(hr); if (S.stat && S.tents.length > S.stat.maxTents) S.stat.maxTents = S.tents.length;
   const p = S.player;
   const kx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), ky = (keys.down ? 1 : 0) - (keys.up ? 1 : 0), jm = Math.hypot(JOY.x, JOY.y);
@@ -3301,8 +3397,8 @@ function update(dt) {
   const warnH = S.perks.has('vigias') ? 3 : 1.5;
   while (S.nextRaid < (S.calmUntil || 0)) S.nextRaid += 24; // the rest: the next dawn raid moves to a day that respects it
   if (!S.raid && !S.warned && S.clock >= S.nextRaid - warnH) { S.warned = true; sfx('siren'); }
-  if (!S.raid && S.clock >= S.nextRaid && !S.winning) { startRaid(false); S.nextRaid += 24; }
-  if (S.clock >= S.nextPatrol) { if (S.city.patrols && !S.raid && !S.winning) startRaid(true); S.nextPatrol += 24; }
+  if (!S.raid && S.clock >= S.nextRaid && !S.winning) { startRaid(false); S.nextRaid += S.city.lutaGap || 24; }
+  if (S.clock >= S.nextPatrol) { if (S.city.patrols && !S.raid && !S.winning) startRaid(true); S.nextPatrol += S.city.lutaGap || 24; }
   if (S.clock >= S.nextLimit) { S.nextLimit += 24; const c = iso(CX, NY, 0); floatXY(c.x, 60, 'PSP: limite legal 00:30', '#9ecbff'); }
 
   // arrivals
@@ -3477,13 +3573,14 @@ function update(dt) {
   updDJ(dt);
   updChoir(dt, hr);
   updEvents(dt, hr);
+  if (S.city.luta) lutaUpd(dt);
 
   // meters
   S.morale = Math.max(0, S.morale - dt * (.5 + S.tents.length * .012) * (1 + .4 * S.dark) * (S.perks.has('turnos') ? .7 : 1) * (S.calm ? .7 : 1));
   if (S.morale < 20 && !S.kettle) { /* a kettle: nobody gets out either */ S.leaveT -= dt; if (S.leaveT <= 0 && S.tents.length) { S.leaveT = 3; const t = pick(S.tents); t.occ--; float(t.gx, t.gy, 'Foi para casa', '#d6d0e6'); sfx('leave'); if (t.occ <= 0) removeTent(t, false); } }
   if (S.support > 10) S.support = Math.max(10, S.support - dt * .22);
   const dk = S.donkey === 'giant' ? 1.25 : S.donkey === 'small' ? 1.1 : 1;
-  if (!S.kettle) S.pressure = Math.min(100, S.pressure + dt * (.032 * Math.sqrt(S.tents.length) + .0013 * S.support) * dk * (S.perks.has('cartazes') ? 1.2 : 1)); // a kettle plays out to the end; the pressure waits
+  if (!S.kettle) S.pressure = Math.min(100, S.pressure + dt * (.032 * Math.sqrt(S.tents.length) + .0013 * S.support) * dk * (S.perks.has('cartazes') ? 1.2 : 1) * (S.city.pressK || 1)); // a kettle plays out to the end; the pressure waits
 
   // tips near landmarks
   S.tipT -= dt;
@@ -3964,6 +4061,20 @@ function drawVent(d) { // the slanted skylight of the car park underneath
   poly([P(x0, y0, 8), P(x1, y0, 8), P(x1, y1, 2), P(x0, y1, 2)], '#4a4650');
   for (let i = 1; i < 5; i++) { const t = i / 5, a = P(x0, y0 + t, 8 - 6 * t), b = P(x1, y0 + t, 8 - 6 * t); ctx.fillStyle = '#6a6672'; ctx.fillRect(Math.round(a.x), Math.round(a.y), Math.max(1, Math.round(b.x - a.x)), 1); }
 }
+// Jardim da Nêspera: clipped hedges, the two dark bears and the terracotta duck, the playground, a grey cabinet, globe lamps
+function drawHedge(d) { const h = d.l / 2; if (d.ax === 'y') box(ctx, d.gx - .2, d.gy - h, d.gx + .2, d.gy + h, 0, 9, '#3f8a3e', '#2f6e30', '#285f2a'); else box(ctx, d.gx - h, d.gy - .2, d.gx + h, d.gy + .2, 0, 9, '#3f8a3e', '#2f6e30', '#285f2a'); }
+function drawBear(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), C = '#4a4d55', D = '#33353c';
+  ell(ctx, x, y, 5, 'rgba(30,10,70,.25)');
+  if (d.slim) { R(x - 3, y - 10, 6, 10, C); R(x - 2, y - 14, 5, 4, C); R(x + 2, y - 10, 1, 10, D); R(x - 2, y - 15, 1, 1, C); R(x + 2, y - 15, 1, 1, C); return; }
+  R(x - 4, y - 8, 8, 8, C); R(x - 5, y - 2, 3, 2, D); R(x + 2, y - 2, 3, 2, D); R(x - 3, y - 13, 6, 5, C); R(x - 3, y - 14, 1, 1, C); R(x + 2, y - 14, 1, 1, C); R(x + 3, y - 8, 1, 8, D); }
+function drawDuck(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y);
+  ell(ctx, x, y, 5, 'rgba(30,10,70,.25)'); R(x - 4, y - 5, 8, 5, '#d98a52'); R(x + 1, y - 9, 3, 4, '#d98a52'); R(x - 4, y - 5, 8, 1, '#e9a46c'); R(x + 3, y - 8, 1, 1, '#b86b38'); }
+function drawPlay(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), G = '#2f6b4a';
+  if (d.bars) { vl(ctx, x - 5, y - 9, y, G); vl(ctx, x + 5, y - 9, y, G); R(x - 5, y - 9, 11, 1, G); R(x - 2, y - 5, 5, 1, '#9aa0a8'); return; }
+  vl(ctx, x - 6, y - 14, y, G); vl(ctx, x + 6, y - 14, y, G); R(x - 6, y - 14, 13, 1, G); vl(ctx, x - 2, y - 13, y - 5, '#9aa0a8'); vl(ctx, x + 2, y - 13, y - 5, '#9aa0a8'); R(x - 3, y - 5, 2, 1, '#c2342c'); R(x + 1, y - 5, 2, 1, '#c2342c'); }
+function drawCabinet(d) { box(ctx, d.gx - .18, d.gy - .14, d.gx + .18, d.gy + .14, 0, 10, '#d4d2cc', '#b9b7b0', '#a5a39d'); }
+function drawGlobe(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 1, 3, 1, '#2a2a30'); vl(ctx, x, y - 22, y, '#3a3a42'); circ(ctx, x + .5, y - 24, 2.6, S.dark > .3 ? '#fff3b0' : '#f2f2ee'); }
+function drawBinB(d) { box(ctx, d.gx - .1, d.gy - .1, d.gx + .1, d.gy + .1, 0, 6, '#2a2a30', '#1d1d22', '#151519'); }
 function drawBench(d) { box(ctx, d.gx - .35, d.gy - .12, d.gx + .35, d.gy + .12, 0, 3, '#b4b3b9', '#98979e', '#838289'); }
 function drawPool(d) {
   const q = iso(d.gx, d.gy), r = 24;
@@ -4196,7 +4307,7 @@ function draw() {
   const add = (gx, gy, f, a) => dlPush(gx, gy, f, a, false);
   const addP = (gx, gy, f, a) => dlPush(gx, gy, f, a, true); // people: smaller in Porto (see small)
   for (const dd of S.city.deco) {
-    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd) }[dd.t];
+    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd), hedge: () => drawHedge(dd), bear: () => drawBear(dd), duck: () => drawDuck(dd), play: () => drawPlay(dd), cabinet: () => drawCabinet(dd), globe: () => drawGlobe(dd), binb: () => drawBinB(dd) }[dd.t];
     add(dd.gx, dd.gy, S.perks.has('cartazes') && posterSpots(dd) ? () => { fn(); if (dd.t === 'column') drawColumnProtest(); posterSpots(dd).forEach(([a, b, z, k]) => { const q = iso(a, b, z); drawPoster(q.x, q.y, k); }); } : fn);
   }
   drawFloorBanners();
@@ -4205,6 +4316,7 @@ function draw() {
   for (const t of S.tents) add(t.gx, t.gy, drawTent, t);
   for (const s of S.stations) add(s.gx, s.gy, drawStation, s);
   for (const c of S.crates) add(c.gx, c.gy, drawCrate, c);
+  if (S.lutaSigns) for (const g of S.lutaSigns) add(g.gx, g.gy, drawLutaSign, g);
   if (S.prPaper) add(S.prPaper.gx, S.prPaper.gy, () => drawPaper(S.prPaper));
   if (xmasShown()) { const xt = xmasAt(); add(xt.gx, xt.gy, () => drawXmasTree(xt)); }
   for (const r of S.residents) addP(r.gx, r.gy, drawResident, r);
@@ -4504,7 +4616,7 @@ function titleScreen() {
   <p class="help tdesc">${L('Monta tendas, junta apoio e segura a praça.<br><b>Até o Governo ceder!</b>', 'Pitch tents, gather support and hold the square.<br><b>Until the Government gives in!</b>')}</p>
   <div id="rallyBox">${titleRally()}</div>
   ${(() => { const d = lastSave(); return d ? `<button class="btnp red cont" data-a="loadlast">${L('Continuar', 'Carry on')}: ${CITIES[d.city].name} · ${L('dia', 'day')} ${d.day} →</button>` : ''; })()}
-  <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>
+  <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>${lutaButton()}
   <div id="pracaSlot">${pracaButton()}</div>
   <div class="minis two"><button class="btnp mini" data-a="rules">${L('Como jogar?', 'How to play?')}</button><button class="btnp mini" data-a="info">${L('Acampada – Informações', 'Camp – Information')}</button></div>${instButton()}${FOOT}`);
 }
@@ -4512,10 +4624,36 @@ function chapterScreen() {
   mode = 'chapters';
   const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
-  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${natalSaved() ? `<button class="btnp" data-a="natalmenu">🎄 ${L('Especial Natal', 'Christmas Special')}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${lutaButton()}${natalSaved() ? `<button class="btnp" data-a="natalmenu">🎄 ${L('Especial Natal', 'Christmas Special')}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+}
+function lutaButton() {
+  const open = lutaIdx().filter(lutaOpen); if (!open.length) return '';
+  const last = CITIES[open[open.length - 1]], today = last.luta.date === lutaToday();
+  return `<button class="btnp red luta" data-a="luta">📣 ${L('Lisboa em luta', 'Lisbon in struggle')}${today ? ` · ${L('hoje', 'today')}: ${last.place}` : ''} →</button>`;
+}
+function lutaScreen() {
+  mode = 'chapters';
+  const rows = lutaIdx().map(i => { const c = CITIES[i], u = c.luta, open = lutaOpen(i), when = `${lutaDay(u.date, LANG === 'en')} · ${u.at || L('hora a anunciar', 'time tba')}`;
+    return `<button class="chap${lutaDone.has(i) ? ' done' : ''}"${open ? ` data-city="${i}"` : ' disabled'}><span class="k">${open ? (u.date === lutaToday() ? L('HOJE', 'TODAY') : '✓') : '🔒'}</span><span><span class="n">${esc(c.place)}</span><span class="pl">${esc(when)} · ${esc(L(u.title, u.titleEn || u.title))}</span></span></button>`; }).join('');
+  show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="help">${L('A Acampada de Lisboa saiu do Rossio por uns dias e leva a luta à cidade. Uma praça nova em cada ação, no dia em que acontece.', 'Acampada Lisboa left the Rossio for a few days and takes the fight across the city. A new square for each action, on the day it happens.')}</p><div class="chaps">${rows}</div>
+  <button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${FOOT}`);
+}
+function lutaClear() {
+  lutaDone.add(cityIdx); try { localStorage.setItem('acampada-luta', JSON.stringify([...lutaDone])); } catch (e) {} dropSave(); const summ = summary(true);
+  mode = 'clear'; const c = S.city, u = c.luta;
+  show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${esc(c.place)}</span>
+  <p class="help">${esc(L(c.clear, c.clearEn))}</p>${S.lutaSaved != null && u.twist === 'leilao' ? `<p class="stat rough">${S.lutaSaved}/${LEILAO_N} ${L('terrenos', 'plots')} · ${fmt(crowd())} ${L('pessoas', 'people')}${summ}</p>` : summ}
+  <p class="help real">🔴 IRL: ${esc(lutaDay(u.date, LANG === 'en'))} · ${esc(u.at || L('hora a anunciar', 'time tba'))} · ${esc(u.where)}</p>
+  <div>${shareBtn()}<button class="btnp" data-a="luta">${L('Lisboa em luta', 'Lisbon in struggle')} →</button></div>`, 'comunicado');
+  prepStory();
 }
 function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
+  if (c.luta) { const u = c.luta;
+    show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="p-mid rough">${esc(L(u.title, u.titleEn || u.title))}</p>${TENT}
+    <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${esc(u.where)}</p>
+    <button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button><button class="btnp red" data-a="luta">${L('← Voltar', '← Back')}</button>${IRL_NOTE()}${FOOT}`);
+    return; }
   show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
   <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p>${realLine(c.name) ? `<p class="help real">${esc(realLine(c.name))}</p>` : ''}${savedOf(cityIdx) ? `<button class="btnp red" data-a="load">${L('Continuar · dia', 'Carry on · day')} ${savedOf(cityIdx).day} →</button>` : ''}<button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button>${realLine(c.name) ? IRL_NOTE() : ''}${FOOT}`);
 }
@@ -4948,8 +5086,9 @@ function closeInfo() {
   else titleScreen();
 }
 function finishLevel() {
+  if (S.city.luta) return lutaClear();
   const first = !cleared.has(cityIdx); cleared.add(cityIdx); saveCleared(); dropSave(); const summ = summary(true);
-  if (cleared.size === CITIES.length && first) {
+  if (ORDER.every(i => cleared.has(i)) && first) {
     mode = 'win';
     show(`<h2 class="p-red rough">${L('VITÓRIA', 'VICTORY')}</h2><p class="p-big rough">${L('A luta continua', 'The struggle goes on')}</p>${TENT}<p class="p-info rough">${L('Cinco praças<br>uma exigência:<br>casas para viver', 'Five squares<br>one demand:<br>homes to live in')}</p>
     <p class="help">${L('Com acampadas nas cinco praças e o apoio sempre a crescer, o governo recua e abre negociações sobre a habitação.', 'With camps in all five squares and support still growing, the government backs down and opens talks on housing.')}</p>${shareBtn()}<button class="btnp" data-a="chapters">${L('Escolher praça', 'Choose a square')}</button>${FOOT}`);
@@ -5006,6 +5145,7 @@ ov.addEventListener('click', e => {
   if (a === 'howinstall') { instOpen(); return; }
   if (a === 'install') { const ev = installEvt; installEvt = null; if (ev) ev.prompt(); titleScreen(); }
   else if (a === 'chapters') chapterScreen();
+  else if (a === 'luta') lutaScreen();
   else if (a === 'title') titleScreen();
   else if (a === 'calgo') calOpen('game');
   else if (a === 'calno') { mode = 'play'; ov.hidden = true; }
