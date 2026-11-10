@@ -343,14 +343,6 @@
  {
   "date": "2026-11-10",
   "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-10",
-  "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
   "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
@@ -407,14 +399,6 @@
  {
   "date": "2026-11-11",
   "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-11",
-  "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
   "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
@@ -431,25 +415,9 @@
  {
   "date": "2026-11-12",
   "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-12",
-  "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
   "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-13",
-  "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
   "horas": 7
  },
  {
@@ -479,14 +447,6 @@
  {
   "date": "2026-11-14",
   "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-14",
-  "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
   "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
@@ -495,25 +455,9 @@
  {
   "date": "2026-11-15",
   "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-15",
-  "at": "17:00",
   "city": "Porto",
   "title": "Acampada",
   "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
- },
- {
-  "date": "2026-11-16",
-  "at": "17:00",
-  "city": "Lisboa",
-  "title": "Acampada",
-  "where": "Rossio · a partir das 17h · 21h assembleia popular",
   "horas": 7
  },
  {
@@ -531,5 +475,45 @@
   "title": "Manifestação pela habitação",
   "where": "Largo do Poeta Bocage",
   "horas": 3
+ },
+ {
+  "date": "2026-11-10",
+  "at": "18:00",
+  "city": "Lisboa",
+  "title": "Assembleia popular no Alto do Pina",
+  "where": "Jardim Bulhão Pato (Jardim da Nêspera)",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-11",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "Protesto contra a Web Summit",
+  "where": "Pavilhão de Portugal",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-21",
+  "at": "12:30",
+  "city": "Lisboa",
+  "title": "Unidade de lutas",
+  "where": "Praça José Fontana",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-21",
+  "at": "19:00",
+  "city": "Lisboa",
+  "title": "Rumo à Assembleia da República",
+  "where": "Assembleia da República · com as tendas",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-17",
+  "at": "17:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
+  "horas": 7
  }
 ]
