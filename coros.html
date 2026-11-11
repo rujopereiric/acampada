@@ -10,7 +10,7 @@
 :root{--bg:#0b0a0a;--ink:#f4f1ea;--muted:#a39d97;--red:#b02a22;--gold:#ffd36b;--green:#4ba36f;--panel:#161414}
 *{box-sizing:border-box;margin:0}
 html,body{background:var(--bg);color:var(--ink);font-family:Jost,sans-serif;min-height:100%}
-body{display:flex;flex-direction:column;align-items:center;padding:max(12px,env(safe-area-inset-top)) 16px 24px}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100svh;padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 20px)} /* centred on tall phones; from the top, with a margin, when it doesn't fit */
 .wrap{width:100%;max-width:640px}
 h1{font-family:Audiowide,sans-serif;font-size:clamp(16px,6vw,40px);white-space:nowrap;line-height:1;letter-spacing:.5px;color:var(--gold);text-align:center;margin:6px 0 2px}
 .sub{font-family:Silkscreen,monospace;font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
