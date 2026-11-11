@@ -301,7 +301,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .btnp.cont{ display:block; width:min(100%, 340px); margin:14px auto 0; }
 .opts{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:12px auto 0; }
 .opts .opt{ background:transparent; color:inherit; border:2px solid currentColor; font:800 12px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.3px; padding:7px 9px 6px; cursor:pointer; opacity:.75; }
-@media (max-width:360px){ .opts{ gap:4px; } .opts .opt{ font-size:10px; letter-spacing:0; padding:7px 4px 6px; } }
+@media (max-width:440px){ .opts{ gap:4px; } .opts .opt{ font-size:10.5px; letter-spacing:0; padding:7px 6px 6px; } } @media (max-width:360px){ .opts .opt{ font-size:10px; padding:7px 4px 6px; } }
 .opts .opt.back{ background:#8b2320; border-color:#8b2320; color:#fff; opacity:1; } .opts .opt.on{ background:#b6ff3b; color:#0b0a0a; border-color:#b6ff3b; opacity:1; }
 #ov .optnote:empty{ display:none; }
 .summ{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:14px auto 4px; max-width:420px; text-transform:none; }
@@ -3366,7 +3366,7 @@ function corosTick() {
   if (!c || c.state !== 'sing' || mode !== 'play' || S.corosAsked === c) return;
   if (Math.hypot(p.gx - c.cx, p.gy - c.cy) > .45) return;
   S.corosAsked = c; mode = 'corosask';
-  show(`<h2 class="p-red rough">${L('Primavera de Coros', 'Spring of Choirs')}</h2><p class="help">${L('Estás no meio do coro. Canta com eles: escolhe uma canção e canta para o microfone. Hoje não se canta na praça, canta-se em casa.', 'You’re in the middle of the choir. Sing with them: pick a song and sing into the microphone. Today there’s no singing in the square, so sing at home.')}</p>
+  show(`<h2 class="p-red rough">${L('Primavera de Coros', 'Spring of Choirs')}</h2><p class="help">${L('Estás no meio do coro. Canta com eles: escolhe uma canção e canta para o microfone. Ensaia em casa e depois vem cantar com o coro, ao vivo, na Acampada.', 'You’re in the middle of the choir. Sing with them: pick a song and sing into the microphone. Rehearse at home, then come and sing with the choir, live, at the Acampada.')}</p>
     <button class="btnp red" data-a="corosgo">${L('Cantar →', 'Sing →')}</button><button class="btnp" data-a="corosno">${L('Agora não', 'Not now')}</button>`);
 }
 function drawChorister(m, c) {

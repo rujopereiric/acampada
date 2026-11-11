@@ -44,11 +44,11 @@ button.alt{background:transparent;color:var(--ink)}button:disabled{opacity:.4}
 a{color:var(--gold)}
 </style></head><body><div class="wrap">
 <h1>PRIMAVERA DE COROS</h1>
-<div class="sub" style="font-size:clamp(9px,3.1vw,12px);white-space:nowrap">ACAMPADA PIXEL · HOJE CANTA-SE EM CASA</div>
+<div class="sub" style="font-size:clamp(9px,3.1vw,12px);white-space:nowrap">ENSAIA EM CASA · CANTA NA PRAÇA</div>
 <a id="praca" class="hidden" href="index.html" style="display:block;text-align:center;font-family:Silkscreen,monospace;font-size:13px;margin:-6px 0 10px">← Voltar à praça</a>
 <div class="stagewrap" id="sw"><canvas id="cv" width="240" height="400"></canvas>
   <div class="phone" id="ph"><div class="hud"><span id="score"></span><span id="tune"></span><span id="time"></span></div><div class="lyric" id="lyric"></div><div class="next" id="next"></div></div>
-  <div class="pick" id="pick"><small>HOJE CANTA-SE EM CASA</small><button id="pickgo">Escolher canção</button><i>6 canções · com o coro da praça</i></div></div>
+  <div class="pick" id="pick"><small>ENSAIA EM CASA</small><button id="pickgo">Escolher canção</button><i>6 canções · com o coro da praça</i></div></div>
 <div id="play" class="hidden">
   <div class="row"><button class="alt" id="stop">Parar</button></div>
 </div>
@@ -67,7 +67,7 @@ a{color:var(--gold)}
   <button id="share">Partilhar · Cantei em casa</button>
   <div class="row"><button class="alt" id="again">Outra vez</button><button class="alt" id="back">Canções</button></div>
 </div>
-<p class="sub" style="margin-top:16px">Com a <a href="https://www.instagram.com/primaveradecoros/">Primavera de Coros</a>. Os coros cantam na praça, ao vivo. <a href="https://acampadapixel.pt">Joga a Acampada</a> · nenhum ecrã substitui a rua.</p>
+<p class="sub" style="margin-top:16px">Com a <a href="https://www.instagram.com/primaveradecoros/">Primavera de Coros</a>. Os coros cantam na praça, ao vivo: mais info em <a href="https://www.instagram.com/primaveradecoros/">@primaveradecoros</a>. <a href="https://acampadapixel.pt">Joga a Acampada</a> · nenhum ecrã substitui a rua.</p>
 </div>
 <script>
 'use strict';
@@ -464,14 +464,14 @@ function shareImage() {
   tx('«' + r.title + '»', 670, '800 52px Jost', '#ffd36b');
   tx('★'.repeat(r.stars) + '☆'.repeat(3 - r.stars), 1480, '64px sans-serif', '#ffd36b');
   tx(Math.round(r.pct * 100) + '% afinado · ' + r.pts + ' pontos', 1565, '800 54px Jost', '#f4f1ea');
-  tx('Hoje a praça é a tua sala.', 1640, '700 46px Jost', '#a39d97'); tx('Canta tu também:', 1695, '700 46px Jost', '#a39d97');
+  tx('Em casa soou bem. Com o coro soa melhor.', 1640, '700 46px Jost', '#a39d97'); tx('Todos os dias na Acampada.', 1695, '700 46px Jost', '#a39d97');
   g.fillStyle = '#f4f1ea'; g.fillRect(72, 1725, 760, 96); tx('ACAMPADAPIXEL.PT/COROS', 1791, '800 50px Jost', '#0b0a0a');
-  tx('@acampadapixel · @primaveradecoros', 1870, '700 40px Jost', '#f4f1ea');
+  tx('@acampadapixel · mais info em @primaveradecoros', 1870, '700 36px Jost', '#f4f1ea');
   return new Promise(res => c.toBlob(res, 'image/png'));
 }
 $('share').onclick = async () => {
   if (!endRes) return; const blob = await shareImage(), file = new File([blob], 'cantei-em-casa.png', { type: 'image/png' });
-  const text = `Cantei «${endRes.title}» em casa: ${Math.round(endRes.pct * 100)}%. Hoje a praça é a tua sala. Canta tu também: https://acampadapixel.pt/coros @acampadapixel @primaveradecoros`;
+  const text = `Cantei «${endRes.title}» em casa: ${Math.round(endRes.pct * 100)}%. Em casa soou bem, com o coro soa melhor: todos os dias na Acampada. Canta tu também: https://acampadapixel.pt/coros @acampadapixel · Mais info em @primaveradecoros`;
   try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cantei-em-casa.png'; a.click(); // computers: download it
 };
