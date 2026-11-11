@@ -281,20 +281,28 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .p-mid{ font-weight:700; font-size:22px; line-height:1.15; margin-top:6px !important; text-transform:uppercase; }
 .p-info{ font-weight:800; font-size:22px; line-height:1.12; text-transform:uppercase; }
 .tent{ display:block; margin:12px auto 10px; width:170px; height:auto; }
-.chaps{ display:grid; gap:8px; margin:14px auto 0; max-width:420px; }
-.chap{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; text-align:left; background:transparent; color:#fff; border:2px solid #f4f1ea; padding:8px 12px 6px; cursor:pointer; font-family:Jost, Futura, sans-serif; }
+.chaps{ display:grid; gap:6px; margin:12px auto 0; max-width:420px; }
+.xtras{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin:6px auto 0; max-width:420px; } .xtras.n1{ grid-template-columns:1fr; } .xtras.n2{ grid-template-columns:1fr 1fr; } .xtras.n3{ grid-template-columns:1fr 1fr; } .xtras.n3 .xt.red{ grid-column:1 / -1; }
+.xt{ display:flex; flex-direction:column; justify-content:center; gap:2px; min-width:0; background:#f4f1ea; color:#0b0a0a; border:none; padding:7px 8px 6px; cursor:pointer; font-family:Jost, Futura, sans-serif; text-align:center; }
+.xt b{ font-weight:800; font-size:15px; line-height:1.1; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.xt small{ font:700 11.5px/1.2 "Helvetica Neue", Arial, sans-serif; opacity:.75; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.xt.red{ background:#8b2320; color:#fff; flex-direction:row; align-items:baseline; justify-content:center; gap:10px; } .xt.red small{ opacity:.9; }
+.bigtext .xt b{ font-size:17px; } .bigtext .xt small{ font-size:13px; }
+.chap{ display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:10px; text-align:left; background:transparent; color:#fff; border:2px solid #f4f1ea; padding:6px 12px 5px; cursor:pointer; font-family:Jost, Futura, sans-serif; }
 .chap:active{ transform:translateY(2px); }
 .chap .k{ color:#b02a22; font-weight:800; font-size:14px; }
-.chap .n{ font-weight:800; font-size:22px; line-height:1; text-transform:uppercase; }
+.chap.cap{ grid-template-columns:1fr auto; } .chap.cap .k{ margin-right:8px; font-size:13px; }
+.chap .n{ font-weight:800; font-size:20px; line-height:1; text-transform:uppercase; }
 .chap .pl{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:12px; font-weight:400; color:#c9c4c4; margin-top:2px; }
 .chap .real{ display:block; font-family:"Helvetica Neue", Arial, sans-serif; font-size:12px; font-weight:700; color:#ff8aa8; margin-top:3px; }
 .chap .ok.sv{ background:#ffd23a; }
 #ov p.help.irl{ font-size:11px; opacity:.75; margin-top:14px !important; }
 #ov p.help.real{ color:#ff8aa8; font-weight:700; }
 .btnp.cont{ display:block; width:min(100%, 340px); margin:14px auto 0; }
-.opts{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:16px auto 0; }
+.opts{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px; margin:12px auto 0; }
 .opts .opt{ background:transparent; color:inherit; border:2px solid currentColor; font:800 12px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.3px; padding:7px 9px 6px; cursor:pointer; opacity:.75; }
-.opts .opt.on{ background:#b6ff3b; color:#0b0a0a; border-color:#b6ff3b; opacity:1; }
+@media (max-width:360px){ .opts{ gap:4px; } .opts .opt{ font-size:10px; letter-spacing:0; padding:7px 4px 6px; } }
+.opts .opt.back{ background:#8b2320; border-color:#8b2320; color:#fff; opacity:1; } .opts .opt.on{ background:#b6ff3b; color:#0b0a0a; border-color:#b6ff3b; opacity:1; }
 #ov .optnote:empty{ display:none; }
 .summ{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin:14px auto 4px; max-width:420px; text-transform:none; }
 .summ div{ background:rgba(11,10,10,.55); padding:7px 4px 6px; display:flex; flex-direction:column; align-items:center; gap:2px; }
@@ -1599,7 +1607,7 @@ const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&a
 /* ================= options: calm mode, bigger letters, high contrast (kept in this browser) ================= */
 const OPTS = (() => { try { return { calm: false, big: false, ...JSON.parse(localStorage.getItem('acampada-opts') || '{}') }; } catch (e) { return { calm: false, big: false }; } })();
 function optsApply() { const de = document.documentElement; de.classList.toggle('bigtext', !!OPTS.big); de.classList.remove('hicon'); delete OPTS.hc; try { localStorage.setItem('acampada-opts', JSON.stringify(OPTS)); } catch (e) {} if (TELLY) TELLY.lay = 0; }
-const optsRow = (inGame) => `<div class="opts">${inGame ? '' : `<button class="opt${OPTS.calm ? ' on' : ''}" data-a="opt" data-o="calm">${OPTS.calm ? '☾' : '☀'} ${L('Modo calmo', 'Calm mode')}</button>`}<button class="opt${OPTS.big ? ' on' : ''}" data-a="opt" data-o="big">Aa ${L('Letra maior', 'Bigger text')}</button>${!inGame && tasksAny() ? `<button class="opt" data-a="tasksreset">↺ ${L('Repetir as tarefas', 'Redo the tasks')}</button>` : ''}</div>
+const optsRow = (inGame, lead = '') => `<div class="opts">${lead}${inGame ? '' : `<button class="opt${OPTS.calm ? ' on' : ''}" data-a="opt" data-o="calm">${OPTS.calm ? '☾' : '☀'} ${L('Modo calmo', 'Calm mode')}</button>`}<button class="opt${OPTS.big ? ' on' : ''}" data-a="opt" data-o="big">Aa ${L('Letra maior', 'Bigger text')}</button>${!inGame && tasksAny() ? `<button class="opt" data-a="tasksreset">↺ ${L('Repetir as tarefas', 'Redo the tasks')}</button>` : ''}</div>
   <p class="help optnote">${inGame ? (S.calm ? L('Esta praça está em modo calmo. Escolhe o modo antes de começar uma praça.', 'This square is in calm mode. Pick the mode before you start a square.') : '') : OPTS.calm ? L('Modo calmo: a polícia vem com poucos agentes e só de dois em dois dias, sem polícia de choque nem fascistas, a moral desce mais devagar.', 'Calm mode: light raids every other day, no riot police or fascists, morale drops more slowly.') : ''}</p>`;
 
 /* ================= saving a square half-way (one per square, in this browser) ================= */
@@ -4633,9 +4641,19 @@ function titleScreen() {
 }
 function chapterScreen() {
   mode = 'chapters';
-  const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
+  const rows = ORDER.map((i, n) => [CITIES[i], i, n]).map(([c, i, n]) => `<button class="chap cap${cleared.has(i) ? ' done' : ''}" data-city="${i}"><span><span class="k">${L('CAP.', 'CH.')} ${n + 1}</span><span class="n">${c.name}</span><span class="pl">${c.place} · ${L(c.tag, c.tagEn || c.tag).replace('&', '&amp;')}</span>${realLine(c.name) ? `<span class="real">${esc(realLine(c.name))}</span>` : ''}</span>${savedOf(i) ? `<span class="ok sv">${L('Guardada · dia', 'Saved · day')} ${savedOf(i).day}</span>` : cleared.has(i) ? `<span class="ok">${L('Resistiu', 'Held')}</span>` : '<span></span>'}</button>`).join('');
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
-  ${calSaved().open ? `<button class="btnp" data-a="calmenu">🔓 Caldas da Rainha · ${'★'.repeat(calSaved().best)}${'☆'.repeat(3 - calSaved().best)}</button>` : ''}${lutaButton()}${natalSaved() ? `<button class="btnp" data-a="natalmenu">🎄 ${L('Especial Natal', 'Christmas Special')}</button>` : ''}${optsRow()}<button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+  ${extrasRow()}${optsRow(false, `<button class="opt back" data-a="title">${L('← Voltar', '← Back')}</button>`)}${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
+}
+/* the specials (Caldas, Lisboa em luta, Natal) as one row of small tiles under the chapters, so the list doesn't grow a screen */
+function extrasRow() {
+  const t = [], cs = calSaved();
+  const lo = lutaIdx().filter(lutaOpen);
+  if (lo.length) { const last = CITIES[lo[lo.length - 1]], today = last.luta.date === lutaToday();
+    t.push(`<button class="xt red" data-a="luta"><b>📣 ${L('Lisboa em luta', 'Lisbon in struggle')}</b><small>${today ? `${L('hoje', 'today')}: ${esc(last.place)}` : L('as manifs', 'the protests')} →</small></button>`); }
+  if (cs.open) t.push(`<button class="xt" data-a="calmenu"><b>🔓 Caldas</b><small>${'★'.repeat(cs.best)}${'☆'.repeat(3 - cs.best)}</small></button>`);
+  if (natalSaved()) t.push(`<button class="xt" data-a="natalmenu"><b>🎄 ${L('Natal', 'Christmas')}</b><small>${L('especial', 'special')}</small></button>`);
+  return t.length ? `<div class="xtras n${t.length}">${t.join('')}</div>` : '';
 }
 function lutaButton() {
   const open = lutaIdx().filter(lutaOpen); if (!open.length) return '';
