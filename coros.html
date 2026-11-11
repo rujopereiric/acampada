@@ -14,7 +14,11 @@ body{display:flex;flex-direction:column;align-items:center;padding:max(12px,env(
 .wrap{width:100%;max-width:640px}
 h1{font-family:Audiowide,sans-serif;font-size:clamp(24px,7vw,40px);line-height:1;letter-spacing:1px;color:var(--gold);text-align:center;margin:6px 0 2px}
 .sub{font-family:Silkscreen,monospace;font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
-canvas{display:block;width:100%;image-rendering:pixelated;border:3px solid var(--ink);background:#1b1430}
+canvas{display:block;width:100%;image-rendering:pixelated;background:#0a0810}
+.stagewrap{position:relative;width:100%;max-width:400px;margin:0 auto;border:3px solid var(--ink)}
+/* the tablet in your hands: its screen is x 28-212, y 248-400 of the 240 x 400 picture; the lyrics sit on its top part */
+.phone{position:absolute;left:11.67%;width:76.67%;top:63%;height:12.5%;display:flex;flex-direction:column;justify-content:flex-start;font-size:calc(var(--u,1.5px) * 7.6);pointer-events:none}
+.phone .hud{margin:.2em .5em 0;font-size:.62em}.phone .lyric{min-height:0;font-size:1em;margin:.25em .3em 0;line-height:1.12}.phone .next{min-height:0;font-size:.62em;margin-top:.15em}
 .lyric{min-height:3.2em;font-weight:800;font-size:clamp(20px,5.4vw,30px);line-height:1.15;text-align:center;margin:12px 0 2px}
 .lyric b{color:var(--gold)}.lyric i{font-style:normal;color:var(--muted)}
 .next{min-height:1.4em;font-weight:700;font-size:16px;color:var(--muted);text-align:center}
@@ -33,11 +37,11 @@ button.alt{background:transparent;color:var(--ink)}button:disabled{opacity:.4}
 a{color:var(--gold)}
 </style></head><body><div class="wrap">
 <h1>PRIMAVERA DE COROS</h1>
-<div class="sub">ACAMPADA PIXEL · CANTA COM O CORO</div>
-<canvas id="cv" width="320" height="200"></canvas>
+<div class="sub">ACAMPADA PIXEL · HOJE CANTA-SE EM CASA</div>
+<a id="praca" class="hidden" href="index.html" style="display:block;text-align:center;font-family:Silkscreen,monospace;font-size:13px;margin:-6px 0 10px">← Voltar à praça</a>
+<div class="stagewrap" id="sw"><canvas id="cv" width="240" height="400"></canvas>
+  <div class="phone" id="ph"><div class="hud"><span id="score"></span><span id="tune"></span><span id="time"></span></div><div class="lyric" id="lyric"></div><div class="next" id="next"></div></div></div>
 <div id="play" class="hidden">
-  <div class="hud"><span id="score">0</span><span id="tune">—</span><span id="time"></span></div>
-  <div class="lyric" id="lyric"></div><div class="next" id="next"></div>
   <div class="row"><button class="alt" id="stop">Parar</button></div>
 </div>
 <div id="menu" class="panel">
@@ -52,14 +56,16 @@ a{color:var(--gold)}
 <div id="end" class="panel hidden">
   <div class="stars" id="stars"></div><div class="big" id="final"></div>
   <p id="verdict" style="text-align:center"></p>
-  <div class="row"><button id="again">Outra vez</button><button class="alt" id="back">Canções</button></div>
+  <button id="share">Partilhar · Cantei em casa</button>
+  <div class="row"><button class="alt" id="again">Outra vez</button><button class="alt" id="back">Canções</button></div>
 </div>
-<p class="sub" style="margin-top:16px">Os coros cantam na praça, ao vivo. <a href="https://acampadapixel.pt">Joga a Acampada</a> · nenhum ecrã substitui a rua.</p>
+<p class="sub" style="margin-top:16px">Com a <a href="https://www.instagram.com/primaveradecoros/">Primavera de Coros</a>. Os coros cantam na praça, ao vivo. <a href="https://acampadapixel.pt">Joga a Acampada</a> · nenhum ecrã substitui a rua.</p>
 </div>
 <script>
 'use strict';
 // ---------- songs: lines of [syllable, beats, note, strong]; '' is a rest. words: each line as written ----------
 const NOTE = n => { if (typeof n === 'number') return n; const m = /^([A-G])(b|#)?(\d)$/.exec(n); return 12 * (+m[3] + 1) + { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); };
+// Venham mais cinco: the notes of the Primavera de Coros 1st voice guide, from its pitch (seconds, MIDI)
 const SONGS = [
   { id: 'mostra-a-cara', title: 'Mostra a cara', who: 'Coro Social do Bairro · melodia do jogo', bpm: 96,
     words: ['Mostra a cara', 'Mostra a casa', 'Abra a boca Senhor Presidente', 'Quebra o silêncio que nos morre', 'Que nos mata', 'Mostra a cara', 'Mostra a cara', 'Sai de casa, vem ’pras ruas', 'Nossas ruas, nossas praças', 'Acampadas', 'Acampadas'],
@@ -76,6 +82,30 @@ const SONGS = [
       [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'A4', 1], ['das', 1.5, 'G4'], ['', .5]],
       [['A', .5, 'D4'], ['cam', .5, 'F4'], ['pa', 1, 'E4', 1], ['das', 2, 'D4'], ['', 1.5]]
     ] },
+  { id: 'grandola', title: 'Grândola, Vila Morena', who: 'José Afonso · melodia do arranjo do jogo', bpm: 70,
+    words: ['Grândola, vila morena', 'Terra da fraternidade', 'O povo é quem mais ordena', 'Dentro de ti, ó cidade',
+      'Dentro de ti, ó cidade', 'O povo é quem mais ordena', 'Terra da fraternidade', 'Grândola, vila morena',
+      'Em cada esquina um amigo', 'Em cada rosto igualdade', 'Grândola, vila morena', 'Terra da fraternidade'],
+    lines: (() => { // the four phrases of the tune (from the game's MIDI arrangement, an octave or two down); every verse sings them in order
+      const R8 = [.75, .25, .75, .25, .75, .25, 1, 1, 2.5], TUNES = [['C4', 'C4', 'C4', 'B3', 'C4', 'D4', 'E4', 'D4', 'C4'], ['F4', 'F4', 'F4', 'E4', 'F4', 'G4', 'A4', 'G4', 'F4'],
+        ['F4', 'E4', 'F4', 'G4', 'A4', 'G4', 'F4', 'E4', 'D4'], ['B3', 'C4', 'D4', 'F4', 'E4', 'D4', 'E4', 'D4', 'C4']];
+      const SY = [['Grân', 'do', 'la,', 'vi', 'la', 'mo', 're', 'na', '_'], ['Ter', 'ra', 'da', 'fra', 'ter', 'ni', 'da', 'de', '_'], ['O', 'po', 'vo é', 'quem', 'mais', 'or', 'de', 'na', '_'], ['Den', 'tro', 'de', 'ti,', 'ó', 'ci', 'da', 'de', '_'],
+        ['Den', 'tro', 'de', 'ti,', 'ó', 'ci', 'da', 'de', '_'], ['O', 'po', 'vo é', 'quem', 'mais', 'or', 'de', 'na', '_'], ['Ter', 'ra', 'da', 'fra', 'ter', 'ni', 'da', 'de', '_'], ['Grân', 'do', 'la,', 'vi', 'la', 'mo', 're', 'na', '_'],
+        ['Em', 'ca', 'da es', 'qui', 'na um', 'a', 'mi', 'go', '_'], ['Em', 'ca', 'da', 'ros', 'to i', 'gual', 'da', 'de', '_'], ['Grân', 'do', 'la,', 'vi', 'la', 'mo', 're', 'na', '_'], ['Ter', 'ra', 'da', 'fra', 'ter', 'ni', 'da', 'de', '_']];
+      return SY.map((sy, li) => [...sy.map((s, k) => [s, R8[k], TUNES[li % 4][k], k === 6 || k === 7 ? 1 : 0]), ['', .5]]); })() },
+  { id: 'venham-mais-cinco', title: 'Venham mais cinco', who: 'José Afonso · melodia e acompanhamento de José Galvão (Educação Musical, CC)', bpm: 138.05,
+    backing: { src: 'coros/venham-mais-cinco-galvao.mp3', at: 2 }, // José Galvão's backing track (Creative Commons), cut so the first sung note falls 2 s in
+    // One voice from start to finish: José Galvão's "Venham mais 5" (C major, 2/4), A B C D C, eight bars, A B C D C C:
+    // A the verse, B "Não me obriguem", C the refrain, D "Iii ba ra bu di bai ié". Notes and timing checked against his
+    // falling-notes video. Each [syllable, beats, note, strong].
+    words: ["Venham mais cinco, duma assentada que eu pago já", "Do branco ou tinto, se o velho estica eu fico por cá", "Se tem má pinta, dá-lhe um apito e põe-no a andar", "De espada à cinta, já crê que é rei d’aquém e d’além-mar", "Não me obriguem a vir para a rua gritar", "Que é já tempo de embalar a trouxa e zarpar", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Iii barabu dibai ié", "Iii barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "A gente ajuda, havemos de ser mais, eu bem sei", "Mas há quem queira deitar abaixo o que eu levantei", "A bucha é dura, mais dura é a razão que a sustém", "Só nesta rusga não há lugar p’rós filhos da mãe", "Não me obriguem a vir para a rua gritar", "Que é já tempo de embalar a trouxa e zarpar", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Iii barabu dibai ié", "Iii barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié", "Tiririri riti, tiririri ri", "Tiririri barabu dibai ié"],
+    lines: [[["Ve", 0.5, "G4", 0], ["nham", 0.5, "G4", 0], ["mais", 0.5, "F4", 0], ["cin", 1.0, "E4", 1], ["co", 1.0, "C4", 1], ["du", 0.5, "C4", 0], ["ma as", 0.5, "F4", 0], ["sen", 0.5, "F4", 0], ["ta", 0.5, "F4", 0], ["da", 0.5, "E4", 0], ["que eu", 0.5, "D4", 0], ["pa", 0.5, "D4", 0], ["go", 0.5, "C4", 0], ["já", 2.5, "E4", 1], ["", 4.0]], [["Do", 0.5, "G4", 0], ["bran", 0.5, "G4", 0], ["co ou", 0.5, "F4", 0], ["tin", 1.0, "E4", 1], ["to", 1.0, "C4", 1], ["se o", 0.5, "C4", 0], ["ve", 0.5, "F4", 0], ["lho es", 0.5, "F4", 0], ["ti", 0.5, "F4", 0], ["ca eu", 0.5, "E4", 0], ["fi", 0.5, "D4", 0], ["co", 0.5, "D4", 0], ["por", 0.5, "C4", 0], ["cá", 2.5, "C4", 1], ["", 4.0]], [["Se", 0.5, "G4", 0], ["tem", 0.5, "G4", 0], ["má", 0.5, "F4", 0], ["pin", 1.0, "E4", 1], ["ta", 1.0, "C4", 1], ["dá", 0.5, "C4", 0], ["lhe um", 0.5, "F4", 0], ["a", 0.5, "F4", 0], ["pi", 0.5, "F4", 0], ["to e", 0.5, "E4", 0], ["põe", 0.5, "D4", 0], ["no a", 0.5, "D4", 0], ["an", 0.5, "C4", 0], ["dar", 2.5, "E4", 1], ["", 4.0]], [["De es", 0.5, "G4", 0], ["pa", 0.5, "G4", 0], ["da à", 0.5, "F4", 0], ["cin", 1.0, "E4", 1], ["ta", 1.0, "C4", 1], ["já", 0.5, "C4", 0], ["crê", 0.5, "F4", 0], ["que é", 0.5, "F4", 0], ["rei", 0.5, "F4", 0], ["d’a", 0.5, "E4", 0], ["quém", 0.5, "D4", 0], ["e", 0.5, "D4", 0], ["d’a lém", 0.5, "C4", 0], ["mar", 2.5, "C4", 1], ["", 4.0]], [["Não", 1.0, "A4", 1], ["me o", 0.5, "A4", 0], ["bri", 1.0, "D5", 1], ["guem", 1.0, "D5", 1], ["a", 0.5, "C5", 0], ["vir", 0.5, "B4", 0], ["pa", 0.5, "B4", 0], ["ra a", 0.5, "A4", 0], ["ru", 1.0, "G4", 1], ["a", 1.0, "F4", 1], ["gri", 0.5, "A4", 0], ["tar", 2.5, "E4", 1], ["", 3.5]], [["Que é", 1.0, "A4", 1], ["já", 0.5, "A4", 0], ["tem", 1.0, "D5", 1], ["po", 1.0, "D5", 1], ["de em", 0.5, "C5", 0], ["ba", 0.5, "B4", 0], ["lar", 0.5, "B4", 0], ["a", 0.5, "A4", 0], ["trou", 1.0, "G4", 1], ["xa e", 1.0, "F4", 1], ["zar", 0.5, "A4", 0], ["par", 2.0, "E4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 1.0, "C4", 1], ["ra", 0.5, "C4", 0], ["bu", 0.5, "D4", 0], ["di", 0.5, "D4", 0], ["bai", 0.5, "D4", 0], ["ié", 1.5, "C4", 1], ["", 1.0]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1], ["", 5.5]], [["Iii", 2.5, "G4", 1], ["", 2.5], ["ba", 0.5, "A4", 0], ["ra", 0.5, "G4", 0], ["bu", 0.5, "E4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1], ["", 5.5]], [["Iii", 2.5, "G4", 1], ["", 2.5], ["ba", 0.5, "A4", 0], ["ra", 0.5, "G4", 0], ["bu", 0.5, "E4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1], ["", 20.0]], [["A", 0.5, "G4", 0], ["gen", 0.5, "G4", 0], ["te a", 0.5, "F4", 0], ["ju", 1.0, "E4", 1], ["da", 1.0, "C4", 1], ["ha", 0.5, "C4", 0], ["ve", 0.5, "F4", 0], ["mos", 0.5, "F4", 0], ["de", 0.5, "F4", 0], ["ser", 0.5, "E4", 0], ["mais", 0.5, "D4", 0], ["eu", 0.5, "D4", 0], ["bem", 0.5, "C4", 0], ["sei", 2.5, "E4", 1], ["", 4.0]], [["Mas", 0.5, "G4", 0], ["há", 0.5, "G4", 0], ["quem", 0.5, "F4", 0], ["quei", 1.0, "E4", 1], ["ra", 1.0, "C4", 1], ["dei", 0.5, "C4", 0], ["tar", 0.5, "F4", 0], ["a", 0.5, "F4", 0], ["bai", 0.5, "F4", 0], ["xo o", 0.5, "E4", 0], ["que eu", 0.5, "D4", 0], ["le", 0.5, "D4", 0], ["van", 0.5, "C4", 0], ["tei", 2.5, "C4", 1], ["", 4.0]], [["A", 0.5, "G4", 0], ["bu", 0.5, "G4", 0], ["cha é", 0.5, "F4", 0], ["du", 1.0, "E4", 1], ["ra", 1.0, "C4", 1], ["mais", 0.5, "C4", 0], ["du", 0.5, "F4", 0], ["ra é", 0.5, "F4", 0], ["a", 0.5, "F4", 0], ["ra", 0.5, "E4", 0], ["zão", 0.5, "D4", 0], ["que a", 0.5, "D4", 0], ["sus", 0.5, "C4", 0], ["tém", 2.5, "E4", 1], ["", 4.0]], [["Só", 0.5, "G4", 0], ["nes", 0.5, "G4", 0], ["ta", 0.5, "F4", 0], ["rus", 1.0, "E4", 1], ["ga", 1.0, "C4", 1], ["não", 0.5, "C4", 0], ["há", 0.5, "F4", 0], ["lu", 0.5, "F4", 0], ["gar", 0.5, "F4", 0], ["p’rós", 0.5, "E4", 0], ["fi", 0.5, "D4", 0], ["lhos", 0.5, "D4", 0], ["da", 0.5, "C4", 0], ["mãe", 2.5, "C4", 1], ["", 4.0]], [["Não", 1.0, "A4", 1], ["me o", 0.5, "A4", 0], ["bri", 1.0, "D5", 1], ["guem", 1.0, "D5", 1], ["a", 0.5, "C5", 0], ["vir", 0.5, "B4", 0], ["pa", 0.5, "B4", 0], ["ra a", 0.5, "A4", 0], ["ru", 1.0, "G4", 1], ["a", 1.0, "F4", 1], ["gri", 0.5, "A4", 0], ["tar", 2.5, "E4", 1], ["", 3.5]], [["Que é", 1.0, "A4", 1], ["já", 0.5, "A4", 0], ["tem", 1.0, "D5", 1], ["po", 1.0, "D5", 1], ["de em", 0.5, "C5", 0], ["ba", 0.5, "B4", 0], ["lar", 0.5, "B4", 0], ["a", 0.5, "A4", 0], ["trou", 1.0, "G4", 1], ["xa e", 1.0, "F4", 1], ["zar", 0.5, "A4", 0], ["par", 2.0, "E4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 1.0, "C4", 1], ["ra", 0.5, "C4", 0], ["bu", 0.5, "D4", 0], ["di", 0.5, "D4", 0], ["bai", 0.5, "D4", 0], ["ié", 1.5, "C4", 1], ["", 1.0]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1], ["", 5.5]], [["Iii", 2.0, "G4", 1], ["", 3.0], ["ba", 0.5, "A4", 0], ["ra", 0.5, "G4", 0], ["bu", 0.5, "E4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1], ["", 5.5]], [["Iii", 2.5, "G4", 1], ["", 2.5], ["ba", 0.5, "A4", 0], ["ra", 0.5, "G4", 0], ["bu", 0.5, "E4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["", 0.5]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.0, "C4", 1], ["ti", 0.5, "C4", 0], ["ti", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 0.5, "D4", 0], ["ri", 1.0, "E4", 1], ["ri", 1.5, "C4", 1]], [["ti", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 0.5, "F4", 0], ["ri", 1.0, "E4", 1], ["ba", 0.5, "C4", 0], ["ra", 0.5, "C4", 0], ["bu", 0.5, "C4", 0], ["di", 0.5, "D4", 0], ["bai", 1.0, "D4", 1], ["ié", 2.5, "C4", 1]]] },
+  { id: 'internacional', title: 'A Internacional', who: 'Degeyter · letra portuguesa de Neno Vasco (1909)', bpm: 104,
+    words: ["De pé, ó vítimas da fome!", "De pé, famélicos da terra!", "Da ideia a chama já consome", "A crosta bruta que a soterra.", "Cortai o mal bem pelo fundo!", "De pé, de pé, não mais senhores!", "Se nada somos neste mundo,", "Sejamos tudo, ó produtores!", "Bem unidos façamos,", "Nesta luta final,", "Uma terra sem amos", "A Internacional!", "Bem unidos façamos,", "Nesta luta final,", "Uma terra sem amos", "A Internacional!"],
+    lines: [[["De", 0.5, "G4"], ["pé", 1.5, "C5", 1], ["ó", 0.5, "B4"], ["ví", 0.5, "D5"], ["ti", 0.5, "C5"], ["mas", 0.5, "G4"], ["da", 0.5, "E4"], ["fo", 2, "A4", 1], ["me", 1.5, "F4", 1]], [["De", 0.5, "A4"], ["pé", 1.5, "D5", 1], ["fa", 0.5, "C5"], ["mé", 0.5, "B4"], ["li", 0.5, "A4"], ["cos", 0.5, "G4"], ["da", 0.5, "F4"], ["ter", 2, "E4", 1], ["ra", 1, "E4"], ["", 0.5]], [["Da i", 0.5, "G4"], ["dei", 1.5, "C5", 1], ["a a", 0.5, "B4"], ["cha", 0.5, "D5"], ["ma", 0.5, "C5"], ["já", 0.5, "G4"], ["con", 0.5, "E4"], ["so", 2, "A4", 1], ["me", 1, "F4"]], [["A", 0.5, "D5"], ["cros", 0.5, "C5"], ["ta", 1.5, "B4", 1], ["bru", 0.5, "D5"], ["ta", 1, "F5"], ["que a", 0.5, "F5"], ["so", 0.5, "B4"], ["ter", 2, "C5", 1], ["ra", 0.5, "C5"], ["", 0.5]], [["Cor", 0.5, "E5"], ["tai", 0.5, "D5"], ["o", 2, "B4", 1], ["mal", 0.5, "A4"], ["bem", 0.5, "B4"], ["pe", 0.5, "C5"], ["lo", 0.5, "A4"], ["fun", 2, "B4", 1], ["do", 1, "G4"]], [["De", 0.5, "F#4"], ["pé", 0.5, "G4"], ["de", 1, "A4"], ["pé", 0.5, "A4"], ["não", 0.5, "A4"], ["mais", 1.5, "D5", 1], ["se", 0.5, "C5"], ["nho", 2, "B4", 1], ["res", 1, "B4"], ["", 0.5]], [["Se", 0.5, "D5"], ["na", 1.5, "D5", 1], ["da", 0.5, "B4"], ["so", 0.5, "G4"], ["mos", 0.5, "G4"], ["nes", 0.5, "F#4"], ["te", 0.5, "G4"], ["mun", 2, "E5", 1], ["do", 0.5, "C5"]], [["Se", 0.5, "A4"], ["ja", 0.5, "B4"], ["mos", 0.5, "C5"], ["tu", 1, "B4"], ["do ó", 1, "D5"], ["pro", 0.5, "C5"], ["du", 0.5, "C5"], ["to", 1, "A4"], ["res", 2.5, "G4", 1], ["", 0.5]], [["Bem", 0.5, "E5"], ["u", 0.5, "D5"], ["ni", 2, "C5", 1], ["dos", 1.5, "G4", 1], ["fa", 0.5, "E4"], ["ça", 2, "A4", 1], ["mos", 1, "F4"]], [["Nes", 0.5, "D5"], ["ta", 0.5, "C5"], ["lu", 2, "B4", 1], ["ta", 1.5, "A4", 1], ["fi", 0.5, "G4"], ["nal", 2.5, "G4", 1], ["", 0.5]], [["U", 0.5, "G4"], ["ma", 0.5, "G4"], ["ter", 2, "E5", 1], ["ra", 1, "D5"], ["sem", 1, "G4"], ["a", 2, "C5", 1], ["mos", 1.5, "B4", 1]], [["A", 0.5, "B4"], ["In", 1.5, "A4", 1], ["ter", 0.5, "G#4"], ["na", 1, "A4"], ["cio", 1, "D5"], ["nal", 2.5, "D5", 1], ["", 0.5]], [["Bem", 0.5, "E5"], ["u", 0.5, "D5"], ["ni", 2, "C5", 1], ["dos", 1.5, "G4", 1], ["fa", 0.5, "E4"], ["ça", 2, "A4", 1], ["mos", 1, "F4"]], [["Nes", 0.5, "D5"], ["ta", 0.5, "C5"], ["lu", 2, "B4", 1], ["ta", 1.5, "A4", 1], ["fi", 0.5, "G4"], ["nal", 2.5, "E5", 1], ["", 0.5]], [["U", 0.5, "E5"], ["ma", 0.5, "E5"], ["ter", 2, "G5", 1], ["ra", 1, "F5"], ["sem", 1, "E5"], ["a", 0.5, "D5"], ["_", 0.5, "C#5"], ["_", 0.5, "D5"], ["_", 0.5, "E5"], ["mos", 1.5, "F5", 1]], [["A", 0.5, "F5"], ["In", 1.5, "E5", 1], ["ter", 0.5, "E5"], ["na", 1.5, "D5", 1], ["cio", 0.5, "D5"], ["nal", 3, "C5", 1], ["", 1]]] },
+  { id: 'bella-ciao', title: 'Bella ciao', who: 'canção popular italiana', bpm: 116,
+    words: ["Una mattina mi son svegliato", "o bella ciao, bella ciao, bella ciao, ciao, ciao", "una mattina mi son svegliato", "e ho trovato l'invasor", "O partigiano portami via", "o bella ciao, bella ciao, bella ciao, ciao, ciao", "o partigiano portami via", "che mi sento di morir", "E se io muoio da partigiano", "o bella ciao, bella ciao, bella ciao, ciao, ciao", "e se io muoio da partigiano", "tu mi devi seppellir"],
+    lines: [[["U", 0.5, "A3"], ["na", 0.5, "D4"], ["mat", 0.5, "E4"], ["ti", 0.5, "F4"], ["na", 2, "D4", 1], ["mi", 0.5, "A3"], ["son", 0.5, "D4"], ["sve", 0.5, "E4"], ["glia", 0.5, "F4"], ["to", 2, "D4", 1]], [["o", 0.5, "A3"], ["bel", 0.5, "D4"], ["la", 0.5, "E4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "A4"], ["ciao", 1, "A4"], ["ciao", 0.5, "A4"]], [["u", 0.5, "A4"], ["na", 0.5, "G4"], ["mat", 0.5, "A4"], ["ti", 0.5, "Bb4"], ["na", 2, "Bb4", 1], ["mi", 0.5, "Bb4"], ["son", 0.5, "A4"], ["sve", 0.5, "G4"], ["glia", 0.5, "Bb4"], ["to", 2, "A4", 1]], [["e", 0.5, "A4"], ["ho", 0.5, "G4"], ["tro", 0.5, "F4"], ["va", 1, "E4"], ["to", 1, "A4"], ["l'in", 1, "F4"], ["va", 1, "E4"], ["sor", 2, "D4", 1], ["", 1.5]], [["O", 0.5, "A3"], ["par", 0.5, "D4"], ["ti", 0.5, "E4"], ["gia", 0.5, "F4"], ["no", 2, "D4", 1], ["por", 0.5, "A3"], ["ta", 0.5, "D4"], ["mi", 0.5, "E4"], ["vi", 0.5, "F4"], ["a", 2, "D4", 1]], [["o", 0.5, "A3"], ["bel", 0.5, "D4"], ["la", 0.5, "E4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "A4"], ["ciao", 1, "A4"], ["ciao", 0.5, "A4"]], [["o", 0.5, "A4"], ["par", 0.5, "G4"], ["ti", 0.5, "A4"], ["gia", 0.5, "Bb4"], ["no", 2, "Bb4", 1], ["por", 0.5, "Bb4"], ["ta", 0.5, "A4"], ["mi", 0.5, "G4"], ["vi", 0.5, "Bb4"], ["a", 2, "A4", 1]], [["che", 0.5, "A4"], ["mi", 0.5, "G4"], ["_", 0.5, "F4"], ["sen", 1, "E4"], ["to", 1, "A4"], ["di", 1, "F4"], ["mo", 1, "E4"], ["rir", 2, "D4", 1], ["", 1.5]], [["E", 0.5, "A3"], ["se", 0.5, "D4"], ["io", 0.5, "E4"], ["muo", 0.5, "F4"], ["io", 2, "D4", 1], ["da", 0.5, "A3"], ["par", 0.5, "D4"], ["ti", 0.5, "E4"], ["gia", 0.5, "F4"], ["no", 2, "D4", 1]], [["o", 0.5, "A3"], ["bel", 0.5, "D4"], ["la", 0.5, "E4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "F4"], ["bel", 0.5, "E4"], ["la", 0.5, "D4"], ["ciao", 1, "A4"], ["ciao", 1, "A4"], ["ciao", 0.5, "A4"]], [["e", 0.5, "A4"], ["se", 0.5, "G4"], ["io", 0.5, "A4"], ["muo", 0.5, "Bb4"], ["io", 2, "Bb4", 1], ["da", 0.5, "Bb4"], ["par", 0.5, "A4"], ["ti", 0.5, "G4"], ["gia", 0.5, "Bb4"], ["no", 2, "A4", 1]], [["tu", 0.5, "A4"], ["mi", 0.5, "G4"], ["_", 0.5, "F4"], ["de", 1, "E4"], ["vi", 1, "A4"], ["sep", 1, "F4"], ["pel", 1, "E4"], ["lir", 2, "D4", 1], ["", 1.5]]] },
   { id: 'semana-sangrenta', title: 'A semana sangrenta', who: 'versão do Coro da Achada · arranjo a 4 vozes do jogo', bpm: 104,
     words: ["P’ra além do bufo e do militar", "Já só se vêem nos caminhos", "Velhos e tristes a chorar", "Pobres viúvas e meninos", "Até Paris cheira a miséria", "Mesmo os sortudos assustados", "A moda também vai à guerra", "Há passeios ensanguentados", "Sim, mas... a terra treme", "Os dias maus vão acabar", "O contra-ataque não se teme", "Se toda a gente se juntar", "Se toda a gente se juntar"],
     lines: [
@@ -97,6 +127,12 @@ const SONGS = [
 ];
 const LEAD = 2; // seconds before the first note
 function build(song) { // notes with times in seconds; strong notes count double
+  if (song.audio) { // a song from a recording: the notes come from its lead voice (seconds), the lyrics are timed lines
+    const lt = song.lyrics.map(l => l[0]), li = t => { let k = 0; for (let i = 0; i < lt.length; i++) if (t >= lt[i] - .3) k = i; return k; };
+    const notes = song.notes.map(([t, d, m], i, a) => { const nx = a[i + 1], dd = nx && nx[0] - (t + d) < .25 ? nx[0] - t : d; // short gaps closed: sung legato
+      return { s: '·', t: t + LEAD, d: dd, m, strong: dd >= .5, li: li(t), on: 0, in: 0 }; });
+    return { notes, parts: [], end: song.end + LEAD + .5 };
+  }
   const b = 60 / song.bpm, notes = []; let t = LEAD;
   song.lines.forEach((line, li) => { for (const [s, d, n, strong] of line) { if (s) notes.push({ s, t, d: d * b, m: NOTE(n), strong: !!strong, li, on: 0, in: 0 }); t += d * b; } });
   const parts = []; // the arrangement's other voices (alto, tenor, bass), sung by the choir under the melody
@@ -146,16 +182,28 @@ function choir(m, d, t0, vol) {
   g.connect(f1).connect(mix); g.connect(f2).connect(mix); mix.gain.value = 1.2; mix.connect(choirBus(a));
   for (const det of [-9, -3, 4, 10]) { const o = a.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det; o.connect(g); o.start(t0); o.stop(t0 + d + .3); }
 }
+// a recording as the guide: decoded once, played on the audio clock with the notes; the Coro button sets its volume
+const recs = {};
+async function playRec(s) { // also a backing track under a sung tune: backing.at is where in the file the first note falls
+  const file = s.audio || s.backing.src, skip = s.backing ? Math.max(0, s.backing.at - LEAD) : 0;
+  const a = audio(), g0 = G; if (!recs[file]) recs[file] = fetch(file).then(r => r.arrayBuffer()).then(b => a.decodeAudioData(b));
+  const buf = await recs[file]; if (G !== g0) return;
+  const src = a.createBufferSource(), g = a.createGain(); src.buffer = buf; g.gain.value = .9 * (guideVol || .15); src.connect(g).connect(a.destination);
+  const from = s.backing ? G.t0 : G.t0 + LEAD; // a recording starts with its first note; a backing track has its own lead-in
+  const late = Math.max(0, a.currentTime - from); src.start(Math.max(a.currentTime, from), late + skip); G.rec = src;
+}
 // ---------- the game ----------
-const $ = id => document.getElementById(id), cv = $('cv'), ctx = cv.getContext('2d'), W = 320, H = 200;
+const $ = id => document.getElementById(id), cv = $('cv'), ctx = cv.getContext('2d'), W = 240, H = 400;
+new ResizeObserver(() => $('sw').style.setProperty('--u', (cv.clientWidth / 240) + 'px')).observe(cv);
 const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-let G = null, song = SONGS[0], trail = [], level = 0;
+let G = null, song = SONGS[0], trail = [], level = 0, endPct = 0, endRes = null;
 const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado|real: a synthetic singer instead of the mic (for testing)
 function start(s) {
   song = s; audio(); const { notes, parts, end } = build(s);
   const lo = Math.min(...notes.map(n => n.m)) - 2, hi = Math.max(...notes.map(n => n.m)) + 2;
   G = { notes, parts, end, lo, hi, t0: actx.currentTime + .3, sched: 0, psched: 0, score: 0, max: notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1), 0), last: 0, combo: 0 };
   trail = []; show('play');
+  if (s.audio || s.backing) playRec(s);
   if (TEST) { // a synthetic voice an octave below the tune (sharp by 2 semitones when 'errado'), straight into the analyser
     const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; g.gain.value = 0; o.connect(g); attach(g); o.start();
     if (TEST === 'real') { // like a person: 0.15 s late, 0.4 semitone flat, a vibrato of half a semitone, a short breath before each note
@@ -167,9 +215,10 @@ function start(s) {
   }
 }
 function stop(done) {
-  if (!G) return; if (G.osc) try { G.osc.stop(); } catch (e) {}
+  if (!G) return; if (G.osc) try { G.osc.stop(); } catch (e) {} if (G.rec) try { G.rec.stop(); } catch (e) {}
   const pct = G.score / G.max, pts = Math.round(pct * 10000), stars = pct >= .75 ? 3 : pct >= .45 ? 2 : pct >= .2 ? 1 : 0;
   window.__coros.result = { pct, pts, stars, notes: G.notes.map(n => +(n.on ? n.in / n.on : 0).toFixed(2)) };
+  if (done) { endPct = pct; endRes = { pct, pts, stars, title: song.title }; }
   G = null;
   if (!done) { show('menu'); return; }
   $('stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars); $('final').textContent = pts + ' pontos';
@@ -178,53 +227,188 @@ function stop(done) {
 }
 function show(id) { for (const k of ['menu', 'play', 'end']) $(k).classList.toggle('hidden', k !== id); }
 function lyric(li, cur) { // the line as written, the current syllable bold, sung ones dim
+  if (song.audio) { const e = (song.words[li] || '').replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]); return cur && cur.li === li ? `<b>${e}</b>` : e; }
   const txt = song.words[li] || '', ns = G.notes.filter(n => n.li === li); let i = 0, out = '';
   const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
   const shown = cur && cur.s === '_' ? ns[ns.indexOf(cur) - 1] : cur; // a held syllable stays lit
   for (const n of ns) {
     if (n.s === '_') continue;
-    let k = n.s.replace(/\s/g, '').length, j = i; while (j < txt.length && /\s/.test(txt[j])) j++; out += esc(txt.slice(i, j)); i = j;
-    while (j < txt.length && k > 0) { if (!/\s/.test(txt[j])) k--; j++; }
+    let k = n.s.replace(/[^\p{L}]/gu, '').length, j = i; while (j < txt.length && !/\p{L}/u.test(txt[j])) j++; out += esc(txt.slice(i, j)); i = j; // letters only: commas and apostrophes go with the word
+    while (j < txt.length && k > 0) { if (/\p{L}/u.test(txt[j])) k--; j++; } while (j < txt.length && /[^\p{L}\s]/u.test(txt[j])) j++;
     const part = esc(txt.slice(i, j)); out += n === shown ? `<b>${part}</b>` : shown && n.t < shown.t ? `<i>${part}</i>` : part; i = j;
   }
   return out + esc(txt.slice(i));
 }
-// ---------- drawing: the Rossio at dusk with the choir on top, the note lane below ----------
-const SKIN = ['#f1c9a5', '#d9a47a', '#a8714a', '#6e4630'], SHIRT = ['#e2483d', '#ffd36b', '#4ba36f', '#5a8fd8', '#c45fd0', '#f4f1ea', '#ff8a3d'];
-function stage(t, singing, glow) {
-  for (let y = 0; y < 70; y++) R(0, y, W, 1, ['#1d1642', '#2f2159', '#4e2d6a', '#82396d'][Math.min(3, y / 18 | 0)]);
-  R(118, 22, 84, 34, '#cfc5ae'); for (let y = 6; y < 22; y++) { const h = (y - 6) * 2.6; R(160 - h, y, h * 2, 1, '#e4dccb'); } // the theatre
-  for (let i = 0; i < 6; i++) R(124 + i * 13, 24, 4, 32, '#f6f1e4'); R(124, 40, 72, 16, 'rgba(255,207,122,.5)');
-  for (const x of [0, 228]) { R(x, 18, 92, 40, x ? '#e6c46a' : '#e7a9a0'); for (let wx = x + 4; wx < x + 88; wx += 9) for (const wy of [24, 36]) R(wx, wy, 5, 6, (wx + wy) % 4 ? '#2a2350' : '#ffd36b'); }
-  for (let y = 56; y < 70; y++) for (let x = 0; x < W; x += 2) R(x, y, 2, 1, Math.floor((Math.sin((x + y * .5) / 6) * 3 + y) / 3) % 2 ? '#2e2a2a' : '#e9e4da'); // the wave pavement
-  if (glow > 0) { ctx.fillStyle = `rgba(255,211,107,${.25 * glow})`; ctx.beginPath(); ctx.ellipse(160, 64, 120, 12, 0, 0, 7); ctx.fill(); }
-  for (let i = 0; i < 9; i++) { // the choir in a half circle, mouths open while they sing
-    const x = 64 + i * 24, y = 66 - Math.abs(i - 4) * 2 + (singing && (Math.floor(t * 4) + i) % 2 ? -1 : 0), sk = SKIN[i % 4], sh = SHIRT[i % 7];
-    R(x - 3, y - 12, 7, 8, sh); R(x - 2, y - 4, 2, 4, '#2b2d55'); R(x + 1, y - 4, 2, 4, '#2b2d55'); R(x - 3, y - 18, 7, 6, sk); R(x - 3, y - 19, 7, 2, ['#2a1c14', '#c8a040', '#16121a'][i % 3]);
-    R(x - 1, y - 14, 3, singing ? 2 : 1, '#5a1a1a'); R(x - 6, y - 11, 3, 5, '#f4f1ea'); // the song sheet
-  }
+// ---------- drawing: 1 November on the Rossio. You stand right behind the orchestra, a little above it; the maestro
+// faces you in the strong white light of a spotlight on a tripod; a huge crowd all round, in the dark, singing. The
+// game is on the phone in your hands. The better you sing, the more people come, and the more phones light up ----------
+const SKIN = ['#f1c9a5', '#d9a47a', '#a8714a', '#6e4630'];
+let sd = 11; const rr = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+const CX = 120, CY = 152, RX = 74, RY = 30; // the clearing round the orchestra
+const inClear = (x, y, k = 1) => ((x - CX) / (RX * k)) ** 2 + ((y - CY) / (RY * k)) ** 2 < 1;
+const HEADS = (() => { const out = []; for (let i = 0; i < 2600 && out.length < 1100; i++) { const y = 34 + Math.pow(rr(), .8) * 366, x = rr() * 248 - 4; if (inClear(x, y, 1.18)) continue;
+  out.push({ x, y, r: 1.2 + (y - 34) / 366 * 5.2, k: rr(), face: rr() < .35, ph: rr() < .5 }); } return out.sort((a, b) => a.y - b.y); })();
+const MUS = (() => { const out = [], n = 22; for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2 + .14; out.push({ x: CX + Math.cos(a) * (RX - 10), y: CY + Math.sin(a) * (RY - 5), a, k: i, ins: ['vl', 'vl', 'vc', 'sax', 'tp', 'vl', 'kb'][i % 7] }); } return out.sort((p, q) => p.y - q.y); })();
+let crowdN = 0, layers = null;
+function head(g, h, glow) { // a head and shoulders in the dark, lit from the square's lamps (and the spotlight, near the orchestra)
+  const r = h.r, x = h.x, y = h.y, lit = glow ? Math.max(0, 1 - Math.hypot((x - CX) / 120, (y - CY) / 60)) : 0;
+  const body = lit > .35 ? '#2a2026' : '#141119', top = lit > .35 ? '#5a4234' : '#2a2026';
+  g.fillStyle = body; g.beginPath(); g.ellipse(x, y + r * 1.25, r * 1.6, r * .9, 0, 0, 7); g.fill();
+  g.fillStyle = h.face ? (lit > .3 ? '#7a5a48' : '#3a2c2a') : body; g.beginPath(); g.ellipse(x, y, r * .8, r * .9, 0, 0, 7); g.fill();
+  g.fillStyle = top; g.fillRect(Math.round(x - r * .6), Math.round(y - r * .9), Math.max(1, Math.round(r * 1.2)), 1);
 }
-function lane(t, cur, now) {
-  const top = 74, h = 122, X0 = 70, PX = 46; // the "now" line, pixels per second
-  R(0, top, W, h, '#120f1c'); const y = m => top + h - 6 - (m - G.lo) / (G.hi - G.lo) * (h - 12);
-  for (let m = Math.ceil(G.lo); m <= G.hi; m++) if (m % 12 === 2 || m % 12 === 9) R(0, y(m), W, 1, '#221d33'); // D and A guides
+function crowdLayers(n) { // the crowd drawn once (behind the orchestra, and in front of it) for a given number of people
+  const mk = () => { const c = document.createElement('canvas'); c.width = 240; c.height = 400; return c; }, far = mk(), back = mk(), front = mk();
+  for (let i = 0; i < HEADS.length; i++) { const h = HEADS[i]; if (i % 1000 / 1000 > n) continue; head((h.y < (COL_MID ? COL_FRONT : 0) ? far : h.y < CY ? back : front).getContext('2d'), h, true); }
+  if (COL_MID) { let q = 7; const r2 = () => (q = (q * 16807) % 2147483647) / 2147483647; // a dense row of people at the column's foot
+    for (let i = 0; i < 46; i++) { const x = CX - 34 + r2() * 68, y = 93 + r2() * 13; if (inClear(x, y, 1.05)) continue; head(back.getContext('2d'), { x, y, r: 1.2 + (y - 34) / 366 * 5.2, face: r2() < .3 }, true); } }
+  return { far, back, front, n };
+}
+function musician(m, t, singing, beat) { // seated, dark clothes, a glowing white sheet or tablet on a stand; the near side seen from behind
+  const near = m.y > CY, x = Math.round(m.x), y = Math.round(m.y), sc = near ? 1.25 : 1;
+  const sx = Math.round(x - Math.cos(m.a) * 6), sy = Math.round(y - Math.sin(m.a) * 3); // the stand, toward the middle
+  const sheet = () => { R(sx, sy - 9, 1, 8, '#4a4650'); R(sx - 3, sy - 13, 7, 5, '#fbf8ef'); R(sx - 3, sy - 13, 7, 1, '#ffffff'); };
+  if (!near) sheet();
+  R(x - 3 * sc, y - 9 * sc, 7 * sc, 7 * sc, '#1c1820'); R(x - 2 * sc, y - 13 * sc, 5 * sc, 4 * sc, near ? '#2a1c14' : SKIN[m.k % 4]); R(x - 2 * sc, y - 14 * sc, 5 * sc, 2 * sc, ['#2a1c14', '#c8a040', '#16121a'][m.k % 3]);
+  const sw = singing ? Math.round(Math.sin(t * 6 + m.k) * 1.5) : 0;
+  if (m.ins === 'vl') R(x + 2 * sc, y - 9 * sc + sw, 5, 1, '#c79a5a');
+  if (m.ins === 'vc') { R(x - 1, y - 12, 3, 12, '#7a4a28'); R(x + 3, y - 8 + sw, 6, 1, '#c79a5a'); }
+  if (m.ins === 'sax') { R(x + 3, y - 10, 2, 7, '#d9b24a'); R(x + 4, y - 4, 3, 2, '#d9b24a'); }
+  if (m.ins === 'tp') R(x + 3, y - 10, 6, 2, '#e8c45a');
+  if (m.ins === 'kb') R(x - 6, y - 4, 12, 2, '#e9e6ee');
+  if (near) sheet();
+}
+function maestro(t, singing, beat) { // light shirt, dark trousers, facing you; the baton keeps the beat
+  const x = CX, y = CY - 2, up = singing ? Math.round(Math.abs(Math.sin(beat * Math.PI)) * 5) : 1;
+  R(x - 9, y, 19, 3, 'rgba(10,6,20,.5)');
+  R(x - 3, y - 9, 3, 9, '#2a2a34'); R(x + 1, y - 9, 3, 9, '#2a2a34'); R(x - 4, y - 21, 9, 12, '#e8e2d6'); R(x + 2, y - 21, 3, 12, '#cfc8ba');
+  R(x - 2, y - 27, 6, 6, '#e0b896'); R(x - 2, y - 28, 6, 2, '#8a8a8a');
+  R(x - 9, y - 22 - up, 5, 2, '#e8e2d6'); R(x - 10, y - 25 - up, 2, 3, '#e0b896'); // left arm
+  R(x + 5, y - 22 - up, 5, 2, '#e8e2d6'); R(x + 9, y - 25 - up, 2, 3, '#e0b896'); R(x + 10, y - 31 - up, 1, 6, '#ffffff'); // right arm, the baton
+}
+const COL_MID = true; // D. Pedro IV's column stands in the middle of the square, behind the orchestra
+const COL_BASE = 104, COL_FRONT = 88; // its steps, a little way back behind the orchestra; the people nearer than COL_FRONT stand in front of its foot
+const DONKEY = ['WW..............WW', 'WKW............WKW', 'WKKW..........WKKW', '.WKKW........WKKW.', '.WKKW........WKKW.', '..WKKW......WKKW..', '..WKKW......WKKW..',
+  '...WKBW....WBKW...', '...BWBB....BBWB...', '....BBBBBBBBBB....', '...bBBBBBBBBBBb...', '...bWWWBBBBWWWb...', '...bWKWBBBBWKWb...', '...bBWBBBBBBWBb...', '...bBBBBBBBBBBb...',
+  '....bBBBKKBBBb....', '....bBBBKKBBBb....', '....GGGGKKGGGG....', '....GGGGKKGGGG....', '....GGGGKKGGGG....', '....gGGGGGGGGg....', '....gGGGGGGGGg....', '....KWKWKWKWKK....',
+  '....KWKWKWKWKK....', '....KKKKKKKKKK....']; // the Rossio donkey head, the same drawing as in the game
+const DPAL = { W: '#f4f1ea', K: '#16121a', B: '#4b2a1f', b: '#361c13', G: '#c3c6cf', g: '#959aa6' };
+let DONK = null;
+const donkeyImg = () => { if (DONK) return DONK; const c = document.createElement('canvas'); c.width = 18; c.height = 25; const g = c.getContext('2d');
+  const dim = h => { const n = parseInt(h.slice(1), 16), k = [.6, .53, .46]; // lit like the stone at that height: dim, warm from the spotlight below
+    return `rgb(${Math.round((n >> 16) * k[0])},${Math.round((n >> 8 & 255) * k[1])},${Math.round((n & 255) * k[2])})`; };
+  DONKEY.forEach((row, y) => [...row].forEach((ch, x) => { if (DPAL[ch]) { g.fillStyle = dim(DPAL[ch]); g.fillRect(x, y, 1, 1); } })); return DONK = c; };
+function column(pct) { // the column of D. Pedro IV in the middle of the square, right behind the maestro: the plinth on its steps
+  // among the crowd, the fluted shaft up into the night, the bronze king on top; warm from the spotlight below, fading as it rises
+  const x = CX, base = COL_BASE, top = 1, lit = y => Math.max(0, Math.min(1, (y - 10) / 95)) * (.7 + .3 * pct);
+  const stone = y => { const l = lit(y); return `rgb(${Math.round(64 + 156 * l)},${Math.round(60 + 140 * l)},${Math.round(66 + 112 * l)})`; };
+  R(x - 26, base - 4, 52, 4, stone(base)); R(x - 23, base - 8, 46, 4, stone(base - 4)); // the steps
+  for (let y = base - 40; y < base - 8; y++) R(x - 19, y, 38, 1, stone(y)); R(x - 21, base - 44, 42, 4, stone(base - 44)); // the plinth and its cornice
+  R(x - 11, base - 33, 22, 13, `rgba(40,30,24,${.3 + .25 * lit(base)})`); R(x + 16, base - 40, 3, 32, 'rgba(0,0,0,.25)'); // the plaque, the shaded side
+  R(x - 13, base - 50, 26, 6, stone(base - 50)); // the base of the shaft
+  { const cx = x + 16, cy = base - 57; // the donkey head, hung from the cornice's right-hand corner, a little crooked
+    ctx.save(); ctx.imageSmoothingEnabled = false; ctx.translate(cx, cy); ctx.rotate(-.12);
+    ctx.fillStyle = '#16121a'; ctx.fillRect(-5, 0, 1, 2); ctx.fillRect(4, 0, 1, 1); ctx.drawImage(donkeyImg(), -9, 1); ctx.restore(); }
+  for (let y = top + 30; y < base - 50; y++) { R(x - 8, y, 16, 1, stone(y)); for (const f of [-5, -2, 1, 4]) R(x + f, y, 1, 1, 'rgba(0,0,0,.2)'); R(x + 7, y, 1, 1, 'rgba(0,0,0,.35)'); } // the fluted shaft
+  R(x - 12, top + 26, 24, 4, stone(top + 26)); R(x - 10, top + 22, 20, 4, stone(top + 22)); R(x - 7, top + 19, 14, 3, stone(top + 19)); // the capital
+  const BR = '#2e2c26'; R(x - 4, top + 7, 8, 12, BR); R(x - 3, top + 1, 6, 6, BR); R(x + 4, top + 8, 5, 2, BR); R(x - 7, top + 9, 3, 6, BR); R(x - 4, top + 18, 8, 1, '#3e3a32'); // the king in bronze, the charter in his hand
+}
+function scene(t, singing, pct, beat) {
+  // the night sky and the square's far end: the theatre's lit front, the buildings either side, the column, lamps
+  R(0, 0, W, 60, '#0a0812'); for (let i = 0; i < 12; i++) R((i * 53) % W, (i * 17) % 18, 1, 1, '#5a5670');
+  R(60, 10, 120, 30, '#2a2420'); R(70, 14, 100, 24, '#3a3028'); for (let i = 0; i < 6; i++) R(76 + i * 17, 16, 4, 22, '#6a5a44'); R(70, 26, 100, 12, 'rgba(255,190,110,.25)'); // the theatre, lit warm
+  R(0, 16, 60, 24, '#1e1a22'); R(180, 16, 60, 24, '#1e1a22'); for (let x = 4; x < 60; x += 9) R(x, 22, 4, 5, '#d9a050'); for (let x = 184; x < 240; x += 9) R(x, 22, 4, 5, (x % 18) ? '#d9a050' : '#2a2430');
+  if (!COL_MID) { R(44, 4, 3, 36, '#4a4450'); R(40, 30, 11, 8, '#4a4450'); } // the column, far off (the old view)
+  for (const x of [26, 214]) { R(x, 30, 1, 10, '#3a3640'); R(x - 1, 28, 3, 2, '#ffd9a0'); }
+  R(0, 40, W, 360, '#0d0b12');
+  // the spotlight's pool, warm on the stones
+  const g = ctx.createRadialGradient(CX, CY - 6, 4, CX, CY, 92); g.addColorStop(0, `rgba(255,240,210,${.55 + .25 * pct})`); g.addColorStop(.45, 'rgba(255,214,150,.22)'); g.addColorStop(1, 'rgba(255,214,150,0)');
+  // the crowd behind, the orchestra and the maestro, the crowd in front
+  const want = .45 + .55 * Math.min(1, pct * 1.3); crowdN += (want - crowdN) * .03;
+  if (!layers || Math.abs(layers.n - crowdN) > .04) layers = crowdLayers(crowdN);
+  ctx.drawImage(layers.far, 0, 0);
+  if (COL_MID) column(pct);
+  ctx.drawImage(layers.back, 0, 0);
+  ctx.fillStyle = '#2a2420'; ctx.beginPath(); ctx.ellipse(CX, CY, RX, RY, 0, 0, 7); ctx.fill(); ctx.fillStyle = g; ctx.fillRect(0, 40, W, 230);
+  for (const m of MUS) if (m.y <= CY) musician(m, t, singing, beat);
+  // the spotlight on its tripod, beside the maestro
+  R(CX + 18, CY - 26, 1, 24, '#3a3640'); R(CX + 15, CY - 3, 7, 1, '#3a3640'); R(CX + 15, CY - 30, 7, 5, '#2a2830'); R(CX + 14, CY - 29, 2, 3, '#fffbe8');
+  maestro(t, singing, beat);
+  for (const m of MUS) if (m.y > CY) musician(m, t, singing, beat);
+  ctx.drawImage(layers.front, 0, 0);
+  // phones held up, more as the singing gets better; they twinkle
+  const nph = Math.floor(HEADS.length * (.03 + .2 * pct));
+  for (let i = 0; i < nph; i++) { const h = HEADS[(i * 37) % HEADS.length]; if ((i % 1000) / 1000 > crowdN) continue; if ((Math.floor(t * 2) + i) % 9 === 0) continue;
+    const w = h.r > 4 ? 2 : 1; R(h.x + h.r * .4, h.y - h.r * 1.6, w, w + 1, '#f4f6ff'); R(h.x + h.r * .4, h.y - h.r * 1.6 + w + 1, w, 2, '#2a2026'); }
+  // your hands and the phone
+  R(20, 240, 200, 170, '#121014'); R(22, 242, 196, 170, '#1c1a20'); R(28, 248, 184, 152, '#07060c'); R(112, 244, 16, 2, '#2c2a32');
+}
+let HANDS = null;
+function handsImg() { // your two hands holding the tablet at its sides, as in a photo: each thumb upright on the front,
+  // over the frame and the screen's edge; under it the side of the fist, the curled index finger making its outer edge
+  // beyond the tablet; the wrists going down and a little outwards. The other fingers are behind the tablet. A hand is
+  // about a seventh of the tablet's width. Pixel masks with an outline; the right hand is the left one mirrored.
+  if (HANDS) return HANDS;
+  const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+  const SK = '#c08a66', SH = '#9a6a4e', DK = '#74503c', HI = '#ddaa84', OL = '#2e1c14', NAIL = '#ecc8b0', NAIL2 = '#c49880';
+  const k = (x, y) => y * W + x, mask = () => new Set();
+  const span = (m, y, x0, x1) => { for (let x = Math.round(x0); x <= Math.round(x1); x++) if (x >= 0 && x < W) m.add(k(x, y)); };
+  const px = (x, y, col) => { g.fillStyle = col; g.fillRect(x, y, 1, 1); };
+  const paint = (m, shade, noBottom) => { for (const v of m) { const x = v % W, y = (v - x) / W;
+    const edge = !m.has(k(x - 1, y)) || !m.has(k(x + 1, y)) || !m.has(k(x, y - 1)) || (!noBottom && !m.has(k(x, y + 1)) && y < H - 1);
+    px(x, y, edge ? OL : shade(x, y)); } };
+  // the fist: the curled index finger's knuckle at the top left, the ball of the thumb on the front, then the wrist
+  const fist = mask();
+  for (let y = 333; y < H; y++) { const top = Math.max(0, 345 - y), knuckle = top * top / 12; // a rounded top, the knuckle
+    const x0 = y < 378 ? 6 + knuckle + Math.max(0, y - 368) * .2 : 8 - (y - 378) * .25, x1 = y < 360 ? Math.min(33.6 + (y - 333) * .015, 26 + (y - 333) * 1.2) : y < 378 ? 34 - (y - 360) * .17 : 31 - (y - 378) * .55;
+    span(fist, y, x0, x1); }
+  // the thumb, upright on the front, leaning in a little
+  const TX = y => 29 - (y - 321) * .05, thumb = mask();
+  for (let y = 321; y < 352; y++) { const hw = 4.6 + (y - 321) * .05 - ([2.4, 1.2, .5][y - 321] || 0); span(thumb, y, TX(y) - hw, TX(y) + hw); }
+  // one light for the whole hand, from the screen and the stage: brighter towards the tablet and the top, darker towards
+  // the outer side and the wrist. A ramp of skin tones, blended with a 4x4 dither so there are no straight bands.
+  const RAMP = ['#5a3c2e', '#6c4a38', '#7e5842', '#90664c', '#a27456', '#b38260', '#c3906a', '#d19e76', '#deac84', '#e8bb94'];
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  const bounds = m => { const b = {}; for (const v of m) { const x = v % W, y = (v - x) / W; const r = b[y] || (b[y] = [x, x]); r[0] = Math.min(r[0], x); r[1] = Math.max(r[1], x); } return b; };
+  const FB = bounds(fist), TB = bounds(thumb);
+  const light = (x, y) => { const r = FB[y] || TB[y], across = r ? (x - r[0]) / Math.max(1, r[1] - r[0]) : .5; // 0 outer side, 1 inner
+    return .18 + .62 * Math.pow(across, .8) - .3 * Math.max(0, (y - 345) / 55) + .22 * Math.max(0, (345 - y) / 25); };
+  const tone = (x, y) => { const v = Math.max(0, Math.min(.999, light(x, y))) * (RAMP.length - 1), i = Math.floor(v);
+    return RAMP[Math.min(RAMP.length - 1, i + ((v - i) * 16 > BAYER[(y % 4) * 4 + (x % 4)] ? 1 : 0))]; };
+  paint(fist, tone);
+  for (const yy of [350, 359, 368]) for (let x = 9; x < 13; x++) px(x, yy + Math.round((x - 9) * .3), RAMP[1]); // the curled fingers' creases, soft
+  const TL = (x, y) => { const r = TB[y], a = (x - r[0]) / Math.max(1, r[1] - r[0]); return .5 + .42 * a + .2 * Math.max(0, (345 - y) / 25) - .3 * Math.max(0, (y - 345) / 55); };
+  paint(thumb, (x, y) => { const v = Math.max(0, Math.min(.999, TL(x, y))) * (RAMP.length - 1), i = Math.floor(v);
+    return RAMP[Math.min(RAMP.length - 1, i + ((v - i) * 16 > BAYER[(y % 4) * 4 + (x % 4)] ? 1 : 0))]; }, true);
+  for (let j = 0; j < 7; j++) { const w = j === 0 || j === 6 ? 1 : 2; for (let x = -w; x <= w; x++) px(Math.round(TX(324 + j) + x), 324 + j, Math.abs(x) === w || j === 6 ? NAIL2 : NAIL); } // the nail
+  for (let x = -3; x <= 2; x++) px(Math.round(TX(337) + x), 337, SH); // the thumb's knuckle crease
+  g.save(); g.translate(W, 0); g.scale(-1, 1); g.drawImage(c, 0, 0, W / 2, H, 0, 0, W / 2, H); g.restore();
+  const low = document.createElement('canvas'); low.width = W; low.height = H; low.getContext('2d').drawImage(c, 0, 14); // a little lower, the wrists out of the picture
+  return HANDS = low;
+}
+function lane(t, cur, now) { // on the phone's screen, under the lyrics
+  const L = 28, top = 292, w = 184, h = 104, X0 = L + 32, PX = 38;
+  R(L, top, w, h, '#120f1c'); const y = m => top + h - 5 - (m - G.lo) / (G.hi - G.lo) * (h - 10);
+  for (let m = Math.ceil(G.lo); m <= G.hi; m++) if (m % 12 === 2 || m % 12 === 9) R(L, y(m), w, 1, '#221d33');
+  ctx.save(); ctx.beginPath(); ctx.rect(L, top, w, h); ctx.clip();
   for (const n of G.notes) {
-    const x = X0 + (n.t - t) * PX, w = n.d * PX - 2; if (x > W || x + w < 0) continue;
-    const yy = y(n.m) - 3, hit = n.on ? n.in / n.on : 0;
-    R(x, yy, w, 6, n.strong ? '#8a6a20' : '#3e3a5c'); R(x, yy, w, 1, n.strong ? '#ffd36b' : '#7a74a8');
-    if (n.t < t) R(x, yy, Math.min(w, (t - n.t) * PX) * hit, 6, hit > .5 ? '#4ba36f' : '#b02a22');
+    const x = X0 + (n.t - t) * PX, ww = n.d * PX - 1; if (x > L + w || x + ww < L) continue;
+    const yy = y(n.m) - 2, hit = n.on ? n.in / n.on : 0;
+    R(x, yy, ww, 5, n.strong ? '#8a6a20' : '#3e3a5c'); R(x, yy, ww, 1, n.strong ? '#ffd36b' : '#7a74a8');
+    if (n.t < t) R(x, yy, Math.min(ww, (t - n.t) * PX) * hit, 5, hit > .5 ? '#4ba36f' : '#b02a22');
   }
   R(X0, top, 1, h, '#f4f1ea');
-  for (const p of trail) { const x = X0 + (p.t - t) * PX; if (x > 0) R(x - 1, y(p.m) - 1, 2, 2, p.ok ? '#b6ff3b' : '#ff6b5e'); }
+  for (const p of trail) { const x = X0 + (p.t - t) * PX; if (x > L) R(x - 1, y(p.m) - 1, 2, 2, p.ok ? '#b6ff3b' : '#ff6b5e'); }
   if (now) { R(X0 - 3, y(now.m) - 3, 7, 7, now.ok ? '#b6ff3b' : '#ff6b5e'); R(X0 - 2, y(now.m) - 2, 5, 5, '#fff'); }
+  ctx.restore();
 }
 // ---------- the loop ----------
 function frame() {
   requestAnimationFrame(frame);
   const p = pitch(); level = level * .8 + Math.min(1, p.rms * 12) * .2; $('lvl').style.width = (level * 100) + '%';
-  if (!G) { ctx.clearRect(0, 0, W, H); stage(performance.now() / 1000, false, 0); R(0, 74, W, 126, '#120f1c'); return; }
+  if (!G) { ctx.clearRect(0, 0, W, H); scene(performance.now() / 1000, false, endPct, 0); ctx.drawImage(handsImg(), 0, 0); return; }
   const t = actx.currentTime - G.t0;
-  while (G.sched < G.notes.length && G.notes[G.sched].t < t + .25) { const n = G.notes[G.sched++]; choir(n.m, n.d, G.t0 + n.t, n.strong ? 1.15 : 1); }
+  while (!song.audio && !song.backing && G.sched < G.notes.length && G.notes[G.sched].t < t + .25) { const n = G.notes[G.sched++]; choir(n.m, n.d, G.t0 + n.t, n.strong ? 1.15 : 1); }
   while (G.psched < G.parts.length && G.parts[G.psched].t < t + .25) { const n = G.parts[G.psched++]; choir(n.m, n.d, G.t0 + n.t, .45); }
   const cur = G.notes.find(n => t >= n.t && t < n.t + n.d), soon = G.notes.find(n => n.t + n.d > t) || G.notes[G.notes.length - 1];
   let now = null;
@@ -245,7 +429,7 @@ function frame() {
   G.score = G.notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1) * Math.min(1, n.in / (n.d * .6)), 0);
   G.last = t; while (trail.length && trail[0].t < t - 2) trail.shift();
   const pct = G.score / G.max;
-  ctx.clearRect(0, 0, W, H); stage(t, !!cur, Math.min(1, pct * 1.6)); lane(t, cur, now);
+  ctx.clearRect(0, 0, W, H); scene(t, !!cur, pct, song.bpm ? t * song.bpm / 60 : t * 1.6); lane(t, cur, now); ctx.drawImage(handsImg(), 0, 0);
   $('score').textContent = Math.round(pct * 10000) + ' pts'; $('tune').textContent = now ? (now.ok ? 'AFINADO' : now.m > (cur || soon).m ? 'MAIS GRAVE ↓' : 'MAIS AGUDO ↑') : cur ? 'CANTA!' : '—';
   $('time').textContent = Math.max(0, Math.ceil(G.end - t)) + 's';
   $('lyric').innerHTML = lyric(soon.li, cur); $('next').textContent = song.words[soon.li + 1] || '';
@@ -261,6 +445,30 @@ $('mic').onclick = async () => {
   catch (e) { $('micmsg').textContent = 'Sem microfone: o browser não deixou (' + (e.name || e) + '). Dá permissão ao microfone nas definições do site e tenta outra vez.'; }
 };
 let gi = 0; $('guide').onclick = () => { gi = (gi + 1) % GUIDE.length; $('guide').textContent = GUIDE[gi][0]; guideVol = GUIDE[gi][1]; };
+// ---------- sharing: a story picture, «Cantei em casa» ----------
+function shareImage() {
+  const r = endRes, c = document.createElement('canvas'); c.width = 1080; c.height = 1920; const g = c.getContext('2d');
+  g.fillStyle = '#0b0a0a'; g.fillRect(0, 0, 1080, 1920);
+  g.imageSmoothingEnabled = false; g.drawImage(cv, 0, 20, 240, 220, 180, 730, 720, 660); g.strokeStyle = '#f4f1ea'; g.lineWidth = 6; g.strokeRect(177, 727, 726, 666);
+  const tx = (t, y, font, col, al = 'left') => { g.font = font; g.fillStyle = col; g.textAlign = al; g.fillText(t, al === 'center' ? 540 : 80, y); };
+  g.fillStyle = '#b02a22'; g.fillRect(72, 250, 640, 92); tx('PRIMAVERA DE COROS', 318, '800 52px Jost', '#ffffff'); g.fillText('', 0, 0);
+  tx('CANTEI', 440, '800 120px Jost', '#f4f1ea'); tx('EM CASA', 570, '800 120px Jost', '#f4f1ea');
+  tx('«' + r.title + '»', 670, '800 52px Jost', '#ffd36b');
+  tx('★'.repeat(r.stars) + '☆'.repeat(3 - r.stars), 1480, '64px sans-serif', '#ffd36b');
+  tx(Math.round(r.pct * 100) + '% afinado · ' + r.pts + ' pontos', 1565, '800 54px Jost', '#f4f1ea');
+  tx('Hoje a praça é a tua sala.', 1640, '700 46px Jost', '#a39d97'); tx('Canta tu também:', 1695, '700 46px Jost', '#a39d97');
+  g.fillStyle = '#f4f1ea'; g.fillRect(72, 1725, 760, 96); tx('ACAMPADAPIXEL.PT/COROS', 1791, '800 50px Jost', '#0b0a0a');
+  tx('@acampadapixel · @primaveradecoros', 1870, '700 40px Jost', '#f4f1ea');
+  return new Promise(res => c.toBlob(res, 'image/png'));
+}
+$('share').onclick = async () => {
+  if (!endRes) return; const blob = await shareImage(), file = new File([blob], 'cantei-em-casa.png', { type: 'image/png' });
+  const text = `Cantei «${endRes.title}» em casa: ${Math.round(endRes.pct * 100)}%. Hoje a praça é a tua sala. Canta tu também: https://acampadapixel.pt/coros @acampadapixel @primaveradecoros`;
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'cantei-em-casa.png'; a.click(); // computers: download it
+};
+window.__coros.shareImage = shareImage;
+if (new URLSearchParams(location.search).get('from') === 'jogo') $('praca').classList.remove('hidden');
 $('stop').onclick = () => stop(false); $('again').onclick = () => start(song); $('back').onclick = () => show('menu');
 frame();
 </script></body></html>

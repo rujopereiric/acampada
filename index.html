@@ -3351,6 +3351,16 @@ function updChoir(dt, hr) {
     if (all) S.choir = null;
   }
 }
+// Primavera de Coros: step into the middle of the choir's circle while it sings, and the singing game opens on its
+// song list (coros.html, «canta em casa»); the square is saved first, so «Continuar» brings you back to it
+function corosTick() {
+  const c = S.choir, p = S.player;
+  if (!c || c.state !== 'sing' || mode !== 'play' || S.corosAsked === c) return;
+  if (Math.hypot(p.gx - c.cx, p.gy - c.cy) > .45) return;
+  S.corosAsked = c; mode = 'corosask';
+  show(`<h2 class="p-red rough">${L('Primavera de Coros', 'Spring of Choirs')}</h2><p class="help">${L('Estás no meio do coro. Canta com eles: escolhe uma canção e canta para o microfone. Hoje não se canta na praça, canta-se em casa.', 'You’re in the middle of the choir. Sing with them: pick a song and sing into the microphone. Today there’s no singing in the square, so sing at home.')}</p>
+    <button class="btnp red" data-a="corosgo">${L('Cantar →', 'Sing →')}</button><button class="btnp" data-a="corosno">${L('Agora não', 'Not now')}</button>`);
+}
 function drawChorister(m, c) {
   if (m.done) return;
   const q = iso(m.gx, m.gy), x = Math.round(q.x), y = Math.round(q.y), singing = c.state === 'sing';
@@ -3572,6 +3582,7 @@ function update(dt) {
   kettleHush();
   updDJ(dt);
   updChoir(dt, hr);
+  corosTick();
   updEvents(dt, hr);
   if (S.city.luta) lutaUpd(dt);
 
@@ -5129,6 +5140,29 @@ function pause() {
   <div class="slot"><span class="t">18:00</span><span class="n">${L('Coros', 'Choirs')}</span><span class="d">${L('(ensaio aberto)', '(open rehearsal)')}</span></div><div class="slot"><span class="t">20:30</span><span class="n">${L('Jantar popular', 'Community dinner')}</span></div></div>
   ${tasksHTML()}<p class="help">${L('Em pausa.', 'Paused.')}</p><button class="btnp" data-a="resume">${L('Voltar →', 'Resume →')}</button><button class="btnp" data-a="rules">${L('Como jogar', 'How to play')}</button><button class="btnp" data-a="quitchap">${L('Praças', 'Squares')}</button><button class="btnp" data-a="quittitle">${L('Menu inicial', 'Main menu')}</button>${optsRow(true)}`, 'green');
 }
+/* Coros and Natal open over the square instead of replacing it: the game pauses underneath (mode 'side' skips the
+   updates and the music) and nothing reloads. Their own "back to the game" links lead to the game page, so when the
+   frame lands anywhere else than coros.html or natal.html, the layer closes; so do the ✕ and the phone's back button. */
+let sideEl = null, sideMode = 'play', sideOv = true;
+function sideOpen(url) {
+  if (sideEl) return;
+  sideMode = mode; sideOv = ov.hidden; ov.hidden = true; mode = 'side';
+  sideEl = document.createElement('div');
+  sideEl.style.cssText = 'position:fixed;inset:0;z-index:1000;background:#0b0a0a';
+  sideEl.innerHTML = '<iframe allow="microphone; autoplay" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe>' +
+    '<button id="sideX" aria-label="Fechar" style="position:absolute;top:calc(8px + env(safe-area-inset-top));right:calc(8px + env(safe-area-inset-right));z-index:1;width:36px;height:36px;border-radius:18px;border:2px solid #f4f1ea;background:rgba(11,10,10,.75);color:#f4f1ea;font:700 18px/1 sans-serif;cursor:pointer">✕</button>';
+  const f = sideEl.querySelector('iframe');
+  f.onload = () => { let p = ''; try { p = f.contentWindow.location.pathname; } catch (e) {} if (!/(coros|natal)\.html$/.test(p)) sideClose(); };
+  sideEl.querySelector('button').onclick = () => sideClose();
+  f.src = url; document.body.appendChild(sideEl);
+  try { history.pushState({ side: 1 }, ''); } catch (e) {}
+}
+function sideClose(fromBack) {
+  if (!sideEl) return; sideEl.remove(); sideEl = null;
+  mode = sideMode === 'side' ? 'play' : sideMode; ov.hidden = sideOv; last = performance.now();
+  if (!fromBack && history.state && history.state.side) try { history.back(); } catch (e) {}
+}
+window.addEventListener('popstate', () => { if (sideEl) sideClose(true); });
 function audioOn() { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); }
 function begin() { ov.hidden = true; mode = 'play'; { const r = realLine(S.city.name); if (r) floatXY(0, 0, r, '#ff8aa8'); } if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : joyOn() ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : 'Toca para andar', '#ffffff', 26); }
 ov.addEventListener('click', e => {
@@ -5151,9 +5185,11 @@ ov.addEventListener('click', e => {
   else if (a === 'calgo') calOpen('game');
   else if (a === 'calno') { mode = 'play'; ov.hidden = true; }
   else if (a === 'calmenu') calOpen('menu');
-  else if (a === 'natalgo') { natalStore(); mode = 'play'; ov.hidden = true; saveGame(); location.href = 'natal.html'; }
+  else if (a === 'corosgo') { mode = 'play'; ov.hidden = true; saveGame(); sideOpen('coros.html?from=jogo'); }
+  else if (a === 'corosno') { mode = 'play'; ov.hidden = true; }
+  else if (a === 'natalgo') { natalStore(); mode = 'play'; ov.hidden = true; saveGame(); sideOpen('natal.html'); }
   else if (a === 'natalno') { mode = 'play'; ov.hidden = true; }
-  else if (a === 'natalmenu') location.href = 'natal.html';
+  else if (a === 'natalmenu') sideOpen('natal.html');
   else if (a === 'tasksreset') { TASKS.g = 0; TASKS.cord = TASKS.live = false; tasksSave(); chapterScreen(); }
   else if (a === 'reset') { cleared.clear(); saveCleared(); chapterScreen(); }
   else if (a === 'retry') { dropSave(); newLevel(); introScreen(); }
@@ -5893,7 +5929,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
     const d = document.createElement('div'); d.id = 'upd'; d.innerHTML = `${L('Há uma versão nova', 'There’s a new version')} <button type="button">${L('Atualizar', 'Update')}</button>`;
     d.querySelector('button').addEventListener('click', () => location.reload()); document.body.appendChild(d); });
 }
-window.__acampada = { story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
+window.__acampada = { side: url => sideOpen(url), story: { make: makeStory, nextRally, prepStory, get job() { return storyJob; }, levelClear: () => levelClear() }, choirSong: { full: () => semanaNotes(0), note: choirNote, bpm: SEMANA.bpm }, get S() { return S; }, update: dt => update(dt), draw: () => draw(), setMode: m => { mode = m; }, get sax() { return { saxBuf, saxEl, saxVol, duck }; }, newLevel: i => { cityIdx = i; newLevel(); } };
 })();
 </script>
 </body>
