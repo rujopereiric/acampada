@@ -361,7 +361,7 @@
   "at": "15:00",
   "city": "Porto",
   "title": "Casa para viver",
-  "where": "Praça do Marquês",
+  "where": "Praça do Marquês → Praça D. João I",
   "horas": 4
  },
  {
@@ -414,19 +414,19 @@
  },
  {
   "date": "2026-11-12",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-13",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-13",
@@ -446,27 +446,27 @@
  },
  {
   "date": "2026-11-14",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-15",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-16",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-20",
@@ -510,27 +510,27 @@
  },
  {
   "date": "2026-11-17",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-18",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-19",
-  "at": "17:00",
+  "at": "19:00",
   "city": "Porto",
   "title": "Acampada",
-  "where": "Praça D. João I · a partir das 17h · 21h assembleia popular",
-  "horas": 7
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
  },
  {
   "date": "2026-11-15",

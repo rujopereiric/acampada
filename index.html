@@ -5099,14 +5099,14 @@ const CHECK = () => `<p class="src">${L('Datas e horas podem mudar: confirma nas
 const ADS = [
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Porto · Praça D. João I', 'Porto · Praça D. João I')}</p><div class="rule"></div>
      <p class="t">${L('Acampada', 'Camp')}</p><div class="rule"></div>
-     <div class="cols"><div>${L('Quinta<br><b>12 nov. 2026</b>', 'Thursday<br><b>12 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
-     <p class="src">${L('A acampada mantém-se na Praça D. João I, a partir das 17h, com a assembleia popular às 21h. Aparece e traz quem puderes!', 'The camp stays in Praça D. João I, from 5 pm, with the people’s assembly at 9 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
+     <div class="cols"><div>${L('Quinta<br><b>12 nov. 2026</b>', 'Thursday<br><b>12 Nov 2026</b>')}<br><b>19:00</b></div><div><b>Praça D. João I</b><br>Porto</div></div>
+     <p class="src">${L('A acampada mantém-se na Praça D. João I: coro d’Acampada e assembleia popular às 19h, cantina popular às 20h. Aparece e traz quem puderes!', 'The camp stays in Praça D. João I: the camp choir and the people’s assembly at 7 pm, the people’s canteen at 8 pm. Come and bring whoever you can!')}</p>${CHECK()}</div>`],
   () => ['adred', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><p class="k">${L('Lisboa · Alameda dos Oceanos', 'Lisboa · Alameda dos Oceanos')}</p><div class="rule"></div>
      <p class="t">Camp Summit</p><div class="rule"></div>
      <div class="cols"><div>${L('Quinta<br><b>12 nov. 2026</b>', 'Thursday<br><b>12 Nov 2026</b>')}<br><b>17:00</b></div><div><b>Alameda dos Oceanos</b><br>Lisboa</div></div>
      <p class="src">${L('Acampada Lisboa à porta do Web Summit: concentração na Alameda dos Oceanos, conversa na Praça do Oriente e assembleia popular às 21h.', 'Acampada Lisboa at the door of the Web Summit: gathering at Alameda dos Oceanos, talks at Praça do Oriente and people’s assembly at 9 pm.')}</p>${CHECK()}</div>`],
   () => ['green', `<div class="ad"><span class="adtag">${L('Informação', 'Information')}</span><h2 class="center">${L('Próximos<br><u>dias</u>', 'Coming<br><u>up</u>')}</h2><div class="agenda">
-    <div><span class="when">${L('Todos os dias', 'Every day')} · 17:00</span><span class="what">Porto<small>${L('Praça D. João I: coros, debates, atividades para crianças e mais; assembleia popular às 21h', 'Praça D. João I: choirs, debates, activities for children and more; people’s assembly at 9 pm')}</small></span></div>
+    <div><span class="when">${L('Todos os dias', 'Every day')} · 19:00</span><span class="what">Porto<small>${L('Praça D. João I: coro d’Acampada e assembleia popular às 19h, cantina popular às 20h', 'Praça D. João I: the camp choir and the people’s assembly at 7 pm, the people’s canteen at 8 pm')}</small></span></div>
     <div><span class="when">${L('Domingos', 'Sundays')} · 18:00</span><span class="what">Caldas da Rainha<small>${L('Largo do Termal: assembleia popular pela habitação; cantina, cartazes e música a partir das 17h', 'Largo do Termal: people’s assembly for housing; canteen, posters and music from 5 pm')}</small></span></div>
     <div><span class="when">${L('Qui 12 nov', 'Thu 12 Nov')} · 17:00</span><span class="what">Lisboa<small>${L('Camp Summit: concentração na Alameda dos Oceanos; conversa na Praça do Oriente, assembleia popular às 21h', 'Camp Summit: gathering at Alameda dos Oceanos; talks at Praça do Oriente, people’s assembly at 9 pm')}</small></span></div>
     <div><span class="when">${L('Sex 13 nov', 'Fri 13 Nov')} · 19:00</span><span class="what">Sertã<small>${L('Vigília pela habitação, Casa da Cultura', 'Housing vigil, Casa da Cultura')}</small></span></div>
@@ -5224,15 +5224,15 @@ const RALLIES = [
   { date: '2026-11-10', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · assembleia popular na Galeria Geraldes da Silva', horas: 7 },
   { date: '2026-11-11', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · assembleia popular na Estação de São Bento e na Praça de Almeida Garrett', horas: 7 },
   { date: '2026-11-11', at: '20:00', city: 'Angra do Heroísmo', title: 'Manifestação pela habitação', where: 'Praça Velha', horas: 3 },
-  { date: '2026-11-12', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-13', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
+  { date: '2026-11-12', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-13', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
   { date: '2026-11-13', at: '19:00', city: 'Sertã', title: 'Vigília pela habitação', where: 'Casa da Cultura da Sertã', horas: 2 },
-  { date: '2026-11-14', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-15', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-16', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-17', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-18', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
-  { date: '2026-11-19', at: '17:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · a partir das 17h · 21h assembleia popular', horas: 7 },
+  { date: '2026-11-14', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-15', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-16', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-17', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-18', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
+  { date: '2026-11-19', at: '19:00', city: 'Porto', title: 'Acampada', where: 'Praça D. João I · 19h coro e assembleia popular · 20h cantina', horas: 3 },
   { date: '2026-11-15', at: '17:00', city: 'Caldas da Rainha', title: 'Assembleia popular pela habitação', where: 'Largo do Termal · 17h cantina · 18h assembleia', horas: 4 },
   { date: '2026-11-20', at: '15:00', city: 'Sines', title: 'Manifestação pela habitação', where: 'Largo do Poeta Bocage', horas: 3 },
   { date: '2026-11-28', at: '10:00', city: 'Lisboa', title: 'Grande Assembleia Vida Justa', where: 'Fábrica Braço de Prata · inscrição prévia', horas: 8 },
@@ -5240,7 +5240,7 @@ const RALLIES = [
   { date: '2026-11-14', at: '15:00', city: 'Coimbra', title: 'Casa para viver', where: 'Ponte de Santa Clara' },
   { date: '2026-11-14', at: '15:00', city: 'Braga', title: 'Casa para viver', where: 'Arco da Porta Nova' },
   { date: '2026-11-14', at: '16:00', city: 'Faro', title: 'Casa para viver', where: 'Liceu João de Deus' },
-  { date: '2026-11-14', at: '15:00', city: 'Porto', title: 'Casa para viver', where: 'Praça do Marquês' },
+  { date: '2026-11-14', at: '15:00', city: 'Porto', title: 'Casa para viver', where: 'Praça do Marquês → Praça D. João I' },
   { date: '2026-11-14', at: '15:00', city: null, title: 'Casa para viver', where: 'Lisboa · Porto · Aveiro · Viana · Ponta Delgada · e dezenas de cidades' }
 ];
 const PLACE_ART = { Porto: 'a ', Lisboa: 'o ', Coimbra: 'a ', Braga: 'a ', Faro: 'a ' };
@@ -5253,7 +5253,7 @@ function nextRally(city, now) {
   const t = lisbonNow(now), mins = r => +r.at.slice(0, 2) * 60 + +r.at.slice(3);
   const up = RALLIES.filter(r => r.date > t.date || (r.date === t.date && t.min < mins(r) + (r.horas ? r.horas * 60 : 120))); // a protest stays up for its length (horas), or 2 h
   if (!up.length) return null;
-  const day = up.map(r => r.date).sort()[0], same = up.filter(r => r.date === day);
+  const day = up.map(r => r.date).sort()[0], same = up.filter(r => r.date === day).sort((a, b) => mins(a) - mins(b)); // in time order, so a city's earliest event comes first
   const r = same.find(r => r.city === city) || same.find(r => r.near === city) || same.find(r => !r.city) || same.slice().sort((a, b) => (!PLACE_ART[a.city] - !PLACE_ART[b.city]) || mins(a) - mins(b))[0]; // else the day's first one in a game city
   const d = new Date(r.date + 'T12:00:00Z'), tm = new Date(t.date + 'T12:00:00Z'); tm.setUTCDate(tm.getUTCDate() + 1);
   const when = r.date === t.date ? 'HOJE' : r.date === tm.toISOString().slice(0, 10) ? 'AMANHÃ' : `${DIAS[d.getUTCDay()]} ${d.getUTCDate()} ${MESES[d.getUTCMonth()]}`;
