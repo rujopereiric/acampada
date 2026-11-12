@@ -99,6 +99,11 @@ body{ -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; } 
 #ov .tasks{ text-align:left; margin:12px auto 0; max-width:420px; background:rgba(11,10,10,.12); padding:8px 10px; font:400 13px/1.35 "Helvetica Neue", Arial, sans-serif; } #ov .tasks b{ display:block; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; margin-bottom:6px; } #ov .tasks div{ padding:3px 0; } #ov .tasks .now{ font-weight:700; } #ov .tasks .done{ opacity:.6; text-decoration:line-through; } #ov .tasks .bang{ display:inline-block; min-width:12px; text-align:center; background:#fff; border:2px solid #1b1464; color:#ff3b8b; font:800 11px/12px Jost, sans-serif; }
 #goal.alert{ color:#fff; background:#c2342c; border-left-color:#fff; font-size:14px; pointer-events:none; } .wide #goal.alert{ font-size:17px; }
 .land #goal{ top:auto; bottom:8px; max-width:calc(100% - 96px); } /* on its side: bottom left, the top stays for the messages */ #goal[hidden]{ display:none; } #goal.ok{ color:#b6ff3b; border-left-color:#b6ff3b; } .cam:not(.land) #goal{ top:auto; bottom:70px; max-width:calc(100% - 80px); } .wide #goal{ font-size:14px; } .bigtext #goal{ font-size:15px; }
+#roboPick{ position:absolute; z-index:4; transform:translate(-50%, -100%); background:#0b0a0a; color:#f4f1ea; padding:6px 6px 0; border:2px solid #39e1ff; box-shadow:0 3px 0 rgba(0,0,0,.4); font-family:Jost, Futura, sans-serif; text-align:center; pointer-events:auto; }
+#roboPick[hidden]{ display:none; } #roboPick > b{ display:block; font:400 9px/1 Silkscreen, monospace; color:#39e1ff; letter-spacing:.5px; margin-bottom:5px; }
+#roboPick .rb{ display:flex; gap:4px; } #roboPick button{ display:flex; flex-direction:column; align-items:center; gap:2px; width:62px; padding:5px 0 4px; border:none; font:800 10px/1 Jost, Futura, sans-serif; text-transform:uppercase; color:#0b0a0a; cursor:pointer; }
+#roboPick button i{ font-style:normal; font-size:16px; line-height:1; } #roboPick [data-m=recruit]{ background:#b6ff3b; } #roboPick [data-m=shield]{ background:#39e1ff; } #roboPick [data-m=fetch]{ background:#ffd23a; }
+#roboPick s{ display:block; height:3px; margin:5px -6px 0; background:#39e1ff; transform-origin:left; text-decoration:none; }
 #tut{ position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; max-width:calc(100% - 120px); display:flex; gap:10px; align-items:center; background:#ffd23a; color:#0b0a0a; border:2px solid #0b0a0a; box-shadow:0 3px 0 #0b0a0a; padding:7px 8px 7px 12px; font:800 15px/1.2 Jost, Futura, sans-serif; text-transform:uppercase; }
 #tut[hidden]{ display:none; }
 #upd{ position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); transform:translateX(-50%); z-index:50; background:#0b0a0a; color:#f4f1ea; border:2px solid #f4f1ea; padding:8px 8px 8px 14px; font:700 13px/1 Jost, sans-serif; display:flex; align-items:center; gap:10px; white-space:nowrap; box-shadow:0 4px 0 rgba(11,10,10,.4); } #upd button{ background:#b6ff3b; color:#0b0a0a; border:0; font:800 13px/1 Jost, sans-serif; text-transform:uppercase; padding:7px 10px 6px; cursor:pointer; }
@@ -575,7 +580,7 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
   <div class="stage">
     <canvas id="c" width="256" height="240" aria-label="A acampada vista de cima, em perspetiva"></canvas>
     <div id="goal" hidden aria-live="polite"></div>
-    <div id="tut" hidden><span class="tx"></span><button type="button" id="tutSkip">Saltar</button></div>
+    <div id="roboPick" hidden><b>Programa o robô</b><div class="rb"><button type="button" data-m="recruit"><i>✚</i>Recrutar</button><button type="button" data-m="shield"><i>⛨</i>Proteger</button><button type="button" data-m="fetch"><i>▣</i>Recolher</button></div><s></s></div><div id="tut" hidden><span class="tx"></span><button type="button" id="tutSkip">Saltar</button></div>
     <div id="news" hidden aria-hidden="true"><div class="npw"><div class="np"><div class="top"><span class="ed"></span><span class="pr"></span></div><div class="nm"></div><div class="tag"><span class="sl"></span><span class="dt"></span></div><div class="kick"></div><div class="hl"></div><div class="dk"></div><canvas id="npc" width="160" height="90"></canvas><div class="cap"></div><div class="cols"><p class="lead"></p><div class="box"><b></b><ul></ul></div></div><div class="more"></div></div></div></div>
     <div id="tv" hidden aria-hidden="true"><span class="live">● Em direto</span><div class="pic"><canvas id="tvc" width="160" height="90"></canvas></div><div class="cap"><div class="tk"><span></span></div><div class="lt"><span class="al">Alerta</span><span class="sub"></span></div><div class="hd"></div></div></div>
     <div id="msgs" aria-live="polite"><div id="ban" hidden><span class="ar l">◀&#xFE0E;</span><span class="tx"></span><span class="ar r">▶&#xFE0E;</span></div></div>
@@ -908,6 +913,10 @@ const CITIES = [
    struggles (statement of 10 Nov 2026). One short square per stop, opened on its day (Lisbon time); they are not
    chapters (not in ORDER, not in cleared) and the Rossio level stays as it is ================= */
 const LUTA_FROM = CITIES.length;
+// Camp Summit, the Web Summit's South Entrance gate: the gate: [y0, y1, kind, height] of each pillar along the left side, its gentle curve, and the three entrances
+const GATE_PILLARS = [[3.8, 4.9, 'ribs', 19], [5.7, 6.5, 'grid', 31], [8.1, 8.9, 'grid', 31], [9.7, 10.7, 'ribs', 19]];
+const GATE_LANES = [5.3, 7.3, 9.3];
+function gateX(gy) { return .1 + .22 * ((gy - 7.3) / 3.4) ** 2; }
 CITIES.push(
   { name: 'Lisboa', place: 'Jardim da Nêspera', ground: 'jardim', police: .8, patrols: true, noTents: true, drums: 'marcha', pressK: 3, startH: 18, clockK: .1, raidAt: [19, 20.5], lutaGap: 1.5,
     luta: { cancelled: true, date: '2026-11-10', at: '18:00', where: 'Alto do Pina · Jardim Bulhão Pato (Jardim da Nêspera)', title: 'Assembleia popular no Alto do Pina', titleEn: 'People’s assembly in Alto do Pina', twist: 'leilao' },
@@ -935,7 +944,68 @@ CITIES.push(
     // with balconies and a red-orange one on the right
     L: [{ a: 0, b: 4.2, h: 40, style: 'pombal', col: '#ece2c8', balc: true }, { a: 4.2, b: 10, h: 34, style: 'apart', col: '#efe7d4' }],
     R: [{ a: 0, b: 3.6, h: 60, style: 'empena' }, { a: 3.6, b: 6.8, h: 40, style: 'pombal', col: '#dfe5c6', balc: true }, { a: 6.8, b: 10, h: 44, style: 'apart', col: '#d9694a' }],
-    C: { h: 64, style: 'empena' } }
+    C: { h: 64, style: 'empena' } },
+  // Pavilhão de Portugal (Parque das Nações), the protest against the Web Summit. From Street View: Siza's pala, the thin
+  // concrete canopy sagging between two porticoes (the pavilion's end with its slanted buttresses, and a tall blank
+  // slab), the Tejo under and beyond it with a white railing and tall white flagpoles, the long white pavilion with its
+  // colonnade, light grey calçada, rows of black bollards, lamp posts with dish tops, a big olive tree by the slab,
+  // the São Rafael tower behind; and in November the Web Summit's registration tent, white with purple and pink
+  { name: 'Lisboa', place: 'Pavilhão de Portugal', ground: 'nacoes', blockStyle: k => ({ style: 'office', h: 30 + Math.floor(k * 5) * 5, glass: ['#5f8fa0', '#4f7f96', '#6c9aa8', '#7aa6b0'][Math.floor(k * 4)], screen: k > .7, roof: k < .4 ? '#c9cbc8' : '#bfc6cc' }), police: 1.0, patrols: true, noTents: true, tentMan: [0, 1], tentManFirst: 12, drums: 'marcha', pressK: 3, startH: 19, clockK: .1, raidAt: [19.6, 21], lutaGap: 1.5, // the Homem-tenda was there (Rui's footage)
+    luta: { date: '2026-11-12', at: '17:00', where: 'Alameda dos Oceanos, Parque das Nações', title: 'Camp Summit', titleEn: 'Camp Summit', twist: 'summit', site: 'campsummit.pt' },
+    tag: 'Dinheiro para casas, não para a Web Summit', tagEn: 'Money for homes, not for the Web Summit',
+    intro: 'A Câmara de Lisboa aprovou 8 milhões de euros para a Web Summit este ano e cortou no dinheiro para a habitação: 60 milhões já dados, mais de 110 até 2028. Do outro lado da rua, a Acampada de Lisboa faz a Camp Summit, debaixo do toldo do Pavilhão de Portugal: entrada livre. Quem passa a caminho da cimeira leva crachá: fala com essas pessoas, que troquem o crachá por um bilhete da Camp Summit (0 €) e se juntem.',
+    introEn: 'Lisbon council approved €8 million for the Web Summit this year and cut the money for housing: €60 million given so far, over €110 million by 2028. Across the road, Acampada Lisboa holds the Camp Summit, under the canopy of the Pavilhão de Portugal: free entry. People on their way to the summit wear a badge: talk to them, so they swap it for a Camp Summit ticket (€0) and join.',
+    clear: 'O futuro começa aqui. Not there. A Camp Summit encheu o toldo do Pavilhão de Portugal.',
+    clearEn: 'The future starts here. Not there. The Camp Summit filled the canopy of the Pavilhão de Portugal.',
+    news: { kick: ['Camp Summit', 'Camp Summit'], hl: ['O futuro começa aqui. Not there.', 'The future starts here. Not there.'],
+      dk: ['A Camp Summit encheu o toldo do Pavilhão de Portugal contra os milhões da Câmara para a Web Summit.', 'The protest filled the square of the Pavilhão de Portugal against the council’s millions for the Web Summit.'],
+      cap: ['O protesto no Pavilhão de Portugal.', 'The protest at the Pavilhão de Portugal.'],
+      lead: ['Enquanto a Câmara dá milhões à Web Summit, corta no dinheiro para a habitação. À porta da cimeira, a Acampada de Lisboa lembrou quem precisa de casa, e houve quem largasse o crachá para se juntar.', 'While the council gives millions to the Web Summit, it cuts the money for housing. At the summit’s door, Acampada Lisboa reminded everyone who needs a home, and some people dropped their badge to join.'],
+      box: ['As exigências', 'The demands'], list: [['O dinheiro da Web Summit para habitação pública', 'The Web Summit money for public housing'], ['Nenhum corte na habitação', 'No cuts to housing'], ['Casas para viver, não para lucrar', 'Homes to live in, not for profit']] },
+    size: [16, 12], viewW: 320, fullW: 392, viewY: 88, walk: [15.3, 11.1], // the player stays inside the bollards, where the camera can still show them
+    blocks: [], solid: [[0, 0], [0, 1], [0, 2], [10, 0], [11, 0], [10, 1], [11, 1], [10, 2], [11, 2], [5, 2], [0, 3], [0, 4], [0, 6], [0, 8], [0, 10]],
+    bikePath: () => [[NX + 2, -8], [NX + 2, NY + 2], [-8, NY + 2]], // the cycle lane along the street, not across the square
+    tentOk: (gx, gy) => !(gx < 4.2 && gy > 3.4 && gy < 11.2) && !(gx + gy > 6.6 && gx + gy < 11.6 && Math.abs(gx - gy - 3) < 1.6), // no groups on the stage, in front of it, at the gate or in its lane
+    // the Web Summit's South Entrance (Rui's footage), where the second half of the pavilion would be: four container
+    // pillars in a gentle curve and three entrances. The outer pillars are ribbed red containers with "Welcome to
+    // websummit" signs on top, the inner two towers have a white grid of screens, the purple "South Entrance" banner
+    // spans the middle entrance; staff in yellow raincoats, cypresses behind, the wave calçada and stripes in front
+    deco: [...[4.6, 5.8, 8.4, 9.6].map(gy => ({ t: 'cypress', gx: -.9, gy })), ...[-2.6, -1.2, .2, 1.6, 3, 4.4, 5.8].map(gy => ({ t: 'tree', gx: -4.8, gy })), // the line of trees along the water channel, behind the pavilion
+      ...GATE_PILLARS.map(([y0, y1, k, h]) => ({ t: 'pillar', y0, y1, k, h, x0: gateX((y0 + y1) / 2), x1: gateX((y0 + y1) / 2) + .7, gx: gateX((y0 + y1) / 2) + .7, gy: (y0 + y1) / 2 })),
+      { t: 'gbanner', gx: 1.2, gy: 7.4 }, { t: 'staff', gx: 1.5, gy: 5.5 }, { t: 'staff', gx: 1.6, gy: 9.3, flip: true },
+ { t: 'tree', gx: 12.2, gy: 1.6, big: true }, { t: 'tree', gx: 15, gy: 10.8, big: true },
+      ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15].map(gx => ({ t: 'bollard', gx, gy: 11.6 })), ...[6, 7, 8, 9, 10].map(gy => ({ t: 'bollard', gx: 15.6, gy })),
+      { t: 'lampd', gx: 5, gy: 4.6 }, { t: 'lampd', gx: 9, gy: 8.6 }, { t: 'lampd', gx: 2.4, gy: 8.4 }, { t: 'lampd', gx: 15, gy: 6 }],
+    towerAt: [-7.5, 19.3], // the residential tower across the road, on the left (Rui's sketch): white frame, blue-green glass balconies, a sail on top
+    L: [{ a: 0, b: 2.4, h: 34, style: 'pavilhao', roof: '#ecebe6' }], // no wider than the pala (Google Earth)
+    R: [], // the two porticoes stand as blocks of their own, deeper than a row, so the pala can be as wide as on Google Earth
+    porticos: [{ x0: 0, y0: -2.4, x1: .8, y1: 2.2, h: 34, style: 'portico', ribs: true, roof: '#ecebe6' }, { x0: 10.4, y0: -2.4, x1: 11.6, y1: 2.2, h: 34, style: 'portico', roof: '#ecebe6' }], // drawn in bgExtra, just before the pala that hangs from their tops
+    C: { h: 34, style: 'pavilhao', roof: '#ecebe6' },
+    // outside the square, behind on the right: shade under the pala, the railing, then the Tejo
+    paint: (gx, gy) => { if (gx < 0 && gx > -13 && gy > -5 && gy < NY + .6 && !(gx > -3.4 && gy < 2.4 && gy > 0)) return hash(Math.floor(gx * 9), Math.floor(gy * 9)) < .5 ? [206, 204, 198] : [194, 192, 186]; // beyond the gate
+      if (!(gy < 0 && gx >= 0 && gx < NX + .6 && gy > -9)) return null;
+      if (gy > -2.4) return (gx > .8 && gx < 10.4) ? (hash(Math.floor(gx * 9), Math.floor(gy * 9)) < .5 ? [150, 148, 144] : [140, 138, 134]) : (hash(Math.floor(gx * 9), Math.floor(gy * 9)) < .5 ? [206, 204, 198] : [194, 192, 186]);
+      if (gy > -2.6) return [236, 236, 232];
+      return frac(gx * 1.3 + gy * .4) < .08 ? [70, 104, 140] : [44, 74, 108]; },
+    bgBack: g => { // the promenade between the pavilion and the arena (Rui's sketch): a reddish-brown water channel along the pavilion's back
+      { const p = [iso(-4.1, -3.5), iso(-3.2, -3.5), iso(-3.2, 6.4), iso(-4.1, 6.4)]; g.fillStyle = '#7a4a36'; g.beginPath(); p.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)); g.closePath(); g.fill();
+        const r = [iso(-3.95, -3.5), iso(-3.35, -3.5), iso(-3.35, 6.4), iso(-3.95, 6.4)]; g.fillStyle = '#5d6f74'; g.beginPath(); r.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y)); g.closePath(); g.fill(); }
+      // the MEO Arena behind the pavilion (Google Earth): a huge oval grey dome, ribbed skylights along the top, a dark glazed band at its foot
+      const cx = -11, cy = 1.6, rx = 3.6, ry = 4.8, P = (t, k, z) => iso(cx + rx * k * Math.cos(t), cy + ry * k * Math.sin(t), z), ring = (k, z, c) => { g.fillStyle = c; g.beginPath(); for (let i = 0; i <= 48; i++) { const q = P(i / 48 * Math.PI * 2, k, z); i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y); } g.closePath(); g.fill(); };
+      ring(1.02, 0, '#3e4450'); ring(1, 6, '#525a68'); // the glazed band
+      for (let j = 0; j <= 10; j++) { const t = j / 10, k = Math.cos(t * Math.PI / 2) * .98, z = 8 + Math.sin(t * Math.PI / 2) * 26; ring(k, z, j % 2 ? '#b9bcc2' : '#c4c7cc'); }
+      for (let i = -3; i <= 3; i++) { const a = iso(cx - 1.1, cy + i * .95, 33), b = iso(cx + 1.1, cy + i * .95, 33); g.strokeStyle = '#8d929b'; g.lineWidth = 3; g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.strokeStyle = '#e6e8eb'; g.lineWidth = 1; g.beginPath(); g.moveTo(a.x + 1, a.y - 1); g.lineTo(b.x + 1, b.y - 1); g.stroke(); } // skylights
+    },
+    bgExtra: (g, city) => { // the flagpoles along the river, then the pala sagging between the two porticoes
+      for (let gx = 1.6; gx < NX + .5; gx += .75) { const q = iso(gx, -2.5, 0); g.fillStyle = '#f2f2ee'; g.fillRect(Math.round(q.x), Math.round(q.y) - 40, 1, 40); g.fillRect(Math.round(q.x) - 1, Math.round(q.y) - 41, 3, 1); }
+      for (const e of city.porticos) drawBox(g, e, e.x0, e.y0, e.x1, e.y1, true, true); },
+    // the pala, drawn with the people as a sprite in front (FRONTS), so you walk under it; it fades when it hides you
+    front: { gx: 10.4, gy: 2.1, draw: g => {
+      const za = 34, sag = 15, A = .8, B = 10.4, n = 40, z = t => za - sag * Math.sin(Math.PI * t), front = [], back = [];
+      for (let i = 0; i <= n; i++) { const t = i / n, gx = A + (B - A) * t; front.push(iso(gx, 2.1, z(t))); back.push(iso(gx, -2.3, z(t))); }
+      g.fillStyle = '#e9e1cd'; g.beginPath(); g.moveTo(front[0].x, front[0].y); for (const q of front) g.lineTo(q.x, q.y); for (const q of back.reverse()) g.lineTo(q.x, q.y); g.closePath(); g.fill();
+      g.strokeStyle = '#b5ab96'; g.lineWidth = 2; g.beginPath(); g.moveTo(front[0].x, front[0].y + 1); for (const q of front) g.lineTo(q.x, q.y + 1); g.stroke(); g.lineWidth = 1; } }
+  }
 );
 const lutaIdx = () => CITIES.map((c, i) => c.luta ? i : -1).filter(i => i >= 0);
 const lutaToday = () => { const q = new URLSearchParams(location.search).get('hoje'); return /^\d{4}-\d\d-\d\d$/.test(q || '') ? q : lisbonNow().date; };
@@ -946,10 +1016,237 @@ const lutaDay = (d, en) => new Date(d + 'T12:00:00Z').toLocaleDateString(en ? 'e
 // Alto do Pina: the council put ten municipal plots up for auction (hasta pública). Auction signs go up round the
 // garden; walk to one to tear it down and put up a "casas para viver" one instead. A sign left standing too long: sold
 const LEILAO_N = 10;
-function lutaStart() { S.lutaSigns = []; S.lutaT = 5; S.lutaSaved = 0; S.lutaSold = 0; lutaHud(); }
-function lutaHud() { if (S.city.luta.twist === 'leilao') $('city').textContent = `${L('Terrenos salvos', 'Plots saved')} ${S.lutaSaved}/${LEILAO_N}`; }
+function lutaStart() { S.lutaSigns = []; S.lutaT = 5; S.lutaSaved = 0; S.lutaSold = 0; S.suits = []; S.flood = null; S.pods = null; S.suitT = 3; S.suitIn = 0; S.suitOut = 0; S.suitMoney = 60; S.robots = []; S.robotT = 10; S.robotI = 0; S.robotAllies = 0; lutaHud();
+  if (S.city.luta.twist === 'summit') floatXY(0, 0, L('Este ano, a Câmara deu 8 M€ à Web Summit e cortou na habitação', 'This year the council gave €8M to the Web Summit and cut housing'), '#ffd36b'); }
+function lutaHud() { if (S.city.luta.twist === 'summit') $('city').textContent = `${L('Bilhetes', 'Tickets')} ${S.suitIn} · ${L('Robôs', 'Robots')} ${S.robotAllies}/4`;
+  if (S.city.luta.twist === 'leilao') $('city').textContent = `${L('Terrenos salvos', 'Plots saved')} ${S.lutaSaved}/${LEILAO_N}`; }
+// Web Summit: people with a conference badge cross the square on their way to the summit. Walk up to one and they drop
+// the badge and join the protest. Each one who gets through counts towards the public money given to the summit
+// (60 M€ so far, over 110 M€ by 2028: the camp's statement)
+function summitUpd(dt) {
+  const p = S.player; S.suitT -= dt;
+  if (S.suitT <= 0 && S.suits.length < 4) { S.suitT = rnd(4, 7); const left = Math.random() < .5;
+    const lane = pick(GATE_LANES), a = left ? [rnd(5, NX - 1), NY + 1.4] : [NX + 1.4, rnd(4, NY - 1)], b = [-2.6, lane + rnd(-.15, .15)]; // from the street, through one of the South Entrance's three entrances
+    S.suits.push({ gx: a[0], gy: a[1], tx: b[0], ty: b[1], via: [2.6, b[1]], step: 0, flip: false, back: true, look: { skin: pick(SKIN), hair: pick(HAIR), shirt: pick(['#2a2f45', '#3b3f4c', '#e9e6dd', '#1d2433']), pants: pick(['#22252f', '#3a3d48']) }, badge: pick(['#b6ff3b', '#39e1ff', '#ff5fc8']) }); }
+  for (const o of S.suits) {
+    if (!o.done && Math.hypot(o.gx - p.gx, o.gy - p.gy) < .7) { suitJoins(o); continue; }
+    if (o.held > 0) { o.held -= dt; o.moving = false; continue; } // a robot ally is talking to them
+    if (o.flee) { if (moveEnt(o, o.tx, o.ty, 1.6, dt, true)) o.done = true; continue; } // running out of the flooded summit, to the street
+    if (o.via) { if (moveEnt(o, o.via[0], o.via[1], 1.1, dt, true)) o.via = null; continue; } // first to the gate's lane
+    if (moveEnt(o, o.tx, o.ty, 1.1, dt, true)) { o.done = true; S.suitOut++; S.suitMoney = Math.min(110, S.suitMoney + 5); S.pressure = Math.max(0, S.pressure - 3);
+      const q = iso(clamp(o.gx, 0, NX), clamp(o.gy, 0, NY), 20); floatXY(q.x, q.y, L(`Mais dinheiro público para a Web Summit: ${S.suitMoney} M€`, `More public money for the Web Summit: €${S.suitMoney}M`), '#ff8aa8'); lutaHud(); }
+  }
+  S.suits = S.suits.filter(o => !o.done);
+  robotsUpd(dt);
+  classUpd(dt);
+  floodUpd(dt);
+  podsUpd(dt);
+}
+// a parody of a past Web Summit moment: a TV presenter's "this is not an English class" talk on the verb to be.
+// At 20:00 she takes a little stage by the registration tent and conjugates it, housing edition; the square answers
+const CLASS_AT = [5.6, 2.6];
+const CLASS_LINES = [['Isto não é uma aula de inglês!', 'This is not an English class!'], ['I am… a tenant.', 'I am… a tenant.'], ['You are… a tenant.', 'You are… a tenant.'], ['He/she/it is… a landlord!', 'He/she/it is… a landlord!']];
+function classUpd(dt) { // from 19:30 to 21:00 (the assembly): the class twice, each line as a banner pointing at the stage
+  const c = S.cls ||= { i: -1, t: 0, on: false, round: 0 }, at = { gx: CLASS_AT[0], gy: CLASS_AT[1] };
+  if (c.done) return;
+  if (!c.on) { if (S.clock >= 19.5) { c.on = true; c.t = 0; const q = iso(at.gx, at.gy, 30); floatXY(q.x, q.y, L('No palco da Web Summit: a aula do verbo «to be»', 'On the Web Summit stage: the "verb to be" class'), '#ffd36b', at); } return; }
+  if (S.clock >= 21) { c.done = true; c.over ??= S.t; const q = iso(at.gx, at.gy, 30); floatXY(q.x, q.y, L('21:00: acabou a aula, começa a assembleia popular', '9 pm: class over, the people’s assembly begins'), '#b6ff3b'); return; }
+  c.t += dt; const k = Math.floor(c.t / 5) - 1, n = CLASS_LINES.length;
+  if (k > c.i && k <= n) { c.i = k; const q = iso(at.gx, at.gy, 34);
+    if (k < n) floatXY(q.x, q.y, L(...CLASS_LINES[k]), '#ff9ad5', at);
+    else { floatXY(q.x, q.y, L('E a praça responde: «We are… a acampada!»', 'And the square answers: "We are… the camp!"'), '#b6ff3b', at);
+      S.support = Math.min(100, S.support + 8); S.pressure = Math.min(100, S.pressure + 4); sfx('viral'); sparkle(CX, CY, 12, 14); } }
+  if (k > n + 2 && c.round < 1) { c.round++; c.t = 0; c.i = -1; } // once more, for whoever missed it
+  else if (k > n + 2 && !c.over) c.over = S.t; // the class is over (the flood comes a little after)
+}
+function drawClass() { const c = S.cls; if (!c || !c.on || c.done) return;
+  const [a, b] = CLASS_AT; box(ctx, a - .45, b - .45, a + .45, b + .45, 0, 9, '#3a3d48', '#2a2d36', '#22252d'); // the stage, high enough to be seen over the crowd
+  const q = iso(a, b, 9); guy(q.x, q.y, { skin: '#f0c8a8', hair: '#e8c46a', shirt: '#ff5fa8', pants: '#ff5fa8', moving: false, back: false, flip: false });
+  const x = Math.round(q.x), y = Math.round(q.y); R(x + 3, y - 12, 1, 4, '#16121a'); R(x + 3, y - 13, 2, 1, '#16121a'); } // the microphone
+// It rains inside the Web Summit (as it did on 10 Nov 2026): a little after the "verb to be" class, rain falls from the
+// gate back to the arena's dome, water seeps out from under the dome and floods the promenade, and a crowd of
+// badge-wearers runs out of the South Entrance across the square to the street: whoever the player (or a robot ally)
+// reaches gets a Camp Summit ticket. Those who make it to the street cost nothing: it's a chance, not a threat.
+const FLOOD_N = 16, FLOOD_LEN = 45;
+function floodUpd(dt) {
+  const c = S.cls;
+  if (!S.flood) { if (c && c.over && S.t > c.over + 20) { S.flood = { t0: S.t, n: 0, got: 0, said: 0, spawnT: 2.5 }; const q = iso(1.5, 7.3, 30); floatXY(q.x, q.y, L('Chove dentro da Web Summit!', 'It’s raining inside the Web Summit!'), '#39e1ff', true); sfx('viral'); } return; }
+  const F = S.flood, t = S.t - F.t0;
+  if (F.said === 0 && t > 2) { F.said = 1; const q = iso(4, 7.3, 30); floatXY(q.x, q.y, L('Fogem todos para a praça: apanha-os!', 'They all run into the square: catch them!'), '#ffd36b', true); }
+  F.spawnT -= dt;
+  if (F.n < FLOOD_N && F.spawnT <= 0) { F.spawnT = .55; F.n++; const lane = GATE_LANES[F.n % GATE_LANES.length], right = F.n % 2;
+    S.suits.push({ gx: -.6, gy: lane + rnd(-.15, .15), tx: right ? NX + 1.4 : rnd(4, NX - 1), ty: right ? rnd(2.5, NY - 1.5) : NY + 1.4, flee: true, step: 0, flip: false, back: false,
+      look: { skin: pick(SKIN), hair: pick(HAIR), shirt: pick(['#2a2f45', '#3b3f4c', '#e9e6dd', '#1d2433']), pants: pick(['#22252f', '#3a3d48']) }, badge: pick(['#b6ff3b', '#39e1ff', '#ff5fc8']) }); }
+  if (F.said === 1 && F.n >= FLOOD_N && !S.suits.some(o => o.flee)) { F.said = 2; const q = iso(S.player.gx, S.player.gy, 30);
+    floatXY(q.x, q.y, F.got ? L(`A chuva trouxe ${F.got} bilhetes Camp Summit!`, `The rain brought ${F.got} Camp Summit tickets!`) : L('Fugiram todos para a rua…', 'They all got away to the street…'), F.got ? '#b6ff3b' : '#ff8aa8', true); }
+  if (t > FLOOD_LEN + 10) F.over = true;
+}
+const floodK = () => { const t = S.t - S.flood.t0; return t < FLOOD_LEN ? 1 : Math.max(0, 1 - (t - FLOOD_LEN) / 10); }; // rain and water fade out at the end
+// the water on the ground, under people and things: seeps out from under the dome and spreads down the promenade to
+// the gate as a see-through, rolling sheet, with ripples drifting with the flow and rings where the drops land
+function floodGround(g) {
+  if (S.flood.over) return;
+  const t = S.t - S.flood.t0, grow = Math.min(1, t / 7), K = floodK();
+  g.globalAlpha = K;
+  const poly = (pts, col) => { g.fillStyle = col; g.beginPath(); pts.forEach(([x, y], n) => { const q = iso(x, y, 0); n ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y); }); g.closePath(); g.fill(); };
+  const reach = -8.4 + 9.2 * grow, N = 36, sheet = [];
+  const top = f => 3.4 - f * .5 + Math.sin(f * 14 - t * 2.2) * .18 + Math.sin(f * 31 + t * 1.3) * .07, bot = f => 6.2 + f * 4.6 + Math.sin(f * 12 - t * 2) * .28 + Math.sin(f * 27 + t * 1.7) * .09;
+  for (let s = 0; s <= N; s++) { const f = s / N; sheet.push([-8.6 + (reach + 8.6) * f, top(f)]); }
+  for (let s = N; s >= 0; s--) { const f = s / N; sheet.push([-8.6 + (reach + 8.6) * f, bot(f)]); }
+  for (let s = 0; s <= 8; s++) { const k = s / 8; sheet.splice(N + 1 + s, 0, [reach + Math.sin(k * Math.PI) * (.5 + .15 * Math.sin(t * 3)), top(1) + (bot(1) - top(1)) * k]); }
+  poly(sheet, 'rgba(80,140,225,.38)');
+  for (let w = 0; w < 6; w++) { const base = (w / 6 + t * .07) % 1; g.strokeStyle = w % 2 ? 'rgba(170,205,250,.45)' : 'rgba(50,100,190,.35)'; g.lineWidth = 1; g.beginPath();
+    for (let s = 0; s <= 20; s++) { const k = s / 20, f = Math.min(1, base * grow + Math.sin(k * 9 + t * 3 + w) * .02), gx = -8.6 + (reach + 8.6) * f + Math.sin(k * 7 + t * 2.5 + w) * .18, gy = top(f) + (bot(f) - top(f)) * (.08 + k * .84), q = iso(gx, gy, 0);
+      s ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y); } g.stroke(); }
+  for (let i = 0; i < 40 * grow; i++) { const f = (i * .137 + t * .08) % 1, gx = -8.4 + (reach + 8.4) * f, gy = 3.3 - f * .4 + ((i * 53) % 100) / 100 * (2.8 + f * 4.6), q = iso(gx, gy, 0);
+    g.fillStyle = 'rgba(225,240,255,.55)'; g.fillRect(Math.round(q.x), Math.round(q.y), 3, 1); }
+  for (let i = 0; i < 14; i++) { const ph = (t * 1.3 + i * .37) % 1, f = ((i * .29) % 1) * grow, gx = -8.4 + (reach + 8.4) * f, gy = 3.4 - f * .4 + ((i * 41) % 100) / 100 * (2.7 + f * 4.5), q = iso(gx, gy, 0), r = 1 + ph * 5;
+    g.strokeStyle = `rgba(230,245,255,${(.7 * (1 - ph)).toFixed(2)})`; g.lineWidth = 1; g.beginPath(); g.ellipse(Math.round(q.x), Math.round(q.y), r, r / 2, 0, 0, 7); g.stroke(); }
+  if (grow > .8) { const k = (grow - .8) * 5, c = iso(.8, 7.3, 0); g.fillStyle = 'rgba(80,140,225,.32)'; g.beginPath(); g.ellipse(c.x, c.y, 14 + 22 * k, 6 + 10 * k, 0, 0, 7); g.fill(); }
+  g.globalAlpha = 1;
+}
+// the rain itself, on top of everything (after the night): thin see-through streaks from the gate back to the dome
+function floodRain(g) {
+  if (S.flood.over) return;
+  const t = S.t - S.flood.t0; g.globalAlpha = floodK();
+  for (let i = 0; i < 360; i++) { const gx = -15 + ((i * 53) % 160) / 10, gy = -3.5 + ((i * 37) % 150) / 10, h = gx < -7 ? 70 : 46, z = h - ((t * 170 + i * 13) % h), a = iso(gx, gy, z);
+    g.fillStyle = i % 4 ? 'rgba(200,225,255,.45)' : 'rgba(255,255,255,.6)'; g.fillRect(Math.round(a.x), Math.round(a.y), 1, 6); }
+  g.globalAlpha = 1;
+}
+// Co-living capsules: at 19:10 a start-up sets up two capsules on the square ("1200 €/mês"). Each one standing costs
+// a little morale, and every 25 s sprouts another next to it (up to 7): it spreads. Only a cordão takes one (inside its
+// ring for 3 s), and it becomes one of the camp's tents. While any stands, the police wait. 25 s comes from a
+// simulation: a player who also has other things to do clears them ~100% of the time; at 12-18 s they get out of hand.
+const POD_AT = 19 + 10 / 60, POD_SPREAD = 25, POD_MAX = 7, POD_DRAIN = .2, POD_FILL = 3;
+const podFree = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (xx < 1 || yy < 1 || xx >= NX - 1 || yy >= NY - 1 || S.occ[yy * NX + xx]) return false; }
+  return !S.pods.some(o => !o.done && Math.hypot(o.gx - x - .5, o.gy - y - .5) < 1.9); };
+function podAdd(x, y) { const o = { kind: 'pod', tx: x, ty: y, gx: x + .5, gy: y + .5, prog: 0, pop: 0, spreadT: POD_SPREAD + rnd(-1, 2), done: false }; S.occ[y * NX + x] = o; S.pods.push(o); return o; }
+function podsUpd(dt) {
+  if (!S.pods) { if (S.clock < POD_AT) return; S.pods = []; S.podGot = 0; S.podSaid = S.t;
+    for (const [gx, gy] of [[8, 4], [12, 7]]) { let best = null, bd = 1e9; for (let y = 1; y < NY - 1; y++) for (let x = 1; x < NX - 1; x++) { if (!podFree(x, y)) continue; const d = Math.hypot(x - gx, y - gy); if (d < bd) { bd = d; best = [x, y]; } } if (best) podAdd(...best); }
+    if (!S.pods.length) { S.pods = null; S.podsGone = true; return; }
+    const o = S.pods[0], q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Uma startup montou cápsulas de co-living na praça', 'A start-up set up co-living capsules on the square'), '#ff5fc8', true); sfx('leave');
+    setTimeout(() => { if (!S.pods) return; const o = S.pods.find(o => !o.done); if (o) { const q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Cápsula · 1200 €/mês · sem janela', 'Capsule · €1200/month · no window'), '#ff9ad5'); } }, 2300);
+    setTimeout(() => { if (!S.pods || !S.pods.some(o => !o.done)) return; const q = iso(S.player.gx, S.player.gy, 30); floatXY(q.x, q.y, L('Tiram moral e multiplicam-se. Só um Cordão as ocupa!', 'They drain morale and multiply. Only a Cordão takes them!'), '#ffd36b', true); }, 4600);
+    return; }
+  const live = S.pods.filter(o => !o.done); if (!live.length) return;
+  S.nextRaid = Math.max(S.nextRaid, S.clock + .05); S.nextPatrol = Math.max(S.nextPatrol, S.clock + .05); // the police wait
+  S.morale = Math.max(0, S.morale - POD_DRAIN * live.length * dt);
+  if (S.t - S.podSaid > 8) { S.podSaid = S.t; const o = live[0], q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Mais um quarto a 1200 €: −moral', 'Another €1200 room: −morale'), '#ff8aa8'); }
+  const ch = S.chain;
+  for (const o of live) { o.pop = Math.min(1, o.pop + dt * 2); o.spreadT -= dt;
+    if (o.spreadT <= 0) { o.spreadT = POD_SPREAD;
+      if (S.pods.filter(o => !o.done).length < POD_MAX) for (let k = 0; k < 24; k++) { const a = Math.random() * Math.PI * 2, x = Math.floor(o.gx + Math.cos(a) * 2.1), y = Math.floor(o.gy + Math.sin(a) * 2.1);
+        if (podFree(x, y)) { const n = podAdd(x, y), q = iso(n.gx, n.gy, 26); floatXY(q.x, q.y, L('Mais uma cápsula!', 'Another capsule!'), '#ff5fc8'); sfx('leave'); break; } } }
+    const inside = ch && Math.hypot(ch.gx - o.gx, ch.gy - o.gy) < ch.r + .4;
+    o.prog = inside ? Math.min(1, o.prog + dt / POD_FILL) : Math.max(0, o.prog - dt / 10);
+    if (o.prog >= 1) { o.done = true; S.podGot++; const t = { kind: 'tent', tx: o.tx, ty: o.ty, gx: o.gx, gy: o.gy, color: pick(TENT_COLORS), occ: 1, pop: .4, hit: false, l1: look(S.city.students), l2: look(S.city.students) };
+      S.occ[o.ty * NX + o.tx] = t; S.tents.push(t); S.support = Math.min(100, S.support + 5); sparkle(o.gx, o.gy, 14, 16); sfx('viral');
+      const q = iso(o.gx, o.gy, 26); floatXY(q.x, q.y, L('Cápsula ocupada: agora é uma tenda!', 'Capsule occupied: now it’s a tent!'), '#b6ff3b'); } }
+  if (!S.pods.some(o => !o.done)) { const q = iso(S.player.gx, S.player.gy, 30); floatXY(q.x, q.y, L(`${S.podGot} cápsulas ocupadas: +${S.podGot} tendas`, `${S.podGot} capsules occupied: +${S.podGot} tents`), '#b6ff3b', true); }
+}
+const POD_DIG = { '1': ['01', '11', '01', '01', '01'], '2': ['111', '001', '111', '100', '111'], '0': ['111', '101', '101', '101', '111'], '€': ['011', '100', '111', '100', '011'] };
+function drawPod(o) { // a white sleeping pod with a dark outline, a round purple-lit window and a neon "1200€" sign; a pink glow on the ground
+  const g = ctx, R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }, q = iso(o.gx, o.gy), x0 = Math.round(q.x), y0 = Math.round(q.y), up = Math.round((1 - o.pop) * 8), pulse = .5 + .5 * Math.sin(S.t * 3.3);
+  g.fillStyle = `rgba(255,95,200,${(.18 + .17 * pulse).toFixed(2)})`; g.beginPath(); g.ellipse(x0, y0, 19, 9, 0, 0, 7); g.fill();
+  g.fillStyle = 'rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x0, y0, 13, 5, 0, 0, 7); g.fill();
+  if (o.prog > 0) { g.lineWidth = 3; g.strokeStyle = 'rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(x0, y0, 17, 8.5, 0, 0, 7); g.stroke(); g.strokeStyle = '#b6ff3b'; g.beginPath(); g.ellipse(x0, y0, 17, 8.5, 0, -Math.PI / 2, -Math.PI / 2 + o.prog * Math.PI * 2); g.stroke(); g.lineWidth = 1; }
+  const x = x0 - 13, y = y0 - 17 - up, w = 26, ends = [4, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 4], h = ends.length;
+  for (let i = 0; i < h; i++) R(x + ends[i] - 1, y + i, w - 2 * ends[i] + 2, 1, '#2a2238');
+  for (let i = 1; i < h - 1; i++) R(x + ends[i], y + i, w - 2 * ends[i], 1, i < 3 ? '#ffffff' : i > h - 5 ? '#c9cbd8' : '#eef0f6');
+  R(x + w - 7, y + 3, 1, h - 6, '#b9bccb');
+  for (const [dx, dy, c] of [[0, -3, 1], [-2, -2, 5], [-3, -1, 7], [-3, 0, 7], [-3, 1, 7], [-2, 2, 5], [0, 3, 1]]) R(x + 9 + dx, y + 7 + dy, c, 1, '#1d1830');
+  R(x + 7, y + 6, 3, 3, pulse > .5 ? '#b46cff' : '#8a4dff'); R(x + 7, y + 6, 1, 1, '#f0d8ff');
+  R(x0, y - 3, 1, 3, '#6c7080'); const sx = x0 - 11, sy = y - 11; R(sx - 1, sy - 1, 24, 10, '#ff5fc8'); R(sx, sy, 22, 8, '#1d1830');
+  let cx = sx + 2; for (const chr of '1200€') { const gl = POD_DIG[chr]; gl.forEach((r, yy) => [...r].forEach((v, xx) => { if (v === '1') R(cx + xx, sy + 2 + yy, 1, 1, '#ff9ad5'); })); cx += gl[0].length + 1; }
+}
+function suitJoins(o) { o.done = true; S.suitIn++; if (o.flee && S.flood) S.flood.got++; joinOne(o.gx, o.gy, true); S.support = Math.min(100, S.support + 4); S.pressure = Math.min(100, S.pressure + 2.5);
+  float(o.gx, o.gy, L('Bilhete Camp Summit: 0 €', 'Camp Summit ticket: €0'), '#b6ff3b', 24); sparkle(o.gx, o.gy, 8, 14); sfx('join'); lutaHud(); }
+// the Web Summit's robot "speakers" (from its speakers page). Convincing one is hard work: stay by its side for 6 s
+// while it walks (it forgets half as fast when you step away). Once convinced it joins the protest and, slowly, goes
+// after badge-wearers and people waiting by itself, recruiting them the way the player does
+const ROBOTS = [
+  { name: 'UBTech Walker C1', body: '#eeeeea', head: '#16161c', eye: '#39e1ff', k: 'visor' },
+  { name: 'AgiBot X2 Ultra', body: '#f3f3ef', head: '#f3f3ef', eye: '#16121a', k: 'round' },
+  { name: 'AgiBot A3', body: '#e9e9e5', head: '#0d0d11', eye: '#ffffff', k: 'black' },
+  { name: 'Galbot G1', body: '#d8d9dc', head: '#f1f1ef', eye: '#16161c', k: 'panel' }];
+const ROBOT_NEED = 6;
+function robotsUpd(dt) {
+  const p = S.player;
+  if (S.robotI < ROBOTS.length && !S.robots.some(r => !r.ally)) { S.robotT -= dt;
+    if (S.robotT <= 0) { const R0 = ROBOTS[S.robotI++], left = Math.random() < .5;
+      const a = left ? [rnd(6, NX - 2), NY + 1.4] : [NX + 1.4, rnd(5, NY - 2)], b = [-2.6, 7.3];
+      S.robots.push({ ...R0, gx: a[0], gy: a[1], tx: b[0], ty: b[1], via: [2.6, 7.3], step: 0, flip: false, back: true, prog: 0, said: 0, ally: false });
+      const q = iso(clamp(a[0], 0, NX), clamp(a[1], 0, NY), 20); floatXY(q.x, q.y, L(`${R0.name} a caminho da Web Summit`, `${R0.name} on its way to the Web Summit`), '#39e1ff', true); } }
+  for (const r of S.robots) {
+    if (!r.ally) {
+      const near = Math.hypot(r.gx - p.gx, r.gy - p.gy) < .8;
+      r.prog = near ? r.prog + dt : Math.max(0, r.prog - dt * .5);
+      const lines = [L('A processar: habitação é um direito?', 'Processing: is housing a right?'), L('A recalcular prioridades…', 'Recalculating priorities…')];
+      if (r.said < 2 && r.prog >= ROBOT_NEED * (r.said + 1) / 3) { float(r.gx, r.gy, lines[r.said], '#39e1ff', 26); r.said++; }
+      if (r.prog >= ROBOT_NEED) { r.ally = true; r.hold = 0; r.pause = 1; S.robotAllies++; S.support = Math.min(100, S.support + 10); S.pressure = Math.min(100, S.pressure + 5);
+        const q = iso(r.gx, r.gy, 26); floatXY(q.x, q.y, L(`${r.name} junta-se ao protesto!`, `${r.name} joins the protest!`), '#b6ff3b'); sparkle(r.gx, r.gy, 14, 16); sfx('viral'); S.robotT = 30; lutaHud();
+        roboPickOpen(r); continue; }
+      r.walk = (r.walk || 0) + dt; if (r.walk > 2.2) { r.walk = 0; r.wait = .8; } // it stops now and then (a demo): a chance to catch it
+      if (r.wait > 0) { r.wait -= dt; r.moving = false; continue; }
+      if (r.via) { if (moveEnt(r, r.via[0], r.via[1], .5, dt, true)) r.via = null; continue; }
+      if (moveEnt(r, r.tx, r.ty, .5, dt, true)) { r.gone = true; S.suitMoney = Math.min(110, S.suitMoney + 5); S.robotT = 20;
+        const q = iso(clamp(r.gx, 0, NX), clamp(r.gy, 0, NY), 20); floatXY(q.x, q.y, L(`${r.name} chegou à Web Summit: ${S.suitMoney} M€`, `${r.name} reached the Web Summit: €${S.suitMoney}M`), '#ff8aa8'); lutaHud(); }
+      continue; }
+    // an ally does what the player chose in the top bar (robotMode): recruit, protect the tents, or fetch donations
+    const mode = r.mode || 'recruit', ri = S.robots.filter(o => o.ally).indexOf(r);
+    if (mode === 'shield') { // to the threatened group nearest to it, and stands in front of it (robotShield); otherwise guards a tent
+      const threat = S.police.filter(o => (o.state === 'walk' || o.state === 'dismantle') && o.target && S.tents.includes(o.target)).map(o => o.target);
+      if (threat.length) { let g = null, gd0 = 1e9; for (const t of threat) { const d = Math.hypot(t.gx - r.gx, t.gy + .3 - r.gy); if (d < gd0) { gd0 = d; g = t; } }
+        if (!moveEnt(r, g.gx, g.gy + .3, 1, dt, true)) {} else { r.moving = false; r.back = false; if (!S.shieldSaid) { S.shieldSaid = true; const q = iso(g.gx, g.gy, 26); floatXY(q.x, q.y, L(`${r.name} protege o grupo: modo escudo!`, `${r.name} shields the group: shield mode!`), '#39e1ff'); } }
+        continue; }
+      const ts = [...S.tents].sort((a, b) => (a.tx + a.ty * NX) - (b.tx + b.ty * NX)), t = ts.length ? ts[(ri * 3) % ts.length] : null;
+      if (!t || moveEnt(r, t.gx + .45, t.gy + .45, .8, dt, true)) { r.moving = false; r.back = false; }
+      continue; }
+    if (r.pause > 0) { r.pause -= dt; r.moving = false; continue; }
+    if (mode === 'fetch') { // after the donation boxes, and brings their supplies in
+      let c = null, cd0 = 1e9; for (const o of S.crates) { const d = Math.hypot(o.gx - r.gx, o.gy - r.gy); if (d < cd0) { cd0 = d; c = o; } }
+      if (!c) { r.moving = false; continue; }
+      if (cd0 < .7) { c.life = 0; if (S.stat) S.stat.crates = (S.stat.crates || 0) + 1; S.supplies = Math.min(20, S.supplies + 2); if (!stationOf('kitchen')) S.morale = Math.min(100, S.morale + 5);
+        float(r.gx, r.gy, L(`Robô aliado: ${c.label} +2`, `Robot ally: ${c.label} +2`), '#39e1ff', 30); sparkle(c.gx, c.gy, 6, 6); sfx('crate'); r.pause = 1; }
+      else moveEnt(r, c.gx, c.gy, .9, dt, true);
+      continue; }
+    // recruit: after the nearest badge-wearer or person waiting, slowly; stays by them 3 s to bring them in
+    // people waiting stand still, so they come first; a badge-wearer only when one passes close (they walk faster)
+    let t = null, bd = 1e9; const near = o => Math.hypot(o.gx - r.gx, o.gy - r.gy);
+    for (const o of S.suits) if (!o.done && o.gx > -.3 && o.gy > -.3 && o.gx < NX + .3 && o.gy < NY + .3 && near(o) < 2.2 && near(o) < bd) { bd = near(o); t = o; }
+    if (!t) for (const o of S.arrivals) if (o.state === 'wait' && near(o) < bd) { bd = near(o); t = o; }
+    if (!t) { r.moving = false; continue; }
+    if (bd < .7) { r.moving = false; if (S.suits.includes(t)) t.held = .3; r.hold += dt; if (r.hold >= 2) { r.hold = 0; r.pause = 1.5;
+        if (S.suits.includes(t)) suitJoins(t); else { S.arrivals = S.arrivals.filter(a => a !== t); joinOne(t.gx, t.gy); }
+        float(r.gx, r.gy, L('Robô aliado: mais um!', 'Robot ally: one more!'), '#39e1ff', 30); } }
+    else { r.hold = 0; moveEnt(r, t.gx, t.gy, 1, dt, true); }
+  }
+  S.robots = S.robots.filter(r => !r.gone);
+}
+const robotShield = t => !!(S.robots && S.robots.some(r => r.ally && r.mode === 'shield' && Math.hypot(r.gx - t.gx, r.gy - t.gy) < .6));
+function drawRobot(r) {
+  const q = iso(r.gx, r.gy), x = Math.round(q.x), y = Math.round(q.y), f = r.moving ? Math.floor(r.step || 0) % 3 : 0, B = r.body, D = shade(B, .78);
+  R(x - 3, y - 1, 7, 2, 'rgba(30,10,70,.28)');
+  R(x - 2, y - 6 + (f === 1 ? 1 : 0), 2, 5 - (f === 1 ? 1 : 0), '#9a9ca2'); R(x + 1, y - 6 + (f === 2 ? 1 : 0), 2, 5 - (f === 2 ? 1 : 0), '#9a9ca2'); // legs
+  R(x - 3, y - 12, 7, 6, B); R(x + 2, y - 12, 2, 6, D); R(x - 4, y - 11, 1, 5, D); R(x + 4, y - 11, 1, 5, D); // body, arms
+  if (r.k === 'black') { R(x - 3, y - 12, 7, 2, '#2a2a30'); } if (r.k === 'panel') R(x, y - 10, 1, 1, '#3f6fff'); // A3's dark collar, G1's blue dot
+  R(x - 1, y - 13, 3, 1, '#9a9ca2'); // neck
+  const hx = x - 2, hy = y - 18;
+  if (r.k === 'round') { R(hx, hy + 1, 5, 4, r.head); R(hx + 1, hy, 3, 1, r.head); if (!r.back) { R(hx + 1, hy + 2, 1, 1, r.eye); R(hx + 3, hy + 2, 1, 1, r.eye); } }
+  else if (r.k === 'panel') { R(hx, hy, 5, 5, r.head); if (!r.back) R(hx + 1, hy + 1, 3, 3, '#16161c'); }
+  else { R(hx, hy, 5, 5, r.head); R(hx + 3, hy, 1, 1, '#4a4a55'); if (!r.back) { if (r.k === 'visor') R(hx + 3, hy + 2, 1, 1, r.eye); else { R(hx + 1, hy + 2, 1, 1, r.eye); R(hx + 3, hy + 2, 1, 1, r.eye); } } }
+  if (!r.ally && r.prog > 0) { R(x - 5, y - 23, 11, 2, '#1b1464'); R(x - 5, y - 23, Math.round(11 * Math.min(1, r.prog / ROBOT_NEED)), 2, '#39e1ff'); }
+  if (r.ally) { R(x + 5, y - 20, 1, 10, '#6b4a2b'); const m = r.mode || 'recruit', bg = { recruit: '#b6ff3b', shield: '#39e1ff', fetch: '#ffd23a' }[m]; R(x + 1, y - 27, 9, 8, '#0b0a0a'); R(x + 2, y - 26, 7, 6, r === S.roboPick ? '#f4f1ea' : bg); // a placard with its job
+    if (r !== S.roboPick) { if (m === 'recruit') { R(x + 5, y - 25, 1, 4, '#0b0a0a'); R(x + 3, y - 23, 5, 1, '#0b0a0a'); } else if (m === 'shield') { R(x + 3, y - 25, 5, 2, '#0b0a0a'); R(x + 4, y - 23, 3, 1, '#0b0a0a'); R(x + 5, y - 22, 1, 1, '#0b0a0a'); } else { R(x + 3, y - 24, 5, 3, '#0b0a0a'); R(x + 4, y - 23, 3, 1, bg); } }
+    else if (Math.floor(S.t * 6) % 2) R(x + 5, y - 24, 1, 2, '#0b0a0a'); }
+}
+function drawSuit(o) { const q = iso(o.gx, o.gy); guy(q.x, q.y, { ...o.look, moving: true, step: o.step, flip: o.flip, back: o.back }); const x = Math.round(q.x), y = Math.round(q.y);
+  R(x - 1, y - 10, 1, 3, '#16121a'); R(x + 1, y - 10, 1, 3, '#16121a'); R(x - 1, y - 7, 3, 3, o.badge); } // the lanyard and the badge
 function lutaUpd(dt) {
-  if (S.city.luta.twist !== 'leilao' || S.winning) return;
+  if (S.winning) return;
+  if (S.city.luta.twist === 'summit') return summitUpd(dt);
+  if (S.city.luta.twist !== 'leilao') return;
   const p = S.player, up = S.lutaSigns.filter(g => !g.ok);
   S.lutaT -= dt;
   if (S.lutaT <= 0 && up.length < 3 && S.lutaSaved + S.lutaSold + up.length < LEILAO_N) {
@@ -1149,6 +1446,39 @@ const STYLES = {
     if (u % 10 < 2 || z < 1) return '#f2efe8';
     return z > h - 7 ? '#9fc3d8' : '#5d7f9a'; } }; },
   // blocks of flats behind (Faro): white or cream, a balcony on every floor, flat roofs
+  // Pavilhão de Portugal (Siza): white stone, a colonnade of square pillars with deep shaded bays at the bottom
+  pavilhao: b => { const h = b.h; return { extra: 1, fn: (u, z, w) => {
+    if (z >= h) return null; if (z >= h - 2) return '#fbfaf6';
+    if (z < 15) { if (z >= 12) return '#efede6'; return u % 10 < 3 ? '#f2f0ea' : z < 2 ? '#6a5e52' : '#4a4038'; }
+    return z % 7 === 0 ? '#e2dfd6' : '#f3f1ea'; } }; },
+  // its porticoes: tall blank white slabs; the one at the pavilion's end shows its slanted buttresses on the inner side
+  portico: b => { const h = b.h; return { extra: 1, fn: (u, z, w, front) => {
+    if (z >= h) return null; if (z >= h - 1) return '#fbfaf6';
+    if (b.ribs && !front) { const k = ((u * 2 + z) % 16 + 16) % 16; return k < 6 ? '#f1efe8' : k < 8 ? '#bdb8ad' : '#d9d5cc'; }
+    return z % 8 === 0 ? '#e4e1d8' : '#f1efe8'; } }; },
+  // the Web Summit registration tent: white canvas with a pattern of purple and pink squares
+  wstent: b => ({ extra: 0, fn: (u, z) => { if (z >= b.h) return null; const k = hash(Math.floor(u / 3), Math.floor(z / 3)); if (z > 1 && z < 11 && k < .5) return ['#6b4fd8', '#e0457b', '#8f7bf0', '#3b2f9a'][Math.floor(k * 8) % 4]; return z === 0 ? '#c9c8c4' : '#f4f3f0'; } }),
+  // shipping containers of the Web Summit gate: the inner towers' front is a white grid of screens in a red frame,
+  // the sides and the outer containers are ribbed red
+  contgrid: b => ({ extra: 0, fn: (u, z, w, front) => { if (z >= b.h) return null; if (!front) return u % 2 ? '#b53434' : '#9c2c2c';
+    if (u < 2 || u >= w - 2 || z < 2 || z >= b.h - 2 || z % 15 === 0) return '#b53434'; return (u % 5 === 0 || z % 5 === 0) ? '#b9b4c6' : '#ecebf2'; } }),
+  contribs: b => ({ extra: 0, fn: (u, z) => { if (z >= b.h) return null; if (z % 9 === 0) return '#8f2a2a'; return u % 2 ? '#c23b3b' : '#a83232'; } }),
+  // Parque das Nações around the square (Google Earth): office blocks of white bands and blue-green glass, flat roofs
+  office: b => { const h = b.h, gl = b.glass || '#5f8fa0'; return { extra: 0, fn: (u, z) => {
+    if (z >= h) return null; if (z >= h - 2) return '#f0efea';
+    if (b.screen && u % 30 < 22 && z > 4 && z < h - 6) return (u + z) % 3 ? '#e9e8e4' : '#d6d5d0'; // a white patterned facade (the screen-printed one)
+    const fz = z % 8; return fz < 2 ? '#f2f1ec' : (u % 6 === 0 ? '#d9dcdc' : (fz === 2 ? shade(gl, .8) : gl)); } }; },
+  // the residential tower across the road from the pavilion: white frame at the edges, floors of blue-green glass balconies
+  torre: b => { const h = b.h, G = '#5f9aa6', GL = '#86bcc4', W = '#f2f1ec'; return { extra: 38, fn: (u, z, w) => {
+    const narrow = w < 24; // the narrow side is a white wall with small windows; the broad face has the balconies and, at its right end, the rounded glass drum
+    if (z >= h) { if (narrow) return null; const t = z - h; return u >= w - 11 + t * .22 && u <= w - 1 - t * .06 && t < 36 ? (u < w - 6 ? W : '#d9d8d2') : null; } // the white sail over the drum
+    if (z < 6) return z % 3 ? '#2f5c66' : '#3e6f78'; // dark glass at the foot
+    if (narrow) return (u % 3 === 1 && z % 3 === 1 && u > 1 && u < w - 2) ? '#3a4650' : W;
+    if (u >= w - 10) return z % 4 === 0 ? (u > w - 9 ? W : '#cfd6d6') : u >= w - 2 ? '#4f8a96' : (u + z) % 6 === 0 ? GL : G; // the drum of curved balconies
+    if (z >= h - 9) return (u % 4 < 2 && z % 3 === 1 && u > 3) ? '#3a4650' : W; // the white crown with its window grid
+    if (u < 6) return (u % 3 === 1 && z % 3 === 1) ? '#3a4650' : W; // the white frame with small windows
+    if (u >= w - 12) return W; // the white band beside the drum
+    return z % 4 === 0 ? W : (u % 7 === 0 ? '#e6eeee' : z % 4 === 1 ? GL : G); } }; },
   // a tall blank gable wall (Alto do Pina): salmon, a few small windows in one column, a darker cornice
   empena: b => { const h = b.h; return { extra: 2, fn: (u, z, w) => {
     if (z >= h) return null; if (z >= h - 2) return '#c98c78';
@@ -1258,6 +1588,9 @@ const PLAZA = {
   },
   // Praça da Liberdade: light calçada, dark bands every 3 tiles, the south-west panel framed in dark red with small dark
   // grates, rings and half rings of dark stone
+  nacoes: (gx, gy) => { if (gy > 3.6) { // the wave calçada all along the strip in front of the gate, from left to right
+    if (gx < 3.8 && GATE_LANES.some(l => Math.abs(gy - l) < .32) && frac(gx * 1.5) < .38) return [238, 236, 230]; const v = gy + .4 * Math.sin(gx * Math.PI * 2 / 2.2); return (Math.floor(v * 2.2) & 1) ? [70, 68, 72] : [226, 224, 216]; } // the wave calçada and the white stripes to the gate
+    const k = hash(Math.floor(gx * 9), Math.floor(gy * 9)); return k < .33 ? [206, 204, 198] : k < .66 ? [194, 192, 186] : [214, 212, 206]; }, // Parque das Nações: light grey calçada of small cobbles
   // Jardim Bulhão Pato (Jardim da Nêspera), Alto do Pina, from Street View: seen from Rua Sabino de Sousa (the front),
   // a path of calçada goes in between two raised lawns edged with red brick to the calçada clearing; at the back
   // right the playground on black rubber, along the back clipped hedges
@@ -1436,18 +1769,22 @@ function makeBG0(city) {
   if (city.hills) { const tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H; const tg = tmp.getContext('2d'); drawHills(tg); tg.drawImage(c, 0, 0); g.clearRect(0, 0, W, H); g.drawImage(tmp, 0, 0); }
   const sb = city.setbackL != null ? [city.setbackL, city.setback || 0] : city.setback || 0;
   if (city.fill || city.backFirst) [...(city.fill ? fillBlocks(city) : []), ...(city.backFirst || [])].sort((p, q) => p.x0 + p.x1 + p.y0 + p.y1 - q.x0 - q.x1 - q.y0 - q.y1).forEach(e => drawBox(g, e, e.x0, e.y0, e.x1, e.y1, true, true));
+  if (city.bgBack) city.bgBack(g); // a city's own drawing behind all its rows (the MEO Arena behind the pavilion)
   drawBuilding(g, city.C, 'C', sb);
   [...city.L].sort((a, b) => a.a - b.a).forEach(b => drawBuilding(g, b, 'L', sb));
   if (city.terrace) drawTerrace(g, city.terrace);
   for (const e of city.back || []) drawBox(g, e, e.x0, e.y0, e.x1, e.y1, true, true); // landmarks behind the north row
   [...city.R].sort((a, b) => a.a - b.a).forEach(b => drawBuilding(g, b, 'R', sb));
   if (city.plats) drawPlats(g, city, false);
+  if (city.bgExtra) city.bgExtra(g, city); // a city's own extra drawing in the picture (the pala of the Pavilhão de Portugal)
   for (const e of city.fore || []) drawBox(g, e, e.x0, e.y0, e.x1, e.y1, true, true); // things standing out in front of the rows
   if (city.plats) drawPlats(g, city, true);
   // the blocks in front are drawn as sprites (see FRONTS), so people behind them are hidden properly and show through
   FRONTS.length = 0;
-  for (const [a0, b0, a1, b1] of blocks) {
-    const k = hash(Math.round(a0 * 3), Math.round(b0 * 3)), b = { style: 'pombal', col: BLOCK_WALLS[Math.floor(k * BLOCK_WALLS.length)], h: 24 + Math.floor(k * 4) * 3, roof: k < .5 ? '#c4674a' : '#b85c40', neon: null };
+  const towerBlk = city.towerAt ? blocks.reduce((m, q) => Math.hypot((q[0] + q[2]) / 2 - city.towerAt[0], (q[1] + q[3]) / 2 - city.towerAt[1]) < Math.hypot((m[0] + m[2]) / 2 - city.towerAt[0], (m[1] + m[3]) / 2 - city.towerAt[1]) ? q : m) : null; // one block is a landmark tower
+  for (const blk of blocks) { let [a0, b0, a1, b1] = blk;
+    if (blk === towerBlk) { const mx = (a0 + a1) / 2, my = (b0 + b1) / 2; [a0, b0, a1, b1] = [mx - .7, my - 1.8, mx + .7, my + 1.8]; } // a slab: its broad balcony face turned to the square // a slender tower, not a whole block
+    const k = hash(Math.round(a0 * 3), Math.round(b0 * 3)), b = blk === towerBlk ? { style: 'torre', h: 104, roof: '#e9e8e4' } : city.blockStyle ? city.blockStyle(k) : { style: 'pombal', col: BLOCK_WALLS[Math.floor(k * BLOCK_WALLS.length)], h: 24 + Math.floor(k * 4) * 3, roof: k < .5 ? '#c4674a' : '#b85c40', neon: null };
     const top = b.h + 9 + Math.round(Math.min(a1 - a0, b1 - b0) * 4.2) + 2;
     const bx = Math.floor(iso(a0, b1).x) - 1, rx = Math.ceil(iso(a1, b0).x) + 1, byT = Math.floor(iso(a0, b0, top).y) - 1, byB = Math.ceil(iso(a1, b1).y) + 1;
     if (rx < 0 || bx > W || byB < 0 || byT > H) continue;
@@ -1456,6 +1793,8 @@ function makeBG0(city) {
     const al = gg.getImageData(0, 0, c.width, c.height).data;
     FRONTS.push({ img: c, bx, by: byT, w: c.width, h: c.height, al, gx: a1, gy: b1, ghost: 0 });
   }
+  if (city.front) { const c2 = document.createElement('canvas'); c2.width = W; c2.height = H; const g2 = c2.getContext('2d'); city.front.draw(g2);
+    FRONTS.push({ img: c2, bx: 0, by: 0, w: W, h: H, al: g2.getImageData(0, 0, W, H).data, gx: city.front.gx, gy: city.front.gy, ghost: 0 }); }
   return c;
 }
 
@@ -1706,6 +2045,7 @@ function realToday(city) { // something on today (or still going) in this city, 
 const IRL_NOTE = () => `<p class="help irl">IRL · <i>In Real Life</i>${L(' (na vida real)', '')}</p>`;
 const realLine = city => { const r = realToday(city); return r ? `🔴 ${L('Hoje, IRL', 'Today, IRL')}: ${r.title} · ${r.at.replace(':00', 'h').replace(':', 'h')}${r.where ? ' · ' + r.where.split(' · ')[0] : ''}${r.city !== city ? ' (' + r.city + ')' : ''}` : ''; };
 function newLevel() {
+  roboPickClose(); // the robots' picker is Camp Summit's only
   CAM.look = null; // a tapped event from the last level must not hold the camera
   stopSong(); winSongStop();
   const city = CITIES[cityIdx];
@@ -1723,6 +2063,7 @@ function newLevel() {
     stat: { maxTents: 3, welcomed: 0, raids: 0 },
     player: { gx: CX + 1.5, gy: CY + 3.6, tx: CX + 1.5, ty: CY + 3.6, step: 0, moving: false, flip: false, back: false } };
   for (const [a, b] of city.blocks) S.occ[b * NX + a] = 'X';
+  for (const [a, b] of city.solid || []) S.occ[b * NX + a] = 'X'; // taken by something drawn as deco (the Web Summit tent)
   let tutDone = false; try { tutDone = localStorage.getItem('acampada-tut') === '1'; } catch (e) {}
   S.tut = tutDone ? null : { step: 1, t: 0, x0: S.player.gx, y0: S.player.gy }; tutShow(null);
   S.grafAt = rnd(34, 46); S.graf = null; S.tagged = false; // once per square, on day 2 (10:00-22:00): someone climbs the statue to spray it (see updGraf)
@@ -2627,7 +2968,8 @@ function newsSync() {
       q('.dt').textContent = `${S.city.name} · ${lutaDay(S.city.luta.date, LANG === 'en')}`;
       for (const k of ['kick', 'hl', 'dk', 'cap', 'lead']) q('.' + k).textContent = L(N[k][0], N[k][1]);
       q('.box b').textContent = L(N.box[0], N.box[1]); q('.box ul').innerHTML = '';
-      for (const [pt, en] of N.list) { const li = document.createElement('li'); li.textContent = L(pt, en); q('.box ul').appendChild(li); } }
+      for (const [pt, en] of N.list) { const li = document.createElement('li'); li.textContent = L(pt, en); q('.box ul').appendChild(li); }
+      if (S.city.luta.twist === 'summit' && S.robotAllies) q('.lead').textContent += ' ' + L(`E ${S.robotAllies === 1 ? 'um robô' : S.robotAllies + ' robôs'} da Web Summit ${S.robotAllies === 1 ? 'mudou' : 'mudaram'} de lado.`, `And ${S.robotAllies === 1 ? 'one Web Summit robot' : S.robotAllies + ' Web Summit robots'} switched sides.`); }
   }
   { const el2 = $('news'), wr = el2.querySelector('.npw'), np = el2.querySelector('.np'), k = Math.min(1.2, (el2.clientWidth - 36) / np.offsetWidth, (el2.clientHeight - (CAM.on && !CAM.land ? 110 : 30)) / np.offsetHeight), up = CAM.on && !CAM.land ? 30 : 0; wr.style.transform = `translate(-50%, calc(-50% - ${up}px)) scale(${k.toFixed(3)})`; }
   const c = $('npc'), g = c.getContext('2d'), p = iso(CX, CY), w = 160, h = 90; // the photo: the middle of the square, as it is
@@ -3404,7 +3746,7 @@ function update(dt) {
     let wx = (kx + ky) / 2, wy = (ky - kx) / 2; const m = Math.hypot(wx, wy) || 1; wx /= m; wy /= m;
     slideMove(p, p.gx + wx, p.gy + wy, 3, dt); p.path = null; p.tx = p.gx; p.ty = p.gy;
   } else if (!moveEnt(p, p.tx, p.ty, 3, dt)) {} else p.moving = false;
-  if (!p.toPaper && !p.toTree) { p.gx = clamp(p.gx, .15, NX - .15); p.gy = clamp(p.gy, .15, NY - .15); } // (off the square: on the way to the paper or the tree)
+  if (!p.toPaper && !p.toTree) { const [wx1, wy1] = S.city.walk || [NX, NY]; p.gx = clamp(p.gx, .15, wx1 - .15); p.gy = clamp(p.gy, .15, wy1 - .15); } // (off the square: on the way to the paper or the tree)
 
   S.chainCd = Math.max(0, S.chainCd - dt); S.liveCd = Math.max(0, S.liveCd - dt); S.live = Math.max(0, S.live - dt); S.asmCd = Math.max(0, S.asmCd - dt);
   if (S.chain) { S.chain.t -= dt; if (S.chain.t <= 0) S.chain = null; }
@@ -3514,8 +3856,9 @@ function update(dt) {
     else if (moveEnt(v, NX + 5, v.gy, 3, dt, true)) { S.van = null; S.raid = false; onRaidEnd(); }
   }
   const spBase = 1.15 * S.city.police * (1 + .05 * wins()) * (S.perks.has('vigias') ? .85 : 1) * (S.bikes ? .5 : 1) * (S.charge ? 1.3 : 1);
-  const shielded = t => S.chain && Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r;
-  const pushOut = o => { const c = S.chain, dx = o.gx - c.gx, dy = o.gy - c.gy, d = Math.hypot(dx, dy) || 1; if (d < c.r + .25) { o.gx = c.gx + dx / d * (c.r + .25); o.gy = c.gy + dy / d * (c.r + .25); return true; } return false; };
+  const shielded = t => (S.chain && Math.hypot(t.gx - S.chain.gx, t.gy - S.chain.gy) < S.chain.r) || robotShield(t); // an allied robot in front of a group is a shield too (Web Summit)
+  const pushOut = o => { const c = S.chain && o.target && Math.hypot(o.target.gx - S.chain.gx, o.target.gy - S.chain.gy) < S.chain.r ? S.chain : o.target ? { gx: o.target.gx, gy: o.target.gy, r: .55 } : null; if (!c) return false; // the cordão, or an allied robot standing in front of the group
+    const dx = o.gx - c.gx, dy = o.gy - c.gy, d = Math.hypot(dx, dy) || 1; if (d < c.r + .25) { o.gx = c.gx + dx / d * (c.r + .25); o.gy = c.gy + dy / d * (c.r + .25); return true; } return false; };
   for (const o of S.police) {
     if (o.kettle) continue; // see updKettle
     if ((!S.riot || S.riotAct) && S.raidT > (S.charge ? 42 : S.light ? 15 : S.swept ? 18 : 30) && o.state !== 'back') o.state = 'back'; // riot police nobody stands up to: they stay until everything is gone
@@ -3534,7 +3877,7 @@ function update(dt) {
     }
     if (o.riot) { const bk = S.city.violent ? 1 : S.city.rough ? .3 : .1; o.hit = false; for (const r of S.residents) if (Math.hypot(r.gx - o.gx, r.gy - o.gy) < .8) { o.hit = true; if (Math.random() < dt * 1.5 * bk) blood(r.gx, r.gy); } if (o.state === 'dismantle' && Math.random() < dt * bk) blood(o.target.gx, o.target.gy); } // blood: Porto, and a tenth as much elsewhere
     if (o.state === 'walk') {
-      const t = o.target; let sp = spBase; if (gd(o, p) < .9) sp *= .35;
+      const t = o.target; let sp = spBase; if (gd(o, p) < .9) sp *= .35; if (S.robots && S.robots.some(r => r.ally && gd(o, r) < .9)) sp *= .5;
       if (gd(o, t) < .4) { o.state = 'dismantle'; o.prog = 0; o.moving = false; }
       else { moveEnt(o, t.gx, t.gy + .3, sp, dt); o.blocked = false;
         if (shielded(t) && pushOut(o)) { o.blocked = true; o.moving = false; o.re += dt; if (o.re > 1.2) { const alt = nearestTent(o, true); if (alt) o.target = alt; o.re = 0; } } }
@@ -3795,7 +4138,7 @@ function updTentMan(dt) {
   if (!S.city.tentMan) return;
   const m = S.tentMan;
   if (!m) {
-    S.tentT = (S.tentT ?? rnd(25, 50)) - dt;
+    S.tentT = (S.tentT ?? (S.city.tentManFirst || rnd(25, 50))) - dt;
     if (S.tentT > 0 || S.kettle || S.raid || S.fasc || S.winning) return;
     S.tentT = rnd(80, 160);
     const p = S.player, st = S.city.tentMan.map(i => streets()[i]).reduce((b, t) => Math.abs((t.axis === 'x' ? p.gy : p.gx) - t.c) < Math.abs((b.axis === 'x' ? p.gy : p.gx) - b.c) ? t : b), dir = Math.random() < .5 ? 1 : -1;
@@ -4091,6 +4434,45 @@ function drawDuck(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.
 function drawPlay(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y), G = '#2f6b4a';
   if (d.bars) { vl(ctx, x - 5, y - 9, y, G); vl(ctx, x + 5, y - 9, y, G); R(x - 5, y - 9, 11, 1, G); R(x - 2, y - 5, 5, 1, '#9aa0a8'); return; }
   vl(ctx, x - 6, y - 14, y, G); vl(ctx, x + 6, y - 14, y, G); R(x - 6, y - 14, 13, 1, G); vl(ctx, x - 2, y - 13, y - 5, '#9aa0a8'); vl(ctx, x + 2, y - 13, y - 5, '#9aa0a8'); R(x - 3, y - 5, 2, 1, '#c2342c'); R(x + 1, y - 5, 2, 1, '#c2342c'); }
+// Parque das Nações: black bollards, lamp posts with a round dish on top, and the Web Summit registration tent
+// the Web Summit's South Entrance (Rui's footage): two towers of red shipping containers, white screens on them, and a
+// purple "South Entrance" banner across, with "Welcome to websummit" signs on the towers
+function drawWSGate(d) {
+  for (const gy of [d.gy - 1.5, d.gy + 1.5]) { const x0 = d.gx - .45, x1 = d.gx + .45, y0 = gy - .45, y1 = gy + .45;
+    box(ctx, x0, y0, x1, y1, 0, 26, '#c23b3b', '#a33030', '#8f2a2a');
+    for (const z of [6, 14]) { const q = iso(x1, gy, z); R(q.x - 2, q.y - 6, 6, 6, '#e9e6ee'); R(q.x - 1, q.y - 5, 4, 1, '#b9b4c6'); } // screens
+    const s2 = iso(x1, gy + .2, 23); R(s2.x - 3, s2.y - 3, 7, 3, '#6b4fd8'); R(s2.x - 2, s2.y - 2, 5, 1, '#ffffff'); }
+  const a = iso(d.gx + .45, d.gy - 1.1, 26), b = iso(d.gx + .45, d.gy + 1.1, 26);
+  ctx.fillStyle = '#6b4fd8'; ctx.beginPath(); ctx.moveTo(a.x, a.y - 1); ctx.lineTo(b.x, b.y - 1); ctx.lineTo(b.x, b.y + 5); ctx.lineTo(a.x, a.y + 5); ctx.closePath(); ctx.fill();
+  const m = iso(d.gx + .45, d.gy, 26); R(m.x - 6, m.y + 1, 12, 1, '#ffffff'); // "South Entrance"
+}
+function drawPillar(d) {
+  drawBox(ctx, { style: d.k === 'grid' ? 'contgrid' : 'contribs', h: d.h, roof: '#a83232' }, d.x0, d.y0, d.x1, d.y1, true, false);
+  if (d.k === 'ribs') { const face = (y0, y1, z0, z1, c) => { const a = iso(d.x1, y0, z0), b = iso(d.x1, y1, z0), e = iso(d.x1, y1, z1), f = iso(d.x1, y0, z1); ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(e.x, e.y); ctx.lineTo(f.x, f.y); ctx.closePath(); ctx.fill(); };
+    face(d.y0 + .05, d.y1 - .05, d.h + 1, d.h + 8, '#6b4fd8'); face(d.y0 + .05, (d.y0 + d.y1) / 2, d.h + 1, d.h + 8, '#d6336c'); const m = iso(d.x1, (d.y0 + d.y1) / 2, d.h + 5); R(m.x - 5, m.y - 1, 10, 1, '#ffffff'); } // Welcome to websummit
+}
+function drawGateBanner() { // "South Entrance", across the middle entrance, between the two inner towers
+  const [, a1] = GATE_PILLARS[1], [b0] = GATE_PILLARS[2], xa = gateX(a1) + .7, xb = gateX(b0) + .7, z0 = 22, z1 = 30;
+  const p = [iso(xa, a1, z0), iso(xb, b0, z0), iso(xb, b0, z1), iso(xa, a1, z1)]; ctx.fillStyle = '#5b3fd0'; ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y); for (const q of p.slice(1)) ctx.lineTo(q.x, q.y); ctx.closePath(); ctx.fill();
+  const m = iso((xa + xb) / 2, (a1 + b0) / 2, 26); R(m.x - 6, m.y - 1, 12, 2, '#ffffff');
+}
+function drawCont(d) {
+  drawBox(ctx, { style: d.k === 'grid' ? 'contgrid' : 'contribs', h: d.h, roof: '#a83232' }, d.x0, d.y0, d.x1, d.y1, false, true);
+  const face = (x0, x1, z0, z1, c) => { const a = iso(x0, d.y1, z0), b = iso(x1, d.y1, z0), e = iso(x1, d.y1, z1), f = iso(x0, d.y1, z1); ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(e.x, e.y); ctx.lineTo(f.x, f.y); ctx.closePath(); ctx.fill(); };
+  if (d.sign) { face(d.x0 + .05, d.x1 - .05, d.h + 1, d.h + 8, '#d6336c'); face((d.x0 + d.x1) / 2, d.x1 - .05, d.h + 1, d.h + 8, '#6b4fd8'); const m = iso((d.x0 + d.x1) / 2, d.y1, d.h + 5); R(m.x - 5, m.y - 1, 10, 1, '#ffffff'); } // Welcome to websummit
+  if (d.banner) { const [a0, a1] = d.banner; face(a0, a1, d.h - 9, d.h - 1, '#5b3fd0'); face(a0, a1, d.h - 9, d.h - 8, '#3b2a9a'); const m = iso((a0 + a1) / 2, d.y1, d.h - 5); R(m.x - 7, m.y - 1, 14, 2, '#ffffff'); } // South Entrance
+}
+function drawCypress(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); ell(ctx, x, y, 5, 'rgba(30,10,70,.22)'); R(x - 1, y - 4, 2, 4, '#4a3420');
+  for (let i = 0; i < 40; i++) { const w = Math.max(1, Math.round(4.5 * Math.sin(Math.PI * Math.min(1, (i + 3) / 44)))); R(x - w, y - 4 - i, w * 2, 1, i % 5 === 0 ? '#1d3a22' : '#26492b'); R(x, y - 4 - i, w, 1, '#1d3a22'); } }
+function drawStaff(d) { const q = iso(d.gx, d.gy); guy(q.x, q.y, { skin: '#e8c3a0', hair: '#f2c230', shirt: '#f2c230', pants: '#2a2d36', moving: false, back: false, flip: !!d.flip }); } // Web Summit staff in a yellow raincoat
+function drawBollard(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); R(x, y - 6, 2, 6, '#26282e'); R(x, y - 6, 1, 6, '#3c3f47'); }
+function drawLampD(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 1, 3, 1, '#4a4c54'); vl(ctx, x, y - 30, y, '#8d9098'); R(x - 4, y - 32, 9, 2, '#d6d8dc'); R(x - 3, y - 30, 7, 1, S.dark > .3 ? '#fff3b0' : '#a9acb2'); }
+function drawWSTent(d) { const x0 = d.gx - 1.3, x1 = d.gx + 1.3, y0 = d.gy - .7, y1 = d.gy + .7;
+  drawBox(ctx, { style: 'wstent', h: 12, roof: '#f4f3f0' }, x0, y0, x1, y1, true, true);
+  const a = iso(x0, y1, 12), b = iso(x1, y1, 12), c = iso(x1, y0, 12), m1 = iso(x0, d.gy, 18), m2 = iso(x1, d.gy, 18); // a gable roof along the tent
+  ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(m2.x, m2.y); ctx.lineTo(m1.x, m1.y); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#e6e5e2'; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.lineTo(m2.x, m2.y); ctx.closePath(); ctx.fill();
+  const dr = iso(d.gx, y1, 0); R(dr.x - 2, dr.y - 7, 5, 7, '#3a3d48'); }
 function drawCabinet(d) { box(ctx, d.gx - .18, d.gy - .14, d.gx + .18, d.gy + .14, 0, 10, '#d4d2cc', '#b9b7b0', '#a5a39d'); }
 function drawGlobe(d) { const q = iso(d.gx, d.gy), x = Math.round(q.x), y = Math.round(q.y); R(x - 1, y - 1, 3, 1, '#2a2a30'); vl(ctx, x, y - 22, y, '#3a3a42'); circ(ctx, x + .5, y - 24, 2.6, S.dark > .3 ? '#fff3b0' : '#f2f2ee'); }
 function drawBinB(d) { box(ctx, d.gx - .1, d.gy - .1, d.gx + .1, d.gy + .1, 0, 6, '#2a2a30', '#1d1d22', '#151519'); }
@@ -4313,6 +4695,7 @@ function draw() {
   if (d > .2) for (const [x, y0, k] of STARS) for (const y of [y0 + SKYDY]) { const on = (Math.floor(S.t * 2 + k) % 4) !== 0; ctx.globalAlpha = d; R(x, y, 1, 1, '#ffffff'); if (on && k > 4) { R(x - 1, y, 3, 1, '#c9f6ff'); R(x, y - 1, 1, 3, '#c9f6ff'); } ctx.globalAlpha = 1; }
   else { ctx.globalAlpha = 1 - d; circ(ctx, 36, 26 + SKYDY, 9, '#fff6c7'); circ(ctx, 34, 24 + SKYDY, 4, '#ffffff'); ctx.globalAlpha = 1; }
   ctx.drawImage(bg, 0, 0);
+  if (S.flood) floodGround(ctx);
 
   if (S.chain) { const c = S.chain, q = iso(c.gx, c.gy); ctx.fillStyle = 'rgba(57,225,255,.18)'; ctx.beginPath(); ctx.ellipse(q.x, q.y, c.r * TW * 1.414, c.r * TH * 1.414, 0, 0, Math.PI * 2); ctx.fill(); }
   if (S.kettle && S.kettle.R && (S.kettle.phase === 'wait' || S.kettle.phase === 'charge')) { // the ground outside the ring goes darker
@@ -4326,16 +4709,20 @@ function draw() {
   const add = (gx, gy, f, a) => dlPush(gx, gy, f, a, false);
   const addP = (gx, gy, f, a) => dlPush(gx, gy, f, a, true); // people: smaller in Porto (see small)
   for (const dd of S.city.deco) {
-    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd), hedge: () => drawHedge(dd), bear: () => drawBear(dd), duck: () => drawDuck(dd), play: () => drawPlay(dd), cabinet: () => drawCabinet(dd), globe: () => drawGlobe(dd), binb: () => drawBinB(dd) }[dd.t];
+    const fn = { umbrella: () => drawUmbrella(dd), lamp: () => drawLamp(dd), tree: () => drawTree(dd), fountain: () => drawFountain(dd.gx, dd.gy, false), chafariz: () => dd.flat ? drawPool(dd) : drawFountain(dd.gx, dd.gy, true), corcel: () => drawCorcel(dd), column: drawColumn, bin: () => drawBin(dd), fonte: () => drawFonte(dd), rail: () => drawRail(dd), kiosk: () => drawKiosk(dd), vent: () => drawVent(dd), bench: () => drawBench(dd), bollard: () => drawBollard(dd), wsgate: () => drawWSGate(dd), cont: () => drawCont(dd), pillar: () => drawPillar(dd), gbanner: () => drawGateBanner(), cypress: () => drawCypress(dd), staff: () => drawStaff(dd), lampd: () => drawLampD(dd), wstent: () => drawWSTent(dd), hedge: () => drawHedge(dd), bear: () => drawBear(dd), duck: () => drawDuck(dd), play: () => drawPlay(dd), cabinet: () => drawCabinet(dd), globe: () => drawGlobe(dd), binb: () => drawBinB(dd) }[dd.t];
     add(dd.gx, dd.gy, S.perks.has('cartazes') && posterSpots(dd) ? () => { fn(); if (dd.t === 'column') drawColumnProtest(); posterSpots(dd).forEach(([a, b, z, k]) => { const q = iso(a, b, z); drawPoster(q.x, q.y, k); }); } : fn);
   }
   drawFloorBanners();
   if (S.stains) { S.stains = S.stains.filter(b => (b.t -= 1 / 60) > 0); for (const b of S.stains) { const q = iso(b.gx, b.gy); ctx.globalAlpha = Math.min(1, b.t / 10); ell(ctx, q.x, q.y, 2.5, '#7a0b12'); R(Math.round(q.x) + 2, Math.round(q.y), 2, 1, '#b3121b'); ctx.globalAlpha = 1; } }
   if (S.wounded) for (const w of S.wounded) addP(w.gx, w.gy, drawWounded, w);
   for (const t of S.tents) add(t.gx, t.gy, drawTent, t);
+  if (S.pods) for (const o of S.pods) if (!o.done) add(o.gx, o.gy, drawPod, o);
   for (const s of S.stations) add(s.gx, s.gy, drawStation, s);
   for (const c of S.crates) add(c.gx, c.gy, drawCrate, c);
   if (S.lutaSigns) for (const g of S.lutaSigns) add(g.gx, g.gy, drawLutaSign, g);
+  if (S.suits) for (const o of S.suits) addP(o.gx, o.gy, drawSuit, o);
+  if (S.robots) for (const r of S.robots) addP(r.gx, r.gy, drawRobot, r);
+  if (S.cls && S.cls.on && !S.cls.done) add(CLASS_AT[0], CLASS_AT[1], drawClass);
   if (S.prPaper) add(S.prPaper.gx, S.prPaper.gy, () => drawPaper(S.prPaper));
   if (xmasShown()) { const xt = xmasAt(); add(xt.gx, xt.gy, () => drawXmasTree(xt)); }
   for (const r of S.residents) addP(r.gx, r.gy, drawResident, r);
@@ -4383,6 +4770,7 @@ function draw() {
     if (S.donkey === 'giant' && S.city.donkey) { const q = iso(CX, CY + .6, 20); glow(q.x, q.y, 20, 'rgba(255,230,160,A)', .25 * d); }
     ctx.globalCompositeOperation = 'source-over';
   }
+  if (S.flood) floodRain(ctx);
 
   for (const q of S.parts) {
     ctx.globalAlpha = Math.min(1, q.life * 2);
@@ -4671,8 +5059,8 @@ function lutaClear() {
   lutaDone.add(cityIdx); try { localStorage.setItem('acampada-luta', JSON.stringify([...lutaDone])); } catch (e) {} dropSave(); const summ = summary(true);
   mode = 'clear'; const c = S.city, u = c.luta;
   show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${esc(c.place)}</span>
-  <p class="help">${esc(L(c.clear, c.clearEn))}</p>${S.lutaSaved != null && u.twist === 'leilao' ? `<p class="stat rough">${S.lutaSaved}/${LEILAO_N} ${L('terrenos', 'plots')} · ${fmt(crowd())} ${L('pessoas', 'people')}${summ}</p>` : summ}
-  <p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(lutaDay(u.date, LANG === 'en'))} · ${esc(u.at || L('hora a anunciar', 'time tba'))} · ${esc(u.where)}</p>
+  <p class="help">${esc(L(c.clear, c.clearEn))}</p>${S.lutaSaved != null && u.twist === 'leilao' ? `<p class="stat rough">${S.lutaSaved}/${LEILAO_N} ${L('terrenos', 'plots')} · ${fmt(crowd())} ${L('pessoas', 'people')}${summ}</p>` : u.twist === 'summit' ? `<p class="stat rough">${S.suitIn} ${L('bilhetes Camp Summit', 'Camp Summit tickets')} · ${S.robotAllies}/4 ${L('robôs aliados', 'robot allies')} · ${fmt(crowd())} ${L('pessoas', 'people')}${summ}</p>` : summ}
+  <p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(lutaDay(u.date, LANG === 'en'))} · ${esc(u.at || L('hora a anunciar', 'time tba'))} · ${esc(u.where)}${u.site ? ' · ' + esc(u.site) : ''}</p>
   <div>${shareBtn()}<button class="btnp" data-a="luta">${L('Lisboa em luta', 'Lisbon in struggle')} →</button></div>`, 'comunicado');
   prepStory();
 }
@@ -4680,7 +5068,7 @@ function introScreen() {
   mode = 'intro'; const c = CITIES[cityIdx];
   if (c.luta) { const u = c.luta;
     show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="p-mid rough">${esc(L(u.title, u.titleEn || u.title))}</p>${TENT}
-    <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(u.where)}</p>
+    <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(u.where)}${u.site ? ' · ' + esc(u.site) : ''}</p>
     <button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button><button class="btnp red" data-a="luta">${L('← Voltar', '← Back')}</button>${IRL_NOTE()}${FOOT}`);
     return; }
   show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
@@ -5283,7 +5671,7 @@ function setTarget(e) {
   const sx = (e.clientX - r.left) / r.width * W, sy = (e.clientY - r.top) / r.height * H + 3;
   let w = toWorld(sx, sy); const T = S.city.terrace;
   if (T) { const u = toWorld(sx, sy + T.h); if (u.gx >= 0 && u.gx < T.w + .2 && u.gy >= 0 && u.gy <= NY) w = u; }
-  let gx = clamp(w.gx, .15, NX - .15), gy = clamp(w.gy, .15, NY - .15);
+  const [wx1, wy1] = S.city.walk || [NX, NY]; let gx = clamp(w.gx, .15, wx1 - .15), gy = clamp(w.gy, .15, wy1 - .15);
   if (blockedAt(gx, gy)) { let b = null, bd = 1e9; for (let yy = 0; yy < NY; yy++) for (let xx = 0; xx < NX; xx++) { if (blockedAt(xx + .5, yy + .5)) continue; const d = Math.hypot(xx + .5 - gx, yy + .5 - gy); if (d < bd) { bd = d; b = [xx + .5, yy + .5]; } } if (b) [gx, gy] = b; }
   S.player.tx = gx; S.player.ty = gy;
 }
@@ -5321,6 +5709,22 @@ function joyEnd(e) { if (e && e.pointerId !== JOY.id) return false; JOY.id = nul
     const d = dx < 0 ? 1 : -1;
     if (mode === 'info') openInfo(infoIdx + d); else if (mode === 'rules' && rulesPage + d >= 0 && rulesPage + d <= 3) rulesGo(d);
   }, { passive: true }); }
+// programming a robot ally (Camp Summit): when one joins, three buttons pop up above it; one tap sets its job, for good.
+// The game runs at a third of its speed meanwhile; after 4 s it goes on recruiting.
+const ROBO_JOB = { recruit: ['recruta quem passa', 'recruits passers-by'], shield: ['protege as tendas', 'shields the tents'], fetch: ['recolhe donativos', 'fetches donations'] };
+function roboPickOpen(r) { S.roboPick = r; S.roboPickT = 0; const el = $('roboPick');
+  el.querySelector('b').textContent = L(`Programa o ${r.name}`, `Program ${r.name}`);
+  for (const b of el.querySelectorAll('button')) b.lastChild.textContent = { recruit: L('Recrutar', 'Recruit'), shield: L('Proteger', 'Protect'), fetch: L('Recolher', 'Fetch') }[b.dataset.m];
+  el.hidden = false; roboPickPlace(); sfx('chain'); }
+function roboPickClose() { if (S) S.roboPick = null; $('roboPick').hidden = true; }
+function roboPickSet(m) { const r = S.roboPick; if (!r) return; r.mode = m; r.hold = 0; r.pause = 0; roboPickClose(); sfx('viral');
+  const q = iso(r.gx, r.gy, 30); floatXY(q.x, q.y, `${r.name} ${L(...ROBO_JOB[m])}`, '#39e1ff'); }
+function roboPickPlace() { const r = S.roboPick, el = $('roboPick'); if (!r) return; const cr = cv.getBoundingClientRect(), pr = cv.parentElement.getBoundingClientRect(), q = iso(r.gx, r.gy, 30);
+  const x = cr.left - pr.left + q.x / W * cr.width, y = cr.top - pr.top + q.y / H * cr.height, w = el.offsetWidth / 2 + 6;
+  el.style.left = Math.max(w, Math.min(pr.width - w, x)) + 'px'; el.style.top = Math.max(el.offsetHeight + 6, y) + 'px'; }
+function roboPickTick(dtReal) { if (!S || !S.roboPick) return; S.roboPickT += dtReal; roboPickPlace(); $('roboPick').querySelector('s').style.transform = `scaleX(${Math.max(0, 1 - S.roboPickT / 4)})`;
+  if (S.roboPickT >= 4 || mode !== 'play') { if (mode === 'play') roboPickSet(S.roboPick.mode || 'recruit'); else roboPickClose(); } }
+$('roboPick').addEventListener('pointerdown', e => { e.stopPropagation(); const b = e.target.closest('button'); if (b && mode === 'play') roboPickSet(b.dataset.m); });
 $('tutSkip').addEventListener('click', e => { e.stopPropagation(); if (S && S.tut) tutEnd(); });
 const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
 addEventListener('keydown', e => {
@@ -5415,7 +5819,8 @@ function updCam(dt) {
   else if (CAM.look) { CAM.look = null; const c = iso(S.player.gx, S.player.gy); tx = c.x; ty = c.y - 12; }
   else {
     if (px < CAM.x - mx) tx = px + mx; else if (px > CAM.x + mx) tx = px - mx;
-    if (py < CAM.y - my) ty = py + my; else if (py > CAM.y + my) ty = py - my;
+    const myB = vh * .1; // going down it follows sooner, so the player stays above the task bar at the bottom
+    if (py < CAM.y - my) ty = py + my; else if (py > CAM.y + myB) ty = py - myB;
   }
   CAM.x += (tx - CAM.x) * Math.min(1, dt * 3); CAM.y += (ty - CAM.y) * Math.min(1, dt * 3);
   if (vw < W) CAM.x = clamp(CAM.x, vw / 2, W - vw / 2); if (vh < H) CAM.y = clamp(CAM.y, vh / 2, H - vh / 2);
@@ -5564,7 +5969,7 @@ if (document.fullscreenEnabled && pcMQ.matches) {
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
-  if (mode === 'play') { if (S.aimHold > 0) { S.aimHold -= dt; S.t += dt; } else update(aimOpen() ? dt * .4 : dt); } else S.t += dt; // the aim slows the game down (and stops it, the first time)
+  if (mode === 'play') { if (S.aimHold > 0) { S.aimHold -= dt; S.t += dt; } else update(aimOpen() ? dt * .4 : S.roboPick ? dt * .3 : dt); roboPickTick(dt); } else S.t += dt; // the aim slows the game down (and stops it, the first time)
   if (CAL) calTick(dt);
   songTick(); choirTick(); saxTick(dt);
   updCam(dt); draw(); tellySync(dt); tvSync(); newsSync();
