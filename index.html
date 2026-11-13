@@ -1117,20 +1117,35 @@ function floodRain(g) {
 // a little morale, and every 25 s sprouts another next to it (up to 7): it spreads. Only a cordão takes one (inside its
 // ring for 3 s), and it becomes one of the camp's tents. While any stands, the police wait. 25 s comes from a
 // simulation: a player who also has other things to do clears them ~100% of the time; at 12-18 s they get out of hand.
-const POD_AT = 19 + 10 / 60, POD_SPREAD = 25, POD_MAX = 7, POD_DRAIN = .2, POD_FILL = 3;
+const POD_HOLD = 30, POD_AT = 19 + 10 / 60, POD_SPREAD = 25, POD_MAX = 7, POD_DRAIN = .2, POD_FILL = 3;
 const podFree = (x, y) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (xx < 1 || yy < 1 || xx >= NX - 1 || yy >= NY - 1 || S.occ[yy * NX + xx]) return false; }
   return !S.pods.some(o => !o.done && Math.hypot(o.gx - x - .5, o.gy - y - .5) < 1.9); };
+// how to take a capsule, in the banner at the top while any stands (with the Cordão button pulsing)
+function podHint(live) {
+  const on = live.length && mode === 'play' && !S.tut && !S.raid;
+  if (!on) { if (S.podHinted) { S.podHinted = false; tutShow(null); } return; }
+  const pc = pcMQ.matches, ch = S.chain && live.some(o => Math.hypot(S.chain.gx - o.gx, S.chain.gy - o.gy) < S.chain.r + .4);
+  const txt = ch ? L('Fica no Cordão até o anel verde fechar: a cápsula passa a tenda', 'Hold the Cordão until the green ring closes: the capsule becomes a tent')
+    : people() < 6 ? L('Cápsulas: junta 6 pessoas, depois põe-te ao lado de uma e faz um Cordão', 'Capsules: get 6 people, then stand next to one and make a Cordão')
+    : pc ? L('Cápsulas: põe-te ao lado de uma e carrega em Cordão (Z)', 'Capsules: stand next to one and press Cordão (Z)') : L('Cápsulas: põe-te ao lado de uma e carrega em Cordão', 'Capsules: stand next to one and press Cordão');
+  S.podHinted = true; tutShow(txt, ch ? null : ['btnChain']);
+}
 function podAdd(x, y) { const o = { kind: 'pod', tx: x, ty: y, gx: x + .5, gy: y + .5, prog: 0, pop: 0, spreadT: POD_SPREAD + rnd(-1, 2), done: false }; S.occ[y * NX + x] = o; S.pods.push(o); return o; }
 function podsUpd(dt) {
   if (!S.pods) { if (S.clock < POD_AT) return; S.pods = []; S.podGot = 0; S.podSaid = S.t;
     for (const [gx, gy] of [[8, 4], [12, 7]]) { let best = null, bd = 1e9; for (let y = 1; y < NY - 1; y++) for (let x = 1; x < NX - 1; x++) { if (!podFree(x, y)) continue; const d = Math.hypot(x - gx, y - gy); if (d < bd) { bd = d; best = [x, y]; } } if (best) podAdd(...best); }
     if (!S.pods.length) { S.pods = null; S.podsGone = true; return; }
     const o = S.pods[0], q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Uma startup montou cápsulas de co-living na praça', 'A start-up set up co-living capsules on the square'), '#ff5fc8', true); sfx('leave');
-    setTimeout(() => { if (!S.pods) return; const o = S.pods.find(o => !o.done); if (o) { const q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Cápsula · 1200 €/mês · sem janela', 'Capsule · €1200/month · no window'), '#ff9ad5'); } }, 2300);
-    setTimeout(() => { if (!S.pods || !S.pods.some(o => !o.done)) return; const q = iso(S.player.gx, S.player.gy, 30); floatXY(q.x, q.y, L('Tiram moral e multiplicam-se. Só um Cordão as ocupa!', 'They drain morale and multiply. Only a Cordão takes them!'), '#ffd36b', true); }, 4600);
-    return; }
-  const live = S.pods.filter(o => !o.done); if (!live.length) return;
-  S.nextRaid = Math.max(S.nextRaid, S.clock + .05); S.nextPatrol = Math.max(S.nextPatrol, S.clock + .05); // the police wait
+    S.podT0 = S.t; S.podMsg = 0; return; }
+  const live = S.pods.filter(o => !o.done);
+  // the two follow-up messages, in game time (a pause holds them, a restart drops them)
+  if (S.podMsg === 0 && S.t - S.podT0 > 2.3) { S.podMsg = 1; const o = live[0]; if (o) { const q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Cápsula · 1200 €/mês · 2 m²', 'Capsule · €1200/month · 2 m²'), '#ff9ad5'); } }
+  if (S.podMsg === 1 && S.t - S.podT0 > 4.6) { S.podMsg = 2; if (live.length) { const q = iso(S.player.gx, S.player.gy, 30); floatXY(q.x, q.y, L('Tiram moral e multiplicam-se. Só um Cordão as ocupa!', 'They drain morale and multiply. Only a Cordão takes them!'), '#ffd36b', true); } }
+  podHint(live);
+  if (!live.length) return;
+  // the police wait while the capsules go up, but not for ever: 30 s at most (otherwise one capsule left standing on
+  // purpose would keep every raid away)
+  if (S.t - S.podT0 < POD_HOLD) { S.nextRaid = Math.max(S.nextRaid, S.clock + .05); S.nextPatrol = Math.max(S.nextPatrol, S.clock + .05); }
   S.morale = Math.max(0, S.morale - POD_DRAIN * live.length * dt);
   if (S.t - S.podSaid > 8) { S.podSaid = S.t; const o = live[0], q = iso(o.gx, o.gy, 30); floatXY(q.x, q.y, L('Mais um quarto a 1200 €: −moral', 'Another €1200 room: −morale'), '#ff8aa8'); }
   const ch = S.chain;
@@ -5066,6 +5081,7 @@ function secretRows() {
   return r.join('');
 }
 function lutaClear() {
+  if (S && S.podHinted) { S.podHinted = false; tutShow(null); } // (the capsules' banner)
   lutaDone.add(cityIdx); try { localStorage.setItem('acampada-luta', JSON.stringify([...lutaDone])); } catch (e) {} dropSave(); const summ = summary(true);
   mode = 'clear'; const c = S.city, u = c.luta;
   show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${esc(c.place)}</span>
@@ -5534,6 +5550,7 @@ function finishLevel() {
   prepStory();
 }
 function gameOver() {
+  if (S && S.podHinted) { S.podHinted = false; tutShow(null); } // (the capsules' banner)
   sfx('lose'); mode = 'over'; dropSave(); const summ = summary(false);
   show(`<span class="box-red rough">${L('Comunicado<br>de imprensa', 'Press<br>release')}</span><br><span class="box-white rough">${L('Sobre a<br>repressão policial', 'On police<br>repression')}</span>
   <p class="help">${L(`Ao amanhecer, enquanto a maioria das pessoas dormia, a polícia levou as tendas de ${S.city.place}. ${S.detained} pessoas detidas.`, `At dawn, while most people were asleep, the police took the tents from ${S.city.place}. ${S.detained} people arrested.`)}</p>
