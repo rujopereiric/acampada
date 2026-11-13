@@ -539,5 +539,21 @@
   "title": "Assembleia popular pela habitação",
   "where": "Largo do Termal · 17h cantina · 18h assembleia",
   "horas": 4
+ },
+ {
+  "date": "2026-11-20",
+  "at": "19:00",
+  "city": "Porto",
+  "title": "Acampada",
+  "where": "Praça D. João I · 19h coro e assembleia popular · 20h cantina",
+  "horas": 3
+ },
+ {
+  "date": "2026-11-14",
+  "at": "10:30",
+  "city": "Sines",
+  "title": "Concentração Casa para Viver",
+  "where": "Jardim das Descobertas",
+  "horas": 3
  }
 ]
