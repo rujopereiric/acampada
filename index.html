@@ -5023,7 +5023,7 @@ function titleScreen() {
   <p class="help tdesc">${L('Monta tendas, junta apoio e segura a praça.<br><b>Até o Governo ceder!</b>', 'Pitch tents, gather support and hold the square.<br><b>Until the Government gives in!</b>')}</p>
   <div id="rallyBox">${titleRally()}</div>
   ${(() => { const d = lastSave(); return d ? `<button class="btnp red cont" data-a="loadlast">${L('Continuar', 'Carry on')}: ${CITIES[d.city].name} · ${L('dia', 'day')} ${d.day} →</button>` : ''; })()}
-  <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>${lutaButton()}
+  <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>
   <div id="pracaSlot">${pracaButton()}</div>
   <div class="minis two"><button class="btnp mini" data-a="rules">${L('Como jogar?', 'How to play?')}</button><button class="btnp mini" data-a="info">${L('Acampada – Informações', 'Camp – Information')}</button></div>${instButton()}${FOOT}`);
 }
@@ -5033,15 +5033,12 @@ function chapterScreen() {
   show(`<h2 class="p-red rough">${L('ESCOLHE', 'CHOOSE')}</h2><p class="p-big rough">${L('a tua praça', 'your square')}</p><p class="help">${L('Joga as praças pela ordem que quiseres. Segura as cinco para ganhar.', 'Play the squares in any order. Hold all five to win.')}</p><div class="chaps">${rows}</div>
   ${extrasRow()}${optsRow(false, `<button class="opt back" data-a="title">${L('← Voltar', '← Back')}</button>`)}${cleared.size ? `<button class="btnp" data-a="reset">${L('Recomeçar tudo', 'Start over')}</button>` : ''}${CITIES.some(c => realLine(c.name)) ? IRL_NOTE() : ''}`);
 }
-/* the specials (Caldas, Lisboa em luta, Natal) as one row of small tiles under the chapters, so the list doesn't grow a screen */
+/* the extra chapters (Lisboa em luta, and the secret ones once found: Caldas, Natal) behind one button under the chapters */
 function extrasRow() {
-  const t = [], cs = calSaved();
-  const lo = lutaIdx().filter(lutaOpen);
-  if (lo.length) { const last = CITIES[lo[lo.length - 1]], today = last.luta.date === lutaToday();
-    t.push(`<button class="xt red" data-a="luta"><b>📣 ${L('Lisboa em luta', 'Lisbon in struggle')}</b><small>${today ? `${L('hoje', 'today')}: ${esc(last.place)}` : L('as manifs', 'the protests')} →</small></button>`); }
-  if (cs.open) t.push(`<button class="xt" data-a="calmenu"><b>🔓 Caldas</b><small>${'★'.repeat(cs.best)}${'☆'.repeat(3 - cs.best)}</small></button>`);
-  if (natalSaved()) t.push(`<button class="xt" data-a="natalmenu"><b>🎄 ${L('Natal', 'Christmas')}</b><small>${L('especial', 'special')}</small></button>`);
-  return t.length ? `<div class="xtras n${t.length}">${t.join('')}</div>` : '';
+  const lo = lutaIdx().filter(lutaOpen), cs = calSaved(), nat = natalSaved();
+  if (!lo.length && !cs.open && !nat) return '';
+  const last = lo.length ? CITIES[lo[lo.length - 1]] : null, today = last && last.luta.date === lutaToday();
+  return `<div class="xtras n1"><button class="xt red" data-a="luta"><b>📣 ${L('Lisboa em luta · Capítulos extra', 'Lisbon in struggle · Extra chapters')}</b><small>${today ? `${L('hoje', 'today')}: ${esc(last.place)} ` : ''}→</small></button></div>`;
 }
 function lutaButton() {
   const open = lutaIdx().filter(lutaOpen); if (!open.length) return '';
@@ -5052,8 +5049,15 @@ function lutaScreen() {
   mode = 'chapters';
   const rows = lutaIdx().map(i => { const c = CITIES[i], u = c.luta, open = lutaOpen(i), when = `${lutaDay(u.date, LANG === 'en')} · ${u.at || L('hora a anunciar', 'time tba')}`;
     return `<button class="chap${lutaDone.has(i) ? ' done' : ''}"${open ? ` data-city="${i}"` : ' disabled'}><span class="k">${open ? (u.date === lutaToday() ? L('HOJE', 'TODAY') : '✓') : '🔒'}</span><span><span class="n">${esc(c.place)}</span><span class="pl">${esc(when)} · ${esc(L(u.title, u.titleEn || u.title))}${u.cancelled ? ' · ' + L('cancelado (mau tempo)', 'cancelled (bad weather)') : ''}</span></span></button>`; }).join('');
-  show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="help">${L('A Acampada de Lisboa saiu do Rossio por uns dias e leva a luta à cidade. Uma praça nova em cada ação, no dia em que acontece.', 'Acampada Lisboa left the Rossio for a few days and takes the fight across the city. A new square for each action, on the day it happens.')}</p><div class="chaps">${rows}</div>
-  <button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${FOOT}`);
+  show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="help">${L('A Acampada de Lisboa saiu do Rossio por uns dias e leva a luta à cidade. Uma praça nova em cada ação, no dia em que acontece.', 'Acampada Lisboa left the Rossio for a few days and takes the fight across the city. A new square for each action, on the day it happens.')}</p><div class="chaps">${rows}${secretRows()}</div>
+  <button class="btnp red" data-a="chapters">${L('← Voltar', '← Back')}</button>${FOOT}`);
+}
+/* the secret chapters, in the extras only once they've been found in the game */
+function secretRows() {
+  const cs = calSaved(), r = [];
+  if (cs.open) r.push(`<button class="chap${cs.best ? ' done' : ''}" data-a="calmenu"><span class="k">🔓</span><span><span class="n">Caldas da Rainha</span><span class="pl">${L('nível secreto', 'secret level')} · ${'★'.repeat(cs.best)}${'☆'.repeat(3 - cs.best)}</span></span></button>`);
+  if (natalSaved()) r.push(`<button class="chap" data-a="natalmenu"><span class="k">🎄</span><span><span class="n">${L('Natal na Praça', 'Christmas in the square')}</span><span class="pl">${L('especial de Natal · Rossio e Porto', 'Christmas special · Rossio and Porto')}</span></span></button>`);
+  return r.join('');
 }
 function lutaClear() {
   lutaDone.add(cityIdx); try { localStorage.setItem('acampada-luta', JSON.stringify([...lutaDone])); } catch (e) {} dropSave(); const summ = summary(true);
@@ -6034,7 +6038,7 @@ function calOpen(from) { // from: 'game' (the paper in Lisboa) or 'menu' (the sq
 }
 function calClose() {
   $('cal').hidden = true; const from = CAL && CAL.from; CAL = null;
-  if (from === 'game' && S) { mode = 'play'; ov.hidden = true; } else chapterScreen();
+  if (from === 'game' && S) { mode = 'play'; ov.hidden = true; } else lutaScreen(); // (from the extra chapters, back to them)
 }
 function calTap() {
   const c = CAL; if (!c) return;
