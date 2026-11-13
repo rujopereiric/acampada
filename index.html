@@ -374,6 +374,20 @@ canvas{ display:block; width:100%; height:auto; aspect-ratio:256/240; image-rend
 .tcorner{ display:flex; gap:8px; }
 .ibtn.sm{ width:40px; height:40px; font-size:20px; } .ibtn.sm svg{ width:20px; height:20px; }
 .minis.two{ display:grid; grid-template-columns:auto minmax(0, 1fr); gap:8px; width:min(100%, 340px); margin:12px auto 0; }
+.minis.two .btnp.sug{ grid-column:1 / -1; }
+.sugf{ max-width:420px; margin:12px auto 0; text-align:left; }
+.sugf label{ display:block; font:800 12px/1.1 Jost, Futura, sans-serif; text-transform:uppercase; letter-spacing:.6px; color:#f4f1ea; margin:12px 0 5px; }
+.sugf label small{ text-transform:none; letter-spacing:0; font-weight:600; color:var(--muted); }
+.sugf textarea, .sugf input{ display:block; width:100%; box-sizing:border-box; font:500 16px/1.35 "Helvetica Neue", Arial, sans-serif; background:#f4f1ea; color:#0b0a0a; border:2px solid #f4f1ea; border-radius:0; padding:8px 9px; margin:0; }
+.sugf textarea{ min-height:120px; resize:vertical; }
+.sugf textarea:focus, .sugf input:focus{ outline:3px solid #b6ff3b; outline-offset:1px; }
+.sugt{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); }
+.sugt button{ font:800 14px/1 Jost, Futura, sans-serif; text-transform:uppercase; background:transparent; color:#f4f1ea; border:2px solid #f4f1ea; padding:10px 4px 8px; cursor:pointer; }
+.sugt button + button{ border-left:0; } .sugt button.on{ background:#f4f1ea; color:#0b0a0a; }
+.sugc{ text-align:right; font:600 12px/1 "Helvetica Neue", Arial, sans-serif; color:var(--muted); margin-top:4px; }
+.sugnote{ font:500 12.5px/1.45 "Helvetica Neue", Arial, sans-serif; color:var(--muted); margin:12px 0 0; }
+.sugerr{ font:700 14px/1.35 "Helvetica Neue", Arial, sans-serif; color:#ff8aa8; margin:10px 0 0; } .sugerr:empty{ display:none; }
+.hp{ position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden; }
 .minis.two .btnp.mini{ width:100%; font-size:clamp(10px, 3.05vw, 12.5px); letter-spacing:.2px; white-space:nowrap; padding:11px 6px 9px; min-width:0; }
 
 .ibtn{ width:58px; height:58px; display:grid; place-items:center; padding:0; border:0; cursor:pointer; text-decoration:none; box-sizing:border-box; background:transparent; color:#f4f1ea; font-family:Jost, sans-serif; font-weight:800; font-size:30px; line-height:1; box-shadow:inset 0 0 0 2px rgba(244,241,234,.7); }
@@ -5035,6 +5049,56 @@ async function shareGame(btn) {
   if (job.blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(job.blob); a.download = 'acampada-pixel.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
 }
+/* ---------- the suggestion box (title screen): an idea, a bug, anything. Sent to the square's server (servidor:
+   /sugestoes) and read by the organisers on /gestao. The contact is optional and only for answering; the language,
+   the screen size and the browser go with it, to make sense of bugs. A field nobody sees and the time taken to write
+   are there to catch scripts. */
+let SUGD = { tipo: 'ideia', texto: '', nome: '', contacto: '' };
+function sugScreen() {
+  mode = 'sug'; SUGD.t0 = Date.now();
+  const tb = (k, pt, en) => `<button type="button" data-sugt="${k}" class="${SUGD.tipo === k ? 'on' : ''}" aria-pressed="${SUGD.tipo === k}">${L(pt, en)}</button>`;
+  show(`<h2 class="p-red rough">${L('SUGESTÕES', 'SUGGESTIONS')}</h2><p class="p-mid rough">${L('e erros', 'and bugs')}</p>
+  <p class="help">${L('Uma ideia para o jogo, um erro que encontraste, ou outra coisa? Escreve aqui: lemos tudo.', 'An idea for the game, a bug you found, or something else? Write it here: we read everything.')}</p>
+  <div class="sugf">
+    <div class="sugt" role="group" aria-label="${L('Tipo', 'Type')}">${tb('ideia', 'Ideia', 'Idea')}${tb('erro', 'Erro', 'Bug')}${tb('outro', 'Outro', 'Other')}</div>
+    <label for="sugTxt">${L('A tua mensagem', 'Your message')}</label>
+    <textarea id="sugTxt" maxlength="600" rows="5" placeholder="${L('Ex.: no Porto, a tenda ficou presa atrás da grua…', 'E.g.: in Porto, the tent got stuck behind the crane…')}"></textarea>
+    <div class="sugc" id="sugCnt">0 / 600</div>
+    <label for="sugNome">${L('Nome', 'Name')} <small>${L('(opcional)', '(optional)')}</small></label>
+    <input id="sugNome" maxlength="40" autocomplete="nickname">
+    <label for="sugCont">${L('Contacto', 'Contact')} <small>${L('(opcional) e-mail ou @instagram, se quiseres resposta', '(optional) e-mail or @instagram, if you want a reply')}</small></label>
+    <input id="sugCont" maxlength="80" autocomplete="email" autocapitalize="off" spellcheck="false">
+    <div class="hp" aria-hidden="true"><label for="sugSite">Site</label><input id="sugSite" tabindex="-1" autocomplete="off"></div>
+    <p class="sugnote">${L('O contacto só serve para te respondermos sobre esta mensagem: não é partilhado nem usado para mais nada. Junto vão a língua, o tamanho do ecrã e o navegador, para percebermos os erros. Não guardamos o teu endereço IP.', 'The contact is only used to reply about this message: it isn’t shared or used for anything else. The language, screen size and browser go with it, to help us understand bugs. We don’t keep your IP address.')}</p>
+    <p class="sugerr" id="sugErr" role="alert"></p>
+  </div>
+  <button class="btnp" data-a="sugsend">${L('Enviar', 'Send')} →</button><button class="btnp red" data-a="title">${L('← Voltar', '← Back')}</button>${FOOT}`);
+  const tx = $('sugTxt'), cnt = () => { $('sugCnt').textContent = tx.value.length + ' / 600'; };
+  tx.value = SUGD.texto; $('sugNome').value = SUGD.nome; $('sugCont').value = SUGD.contacto; cnt();
+  tx.addEventListener('input', () => { SUGD.texto = tx.value; cnt(); });
+  $('sugNome').addEventListener('input', e => { SUGD.nome = e.target.value; });
+  $('sugCont').addEventListener('input', e => { SUGD.contacto = e.target.value; });
+  if (pcMQ.matches) tx.focus();
+}
+async function sugSend(b) {
+  const err = t => { $('sugErr').textContent = t; }, texto = $('sugTxt').value.trim();
+  if (texto.length < 5) { err(L('Escreve um pouco mais (pelo menos 5 letras).', 'Write a little more (at least 5 characters).')); $('sugTxt').focus(); return; }
+  err(''); b.disabled = true; const label = b.textContent; b.textContent = L('A enviar…', 'Sending…');
+  const body = { tipo: SUGD.tipo, texto, nome: $('sugNome').value.trim(), contacto: $('sugCont').value.trim(), site: $('sugSite').value, ms: Date.now() - (SUGD.t0 || Date.now()),
+    pagina: 'jogo', lingua: LANG, ecra: innerWidth + 'x' + innerHeight };
+  let r = null; try { r = await fetch(PRACA_SRV + '/sugestoes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); } catch (e) {}
+  let ok = false; if (r && r.ok) { try { ok = (await r.json()).ok === true; } catch (e) {} } // (a server without the box answers 200 with no "ok")
+  if (mode !== 'sug') return; // left the screen meanwhile
+  if (ok) { SUGD = { tipo: 'ideia', texto: '', nome: '', contacto: '' }; mode = 'sugok';
+    show(`<h2 class="p-red rough">${L('OBRIGADO!', 'THANK YOU!')}</h2><p class="p-mid rough">${L('Recebemos a tua mensagem', 'We got your message')}</p>
+    <p class="help">${body.contacto ? L('Se for preciso, respondemos-te para o contacto que deixaste.', 'If needed, we’ll reply to the contact you left.') : L('Não deixaste contacto, por isso não te podemos responder: mas vamos ler.', 'You left no contact, so we can’t reply: but we will read it.')}</p>
+    <button class="btnp red" data-a="title">${L('← Voltar ao início', '← Back to the start')}</button>${FOOT}`); return; }
+  b.disabled = false; b.textContent = label;
+  err(!r || r.ok ? L('Sem ligação ao servidor. Tenta outra vez daqui a pouco.', 'No connection to the server. Try again in a moment.')
+    : r.status === 429 ? L('Já enviaste várias mensagens na última hora. Tenta mais tarde.', 'You’ve sent several messages in the last hour. Try again later.')
+    : r.status === 503 ? L('A caixa de sugestões está cheia por hoje. Tenta amanhã.', 'The suggestion box is full for today. Try tomorrow.')
+    : L('Não foi possível enviar. Tenta outra vez.', 'It couldn’t be sent. Try again.'));
+}
 function titleScreen() {
   mode = 'title';
   prepInvite();
@@ -5046,7 +5110,7 @@ function titleScreen() {
   ${(() => { const d = lastSave(); return d ? `<button class="btnp red cont" data-a="loadlast">${L('Continuar', 'Carry on')}: ${CITIES[d.city].name} · ${L('dia', 'day')} ${d.day} →</button>` : ''; })()}
   <button class="btnp play" data-a="chapters">${L('Joga →', 'Play →')}</button>
   <div id="pracaSlot">${pracaButton()}</div>
-  <div class="minis two"><button class="btnp mini" data-a="rules">${L('Como jogar?', 'How to play?')}</button><button class="btnp mini" data-a="info">${L('Acampada – Informações', 'Camp – Information')}</button></div>${instButton()}${FOOT}`);
+  <div class="minis two"><button class="btnp mini" data-a="rules">${L('Como jogar?', 'How to play?')}</button><button class="btnp mini" data-a="info">${L('Acampada – Informações', 'Camp – Information')}</button><button class="btnp mini sug" data-a="sug">💬 ${L('Sugestões e erros', 'Suggestions and bugs')}</button></div>${instButton()}${FOOT}`);
 }
 function chapterScreen() {
   mode = 'chapters';
@@ -5602,6 +5666,9 @@ function audioOn() { if (!actx) { try { actx = new (window.AudioContext || windo
 function begin() { ov.hidden = true; mode = 'play'; { const r = realLine(S.city.name); if (r) floatXY(0, 0, r, '#ff8aa8'); } if (CAM.upright) showRotHint(); float(S.player.gx, S.player.gy, pcMQ.matches ? 'Setas ou WASD para andar' : joyOn() ? L('Arrasta à esquerda para andar', 'Drag on the left to walk') : 'Toca para andar', '#ffffff', 26); }
 ov.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return; audioOn();
+  if (b.dataset.sugt) { SUGD.tipo = b.dataset.sugt; for (const x of ov.querySelectorAll('[data-sugt]')) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); } return; }
+  if (b.dataset.a === 'sug') { sugScreen(); return; }
+  if (b.dataset.a === 'sugsend') { sugSend(b); return; }
   if (b.dataset.build) { build(b.dataset.build); ov.hidden = true; mode = 'play'; return; }
   if (b.dataset.infil) { S.asmCd = 75; ov.hidden = true; mode = 'play'; infCaught('assembleia'); return; }
   if (b.dataset.perk) { const id = b.dataset.perk; S.perks.add(id); S.asmCd = 75; S.asmPool = null;
@@ -5757,6 +5824,7 @@ $('roboPick').addEventListener('pointerdown', e => { e.stopPropagation(); const 
 $('tutSkip').addEventListener('click', e => { e.stopPropagation(); if (S && S.tut) tutEnd(); });
 const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
 addEventListener('keydown', e => {
+  if (e.target && e.target.closest && e.target.closest('input, textarea, select')) return; // typing (the suggestion box): the keys are for the text
   if (!ov.hidden && mode !== 'info' && mode !== 'play') { // every screen with buttons: arrows or WASD to choose, Space or Enter to press, Esc to go back
     const k = e.key.toLowerCase(), dir = ['arrowdown', 's', 'arrowright', 'd'].includes(k) ? 1 : ['arrowup', 'w', 'arrowleft', 'a'].includes(k) ? -1 : 0;
     if (k === 'escape' && mode === 'quit') { quitNo(); e.preventDefault(); return; }
@@ -5952,6 +6020,7 @@ function splitOv(c) {
 function fitOv() {
   const c = ov.querySelector('.wrapc'); if (!c) return;
   c.style.transform = ''; c.style.zoom = '';
+  if (mode === 'sug') return; // the suggestion box scrolls instead: shrunk, its fields would be too small to write in
   if (!ov.hidden) {
     const land = isLand(), room = () => ov.clientHeight - parseFloat(getComputedStyle(ov).paddingTop) - parseFloat(getComputedStyle(ov).paddingBottom);
     if (!land) unsplitOv(c);

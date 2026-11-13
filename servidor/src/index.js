@@ -38,7 +38,11 @@ const STRIKES = 3, STRIKE_WIN = 10 * 60e3, CASTIGO_MS = 10 * 60e3;
 // either: the organisers must always get in, even from a punished network, to pardon it (it has its own lock, 10
 // wrong pass-phrases in 10 minutes, and Cloudflare Access in front). A punishment at the door only stops new
 // connections: whoever is already in the square stays (the square itself puts out those who misbehave inside).
-const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes']);
+const HTTP_MAX = 120, HTTP_WIN = 10e3, DOOR = new Set(['/ws', '/recordes', '/sugestoes']);
+// the suggestion box (index.html, the title screen): what one suggestion may hold, how many one address may send in an
+// hour, how many in a day from everyone (a flood from many addresses can't fill the storage), and how many are kept
+const SUG_BODY = 4096, SUG_TEXT = 600, SUG_NAME = 40, SUG_CONTACT = 80, SUG_PER_HOUR = 3, SUG_PER_DAY = 300, SUG_KEEP = 1000;
+const SUG_TIPOS = ['ideia', 'erro', 'outro'];
 // actions that change nothing for the others (or only answer the one who asked): not counted in LOUD_MAX
 const QUIET = new Set(['pos', 'emote', 'bike', 'quem', 'galeria', 'galeria1', 'hb', 'chess-invite', 'chess-answer', 'chess-move', 'chess-end', 'chess-act', 'chess-who']);
 // Mini Xadrez (multiplayer.html): a challenge waits a minute for an answer; a game with no move for 5 minutes ends;
@@ -172,6 +176,13 @@ export default {
       const r = await stub.fetch(req);
       return (await fromSquare(r)) || new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
     }
+    if (url.pathname === '/sugestoes') { // the suggestion box: only sent, from the game's own pages; read only on /gestao
+      if (req.method !== 'POST') return new Response('método', { status: 405, headers: h });
+      if (!h['Access-Control-Allow-Origin']) return new Response('origem', { status: 403 });
+      if (+(req.headers.get('Content-Length') || 0) > SUG_BODY) return new Response('grande', { status: 413, headers: h });
+      const r = await stub.fetch(req);
+      return (await fromSquare(r)) || new Response(r.body, { status: r.status, headers: { ...h, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+    }
     if (url.pathname === '/estado' || url.pathname === '/mural') {
       // one copy for everyone for a few seconds, kept by Cloudflare near each player: a crowd (or a script) asking
       // over and over doesn't reach the square. The key is the path alone, so adding ?anything doesn't get past it.
@@ -250,6 +261,10 @@ export class Praca {
     this.wallPend = new Map(); this.wallFlushAt = 0; // strokes waiting to be written: the wall is written every few seconds, not pixel by pixel
     this.wall = new Array(PN).fill('-'); for (const r of this.sql.exec('SELECT i, c FROM parede').toArray()) if (r.i >= 0 && r.i < PN) this.wall[r.i] = r.c.toString(16);
     this.recBy = new Map(); // address key -> records sent in the last hour
+    // the suggestion box. Everything goes in and out through placeholders (?), never pasted into the SQL: nothing anyone
+    // writes can change a query. The text is kept as written and only ever shown as text (gestao.js: textContent)
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS sugestoes (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, tipo TEXT, texto TEXT, nome TEXT, contacto TEXT, pagina TEXT, lingua TEXT, ecra TEXT, nav TEXT, lida INTEGER DEFAULT 0)`);
+    this.sugBy = new Map(); // address key -> suggestions sent in the last hour (in memory only, like the other limits)
     for (const col of ["fmt TEXT DEFAULT 'm'", 'cor INTEGER DEFAULT 0', "px TEXT DEFAULT ''"]) { try { this.sql.exec(`ALTER TABLE cartazes ADD COLUMN ${col}`); } catch (e) {} } // posters from before sizes and colours
     this.clima = null; this.nextClima = Date.now() + (20 + Math.random() * 30) * 60e3; // the weather: a rain of bananas now and then
     this.pers = new Personagens(this, W, H); this.jogos = new Jogos(this, W, H); this.diretos = []; this.dirId = 0; this.clean = clean;
@@ -349,6 +364,7 @@ export class Praca {
     if (url.pathname === '/gestao/api') return this.admin(req);
     if (url.pathname === '/castigo') { this.punish(await addrKey(req), plain(req.headers.get('X-Motivo'), 20) || 'pedidos', false); return new Response('ok'); } // from the Worker (its door): new connections only
     if (url.pathname === '/recordes') return this.recordes(req);
+    if (url.pathname === '/sugestoes') return this.sugestao(req);
     const st = await this.status();
     if (url.pathname === '/estado') return Response.json({ ...st, now: Date.now(), counts: this.counts(), dj: this.djInfo(), aviso: this.cfg.aviso });
     if (url.pathname === '/mural') return Response.json({ mural: this.mural(true) });
@@ -509,6 +525,32 @@ export class Praca {
     put('tents', int(m.tents, 0, CELLS[city] || 100), true); put('welcomed', int(m.welcomed, 0, 30 + days * 80), true); if (m.won === true) put('days', days, false);
     return Response.json({ before, novo });
   }
+  // a suggestion from the title screen. Checked field by field: anything unexpected is cut down or refused, never passed on
+  async sugestao(req) {
+    const key = await addrKey(req), until = this.punished(key);
+    if (until) return new Response('castigo', { status: 429, headers: { 'X-Castigo': String(until) } });
+    const m = await bodyJson(req, SUG_BODY); if (!m || typeof m !== 'object' || Array.isArray(m)) return Response.json({ erro: 'pedido' }, { status: 400 });
+    // two traps for scripts: a field people never see (filled = a robot), and a form sent faster than anyone can write.
+    // A robot gets an "ok" all the same, so it has nothing to learn from
+    if (m.site || !(+m.ms >= 2500)) return Response.json({ ok: true });
+    const texto = String(m.texto ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim().slice(0, SUG_TEXT);
+    if (texto.length < 5) return Response.json({ erro: 'curto' }, { status: 400 });
+    const now = Date.now(), sent = (this.sugBy.get(key) || []).filter(t => now - t < 3600e3);
+    if (sent.length >= SUG_PER_HOUR) return Response.json({ erro: 'muitas' }, { status: 429 });
+    if (this.sql.exec('SELECT COUNT(*) AS n FROM sugestoes WHERE at > ?', now - 24 * 3600e3).one().n >= SUG_PER_DAY) return Response.json({ erro: 'cheia' }, { status: 503 });
+    sent.push(now); this.sugBy.set(key, sent); if (this.sugBy.size > 5000) this.sugBy.clear();
+    const tipo = SUG_TIPOS.includes(m.tipo) ? m.tipo : 'outro', lingua = m.lingua === 'en' ? 'en' : 'pt';
+    const ecra = /^\d{2,5}x\d{2,5}$/.test(String(m.ecra || '')) ? String(m.ecra) : '';
+    this.sql.exec('INSERT INTO sugestoes (at, tipo, texto, nome, contacto, pagina, lingua, ecra, nav) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      now, tipo, texto, plain(m.nome, SUG_NAME), plain(m.contacto, SUG_CONTACT), plain(m.pagina, 60), lingua, ecra, plain(req.headers.get('User-Agent'), 200));
+    // no more than SUG_KEEP: the oldest ones already read go first, then the oldest of all
+    const n = this.sql.exec('SELECT COUNT(*) AS n FROM sugestoes').one().n;
+    if (n > SUG_KEEP) { const extra = n - SUG_KEEP;
+      this.sql.exec('DELETE FROM sugestoes WHERE id IN (SELECT id FROM sugestoes WHERE lida = 1 ORDER BY id LIMIT ?)', extra);
+      const n2 = this.sql.exec('SELECT COUNT(*) AS n FROM sugestoes').one().n; if (n2 > SUG_KEEP) this.sql.exec('DELETE FROM sugestoes WHERE id IN (SELECT id FROM sugestoes ORDER BY id LIMIT ?)', n2 - SUG_KEEP); }
+    return Response.json({ ok: true });
+  }
+  sugList() { return this.sql.exec('SELECT id, at, tipo, texto, nome, contacto, pagina, lingua, ecra, nav, lida FROM sugestoes ORDER BY id DESC LIMIT ?', SUG_KEEP).toArray(); }
   alarmAt(t) { this.ctx.storage.getAlarm().then(a => { if (!a || a > t) this.ctx.storage.setAlarm(t); }); }
   congaOut(id) { const i = this.conga.indexOf(id); if (i < 0) return; this.conga.splice(i, 1); this.broadcast({ t: 'conga', ids: this.conga }); }
   pub(p) { return { id: p.id, n: p.name, c: p.city, w: p.won || 0, l: p.look, x: +p.x.toFixed(2), y: +p.y.toFixed(2), e: p.emote, i: p.item || 0, b: p.bike ? 1 : 0, g: p.mode === 'apoio' ? 1 : 0 }; }
@@ -705,6 +747,11 @@ export class Praca {
       case 'perdoar': this.castigo.delete(String(m.k || '')); break;
       case 'perdoar-todos': this.castigo.clear(); this.strikes.clear(); break;
       case 'apagar-recorde': if (CITIES.includes(m.city) && ['tents', 'welcomed', 'days'].includes(m.k)) this.sql.exec('DELETE FROM recordes WHERE city = ? AND k = ?', m.city, m.k); break;
+      case 'sugestoes': break; // the list comes with the answer (below)
+      case 'sug-lida': this.sql.exec('UPDATE sugestoes SET lida = ? WHERE id = ?', m.lida ? 1 : 0, m.id | 0); break;
+      case 'sug-todas-lidas': this.sql.exec('UPDATE sugestoes SET lida = 1 WHERE lida = 0'); break;
+      case 'sug-apagar': this.sql.exec('DELETE FROM sugestoes WHERE id = ?', m.id | 0); break;
+      case 'sug-apagar-lidas': this.sql.exec('DELETE FROM sugestoes WHERE lida = 1'); break;
       case 'tirar-cartaz': { const id = m.id | 0; this.sql.exec('UPDATE cartazes SET hidden = 2 WHERE id = ?', id); this.broadcast({ t: 'cartaz-', id }); break; }
       case 'config': {
         if (m.npcs && typeof m.npcs === 'object') { for (const k of NPC_KINDS) if (typeof m.npcs[k] === 'boolean') c.npcs[k] = m.npcs[k]; if (this.timer) this.pers.ensure(); }
@@ -718,12 +765,13 @@ export class Praca {
         this.broadcast({ t: 'cfg', cfg: this.pubCfg() }); break; }
       default: return Response.json({ erro: 'Ação desconhecida.' }, { status: 400 });
     }
-    if (m.acao !== 'estado') await this.save();
+    if (m.acao !== 'estado' && !String(m.acao).startsWith('sug')) await this.save();
     const st = await this.status(true);
     if (before.open && !st.open) await this.closedNow(st);
     const ws = windows(await schedule(this.env), now).filter(w => w.close > now).sort((a, b) => a.open - b.open).slice(0, 8).map(pick);
     const people = [...this.people.values()].filter(p => p.name).map(p => ({ id: p.id, name: p.name, city: p.city, mode: p.mode, dev: !!p.dev, px: p.dev ? this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE dev = ?', p.dev).one().n : this.sql.exec('SELECT COUNT(*) AS n FROM parede WHERE key = ? AND name = ?', p.key, p.name).one().n }));
     const mural = this.sql.exec('SELECT id, name, city, text, at, hidden FROM mural WHERE expires > ? ORDER BY id DESC LIMIT 200', now).toArray();
-    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })), castigos: [...this.castigo].filter(([, x]) => x.until > now).map(([k, x]) => ({ k, why: x.why, at: x.at, until: x.until })), recordes: this.recDump(), stats: this.statDump(now), site: this.site(now) });
+    return Response.json({ ok: true, now, estado: st, dj: this.djInfo(), cfg: { ...this.pubCfg(), dj: c.dj, aviso: c.aviso, force: c.force, climaAuto: c.climaAuto }, clima: this.climaNow(), nextClima: this.nextClima, agenda: c.agenda.filter(x => x.close > now), horario: ws, people, counts: this.counts(), mural, diretos: this.diretos.slice().reverse(), cartazes: this.cartazes(), convencidos: this.pers.convincedToday(), npcs: c.npcs, parede: this.wallStr(), paredeRep: this.wallReports(), galeria: this.sql.exec('SELECT id, at FROM paredes ORDER BY id DESC').toArray(), bans: c.bans.filter(b => b.until > now).map(b => ({ dev: b.dev, name: b.name, until: b.until })), castigos: [...this.castigo].filter(([, x]) => x.until > now).map(([k, x]) => ({ k, why: x.why, at: x.at, until: x.until })), recordes: this.recDump(), stats: this.statDump(now), site: this.site(now),
+      sugNovas: this.sql.exec('SELECT COUNT(*) AS n FROM sugestoes WHERE lida = 0').one().n, ...(String(m.acao).startsWith('sug') ? { sug: this.sugList() } : {}) });
   }
 }

@@ -55,6 +55,10 @@ h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppe
 .kpis{ display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:6px; }
 .kpi{ background:var(--paper); color:var(--ink); padding:8px 9px 7px; } .kpi b{ display:block; font:800 24px/1 Jost, sans-serif; } .kpi small{ display:block; font-size:12px; color:#5b554f; margin-top:3px; }
 .toast[hidden]{ display:none; }
+.sug .t{ flex:1; } .sug .txt{ white-space:pre-wrap; margin:4px 0 2px; font-family:"Helvetica Neue", Arial, sans-serif; font-weight:500; }
+.sug .tipo{ display:inline-block; font:800 11px/1 Jost, sans-serif; text-transform:uppercase; letter-spacing:.6px; padding:3px 5px 2px; margin-right:6px; background:var(--ink); color:var(--paper); }
+.sug .tipo.erro{ background:var(--redbox); } .sug .tipo.ideia{ background:var(--green); color:var(--ink); }
+.sug .row{ flex-direction:column; align-items:stretch; }
 #login{ max-width:380px; margin:12vh auto 0; text-align:center; }
 #login p{ color:#c9c4c4; }
 :focus-visible{ outline:3px solid var(--lime); outline-offset:2px; }
@@ -71,7 +75,7 @@ h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppe
   </div>
   <div id="app" hidden>
     <div class="row" style="justify-content:space-between"><h1>A Praça<small>Gestão</small></h1><button class="ghost sm" id="sair">Sair</button></div>
-    <nav class="tabs" id="tabs" role="tablist"><button data-t="praca" role="tab">Praça</button><button data-t="numeros" role="tab">Números</button><button data-t="conteudo" role="tab">Mural e cartazes</button><button data-t="animacao" role="tab">Animação</button><button data-t="protecao" role="tab">Proteção <i id="tabProt"></i></button></nav>
+    <nav class="tabs" id="tabs" role="tablist"><button data-t="praca" role="tab">Praça</button><button data-t="numeros" role="tab">Números</button><button data-t="conteudo" role="tab">Mural e cartazes</button><button data-t="animacao" role="tab">Animação</button><button data-t="protecao" role="tab">Proteção <i id="tabProt"></i></button><button data-t="sugestoes" role="tab">Sugestões <i id="tabSug"></i></button></nav>
 
     <section data-tab="praca"><h2>Estado <span id="badge" class="badge"></span></h2>
       <div id="estadoTxt"></div>
@@ -105,6 +109,13 @@ h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppe
       <p class="muted" style="margin:0 0 8px">Redes castigadas por 10 minutos: mandaram pedidos ou mensagens a mais, ou pintaram mais depressa do que uma mão consegue. Ninguém é identificado: cada rede é só um código que muda todos os dias. Perdoar aqui pode demorar uns minutos a chegar a todos os servidores da Cloudflare.</p>
       <div class="list" id="castigos"></div>
       <div class="row" style="margin-top:8px"><button class="ghost" id="perdoarTodos">Perdoar todos</button></div>
+    </section>
+
+    <section data-tab="sugestoes"><h2>Sugestões <span class="muted" id="nSug"></span></h2>
+      <p class="muted" style="margin:0 0 8px">Enviadas no ecrã inicial do jogo (botão «Sugestões»). O contacto é opcional e só serve para responder a quem o deixou. Não se guardam endereços IP. Ficam no máximo as 1000 mais recentes.</p>
+      <div class="seg" id="sugSeg"><button data-f="novas">Por ler</button><button data-f="todas">Todas</button></div>
+      <div class="row" style="margin-top:8px"><button class="green" id="sugExport">Exportar .md</button><button class="ghost" id="sugTodasLidas">Marcar todas como lidas</button><button class="red" id="sugApagarLidas">Apagar as lidas</button></div>
+      <div class="list" id="sugList" style="margin-top:8px;max-height:none"></div>
     </section>
 
     <section data-tab="protecao"><h2>Recordes do jogo</h2>
@@ -180,7 +191,7 @@ h3.sub{ margin:12px 0 6px; font:800 12px/1 Jost, sans-serif; text-transform:uppe
 (() => {
 const $ = id => document.getElementById(id);
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} } };
-let frase = store.get('praca-gestao') || sessionStorage.getItem('praca-gestao') || '', S = null, timer = 0;
+let frase = store.get('praca-gestao') || sessionStorage.getItem('praca-gestao') || '', S = null, timer = 0, SUG = null, sugF = 'novas', sugN = -1;
 const fmt = (t, o) => new Intl.DateTimeFormat('pt-PT', { timeZone: 'Europe/Lisbon', ...o }).format(new Date(t));
 const hm = t => fmt(t, { hour: '2-digit', minute: '2-digit' });
 const dia = t => fmt(t, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -192,7 +203,7 @@ async function api(acao, extra = {}, quiet) {
   catch (e) { if (!quiet) toast('Sem ligação ao servidor', true); return null; }
   if (r.status === 401) { frase = ''; store.set('praca-gestao', null); sessionStorage.removeItem('praca-gestao'); showLogin(j.erro); return null; }
   if (!r.ok) { toast(j.erro || 'Erro', true); return null; }
-  S = j; render(); return j;
+  if (j.sug) SUG = j.sug; S = j; render(); return j;
 }
 function showLogin(err) { $('app').hidden = true; $('login').hidden = false; clearInterval(timer); if (err) toast(err, true); $('frase').focus(); }
 $('loginForm').addEventListener('submit', async e => {
@@ -201,7 +212,7 @@ $('loginForm').addEventListener('submit', async e => {
 });
 $('sair').addEventListener('click', () => { frase = ''; store.set('praca-gestao', null); sessionStorage.removeItem('praca-gestao'); showLogin(); });
 let tab = store.get('praca-gestao-tab') || 'praca';
-function showTab(t) { tab = t; store.set('praca-gestao-tab', t);
+function showTab(t) { tab = t; store.set('praca-gestao-tab', t); if (t === 'sugestoes' && frase && S) api('sugestoes', {}, true);
   for (const b of document.querySelectorAll('#tabs button')) { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); }
   for (const s of document.querySelectorAll('section[data-tab]')) s.hidden = s.dataset.tab !== t; scrollTo(0, 0); }
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) showTab(b.dataset.t); });
@@ -250,8 +261,51 @@ function renderNumeros() {
     dl.append(item(dia(t), d.entradas + ' entradas (' + d.praca + ' na praça, ' + d.apoio + ' de longe) · ' + d.pessoas + ' pessoas · pico ' + d.pico + (d.pico ? ' às ' + hm(d.pico_at) : ''), []));
   }
 }
+// the suggestions: always shown as text (textContent), never as HTML
+const SUG_TIPO = { ideia: 'Ideia', erro: 'Erro', outro: 'Outro' };
+function renderSug() {
+  const n = S.sugNovas || 0; $('tabSug').textContent = n ? n : ''; $('nSug').textContent = n ? n + ' por ler' : '';
+  if (tab === 'sugestoes' && n !== sugN && sugN !== -1) { sugN = n; api('sugestoes', {}, true); return; } sugN = n;
+  for (const b of $('sugSeg').children) b.classList.toggle('on', b.dataset.f === sugF);
+  const all = SUG || [], list = sugF === 'novas' ? all.filter(x => !x.lida) : all, sl = $('sugList'); sl.innerHTML = '';
+  $('sugExport').disabled = !all.length; $('sugTodasLidas').disabled = !all.some(x => !x.lida); $('sugApagarLidas').disabled = !all.some(x => x.lida);
+  if (!SUG) { sl.append(el('div', 'muted', 'A carregar…')); return; }
+  if (!list.length) sl.append(el('div', 'muted', sugF === 'novas' ? 'Nada por ler.' : 'Ainda não há sugestões.'));
+  for (const x of list) {
+    const d = el('div', 'item sug' + (x.lida ? ' off' : '')), t = el('div', 't'), h = el('div');
+    h.append(el('span', 'tipo ' + x.tipo, SUG_TIPO[x.tipo] || x.tipo), el('b', '', dia(x.at) + ', ' + hm(x.at)));
+    t.append(h, el('div', 'txt', x.texto));
+    const quem = [x.nome, x.contacto].filter(Boolean).join(' · ');
+    if (quem) t.append(el('small', '', 'De: ' + quem));
+    t.append(el('small', '', [x.pagina, x.lingua === 'en' ? 'em inglês' : '', x.ecra ? 'ecrã ' + x.ecra : ''].filter(Boolean).join(' · ')));
+    if (x.nav) t.append(el('small', '', x.nav));
+    const r = el('div', 'row');
+    r.append(btn(x.lida ? 'Por ler' : 'Lida', 'ghost', () => api('sug-lida', { id: x.id, lida: !x.lida })), btn('Apagar', 'red', () => api('sug-apagar', { id: x.id }), 'Confirmar'));
+    d.append(t, r); sl.append(d);
+  }
+}
+// the export: a Markdown file. What people wrote is escaped, so in a Markdown viewer it stays text: no links, images or
+// HTML of theirs (an image could load from someone's server when the file is opened)
+const BS = String.fromCharCode(92), MD_SPECIAL = BS + '\x60*_[]<>!|';
+const mdEsc = v => Array.from(String(v || '')).map(ch => MD_SPECIAL.includes(ch) ? BS + ch : ch).join('');
+function sugMd() {
+  const all = (SUG || []).slice().reverse(), now = Date.now();
+  const out = ['# Sugestões · Acampada Pixel', '', 'Exportado a ' + dia(now) + ', ' + hm(now) + ' · ' + all.length + ' sugestões (' + all.filter(x => !x.lida).length + ' por ler)', ''];
+  for (const x of all) {
+    out.push('## ' + (SUG_TIPO[x.tipo] || 'Outro') + ' · ' + dia(x.at) + ', ' + hm(x.at) + (x.lida ? '' : ' · por ler'), '');
+    for (const ln of String(x.texto).split('\\n')) out.push('> ' + mdEsc(ln));
+    out.push('');
+    if (x.nome) out.push('- Nome: ' + mdEsc(x.nome));
+    if (x.contacto) out.push('- Contacto: ' + mdEsc(x.contacto));
+    const meta = [x.pagina, x.lingua, x.ecra].filter(Boolean).map(mdEsc).join(' · '); if (meta) out.push('- Onde: ' + meta);
+    if (x.nav) out.push('- Navegador: ' + mdEsc(x.nav));
+    out.push('');
+  }
+  return out.join('\\n');
+}
 function render() {
   if (!S) return;
+  renderSug();
   const st = S.estado, c = S.cfg, f = c.force;
   $('badge').textContent = st.open ? 'Aberta' : 'Fechada'; $('badge').className = 'badge' + (st.open ? ' on' : '');
   const lines = [];
@@ -342,6 +396,11 @@ function render() {
 }
 
 for (const b of document.querySelectorAll('[data-abrir]')) b.addEventListener('click', () => api('abrir', { horas: +b.dataset.abrir, titulo: $('tituloAbrir').value }).then(r => r && toast('Praça aberta')));
+for (const b of $('sugSeg').children) b.addEventListener('click', () => { sugF = b.dataset.f; renderSug(); });
+$('sugExport').addEventListener('click', () => { if (!SUG) return; const a = el('a'), url = URL.createObjectURL(new Blob([sugMd()], { type: 'text/markdown;charset=utf-8' }));
+  a.href = url; a.download = 'sugestoes-acampada-' + new Date().toISOString().slice(0, 10) + '.md'; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000); });
+$('sugTodasLidas').addEventListener('click', () => api('sug-todas-lidas'));
+$('sugApagarLidas').addEventListener('click', function () { if (!this.dataset.armed) { this.dataset.armed = '1'; this.textContent = 'Confirmar: apagar'; setTimeout(() => { this.dataset.armed = ''; this.textContent = 'Apagar as lidas'; }, 4000); return; } this.dataset.armed = ''; this.textContent = 'Apagar as lidas'; api('sug-apagar-lidas').then(r => r && toast('Sugestões lidas apagadas')); });
 $('perdoarTodos').addEventListener('click', () => api('perdoar-todos').then(r => r && toast('Todas as redes perdoadas')));
 $('fechar').addEventListener('click', function () { if (!this.dataset.armed) { this.dataset.armed = '1'; this.textContent = 'Confirmar: fechar'; setTimeout(() => { this.dataset.armed = ''; this.textContent = 'Fechar agora'; }, 4000); return; } this.dataset.armed = ''; this.textContent = 'Fechar agora'; api('fechar').then(r => r && toast('Praça fechada')); });
 $('paredeCv').addEventListener('click', e => { const r = $('paredeCv').getBoundingClientRect(), x = Math.floor((e.clientX - r.left) / r.width * PW), y = Math.floor((e.clientY - r.top) / r.height * PH); selBloco = Math.floor(x / PB) + Math.floor(y / PB) * (PW / PB); render(); });
