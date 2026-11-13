@@ -5073,10 +5073,10 @@ function introScreen() {
   if (c.luta) { const u = c.luta;
     show(`<h2 class="p-red rough">${L('LISBOA', 'LISBON')}</h2><p class="p-big rough">${L('em luta', 'in struggle')}</p><p class="p-mid rough">${esc(L(u.title, u.titleEn || u.title))}</p>${TENT}
     <p class="p-info rough">${esc(lutaDay(u.date, LANG === 'en'))}<br>${esc(u.at || L('hora a anunciar', 'time tba'))}<br>${esc(c.place)}</p><p class="help">${esc(L(c.intro, c.introEn))}</p><p class="help real">🔴 IRL: ${u.cancelled ? L('cancelado pelo mau tempo', 'cancelled for bad weather') + ' · ' : ''}${esc(u.where)}${u.site ? ' · ' + esc(u.site) : ''}</p>
-    <button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button><button class="btnp red" data-a="luta">${L('← Voltar', '← Back')}</button>${IRL_NOTE()}${FOOT}`);
+    <button class="btnp" data-a="go">${L('Começar jogo', 'Start game')}</button><button class="btnp red" data-a="luta">${L('← Voltar', '← Back')}</button>${IRL_NOTE()}${FOOT}`);
     return; }
   show(`<h2 class="p-red rough">${L('PROTESTO', 'PROTEST')}</h2><p class="p-big rough">${L('Acampada', 'Camp')} ${c.name}</p><p class="p-mid rough">${L('Junta-te a nós', 'Join us')}</p>${TENT}
-  <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p>${realLine(c.name) ? `<p class="help real">${esc(realLine(c.name))}</p>` : ''}${savedOf(cityIdx) ? `<button class="btnp red" data-a="load">${L('Continuar · dia', 'Carry on · day')} ${savedOf(cityIdx).day} →</button>` : ''}<button class="btnp" data-a="go">${L('Lá estaremos!', 'We’ll be there!')}</button>${realLine(c.name) ? IRL_NOTE() : ''}${FOOT}`);
+  <p class="p-info rough">${L('Dia 1<br>17 horas', 'Day 1<br>5 pm')}<br>${c.place}</p><p class="help">${T(c.intro)}</p>${realLine(c.name) ? `<p class="help real">${esc(realLine(c.name))}</p>` : ''}${savedOf(cityIdx) ? `<button class="btnp red" data-a="load">${L('Continuar · dia', 'Carry on · day')} ${savedOf(cityIdx).day} →</button>` : ''}<button class="btnp" data-a="go">${L('Começar jogo', 'Start game')}</button>${realLine(c.name) ? IRL_NOTE() : ''}${FOOT}`);
 }
 function buildMenu() {
   if (mode !== 'play') return; if (bigK()) { float(S.player.gx, S.player.gy, NOTHING(), '#ff8aa8'); return; } mode = 'menu';
