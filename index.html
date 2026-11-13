@@ -2164,11 +2164,17 @@ function spawnArrival(opts = {}) {
   const [tx, ty] = opts.target || randomSpot();
   S.arrivals.push({ rent: S.city.rents ? pick([550, 600, 650, 700]) : 0, gx, gy, ex: gx, ey: gy, tx, ty, state: 'walk', wait: 18, auto: !!opts.auto, look: look(S.city.students), step: rnd(0, 9), flip: false, back: true, infoT: 0 });
 }
+// the edge by the street where boxes are left: just outside the square, but within reach of the player, also where
+// the player can't walk right to the edge (the Pavilhão de Portugal's bollards, city.walk)
+function edgeXY(m = .6) {
+  const [wx, wy] = S.city.walk || [NX, NY], ex = Math.min(NX + .25, wx + .1), ey = Math.min(NY + .25, wy + .1), side = Math.random() < .5;
+  return side ? [rnd(m, Math.min(NX, wx) - m), ey] : [ex, rnd(m, Math.min(NY, wy) - m)];
+}
 function spawnCrate() {
   // on the edge by the street, but never behind a lamp, a bench or a structure: the tile in front must be free to stand on
   let gx, gy;
   for (let i = 0; i < 12; i++) {
-    const side = Math.random() < .5; gx = side ? rnd(.6, NX - .6) : NX + .25; gy = side ? NY + .25 : rnd(.6, NY - .6);
+    [gx, gy] = edgeXY();
     const tx = Math.min(NX - 1, Math.floor(gx)), ty = Math.min(NY - 1, Math.floor(gy));
     if (!blockedAt(tx + .5, ty + .5) && !S.arrivals.some(a => Math.hypot(a.gx - gx, a.gy - gy) < .3)) break;
   }
@@ -3395,7 +3401,7 @@ function updEvents(dt, hr) {
   if ((S.freeze > 0 || song) && Math.random() < dt * 8 && S.residents.length) { const r = pick(S.residents), q = iso(r.gx, r.gy, 18); S.parts.push({ x: q.x, y: q.y, vx: rnd(-4, 4), vy: -12, life: 1.1, type: 'note', col: pick(['#ffd36b', '#ffffff', '#ff3b4e']) }); }
   // Porto: blue helmet crate
   if (c.helmets) {
-    if (!S.hcrate && S.helmets === 0 && !S.kettle) { S.helmetT -= dt; if (S.helmetT <= 0) { const side = Math.random() < .5; S.hcrate = { gx: side ? rnd(1, NX - 1) : NX + .25, gy: side ? NY + .25 : rnd(1, NY - 1), life: 30 }; const q = iso(S.hcrate.gx, S.hcrate.gy, 14); floatXY(q.x, q.y, 'Capacetes!', '#39e1ff'); S.helmetT = 70; } }
+    if (!S.hcrate && S.helmets === 0 && !S.kettle) { S.helmetT -= dt; if (S.helmetT <= 0) { const [hx, hy] = edgeXY(1); S.hcrate = { gx: hx, gy: hy, life: 30 }; const q = iso(S.hcrate.gx, S.hcrate.gy, 14); floatXY(q.x, q.y, 'Capacetes!', '#39e1ff'); S.helmetT = 70; } }
     if (S.hcrate) { S.hcrate.life -= dt; if (gd(S.hcrate, p) < .7) { S.helmets = 2; float(p.gx, p.gy, 'Capacetes: próximos 2 cordões', '#39e1ff', 26); sparkle(S.hcrate.gx, S.hcrate.gy, 10, 6); sfx('crate'); S.hcrate = null; } else if (S.hcrate.life <= 0) S.hcrate = null; }
   }
   // Porto and Lisboa: once the police have gone, the city's cleaning crew comes through and washes the square
