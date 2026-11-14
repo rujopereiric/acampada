@@ -37,6 +37,9 @@ button.alt{background:transparent;color:var(--ink)}button:disabled{opacity:.4}
 .songs button{margin:0;text-transform:none;text-align:left;background:transparent;color:var(--ink);display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;font-size:17px;line-height:1.12;padding:9px 10px}
 .songs button span{font-family:Jost,sans-serif;font-weight:700;font-size:12px;line-height:1.2;color:var(--gold)}
 #menu.ready .intro{display:none}
+#micmsg{margin-top:8px;font-weight:600;font-size:15px;line-height:1.35;color:var(--muted)}#micmsg:empty{display:none}
+#micmsg.err{color:#f4f1ea;border:2px solid var(--gold);padding:10px 12px}#micmsg b{color:var(--gold)}
+#micmsg ol{margin:6px 0 0;padding-left:20px}#micmsg .row{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}#micmsg button,#micmsg a.btn{font-size:14px;padding:8px 10px;width:auto;margin-top:0}#micmsg a.btn{font-family:Jost,sans-serif;font-weight:800;text-transform:uppercase;text-decoration:none;border:3px solid var(--ink);color:var(--ink)}
 .stars{font-size:44px;text-align:center;color:var(--gold);letter-spacing:6px}
 .big{font-family:Audiowide,sans-serif;font-size:34px;text-align:center;margin:4px 0}
 .hidden{display:none}
@@ -57,7 +60,7 @@ a{color:var(--gold)}
   <small>Com auscultadores é melhor: o microfone ouve-te só a ti.</small>
   <button id="mic">Ligar o microfone</button></div>
   <div class="meter"><i id="lvl"></i></div>
-  <small id="micmsg" style="margin-top:8px"></small>
+  <div id="micmsg" role="status" aria-live="polite"></div>
   <div class="songs" id="songs"></div>
   <div class="row"><button class="alt" id="guide">Coro: alto</button></div>
 </div>
@@ -161,7 +164,10 @@ function choirBus(a) {
 const BOOST = 4.5;
 async function micOn() {
   const a = audio();
-  stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } });
+  let st;
+  try { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } }); }
+  catch (e) { if (e && e.name === 'OverconstrainedError') st = await navigator.mediaDevices.getUserMedia({ audio: true }); else throw e; } // (an old phone that doesn't know these options)
+  stream = st; if (a.state !== 'running') { try { await a.resume(); } catch (e) {} } // (the iPhone suspends the sound while it asks)
   attach(a.createMediaStreamSource(stream));
 }
 function attach(src) { const a = audio(); an = a.createAnalyser(); an.fftSize = 2048; buf = new Float32Array(an.fftSize); src.connect(an); }
@@ -448,9 +454,40 @@ function frame() {
 window.__coros = { songs: SONGS, build, fold, midiOf };
 $('songs').innerHTML = SONGS.map((s, i) => `<button data-i="${i}" ${TEST ? '' : 'disabled'}>${s.title}<span>${s.short || s.who}</span></button>`).join('');
 $('songs').onclick = e => { const b = e.target.closest('button'); if (b && !b.disabled) start(SONGS[+b.dataset.i]); };
+// Turning the microphone on. On some iPhones nothing seemed to happen: inside Instagram's (or another app's) own browser
+// there is no microphone at all, a "no" given once is remembered without asking again, and sometimes the question never
+// comes. So: say at once that we're asking, give up waiting after a while, and for each case say what to do on the
+// phone; and the songs can always be sung without the microphone (no score).
+const UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const INAPP = (/Instagram|FBAN|FBAV|FB_IAB|Messenger|TikTok|musical_ly|Snapchat|Line\/|LinkedInApp|Twitter|Threads|WhatsApp|Telegram/i.exec(UA) || [])[0];
+const FRAMED = (() => { try { return window.top !== window; } catch (e) { return true; } })();
+function songsOn() { $('menu').classList.add('ready'); document.querySelectorAll('#songs button').forEach(b => b.disabled = false); }
+function micHelp(kind, name) {
+  const m = $('micmsg'), here = location.origin + location.pathname;
+  const steps = kind === 'inapp' ? `<b>Este browser não dá acesso ao microfone.</b> Estás dentro de uma app (${INAPP ? INAPP.replace(/FBAN|FBAV|FB_IAB/, 'Facebook').replace(/\/$/, '') : 'Instagram, WhatsApp…'}). Abre a página no ${IOS ? 'Safari' : 'Chrome'}:<ol><li>toca em <b>⋯</b> (ou no ícone de partilha), em cima;</li><li>escolhe <b>«Abrir no browser externo»</b> (ou «Abrir no ${IOS ? 'Safari' : 'Chrome'}»).</li></ol>`
+    : kind === 'denied' ? `<b>O microfone está bloqueado para este site</b>, por isso o telemóvel já não pergunta.` + (IOS ? `<ol><li>Na barra do endereço, toca em <b>aA</b> (ou no ícone à esquerda do endereço) → <b>Definições do site</b> → Microfone → <b>Permitir</b>;</li><li>se não aparecer: <b>Definições</b> do iPhone → Apps → <b>Safari</b> (ou o teu browser) → Microfone → <b>Perguntar</b> ou <b>Permitir</b>;</li><li>volta aqui e toca outra vez em «Ligar o microfone».</li></ol>` : `<ol><li>Toca no cadeado ao lado do endereço → Permissões → Microfone → <b>Permitir</b>;</li><li>volta aqui e toca outra vez em «Ligar o microfone».</li></ol>`)
+    : kind === 'slow' ? `<b>O telemóvel não respondeu ao pedido do microfone.</b> Se apareceu uma pergunta, escolhe «Permitir». Se não apareceu nada, recarrega a página${FRAMED ? ' ou abre os Coros numa página própria' : ''} e tenta outra vez.`
+    : kind === 'none' ? `<b>Não encontrámos nenhum microfone</b> neste aparelho. Se usas auscultadores sem fios, tenta sem eles.`
+    : `<b>Não foi possível ligar o microfone</b> (${name}). Fecha outras apps que o estejam a usar (uma chamada, um gravador) e tenta outra vez.`;
+  m.className = 'err';
+  m.innerHTML = steps + `<div class="row">${kind === 'inapp' ? '<button class="alt" id="micCopy">Copiar o endereço</button>' : ''}${FRAMED && kind !== 'inapp' ? `<a class="btn alt" id="micTop" href="${here}" target="_top">Abrir numa página própria</a>` : ''}<button class="alt" id="micSkip">Cantar sem microfone</button></div>`;
+  const c = $('micCopy'); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(here); c.textContent = 'Copiado!'; } catch (e) { prompt('Copia o endereço:', here); } };
+  $('micSkip').onclick = () => { songsOn(); m.className = ''; m.textContent = 'Sem microfone: podes cantar com o coro, mas sem pontuação.'; };
+}
+let micBusy = false;
 $('mic').onclick = async () => {
-  try { await micOn(); $('menu').classList.add('ready'); $('micmsg').textContent = 'Microfone ligado. Escolhe uma canção.'; $('mic').disabled = true; document.querySelectorAll('#songs button').forEach(b => b.disabled = false); }
-  catch (e) { $('micmsg').textContent = 'Sem microfone: o browser não deixou (' + (e.name || e) + '). Dá permissão ao microfone nas definições do site e tenta outra vez.'; }
+  if (micBusy) return; const b = $('mic'), m = $('micmsg');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { micHelp(INAPP || window.isSecureContext !== false ? 'inapp' : 'other', 'ligação não segura'); return; }
+  micBusy = true; b.textContent = 'A pedir o microfone…'; m.className = ''; m.textContent = 'Se aparecer uma pergunta do telemóvel, escolhe «Permitir».';
+  let late = setTimeout(() => { late = 0; if (micBusy) { micBusy = false; b.textContent = 'Ligar o microfone'; micHelp('slow'); } }, 12000); // (and the button works again)
+  try {
+    await micOn(); songsOn(); m.className = ''; m.textContent = 'Microfone ligado. Escolhe uma canção.'; b.disabled = true; b.textContent = 'Microfone ligado';
+  } catch (e) {
+    const n = (e && e.name) || String(e);
+    b.textContent = 'Ligar o microfone';
+    micHelp(n === 'NotAllowedError' || n === 'SecurityError' || n === 'PermissionDeniedError' ? (INAPP ? 'inapp' : 'denied') : n === 'NotFoundError' || n === 'DevicesNotFoundError' || n === 'OverconstrainedError' ? 'none' : 'other', n);
+  }
+  clearTimeout(late); micBusy = false;
 };
 let gi = 0; $('guide').onclick = () => { gi = (gi + 1) % GUIDE.length; $('guide').textContent = GUIDE[gi][0]; guideVol = GUIDE[gi][1]; };
 // ---------- sharing: a story picture, «Cantei em casa» ----------
