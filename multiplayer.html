@@ -884,7 +884,7 @@ const CRAVO_BMP = ['.RR.', 'RRRR', '.RR.', '..G.', '.GG.', '..G.'], CRAVO_PAL = 
 const BANANA = ['....YK', 'YYYYY.', '.DDD..'], BANANA_PAL = { Y: '#ffd23a', D: '#d9a320', K: '#6b4a2b' };
 function setClima(c) {
   clima = c && c.k === 'bananas' ? c : null; if (!clima) return;
-  $('alertaTxt').textContent = L('O Sr. Banana, Ministro da Administração Interna, ordenou uma chuva de bananas!', 'Mr Banana, Minister of Home Affairs, has ordered a rain of bananas!');
+  $('alertaTxt').textContent = L('O Sr. Banana, Ministro da Administração Interna, ordenou uma chuva de bananas!', 'Mr Banana, Minister of Home Affairs, has ordered a banana rain!');
   $('alerta').hidden = false; plop(true);
 }
 function updClima(dt, now) {
