@@ -151,9 +151,10 @@ function build(song) { // notes with times in seconds; strong notes count double
   return { notes, parts: parts.sort((x, y) => x.t - y.t), end: t + 1.2 };
 }
 // ---------- audio: the microphone, pitch detection, and the choir's guide voice ----------
+const UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 let actx = null, an = null, buf = null, stream = null, guideVol = 1;
 const GUIDE = [['Coro: alto', 1], ['Coro: baixo', .4], ['Sem coro', 0]];
-function audio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return actx; }
+function audio() { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state !== 'running') { try { actx.resume(); } catch (e) {} } return actx; } // (suspended, or "interrupted" on an iPhone)
 let bus = null; // the choir's way out: turned up, then a compressor so the loud notes don't distort on a phone speaker
 function choirBus(a) {
   if (bus && bus.context === a) return bus;
@@ -162,8 +163,24 @@ function choirBus(a) {
   g.connect(c).connect(a.destination); return bus = g;
 }
 const BOOST = 4.5;
+// Without the microphone, an iPhone treats the page's sound as "ambient": the silent switch on the side mutes it (the
+// words still move, since the clock runs). With the microphone on, it plays like a call and is heard. So, when singing
+// without the microphone, ask for "playback", like a video; where that can't be asked for, a silent <audio> on loop
+// does the same. Back to automatic before asking for the microphone.
+let keepAlive = null;
+function soundNoMic() {
+  try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; return; } } catch (e) {}
+  if (!IOS || keepAlive) { if (keepAlive) keepAlive.play().catch(() => {}); return; }
+  try {
+    const n = 4000, b = new Uint8Array(44 + n), v = new DataView(b.buffer), str = (o, x) => { for (let i = 0; i < x.length; i++) b[o + i] = x.charCodeAt(i); };
+    str(0, 'RIFF'); v.setUint32(4, 36 + n, true); str(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+    keepAlive = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); keepAlive.loop = true; keepAlive.setAttribute('playsinline', ''); keepAlive.play().catch(() => {});
+  } catch (e) {}
+}
+function soundWithMic() { try { if (navigator.audioSession) navigator.audioSession.type = 'auto'; } catch (e) {} if (keepAlive) keepAlive.pause(); }
 async function micOn() {
-  const a = audio();
+  const a = audio(); soundWithMic();
   let st;
   try { st = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: false } }); }
   catch (e) { if (e && e.name === 'OverconstrainedError') st = await navigator.mediaDevices.getUserMedia({ audio: true }); else throw e; } // (an old phone that doesn't know these options)
@@ -213,7 +230,7 @@ const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Ma
 let G = null, song = SONGS[0], trail = [], level = 0, endPct = 0, endRes = null;
 const TEST = new URLSearchParams(location.search).get('test'); // ?test=certo|errado|real: a synthetic singer instead of the mic (for testing)
 function start(s) {
-  song = s; audio(); const { notes, parts, end } = build(s);
+  song = s; if (!stream) soundNoMic(); audio(); const { notes, parts, end } = build(s);
   const lo = Math.min(...notes.map(n => n.m)) - 2, hi = Math.max(...notes.map(n => n.m)) + 2;
   G = { notes, parts, end, lo, hi, t0: actx.currentTime + .3, sched: 0, psched: 0, score: 0, max: notes.reduce((a, n) => a + n.d * (n.strong ? 2 : 1), 0), last: 0, combo: 0 };
   trail = []; show('play');
@@ -458,7 +475,6 @@ $('songs').onclick = e => { const b = e.target.closest('button'); if (b && !b.di
 // there is no microphone at all, a "no" given once is remembered without asking again, and sometimes the question never
 // comes. So: say at once that we're asking, give up waiting after a while, and for each case say what to do on the
 // phone; and the songs can always be sung without the microphone (no score).
-const UA = navigator.userAgent, IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const INAPP = (/Instagram|FBAN|FBAV|FB_IAB|Messenger|TikTok|musical_ly|Snapchat|Line\/|LinkedInApp|Twitter|Threads|WhatsApp|Telegram/i.exec(UA) || [])[0];
 // on an iPhone, Chrome, Firefox, Edge and Brave are apps of their own: the microphone is switched on for the app, in the iPhone's settings
 const IOSAPP = !IOS ? '' : /CriOS/.test(UA) ? 'Chrome' : /FxiOS/.test(UA) ? 'Firefox' : /EdgiOS/.test(UA) ? 'Edge' : /Brave/.test(UA) || navigator.brave ? 'Brave' : /OPiOS|OPT\//.test(UA) ? 'Opera' : /DuckDuckGo/.test(UA) ? 'DuckDuckGo' : '';
@@ -475,7 +491,7 @@ function micHelp(kind, name) {
   m.className = 'err';
   m.innerHTML = steps + `<div class="row">${kind === 'inapp' ? '<button class="alt" id="micCopy">Copiar o endereço</button>' : ''}${FRAMED && kind !== 'inapp' ? `<a class="btn alt" id="micTop" href="${here}" target="_top">Abrir numa página própria</a>` : ''}<button class="alt" id="micSkip">Cantar sem microfone</button></div>`;
   const c = $('micCopy'); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(here); c.textContent = 'Copiado!'; } catch (e) { prompt('Copia o endereço:', here); } };
-  $('micSkip').onclick = () => { songsOn(); m.className = ''; m.textContent = 'Sem microfone: podes cantar com o coro, mas sem pontuação.'; };
+  $('micSkip').onclick = () => { soundNoMic(); audio(); songsOn(); m.className = ''; m.textContent = 'Sem microfone: podes cantar com o coro, mas sem pontuação.'; };
 }
 let micBusy = false;
 $('mic').onclick = async () => {
