@@ -276,7 +276,7 @@ function makeLevel(n) {
       }
       x = next; i++;
     }
-    lv.camara = { x: Math.round(lv.goal * .52), say: L('Ai que horror!', 'Oh, how horrid!') };
+    lv.camara = { x: Math.round(lv.goal * .52), say: L('Ai que horror!', 'How ghastly!') };
     lv.flyEvery = [4, 6.5];
   } else {
     lv.name = L('Praça D. João I · Porto', 'Praça D. João I · Porto'); lv.ice = true;
@@ -426,7 +426,7 @@ function step(dt) {
 
   // the price tags grow when you come close
   for (const tg of lvl.tags) {
-    if (!tg.grown && P.x + 120 > tg.x && P.x < tg.x) { tg.grown = true; sfx('grow'); floatText(tg.x, GY - tg.max - 10, L('Sobe o preço!', 'Price goes up!'), '#ff8aa8', 1.2); }
+    if (!tg.grown && P.x + 120 > tg.x && P.x < tg.x) { tg.grown = true; sfx('grow'); floatText(tg.x, GY - tg.max - 10, L('Sobe o preço!', 'Prices up again!'), '#ff8aa8', 1.2); }
     if (tg.grown && tg.g < 1) { tg.g = Math.min(1, tg.g + dt * 1.6); const e = 1 - Math.pow(1 - tg.g, 3); tg.h = 10 + (tg.max - 10) * e; tg.cw = 18 + (tg.w - 18) * e; }
   }
   // carnations
@@ -498,7 +498,7 @@ function stepPorto(dt) {
   for (const tn of lvl.tents) {
     const pu = tn.pusher;
     if (pu) { // a skater or riot police push the tent toward the ice, until it's pegged down, frozen or 150 px on
-      if (pu.state === 'idle' && P.x > tn.x - 240 && mode === 'play') { pu.state = 'push'; floatText(tn.x + 20, GY - 40, pu.kind === 'skate' ? L('Com licença, vai para a pista!', 'Excuse me, it’s for the rink!') : L('Desocupem!', 'Clear out!'), '#ff8aa8', 1.6); }
+      if (pu.state === 'idle' && P.x > tn.x - 240 && mode === 'play') { pu.state = 'push'; floatText(tn.x + 20, GY - 40, pu.kind === 'skate' ? L('Com licença, vai para a pista!', 'Mind out, this is rink space!') : L('Desocupem!', 'Clear out!'), '#ff8aa8', 1.6); }
       if (pu.state === 'push') {
         const blocked = lvl.panels.some(p => p.landed && tn.x - 18 < p.x + p.w && tn.x > p.x);
         if (tn.saved || tn.frozen || blocked || tn.x0 - tn.x > 150) { pu.state = pu.kind === 'skate' ? 'leave' : 'patrol'; pu.a = pu.x - 50; pu.b = pu.x + 40; pu.dir = 1; }
@@ -768,7 +768,7 @@ function drawFlyer(f) {
   if (lvl.n === 1) { // the order, stamped
     R(-w / 2 + 2, -h / 2 + 2, w, h, 'rgba(0,0,0,.35)'); R(-w / 2, -h / 2, w, h, '#f7f5ee');
     for (let k = 0; k < 5; k++) R(-w / 2 + 4, -h / 2 + 4 + k * 4, w - 8 - (k % 2) * 8, 1, '#9a968c');
-    ctx.rotate(-.15); ctx.strokeStyle = '#d22a2a'; ctx.lineWidth = 1.2; ctx.strokeRect(-w / 2 + 3, -4, w - 6, 9); text(L('DESPACHO', 'ORDER'), 0, 3, 5, '#d22a2a');
+    ctx.rotate(-.15); ctx.strokeStyle = '#d22a2a'; ctx.lineWidth = 1.2; ctx.strokeRect(-w / 2 + 3, -4, w - 6, 9); text(L('DESPACHO', 'DECREE'), 0, 3, 5, '#d22a2a');
   } else { // an e-mail from the town hall
     R(-w / 2 + 2, -h / 2 + 2, w, h, 'rgba(0,0,0,.35)'); R(-w / 2, -h / 2, w, h, '#f1ead8');
     ctx.strokeStyle = '#b9ad94'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-w / 2, -h / 2); ctx.lineTo(0, 1); ctx.lineTo(w / 2, -h / 2); ctx.stroke();
@@ -949,8 +949,8 @@ function title() {
 function intro(n) {
   mode = 'intro';
   const body = n === 1
-    ? L('Lisboa, 13 de novembro: as barracas do mercado de Natal começam a montar-se em cima da acampada. Leva a tua tenda até ao <b>centro da praça</b>. Salta as etiquetas de preços, foge do <b>despacho</b> e da <b>Polícia Municipal</b>. Há barracas sobre rodas a empurrar tendas: chega-te a elas e <b>martela 3 vezes</b> para as pregar (ao pé de uma tenda, o botão de saltar é o martelo). E salta nas tendas para ir mais alto!', 'Lisbon, 13 November: the Christmas market stalls go up on top of the camp. Carry your tent to the <b>middle of the square</b>. Jump the price tags, dodge the <b>order</b> and the <b>Municipal Police</b>. Stalls on wheels are pushing tents out: get to them and <b>hammer 3 times</b> to peg them down (by a tent, the jump button is the hammer). And bounce on the tents to go higher!')
-    : L('Porto, 13 de novembro: começa a montagem da pista de gelo em frente ao Rivoli. O chão <b>escorrega</b>. O gelo da pista avança pela praça: chega-te a cada tenda e <b>martela 3 vezes</b> para a pregar antes que o gelo a apanhe: tenda pregada fica, e a pista que se desvie. Patinadores e polícia de choque empurram tendas para o gelo. Precisas de pregar pelo menos <b>6 tendas</b>. Cuidado com os patinadores, com a polícia de choque, com as peças que a grua larga (escorregam!) e com os e-mails da Câmara.', 'Porto, 13 November: the ice rink goes up in front of the Rivoli. The floor is <b>slippery</b>. The rink’s ice spreads across the square: get to each tent and <b>hammer 3 times</b> to peg it down before the ice gets it: a pegged tent stays, and the rink has to go round it. Skaters and riot police push tents onto the ice. You need to peg at least <b>6 tents</b>. Mind the skaters, the riot police, the pieces the crane drops (they slide!) and the town hall’s e-mails.');
+    ? L('Lisboa, 13 de novembro: as barracas do mercado de Natal começam a montar-se em cima da acampada. Leva a tua tenda até ao <b>centro da praça</b>. Salta as etiquetas de preços, foge do <b>despacho</b> e da <b>Polícia Municipal</b>. Há barracas sobre rodas a empurrar tendas: chega-te a elas e <b>martela 3 vezes</b> para as pregar (ao pé de uma tenda, o botão de saltar é o martelo). E salta nas tendas para ir mais alto!', 'Lisbon, 13 November: the Christmas market stalls go up on top of the camp. Carry your tent to the <b>middle of the square</b>. Jump the price tags, dodge the council <b>decree</b> and the <b>Municipal Police</b>. Stalls on wheels are pushing tents out: get to them and <b>hammer 3 times</b> to peg them down (by a tent, the jump button is the hammer). And bounce on the tents to go higher!')
+    : L('Porto, 13 de novembro: começa a montagem da pista de gelo em frente ao Rivoli. O chão <b>escorrega</b>. O gelo da pista avança pela praça: chega-te a cada tenda e <b>martela 3 vezes</b> para a pregar antes que o gelo a apanhe: tenda pregada fica, e a pista que se desvie. Patinadores e polícia de choque empurram tendas para o gelo. Precisas de pregar pelo menos <b>6 tendas</b>. Cuidado com os patinadores, com a polícia de choque, com as peças que a grua larga (escorregam!) e com os e-mails da Câmara.', 'Porto, 13 November: the ice rink goes up in front of the Rivoli. The floor is <b>slippery</b>. The rink’s ice spreads across the square: get to each tent and <b>hammer 3 times</b> to peg it down before the ice gets it: a pegged tent stays, and the rink has to go round it. Skaters and riot police push tents onto the ice. You need to peg at least <b>6 tents</b>. Mind the skaters, the riot police, the pieces the crane drops (they slide!) and the council’s e-mails.');
   show(`<div class="card"><p class="kick">${L('NÍVEL', 'LEVEL')} ${n} / 2</p><h2>${n === 1 ? L('Rossio · Lisboa', 'Rossio · Lisbon') : 'Praça D. João I · Porto'}</h2><p>${body}</p>
   <div class="btns"><button class="big" id="go">${L('Começar', 'Start')} →</button></div></div>`);
   document.getElementById('go').onclick = () => { audioOn(); startLevel(n); };
@@ -988,7 +988,7 @@ function pause() { // a screen of its own, with big buttons (easy to hit on a ph
   if (mode !== 'play' || paused) return; paused = true; keys.left = keys.right = keys.jump = false;
   document.getElementById('bPause').style.visibility = 'hidden';
   show(`<div class="card"><p class="kick">${lvl.name.toUpperCase()}</p><h2>${L('Pausa', 'Paused')}</h2>
-  <div class="btns"><button class="big" id="go">▶︎ ${L('Continuar', 'Go on')}</button><button class="big alt" id="again">${L('Recomeçar o nível', 'Restart the level')}</button></div>
+  <div class="btns"><button class="big" id="go">▶︎ ${L('Continuar', 'Carry on')}</button><button class="big alt" id="again">${L('Recomeçar o nível', 'Restart the level')}</button></div>
   <p class="small" style="margin-top:14px"><a href="#" id="quit" style="color:var(--dim)">${L('Sair para o início', 'Back to the start')}</a></p></div>`);
   document.getElementById('go').onclick = () => { audioOn(); resume(); };
   document.getElementById('again').onclick = () => { audioOn(); stats.cravos = lvl.c0; startLevel(lvl.n); };

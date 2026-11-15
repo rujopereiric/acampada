@@ -368,7 +368,7 @@ function applyTexts() {
   document.documentElement.lang = LANG === 'en' ? 'en' : 'pt-PT';
   for (const el of document.querySelectorAll('[data-t]')) { const t = TXT[el.dataset.t]; if (t) el.textContent = L(t[0], t[1]); }
   $('bSair').textContent = L('Sair', 'Quit'); $('bLang').textContent = LANG === 'en' ? 'PT' : 'EN'; $('bLang').setAttribute('aria-label', L('Mudar para inglês', 'Switch to Portuguese'));
-  $('muralIn').placeholder = L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
+  $('muralIn').placeholder = L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 characters, no links)');
   buildSheets(); renderWhere(); renderCounts(); renderMural(); renderMuralLock();
 }
 
@@ -1077,7 +1077,7 @@ function onMsg(m) {
     hideToast();
     if (m.full) toast(L('A praça está cheia: estás a ver sem boneco.', 'The square is full: you’re watching without an avatar.'), 5000);
     else if (myMode === 'praca') toast(L('Estás na praça! Toca no chão para andar.', 'You’re in the square! Tap the ground to walk.'), 4000);
-    else toast(L('Estás na praça como fantasma: os outros veem que apoias de longe. Toca no chão para andar.', 'You’re in the square as a ghost: the others see you support from afar. Tap the ground to walk.'), 5000);
+    else toast(L('Estás na praça como fantasma: os outros veem que apoias de longe. Toca no chão para andar.', 'You’re in the square as a ghost: everyone can see you’re supporting from afar. Tap the ground to walk.'), 5000);
     showApp(); renderAll(); setTimeout(tourStart, 1500); return;
   }
   if (m.t === 'join') { if (m.p.id !== myId) addPerson(m.p); return; }
@@ -1109,7 +1109,7 @@ function onMsg(m) {
   if (m.t === 'pergunta-fim') { if (interviewOpen) { interviewOpen = false; closeSheets(); toast(L('A jornalista seguiu caminho.', 'The journalist moved on.'), 3000); } return; }
   if (m.t === 'direto') { if (diretos.length < 6) diretos.push(m.d); if (pendingFree && interviewOpen && (m.d.by != null ? m.d.by === myId : m.d.n === (me && me.n))) { pendingFree = false; interviewOpen = false; closeSheets(); } return; }
   if (m.t === 'direto-') { const i = diretos.findIndex(d => d.id === m.id); if (i >= 0) diretos.splice(i, 1); if (diretoNow && diretoNow.id === m.id) diretoUntil = 0; return; }
-  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'desconfianca' ? L(`Depois do engano, ninguém confia em ninguém: espera ${m.wait} s para apontar outra vez.`, `After the mistake nobody trusts anybody: wait ${m.wait} s to point again.`) : m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
+  if (m.t === 'npcno') { const w = NPC_NO[m.why]; const t = m.why === 'desconfianca' ? L(`Depois do engano, ninguém confia em ninguém: espera ${m.wait} s para apontar outra vez.`, `After that blunder, nobody trusts anyone: wait ${m.wait} s to point again.`) : m.why === 'espera' ? L(`Espera ${m.wait} s.`, `Wait ${m.wait} s.`) : w ? L(w[0], w[1]) : ''; const e = $('npcErr'); if (e && interviewOpen && !$('npcSheet').hidden && ['palavras', 'links', 'vazio'].includes(m.why)) e.textContent = t; else if (t) toast(t, 3000); if (m.k === 'bike') renderAll(); return; }
   if (m.t === 'npcsay') { say(m.id, { pensar: L('Hmm… vou pensar nisso.', 'Hmm… I’ll think about it.'), servido: L('Bom apetite! 🍲', 'Enjoy! 🍲') }[m.k] || ''); return; }
   if (m.t === 'convencido') { convencidos = m.total; say(m.id, L('Conta comigo! ✊', 'Count me in! ✊')); toast(L(`${m.n} convenceu um curioso a juntar-se! (${m.total} hoje)`, `${m.n} won a passer-by over! (${m.total} today)`), 3500); renderCounts(); return; }
   if (m.t === 'caos') { say(-1, L('Ai! O meu microfone!', 'Hey! My microphone!')); say(-5, '🎤'); toast(L('A labrador roubou o microfone à Jornalista Laranja!', 'The labrador stole the Orange Journalist’s microphone!'), 4000); return; }
@@ -1473,7 +1473,7 @@ function journalistDialog(q) {
     Q.a.forEach((a, i) => g.append(optBtn(L(a[0], a[1]), () => { send({ t: 'resposta', a: i }); interviewOpen = false; closeSheets(); })));
     const lab = document.createElement('label'); lab.className = 'npclab'; lab.textContent = L('Ou responde por palavras tuas:', 'Or answer in your own words:'); b.append(lab);
     const row = document.createElement('div'); row.className = 'write';
-    const ta = document.createElement('textarea'); ta.maxLength = 100; ta.rows = 2; ta.placeholder = L('Até 100 letras, passa em direto para toda a praça', 'Up to 100 letters, goes live to the whole square');
+    const ta = document.createElement('textarea'); ta.maxLength = 100; ta.rows = 2; ta.placeholder = L('Até 100 letras, passa em direto para toda a praça', 'Up to 100 characters, goes live to the whole square');
     const go = optBtn(L('Responder', 'Answer'), () => { const v = ta.value.trim(); if (!v) return; npcErr.textContent = ''; send({ t: 'resposta', text: v }); pendingFree = true; });
     ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go.click(); } });
     row.append(ta, go); b.append(row);
@@ -1540,15 +1540,15 @@ function camperDialog(id, k) {
   dialog(L('Acampado', 'Camper'), L(ln[0], ln[1]), b => {
     const g = optGrid(b);
     g.append(optBtn(L('Ok, até já', 'OK, see you'), () => closeSheets()));
-    const a = optBtn(L('🚨 Acho que é bufo!', '🚨 I think he’s a snitch!'), () => { closeSheets(); send({ t: 'bufo-acusar', id }); }); a.className = 'redbtn'; g.append(a);
-    const h = document.createElement('p'); h.className = 'note'; h.textContent = L('Bufo: um polícia à paizana ou um infiltrado. A praça vota. Se acertarem, ele foge; se for um acampado, fica ofendido e ninguém pode apontar durante 3 minutos.', 'A snitch: a plain-clothes police officer or an infiltrator. The square votes. Right: he runs; an innocent camper: he’s offended and nobody can point for 3 minutes.'); b.append(h);
+    const a = optBtn(L('🚨 Acho que é bufo!', '🚨 I reckon he’s a plant!'), () => { closeSheets(); send({ t: 'bufo-acusar', id }); }); a.className = 'redbtn'; g.append(a);
+    const h = document.createElement('p'); h.className = 'note'; h.textContent = L('Bufo: um polícia à paizana ou um infiltrado. A praça vota. Se acertarem, ele foge; se for um acampado, fica ofendido e ninguém pode apontar durante 3 minutos.', 'A plant: an undercover cop or an infiltrator. The square votes. Right: he runs; an innocent camper: he takes offence and nobody can point for 3 minutes.'); b.append(h);
   });
 }
 function votoShow() {
   if (bufoVote && performance.now() > bufoVote.until + 3000) bufoVote = null; // (its end never arrived: the connection dropped)
   const v = bufoVote, el = $('voto'); if (!v) { el.hidden = true; clearInterval(bufoTimer); bufoTimer = 0; return; }
   const s = Math.max(0, Math.ceil((v.until - performance.now()) / 1000));
-  $('votoTxt').innerHTML = `${esc(L(`🚨 ${v.n} acha que aquele acampado é bufo. Concordas?`, `🚨 ${v.n} thinks that camper is a snitch. Do you agree?`))}<small>${esc(L(`${v.sim} sim · ${v.nao} não · ${s} s`, `${v.sim} yes · ${v.nao} no · ${s} s`))}</small>`;
+  $('votoTxt').innerHTML = `${esc(L(`🚨 ${v.n} acha que aquele acampado é bufo. Concordas?`, `🚨 ${v.n} thinks that camper is a plant. Do you agree?`))}<small>${esc(L(`${v.sim} sim · ${v.nao} não · ${s} s`, `${v.sim} yes · ${v.nao} no · ${s} s`))}</small>`;
   $('votoSim').disabled = $('votoNao').disabled = !!v.mine || !me; el.hidden = false;
   if (!bufoTimer) bufoTimer = setInterval(votoShow, 500);
 }
@@ -1556,20 +1556,20 @@ $('votoSim').addEventListener('click', () => { if (!bufoVote) return; bufoVote.m
 $('votoNao').addEventListener('click', () => { if (!bufoVote) return; bufoVote.mine = 1; send({ t: 'bufo-votar', ok: false }); votoShow(); });
 function bufoMsg(m) {
   if (m.t === 'acampado-diz') { const ln = CAMPER_LINES[m.k]; if (!ln) return true; if (m.alto) say(m.id, L(ln[0], ln[1])); else camperDialog(m.id, m.k); return true; } // (alto: the infiltrator, out loud for everyone)
-  if (m.t === 'bufo-rumor') { toast(L('👀 Corre o rumor de que há um bufo na praça… Fala com os acampados.', '👀 Word is there’s a snitch in the square… Talk to the campers.'), 6000); return true; }
+  if (m.t === 'bufo-rumor') { toast(L('👀 Corre o rumor de que há um bufo na praça… Fala com os acampados.', '👀 Word is there’s a plant in the square… Talk to the campers.'), 6000); return true; }
   if (m.t === 'bufo-voto') { bufoVote = { id: m.id, n: m.n, until: performance.now() + m.ms, sim: m.sim, nao: m.nao, mine: m.by === myId ? 1 : 0 }; votoShow(); return true; }
   if (m.t === 'bufo-conta') { if (bufoVote && bufoVote.id === m.id) { bufoVote.sim = m.sim; bufoVote.nao = m.nao; votoShow(); } return true; }
   if (m.t === 'bufo-fim') {
     if (bufoVote && bufoVote.id === m.id) { bufoVote = null; votoShow(); }
     const T = {
-      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a plain-clothes police officer. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um porco fascista disfarçado de manifestante! Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a fascist pig dressed as a protester! Well spotted, ${m.by}! +3 supporters`),
-      inocente: L(`😟 Era só um acampado. Ficou ofendido e foi-se embora. Ninguém pode apontar durante ${Math.round((m.lock || 180) / 60)} minutos.`, `😟 He was just a camper. He’s offended and left. Nobody can point for ${Math.round((m.lock || 180) / 60)} minutes.`),
+      apanhado: m.role === 1 ? L(`🚨 Desmascarado! Era um polícia à paizana. Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was an undercover cop. Well spotted, ${m.by}! +3 supporters`) : L(`🚨 Desmascarado! Era um porco fascista disfarçado de manifestante! Bem visto, ${m.by}! +3 apoiantes`, `🚨 Unmasked! He was a fascist pig dressed as a protester! Well spotted, ${m.by}! +3 supporters`),
+      inocente: L(`😟 Era só um acampado. Ficou ofendido e foi-se embora. Ninguém pode apontar durante ${Math.round((m.lock || 180) / 60)} minutos.`, `😟 He was just a camper. He’s taken offence and gone. Nobody can point for ${Math.round((m.lock || 180) / 60)} minutes.`),
       nao: L(`A praça não concordou (${m.sim || 0} sim, ${m.nao || 0} não).`, `The square didn’t agree (${m.sim || 0} yes, ${m.nao || 0} no).`),
-      fugiu: m.role === 1 ? (m.fotos ? L(`📸 Ninguém deu por ele: um polícia à paizana saiu da praça com fotografias de ${m.fotos} ${m.fotos === 1 ? 'pessoa' : 'pessoas'}.`, `📸 Nobody noticed: a plain-clothes officer left the square with photos of ${m.fotos} ${m.fotos === 1 ? 'person' : 'people'}.`) : L('Um polícia à paizana andou pela praça e foi-se embora sem ninguém dar por ele.', 'A plain-clothes officer walked round the square and left without anyone noticing.')) : L('O infiltrado não conseguiu juntar ninguém e foi-se embora.', 'The infiltrator couldn’t gather anyone and left.'),
+      fugiu: m.role === 1 ? (m.fotos ? L(`📸 Ninguém deu por ele: um polícia à paizana saiu da praça com fotografias de ${m.fotos} ${m.fotos === 1 ? 'pessoa' : 'pessoas'}.`, `📸 Nobody noticed: an undercover cop left the square with photos of ${m.fotos} ${m.fotos === 1 ? 'person' : 'people'}.`) : L('Um polícia à paizana andou pela praça e foi-se embora sem ninguém dar por ele.', 'An undercover cop walked round the square and left without anyone noticing.')) : L('O infiltrado não conseguiu juntar ninguém e foi-se embora.', 'The infiltrator couldn’t gather anyone and left.'),
       provocou: L(`💥 O infiltrado conseguiu a confusão que queria${m.fugiram ? `: ${m.fugiram} ${m.fugiram === 1 ? 'curioso assustou-se e foi-se' : 'curiosos assustaram-se e foram-se'} embora` : ''}. Não lhe deem ouvidos!`, `💥 The infiltrator got the trouble he wanted${m.fugiram ? `: ${m.fugiram} scared passer${m.fugiram === 1 ? '-by' : 's-by'} left` : ''}. Don’t listen to him!`)
     }[m.r];
     if (m.r === 'apanhado' && m.role === 2) { const n = npcs.get(m.id); if (n) n.pig = true; pigSound('squeal'); } // the infiltrator turns out to be a pig
-    if (m.r === 'apanhado') { say(m.id, m.role === 1 ? L('Ups… fui apanhado.', 'Oops… caught.') : L('Oinc! Era só… brincadeira!', 'Oink! It was just… a joke!')); if (m.total != null) { convencidos = m.total; renderCounts(); } }
+    if (m.r === 'apanhado') { say(m.id, m.role === 1 ? L('Ups… fui apanhado.', 'Oops… rumbled.') : L('Oinc! Era só… brincadeira!', 'Oink! Only… joking!')); if (m.total != null) { convencidos = m.total; renderCounts(); } }
     if (m.r === 'inocente') say(m.id, L('Eu?! Estou aqui desde o primeiro dia!', 'Me?! I’ve been here since day one!'));
     if (T) toast(T, 6000); return true;
   }
@@ -1602,7 +1602,7 @@ const RIDES = [
   { n: 'Lisbora · Social Ride', w: ['Todas as terças-feiras, às 20:00, no Atrium Saldanha', 'Every Tuesday, 8 pm, at Atrium Saldanha'], c: ['Lisboa', 'Lisbon'] }
 ];
 function bikeRideInfo() {
-  dialog(L('Pedalada', 'Bike ride'), L('Gostaste? Pedala connosco na rua a sério:', 'Like it? Ride with us on the real streets:'), b => {
+  dialog(L('Pedalada', 'Critical Mass'), L('Gostaste? Pedala connosco na rua a sério:', 'Like it? Ride with us on the real streets:'), b => {
     for (const r of RIDES) { const d = document.createElement('div'); d.className = 'ride'; const h = document.createElement('b'); h.textContent = '🚲 ' + r.n; const w = document.createElement('span'); w.textContent = L(r.w[0], r.w[1]); const c = document.createElement('small'); c.textContent = L(r.c[0], r.c[1]); d.append(h, w, c); b.append(d); }
   });
 }
@@ -1649,7 +1649,7 @@ function ctxLabel(t) { // what the button says for each thing (null: nothing to 
   if (t.kind === 'curioso') { const n = npcs.get(t.id); return n && n.g ? null : L('💬 Explicar a acampada', '💬 Explain the camp'); }
   if (t.kind === 'dj') return inConga() >= 0 ? null : L('💃 Entrar na conga', '💃 Join the conga');
   return { jornalista: L('🎤 Dar entrevista', '🎤 Give an interview'), acampado: L('💬 Falar com o acampado', '💬 Talk to the camper'), fotografa: L('📸 Foto de grupo', '📸 Group photo'), cantina: L('🍲 Cantina', '🍲 Canteen'),
-    cao: L('🐾 Fazer festas', '🐾 Pet her'), bola: L('⚽ Chutar a bola', '⚽ Kick the ball'), zezinho: L('🤳 Selfie com o Zezinho', '🤳 Selfie with Zezinho'), bicicletada: L('🚲 Bicicletada', '🚲 Bike ride'),
+    cao: L('🐾 Fazer festas', '🐾 Pet her'), bola: L('⚽ Chutar a bola', '⚽ Kick the ball'), zezinho: L('🤳 Selfie com o Zezinho', '🤳 Selfie with Zezinho'), bicicletada: L('🚲 Bicicletada', '🚲 Critical Mass'),
     estaca: L('⛺ Pegar na estaca', '⛺ Take the peg'), faixa: L('🏳️ Pegar na faixa', '🏳️ Take the banner') }[t.kind] || null;
 }
 function ctxSync() {
@@ -1800,7 +1800,7 @@ $('avisoX').addEventListener('click', () => { avisoClosed = aviso; $('aviso').hi
 function blipAviso() { if (!actx || muted) return; const t = actx.currentTime; for (const [i, f] of [[0, 784], [1, 988]]) { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.setValueAtTime(.04, t + i * .12); g.gain.exponentialRampToValueAtTime(.0001, t + i * .12 + .1); o.connect(g).connect(actx.destination); o.start(t + i * .12); o.stop(t + i * .12 + .12); } }
 function renderMuralLock() {
   const ro = !!cfg.muralRO; $('muralIn').disabled = ro; $('muralSend').disabled = ro; $('muralIn').closest('.write').classList.toggle('ro', ro);
-  $('muralIn').placeholder = ro ? L('O mural está só para leitura.', 'The wall is read-only for now.') : L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 letters, no links)');
+  $('muralIn').placeholder = ro ? L('O mural está só para leitura.', 'The wall is read-only for now.') : L('Escreve ao resto da praça (140 letras, sem links)', 'Write to the rest of the square (140 characters, no links)');
 }
 function shutter() { if (!actx || muted || !me) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(1800, t); o.frequency.setValueAtTime(900, t + .03); g.gain.setValueAtTime(.03, t); g.gain.exponentialRampToValueAtTime(.0001, t + .09); o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .1); }
 function muralPing() { if ($('muralSheet').hidden) $('tMural').classList.add('new'); }
@@ -2015,7 +2015,7 @@ function entryScreen(st) {
   <p class="help">${st.close ? L(`Fecha às ${hhmm(st.close)}.`, `Closes at ${hhmm(st.close)}.`) : L('Aberta até a organização fechar.', 'Open until the organisers close it.')} ${L(`Agora: ${sum(st.counts && st.counts.praca)} na praça, ${sum(st.counts && st.counts.apoio)} de longe.`, `Right now: ${sum(st.counts && st.counts.praca)} in the square, ${sum(st.counts && st.counts.apoio)} from afar.`)}</p>
   ${st.aviso ? `<p class="live" style="border-left-color:var(--lime)"><b>📣 ${esc(st.aviso)}</b></p>` : ''}
   <div class="form">
-    <div><label for="fName">${L('O teu nome na praça', 'Your name in the square')}</label><input id="fName" maxlength="16" autocomplete="nickname" value="${esc(p.name)}" placeholder="${L('Até 16 letras', 'Up to 16 letters')}"></div>
+    <div><label for="fName">${L('O teu nome na praça', 'Your name in the square')}</label><input id="fName" maxlength="16" autocomplete="nickname" value="${esc(p.name)}" placeholder="${L('Até 16 letras', 'Up to 16 characters')}"></div>
     <div><label for="fCity">${L('De que cidade és?', 'Which city are you from?')}</label><select id="fCity"><option value="">${L('Escolhe…', 'Choose…')}</option>${opts}</select>
       <input id="fOther" maxlength="24" placeholder="${L('Qual?', 'Which one?')}" value="${esc(p.other)}" style="margin-top:6px" ${p.city === '_' ? '' : 'hidden'}></div>
     <div><label>${L('Onde estás agora?', 'Where are you now?')}</label><div class="choice">
@@ -2058,7 +2058,7 @@ function entryScreen(st) {
         const b = document.createElement('button'); b.type = 'button';
         const val = k === 'acc' ? i + 1 : i;
         const on = k === 'acc' ? (profile.look.a1 === val || profile.look.a2 === val) : profile.look[k] === val;
-        if (o === null) { b.textContent = L('Da cidade', 'City’s'); b.className = 'chip'; }
+        if (o === null) { b.textContent = L('Da cidade', 'Your city’s'); b.className = 'chip'; }
         else if (typeof o === 'string' && o[0] === '#') { b.className = 'sw'; b.style.background = o; b.setAttribute('aria-label', label + ' ' + (i + 1)); }
         else { b.className = 'chip'; b.textContent = o; }
         b.classList.toggle('on', on);
@@ -2082,7 +2082,7 @@ function entryScreen(st) {
   drawLook(); modeSync();
   $('enter').addEventListener('click', () => {
     const name = $('fName').value.trim(), city = $('fCity').value, other = $('fOther').value.trim();
-    if (!name) { $('formErr').textContent = L('Escreve um nome (pode ser inventado).', 'Write a name (it can be made up).'); $('fName').focus(); return; }
+    if (!name) { $('formErr').textContent = L('Escreve um nome (pode ser inventado).', 'Pick a name (made-up is fine).'); $('fName').focus(); return; }
     if (!city || (city === '_' && !other)) { $('formErr').textContent = L('Escolhe a tua cidade.', 'Choose your city.'); $('fCity').focus(); return; }
     profile.name = name; profile.city = city; profile.other = other;
     store.set('acampada-praca', JSON.stringify(profile));
@@ -2635,7 +2635,7 @@ function chessRender() {
   $('chessBar').innerHTML = '';
   const btn = (t, f, cls = '') => { const b = document.createElement('button'); b.textContent = t; if (cls) b.className = cls; b.addEventListener('click', f); $('chessBar').append(b); };
   const playing = c && !c.over;
-  if (!playing) { btn(L('Jogar vs IA', 'Play vs AI'), () => chessNew('ai', 'w', 0, '', chView), 'go'); btn(L('Desafiar jogador', 'Challenge a player'), chessPick); }
+  if (!playing) { btn(L('Jogar vs IA', 'Play the computer'), () => chessNew('ai', 'w', 0, '', chView), 'go'); btn(L('Desafiar jogador', 'Challenge a player'), chessPick); }
   if (playing) btn(L('Minimizar', 'Minimise'), chessMin);
   if (playing) btn(L('Desistir', 'Resign'), chessResign, 'red');
   $('chessPick').hidden = true;
@@ -2663,7 +2663,7 @@ function chessResign() {
   chessRender(); chessTab();
 }
 function chessPick() { // who to challenge: the people in the square
-  const box = $('chessPick'); box.hidden = false; box.textContent = L('A ver quem está na praça…', 'Looking who is in the square…'); send({ t: 'chess-who' });
+  const box = $('chessPick'); box.hidden = false; box.textContent = L('A ver quem está na praça…', 'Seeing who’s in the square…'); send({ t: 'chess-who' });
 }
 function chessWho(l) {
   const box = $('chessPick'); if (box.hidden || !Array.isArray(l)) return; box.innerHTML = '';
